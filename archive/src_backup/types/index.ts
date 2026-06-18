@@ -44,7 +44,6 @@ export interface Meal {
   notes?: string;
 }
 
-// --- API Response Wrappers ---
 export interface ApiResponse<T> {
   data: T;
   success: boolean;

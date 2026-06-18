@@ -42,3 +42,4 @@ export const nutritionApi = {
       body: JSON.stringify({ petId }),
     }),
 };
+export { apiGet } from "../../../src/core/api-client";

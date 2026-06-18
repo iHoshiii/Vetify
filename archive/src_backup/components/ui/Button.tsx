@@ -22,13 +22,13 @@ export default function Button({
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-600",
     secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus-visible:ring-gray-400",
     ghost: "bg-transparent text-gray-600 hover:bg-gray-100 focus-visible:ring-gray-400",
-  };
+  } as const;
 
   const sizes = {
     sm: "h-8 px-3 text-sm",
     md: "h-10 px-4 text-sm",
     lg: "h-12 px-6 text-base",
-  };
+  } as const;
 
   return (
     <button
