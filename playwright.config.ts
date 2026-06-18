@@ -34,7 +34,7 @@ export default defineConfig({
 
   /* Start Next.js dev server before running tests */
   webServer: {
-    command: "npm run dev --workspace=apps/web",
+    command: "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
