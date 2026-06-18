@@ -33,4 +33,3 @@ export default function MapClient({ clinics = [] }: MapClientProps) {
     </div>
   );
 }
-export { default } from "../../../src/components/MapClient";

@@ -6,4 +6,3 @@ export default function AnatomyPage() {
     </main>
   );
 }
-export { default } from "../../../../src/app/anatomy/page";

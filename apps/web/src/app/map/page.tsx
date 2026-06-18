@@ -6,4 +6,3 @@ export default function MapPage() {
     </main>
   );
 }
-export { default } from "../../../../src/app/map/page";

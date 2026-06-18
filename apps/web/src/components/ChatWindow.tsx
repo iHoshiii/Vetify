@@ -73,4 +73,3 @@ export default function ChatWindow() {
     </div>
   );
 }
-export { default } from "../../../src/components/ChatWindow";

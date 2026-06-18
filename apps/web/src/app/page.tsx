@@ -18,4 +18,3 @@ export default function Home() {
     </div>
   );
 }
-export { default } from "../../../src/app/page";

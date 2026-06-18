@@ -6,4 +6,3 @@ export default function PlannerPage() {
     </main>
   );
 }
-export { default } from "../../../../src/app/planner/page";
