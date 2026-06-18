@@ -36,6 +36,11 @@
 - **Goal:** Make sure your pet eats the right food.
 - **How it works:** You tell the app your pet's age, weight, and any allergies. The app then creates a 7-day meal plan just for them.
 
+###3.7 Smart Care Reminders (Daily Nudges)
+**Goal:** Help you remember the little things that keep your pet happy and healthy.
+
+**How it works:** The app occasionally shows friendly pop-up notifications with quick, helpful tips or reminders. For example, it might say "Don't forget to refill the water bowl!", "Time for a quick walk?", or "Make sure to give your pet a treat today!"
+
 ### 3.6 Veterinary Blogs
 - **Goal:** Keep you informed.
 - **How it works:** A section with articles about local clinics, health tips, and stories about animal care.
