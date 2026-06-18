@@ -112,3 +112,26 @@ vetify/                             # Monorepo Workspace Root
 ├── package.json                    # Monorepo workspace root (npm workspaces + Playwright)
 ├── playwright.config.ts            # E2E test runner configuration (browsers, baseURL, CI)
 └── README.md                       # Monorepo Entrypoint Documentation
+
+---
+
+Repository notes and conventions
+- Canonical frontend lives in `apps/web/` (moved from a legacy root `src/`). Do not keep duplicate copies at repository root.
+- Canonical backend lives in `apps/core-api/` (consolidated from `backend/`). A backup was created before the move and is kept at `archive/backend_backup_2026-06-18.zip`.
+- Archives of removed or condensed folders are kept under `archive/` as timestamped zip files for safe rollback.
+
+Tech & Tooling Highlights
+- Frontend: Next.js 14+, React 18+, TypeScript, Tailwind CSS, PostCSS (requires `autoprefixer`), Vitest for unit tests, Playwright for E2E.
+- Backend: FastAPI, Uvicorn, Pydantic, Motor (async MongoDB), LangChain adapters for AI clients.
+- Database: Prisma schema is present under `apps/web/prisma/` — run `prisma generate` and install `@prisma/client` if server-side Prisma is enabled.
+
+Testing & CI Notes
+- Vitest configuration was narrowed to project tests to avoid running unrelated tests in `node_modules` and Playwright suites during unit runs. See `apps/web/vitest.config.ts`.
+- Backend tests now live in `apps/core-api/tests/` and can be run with `pytest` after installing `apps/core-api/requirements.txt`.
+
+Recommended next steps after consolidation
+- Update `docker-compose.yml` if CI/CD or local development relies on service names or build contexts (should reference `./apps/web` and `./apps/core-api`).
+- Run a production build for the frontend to verify: from repository root, run the workspace build command defined in `package.json` (e.g., `pnpm --filter @workspace/web build` or `npm --workspace apps/web run build`).
+- Install Python deps into a virtualenv and run `pytest` in `apps/core-api/` to validate the backend move.
+
+If you want, I can update `docker-compose.yml` now and run the backend tests in a venv.
