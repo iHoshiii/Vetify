@@ -1,146 +1,71 @@
-```markdown
-# Vetify Project Master Plan
+Here is a highly detailed, execution-level masterplan for Vetify. To ensure this is genuinely an industry-standard blueprint, the execution is structured entirely around the six definitive stages of the development lifecycle: Requirement Analysis, System Design, Implementation, Testing, Deployment, and Maintenance.
 
-This master plan outlines the comprehensive development lifecycle, architecture strategy, data models, and phased implementation schedule for Vetify.
-
----
-
-## 1. Executive Project Summary
-Vetify is a cloud-native, open-source pet health platform engineered to bridge the gap between instant AI-driven digital triage and physical professional veterinary care. The application leverages an asynchronous Python backend and a component-based frontend framework to deliver geospatial mapping, automated nutritional tracking, interactive educational anatomy, and automated medical screening under strict cloud-hosted free-tier constraints.
+This breaks your project down from a high-level architecture into actionable, sprint-ready tasks.
 
 ---
 
-## 2. System Architecture & Component Mapping
+## Stage 1: Requirement Analysis
 
+This stage locks down exactly what is being built, the cloud constraints, and the user journeys before a single line of code is written.
 
-```
-
-[ Client Interface ] <---> [ FastAPI Gateway (Uvicorn) ] <---> [ Cloud LLM APIs ]
-│
-▼
-[ MongoDB Atlas ]
-├── Geospatial Index ($near)
-└── Vector Search Index (RAG)
-
-```
-
-### 2.1 Backend Layer (FastAPI / Uvicorn)
-* **ASGI Server:** Uvicorn implements the Asynchronous Server Gateway Interface to process high-throughput concurrent WebSocket and HTTP requests without thread blocking.
-* **API Router:** FastAPI orchestrates computational endpoints, executes background tasks, and manages data streams.
-* **Validation Engine:** Pydantic enforces data type integrity, automatic request serialization, and runtime schema evaluation.
-
-### 2.2 Orchestration & Inference Layer (LangChain)
-* **Agent Framework:** Executes structural tool calling, state management, and semantic routing based on real-time token classification.
-* **RAG Component:** Combines document chunking strategies with vector transformations to fetch deterministic medical lookups out of data vectors.
-* **Inference Hosts:** Google AI Studio (Gemini 1.5 Flash) and Groq Cloud (Llama-3-70b) execute serverless processing.
-
-### 2.3 Database Layer (MongoDB Atlas Cluster)
-* **Document Store:** Houses highly dynamic BSON records for user collections, appointment pipelines, meal logs, and article indexes.
-* **Geospatial Processing:** Configures a `2dsphere` layout map to perform spherical geometry calculations across latitude/longitude pairs.
-* **Vector Index:** Executes k-nearest neighbor (k-NN) vector computations against dense mathematical embeddings.
+* **Task 1.1: Finalize Free-Tier Quotas.** Document the exact API rate limits for Groq, Google AI Studio, MongoDB Atlas (512MB limit), and Mapbox.
+* **Task 1.2: Define the Triage Guardrails.** Draft the strict medical boundaries for the AI. Decide exactly which symptoms trigger an immediate "Emergency / Find Vet" response versus a standard AI answer.
+* **Task 1.3: User Story Mapping.** Write out the exact click-paths for the three core personas: a user seeking urgent AI advice, a user looking for a routine meal plan, and a user exploring the anatomy viewer.
+* **Task 1.4: Define API Contracts.** Outline the exact JSON structures that the frontend will expect from the backend for the chat, map, and meal features.
 
 ---
 
-## 3. Core Data Schemas (BSON / Pydantic Representations)
+## Stage 2: System Design
 
-### 3.1 Users & Pets Collection
-```json
-{
-  "_id": "ObjectId",
-  "email": "string",
-  "created_at": "datetime",
-  "pets": [
-    {
-      "pet_id": "string",
-      "name": "string",
-      "species": "string",
-      "breed": "string",
-      "age_months": "integer",
-      "weight_kg": "float",
-      "allergies": ["string"],
-      "dietary_restrictions": ["string"]
-    }
-  ]
-}
+This stage translates the requirements into your workspace architecture, database schemas, and visual layouts.
 
-```
-
-### 3.2 Clinics & Professionals Collection
-
-```json
-{
-  "_id": "ObjectId",
-  "name": "string",
-  "license_number": "string",
-  "is_verified": "boolean",
-  "contact_phone": "string",
-  "address": {
-    "street": "string",
-    "city": "string",
-    "coordinates": {
-      "type": "Point",
-      "coordinates": [121.1444, 16.4822] 
-    }
-  }
-}
-
-```
-
-### 3.3 Medical Knowledge Vector Collection
-
-```json
-{
-  "_id": "ObjectId",
-  "source_document": "string",
-  "text_content": "string",
-  "embedding": [0.0142, -0.0234, 0.1045]
-}
-
-```
+* **Task 2.1: Initialize the Monorepo.** Set up the `apps/web` and `apps/core-api` directories, configure Docker, and establish the `.env` templating.
+* **Task 2.2: Lock the Prisma Schema.** Write the `schema.prisma` file containing the exact models for Users, Pets, Clinics, and Blogs, ensuring the MongoDB `Point` geometry is correct.
+* **Task 2.3: Design the UI/UX.** Create wireframes for the Chat Portal, the Interactive Locator Map, and the Nutritional Dashboard.
+* **Task 2.4: Architect the LangChain Graph.** Design the logical flow chart of how a user message passes through the evaluation node, routes to either the RAG knowledge base or the emergency geospatial tool, and returns to the user.
 
 ---
 
-## 4. Phased Implementation Schedule
+## Stage 3: Implementation
 
-### Phase 1: Environment & Cloud Database Initialization
+This is the core coding phase, where the backend engine and frontend client are built in parallel.
 
-**Duration: Weeks 1–2**
+* **Task 3.1: Build the MongoDB Foundation.** Execute `npx prisma db push` to generate the collections and write a seed script to populate mock veterinary clinics with accurate longitude/latitude coordinates.
+* **Task 3.2: Develop the FastAPI Gateway.** Build the core routing infrastructure, Pydantic validation models, and CORS middleware to accept frontend connections securely.
+* **Task 3.3: Implement the Triage AI.** Code the LangChain agent, connect the Groq/Gemini APIs, and write the custom tool that executes the MongoDB `$near` query when an emergency is detected.
+* **Task 3.4: Construct the Next.js UI.** Build the React components, integrate Tailwind CSS, and set up the Axios/Fetch clients to communicate with the FastAPI backend.
+* **Task 3.5: Integrate the Map and SVGs.** Wire the Mapbox GL component to display the backend clinic coordinates and map the interactive anatomy SVG paths to trigger informational pop-ups.
 
-* **Task 1.1:** Initialize the monorepo workspace containing separated `/backend` and `/frontend` directories. Set up local version control rules and lockfile policies.
-* **Task 1.2:** Provision the MongoDB Atlas M0 Cluster. Establish network access white-lists and database read/write permissions.
-* **Task 1.3:** Build database index components. Execute administrative scripts to build the `2dsphere` indexing on the location collection, and compile the Vector Search configurations within the medical knowledge collection.
-* **Task 1.4:** Define Pydantic base models mirroring document structures to guarantee end-to-end data validation before persistence operations.
+---
 
-### Phase 2: LangChain Pipeline & Asynchronous API Development
+## Stage 4: Testing
 
-**Duration: Weeks 3–5**
+This stage verifies that the system is stable, secure, and accurate across all language environments.
 
-* **Task 2.1:** Implement secure API middleware connections targeting Groq and Google AI Studio platforms. Create environment variables utilizing secure local configuration protocols.
-* **Task 2.2:** Build the semantic router inside the LangChain pipeline. Define prompt logic assigning safe thresholds to general pet advice queries while isolating critical health indicators (e.g., hemorrhage, poisoning, continuous vomiting). Program the fallback response: "Contact a professional veterinarian doctor" when thresholds are exceeded.
-* **Task 2.3:** Enforce strict structured output formatting using Pydantic parsers. Ensure that cloud LLMs output structured JSON structures containing Boolean indicator status variables and emergency contact triggers.
-* **Task 2.4:** Program the geospatial fallback middleware. When the AI agent triggers an emergency or complex condition, it must extract location coordinates, execute an automated MongoDB `$near` lookup query, and append the details of the nearest physical clinic or doctor directly into the response payload.
-* **Task 2.5:** Create the automated Meal Planner system endpoint. Instruct the cloud LLM to construct structural 7-day balanced meal configurations based on pet species, age, weight, and allergies.
-* **Task 2.6:** Develop the Blog Content Management System (CMS) endpoint to serve articles about veterinary clinics and health tips.
+* **Task 4.1: Write Backend Logic Tests.** Use Pytest to simulate various user inputs (e.g., "my dog is bleeding") and assert that the LangChain agent correctly triggers the emergency boolean every time.
+* **Task 4.2: Verify Data Mutations.** Ensure that the Next.js Prisma client successfully saves newly generated pet meal plans to the correct user document in MongoDB.
+* **Task 4.3: Execute Frontend Component Tests.** Use Vitest and React Testing Library to ensure the chat window streams text properly and the map renders without crashing.
+* **Task 4.4: Run E2E Automation.** Use Playwright to simulate a full user session: logging in, asking the AI a question, getting an emergency clinic recommendation, and viewing it on the map.
 
-### Phase 3: UI Layout Design & Map Integration
+---
 
-**Duration: Weeks 6–8**
+## Stage 5: Deployment
 
-* **Task 3.1:** Construct the UI Shell using Next.js or React Native. Build stateful interface tracks for the main application workspaces: Chat Portal, Interactive Locator Map, Professional Hiring Marketplace, Anatomy Viewer, and Nutritional Dashboard.
-* **Task 3.2:** Connect the real-time chat pipeline to the FastAPI gateway. Implement asynchronous loading animations, handle multi-turn chat records, and design responsive high-priority layout banners for critical triage interventions (nearest vet clinic details).
-* **Task 3.3:** Inject the Mapbox GL or Google Maps interface engine. Read location payloads sent by the backend server to plot pins dynamically across map frames for all local clinics.
-* **Task 3.4:** Build the visual Anatomy UI tool. Structure vector graphics (SVGs) mapping distinct animal parts for basic animals (dogs, cats, birds). Add click action hooks on structural components to fetch underlying biological details from the database using clean FastAPI routes.
-* **Task 3.5:** Implement the Professional Marketplace UI where users can search, view profiles, and hire licensed veterinary doctors.
+This stage moves the application from your local Docker environment onto the live internet.
 
-### Phase 4: Integration Verification & Cloud Deployment
+* **Task 5.1: Configure CI/CD Pipelines.** Set up GitHub Actions to automatically run your Pytest and Vitest suites whenever you push code to the main branch.
+* **Task 5.2: Provision Cloud Hosting.** Connect the Next.js frontend to Vercel/Netlify and the FastAPI backend to Render/Railway.
+* **Task 5.3: Inject Production Secrets.** Safely add your live MongoDB Atlas connection strings, Mapbox tokens, and LLM API keys to the hosting environment variables.
+* **Task 5.4: Live System Audit.** Perform manual end-to-end checks on the live production URLs to ensure the API responds promptly under real cloud latency.
 
-**Duration: Weeks 9–10**
+---
 
-* **Task 4.1:** Launch automated testing cycles simulating extreme veterinary emergency descriptors. Confirm that the LangChain supervisor intercepts critical alerts, sets accurate emergency statuses, and maps nearby medical clinics without exceptions.
-* **Task 4.2:** Run cross-origin resource sharing (CORS) safety checks and verify that client state maps update smoothly following large payload mutations.
-* **Task 4.3:** Deploy the static frontend client architecture directly to Vercel or Netlify. Connect deployment configurations to production distribution pipelines.
-* **Task 4.4:** Host the backend FastAPI framework on Render or Railway server environments. Configure runtime execution policies using production command parameters: `uvicorn main:app --host 0.0.0.0 --port $PORT`. Validate system continuity.
+## Stage 6: Maintenance
 
-```
+This ongoing stage manages database health, model accuracy, and system updates after launch.
 
-```
+* **Task 6.1: Monitor AI Telemetry.** Periodically review the LangChain output logs to ensure the cloud LLM is not hallucinating medical advice or failing to trigger the emergency protocols.
+* **Task 6.2: Execute Data Migrations.** Write and run Python batch scripts inside `core-api/scripts` when you need to retroactively update thousands of user documents with new default fields.
+* **Task 6.3: Expand the RAG Vector Base.** Continuously ingest new, verified veterinary articles into your MongoDB Vector Search to improve the AI's foundational knowledge.
+
+---
