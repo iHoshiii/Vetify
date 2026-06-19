@@ -1,11 +1,8 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
-async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
   });
 
@@ -20,8 +17,8 @@ async function apiFetch<T>(
 // --- Triage ---
 export const triageApi = {
   chat: (message: string) =>
-    apiFetch<{ reply: string }>("/triage/chat", {
-      method: "POST",
+    apiFetch<{ reply: string }>('/triage/chat', {
+      method: 'POST',
       body: JSON.stringify({ message }),
     }),
 };
@@ -29,16 +26,14 @@ export const triageApi = {
 // --- Locator ---
 export const locatorApi = {
   findNearby: (lat: number, lng: number, radius = 5000) =>
-    apiFetch<{ clinics: unknown[] }>(
-      `/locator/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
-    ),
+    apiFetch<{ clinics: unknown[] }>(`/locator/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
 };
 
 // --- Nutrition ---
 export const nutritionApi = {
   generatePlan: (petId: string) =>
-    apiFetch<{ plan: unknown }>("/nutrition/plan", {
-      method: "POST",
+    apiFetch<{ plan: unknown }>('/nutrition/plan', {
+      method: 'POST',
       body: JSON.stringify({ petId }),
     }),
 };
