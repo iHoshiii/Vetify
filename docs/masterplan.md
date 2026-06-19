@@ -1,71 +1,69 @@
-Here is a highly detailed, execution-level masterplan for Vetify. To ensure this is genuinely an industry-standard blueprint, the execution is structured entirely around the six definitive stages of the development lifecycle: Requirement Analysis, System Design, Implementation, Testing, Deployment, and Maintenance.
+🗺️ The Vetify Masterplan Overview
+Phase | Focus Area | Primary Output -- | -- | -- Phase 1 | Foundation & Docker | A running local monorepo with MongoDB. Phase 2 | The Prisma Bridge | schema.prisma generating TS & Python types. Phase 3 | AI & Backend Logic | FastAPI domains (Triage, Locator, Nutrition). Phase 4 | Next.js Frontend | Interactive UI, Leaflet Map, and AI Chat Stream. Phase 5 | Playwright Testing | Automated E2E tests validating the full system. Phase 6 | Deployment | Multi-stage Dockerfiles pushed to the cloud.
+Phase 1: Workspace Genesis & Infrastructure
+The goal is to wire up the monorepo and get your containerized database running locally.
 
-This breaks your project down from a high-level architecture into actionable, sprint-ready tasks.
+Step 1.1: Initialize the root directory (vetify/). Create your root package.json and configure the workspaces array to track the apps/ and packages/ folders.
 
----
+Step 1.2: Scaffold your two applications. Run the Next.js setup inside apps/web/ and initialize a standard Python virtual environment inside apps/core-api/.
 
-## Stage 1: Requirement Analysis
+Step 1.3: Create the root docker-compose.yml file. Configure a local MongoDB instance and a Mongo-Express viewer so you can easily inspect your database through your browser.
 
-This stage locks down exactly what is being built, the cloud constraints, and the user journeys before a single line of code is written.
+Step 1.4: Run docker-compose up -d. Verify that your local database is spinning up successfully in isolation.
 
-* **Task 1.1: Finalize Free-Tier Quotas.** Document the exact API rate limits for Groq, Google AI Studio, MongoDB Atlas (512MB limit), and Mapbox.
-* **Task 1.2: Define the Triage Guardrails.** Draft the strict medical boundaries for the AI. Decide exactly which symptoms trigger an immediate "Emergency / Find Vet" response versus a standard AI answer.
-* **Task 1.3: User Story Mapping.** Write out the exact click-paths for the three core personas: a user seeking urgent AI advice, a user looking for a routine meal plan, and a user exploring the anatomy viewer.
-* **Task 1.4: Define API Contracts.** Outline the exact JSON structures that the frontend will expect from the backend for the chat, map, and meal features.
+Phase 2: The Prisma Data Bridge
+The goal is to define your database models once and generate the types for both applications.
 
----
+Step 2.1: Inside apps/core-api/, install prisma and prisma-client-py. Initialize Prisma to create the apps/core-api/prisma/schema.prisma file.
 
-## Stage 2: System Design
+Step 2.2: Write your schema models (User, Pet, Clinic, Appointment). Ensure your generators are set up to output the Python client locally and the TypeScript definitions to ../../web/src/types/prisma.
 
-This stage translates the requirements into your workspace architecture, database schemas, and visual layouts.
+Step 2.3: Run prisma db push to sync your models with your running local Docker MongoDB instance.
 
-* **Task 2.1: Initialize the Monorepo.** Set up the `apps/web` and `apps/core-api` directories, configure Docker, and establish the `.env` templating.
-* **Task 2.2: Lock the Prisma Schema.** Write the `schema.prisma` file containing the exact models for Users, Pets, Clinics, and Blogs, ensuring the MongoDB `Point` geometry is correct.
-* **Task 2.3: Design the UI/UX.** Create wireframes for the Chat Portal, the Interactive Locator Map, and the Nutritional Dashboard.
-* **Task 2.4: Architect the LangChain Graph.** Design the logical flow chart of how a user message passes through the evaluation node, routes to either the RAG knowledge base or the emergency geospatial tool, and returns to the user.
+Step 2.4: Run prisma generate. Verify that apps/web/src/types/ now contains your strict TypeScript definitions, confirming the frontend and backend are perfectly synced.
 
----
+Phase 3: Core API & Domain Logic (FastAPI)
+The goal is to build the Python backend brains using Domain-Driven Design.
 
-## Stage 3: Implementation
+Step 3.1 (Infrastructure): Build apps/core-api/app/infra/database.py to initialize the async Prisma client when FastAPI starts.
 
-This is the core coding phase, where the backend engine and frontend client are built in parallel.
+Step 3.2 (Nutrition): Build domains/nutrition/services.py. Implement the standard metabolic formula (RER = 70 \* (weight_in_kg)0.75) and expose it via a FastAPI router.
 
-* **Task 3.1: Build the MongoDB Foundation.** Execute `npx prisma db push` to generate the collections and write a seed script to populate mock veterinary clinics with accurate longitude/latitude coordinates.
-* **Task 3.2: Develop the FastAPI Gateway.** Build the core routing infrastructure, Pydantic validation models, and CORS middleware to accept frontend connections securely.
-* **Task 3.3: Implement the Triage AI.** Code the LangChain agent, connect the Groq/Gemini APIs, and write the custom tool that executes the MongoDB `$near` query when an emergency is detected.
-* **Task 3.4: Construct the Next.js UI.** Build the React components, integrate Tailwind CSS, and set up the Axios/Fetch clients to communicate with the FastAPI backend.
-* **Task 3.5: Integrate the Map and SVGs.** Wire the Mapbox GL component to display the backend clinic coordinates and map the interactive anatomy SVG paths to trigger informational pop-ups.
+Step 3.3 (Locator): Build domains/locator/services.py. Write a script to seed test clinics with GeoJSON coordinate data into your database, and create the MongoDB 2dsphere index required for spatial math.
 
----
+Step 3.4 (Triage/AI): Build domains/triage/services.py. Initialize your LLM provider (Groq/OpenRouter) using LangChain. Build a custom LangChain tool that allows the AI to query your locator service.
 
-## Stage 4: Testing
+Step 3.5: Expose the AI agent via domains/triage/router.py, formatting the output as a stream compatible with the Vercel AI SDK.
 
-This stage verifies that the system is stable, secure, and accurate across all language environments.
+Phase 4: Frontend UI & Client Integration
+The goal is to build the user-facing web app and consume the FastAPI endpoints.
 
-* **Task 4.1: Write Backend Logic Tests.** Use Pytest to simulate various user inputs (e.g., "my dog is bleeding") and assert that the LangChain agent correctly triggers the emergency boolean every time.
-* **Task 4.2: Verify Data Mutations.** Ensure that the Next.js Prisma client successfully saves newly generated pet meal plans to the correct user document in MongoDB.
-* **Task 4.3: Execute Frontend Component Tests.** Use Vitest and React Testing Library to ensure the chat window streams text properly and the map renders without crashing.
-* **Task 4.4: Run E2E Automation.** Use Playwright to simulate a full user session: logging in, asking the AI a question, getting an emergency clinic recommendation, and viewing it on the map.
+Step 4.1: Build out your atomic UI components in apps/web/src/components/ui/ (Tailwind Buttons, Inputs, Layouts).
 
----
+Step 4.2: Install leaflet and react-leaflet. Build the MapClient.tsx component. Use Axios or standard Fetch to hit your FastAPI locator endpoint, mapping the returned Prisma-typed clinics to interactive map pins.
 
-## Stage 5: Deployment
+Step 4.3: Build the ChatWindow.tsx interface. Implement the Vercel AI SDK useChat hook, pointing it directly at your FastAPI streaming endpoint.
 
-This stage moves the application from your local Docker environment onto the live internet.
+Step 4.4: Configure Next.js rewrites (next.config.mjs) so local frontend calls to /api are seamlessly proxied to your FastAPI port. Verify the chat UI successfully triggers map updates.
 
-* **Task 5.1: Configure CI/CD Pipelines.** Set up GitHub Actions to automatically run your Pytest and Vitest suites whenever you push code to the main branch.
-* **Task 5.2: Provision Cloud Hosting.** Connect the Next.js frontend to Vercel/Netlify and the FastAPI backend to Render/Railway.
-* **Task 5.3: Inject Production Secrets.** Safely add your live MongoDB Atlas connection strings, Mapbox tokens, and LLM API keys to the hosting environment variables.
-* **Task 5.4: Live System Audit.** Perform manual end-to-end checks on the live production URLs to ensure the API responds promptly under real cloud latency.
+Phase 5: Quality Assurance & E2E Testing
+The goal is to automate system testing so you never deploy broken code.
 
----
+Step 5.1: Set up packages/e2e-testing/ with its own package.json and initialize Playwright.
 
-## Stage 6: Maintenance
+Step 5.2: Write chat-flow.spec.ts. Program Playwright to open a headless browser, type an emergency message into the chat, and assert that the map component correctly updates to show the nearest clinic.
 
-This ongoing stage manages database health, model accuracy, and system updates after launch.
+Step 5.3: Set up your root GitHub Actions workflow (.github/workflows/test-pipeline.yml) to automatically run these Playwright tests every time you commit code.
 
-* **Task 6.1: Monitor AI Telemetry.** Periodically review the LangChain output logs to ensure the cloud LLM is not hallucinating medical advice or failing to trigger the emergency protocols.
-* **Task 6.2: Execute Data Migrations.** Write and run Python batch scripts inside `core-api/scripts` when you need to retroactively update thousands of user documents with new default fields.
-* **Task 6.3: Expand the RAG Vector Base.** Continuously ingest new, verified veterinary articles into your MongoDB Vector Search to improve the AI's foundational knowledge.
+Phase 6: Containerization & Cloud Deployment
+The goal is to securely expose Vetify to the public.
 
----
+Step 6.1: Write a multi-stage Dockerfile inside apps/web/ optimized for Next.js.
+
+Step 6.2: Write a multi-stage Dockerfile inside apps/core-api/ optimized for Python, ensuring it installs the Prisma client correctly during the build step.
+
+Step 6.3: Connect your GitHub repository to Vercel to host the Next.js frontend application (leveraging their CDN).
+
+Step 6.4: Deploy your Python backend container to a persistent hosting provider (e.g., Render, Railway, or AWS) and connect it to a production MongoDB Atlas cluster.
+
+Step 6.5: Add your production API keys, database URLs, and environment variables to both platforms. Verify the live application!
