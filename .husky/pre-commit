@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh" || true
+
+# Run lint-staged to format staged files with Prettier
+npx --no-install lint-staged

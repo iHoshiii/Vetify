@@ -1,79 +1,144 @@
-vetify/                             # Monorepo Workspace Root
-│
-├── .github/workflows/              # Automated CI/CD Pipelines
-│   ├── test-pipeline.yml           # Runs Vitest, Pytest, and Playwright
-│   └── production-deploy.yml       # Provisions production containers
-│
-├── apps/                           # Isolated Service Domains
-│   │
-│   ├── web/                        # Pure Presentation & UX Layer (Next.js 14+)
-│   │   ├── public/anatomy/         # Immutable vector assets (SVGs)
-│   │   ├── src/
-│   │   │   ├── app/                # Next.js App Router Nodes
-│   │   │   │   ├── layout.tsx      # App shell & global context providers
-│   │   │   │   ├── page.tsx        # Landing view
-│   │   │   │   ├── chat/page.tsx   # AI Triage Interface
-│   │   │   │   ├── map/page.tsx    # Vet Locator Map
-│   │   │   │   └── planner/page.tsx# Nutrition Dashboard
-│   │   │   │
-│   │   │   ├── components/         # Reusable UI Components (No Barrel Files)
-│   │   │   │   ├── ui/             # Atomic, primitive style leaf nodes
-│   │   │   │   │   ├── Button.tsx
-│   │   │   │   │   └── Input.tsx
-│   │   │   │   ├── ChatWindow.tsx  # Interactive stream processor
-│   │   │   │   └── MapClient.tsx   # Geospatial render canvas
-│   │   │   │
-│   │   │   ├── core/
-│   │   │   │   └── api-client.ts   # Axios/Fetch wrapper talking exclusively to FastAPI
-│   │   │   │
-│   │   │   └── types/
-│   │   │       ├── index.ts        # Local UI-only state typings
-│   │   │       └── generated.ts    # AUTO-GENERATED data contracts from FastAPI
-│   │   │
-│   │   ├── package.json
-│   │   ├── tailwind.config.ts
-│   │   └── vitest.config.ts
-│   │
-│   └── core-api/                   # Core Computation & AI Gateway (FastAPI)
-│       ├── app/
-│       │   ├── main.py             # ASGI system initialization & global CORS routing
-│       │   ├── core/               # Pydantic environment configuration & security
-│       │   │   ├── config.py
-│       │   │   └── security.py
-│       │   │
-│       │   ├── domains/            # Bounded Business Contexts (Domain Driven Design)
-│       │   │   ├── triage/         # AI Conversations & Prompt Safety
-│       │   │   │   ├── router.py
-│       │   │   │   ├── services.py # Interacts with Groq
-│       │   │   │   └── schemas.py  # Input/Output Pydantic validation models
-│       │   │   ├── locator/        # Geospatial Processing
-│       │   │   │   ├── router.py
-│       │   │   │   └── services.py # Native Mongo coordinate indexing
-│       │   │   └── nutrition/      # Meal Plan Synthesis
-│       │   │       ├── router.py
-│       │   │       └── services.py # Structure extraction from Gemini
-│       │   │
-│       │   └── infra/              # Explicit Infrastructure Gateway
-│       │       ├── database.py     # Single Async Motor/MongoDB connection manager
-│       │       └── ai_clients.py   # Heavy SDK model initialization (Gemini / Groq)
-│       │
-│       ├── scripts/
-│       │   ├── generate_ts.py      # Script to parse Pydantic schemas -> apps/web/types/generated.ts
-│       │   └── migrations/         # Python-based data migrations & defaults
-│       │
-│       ├── tests/                  # Pytest Framework Integration
-│       │   ├── conftest.py         # Mock system engines & application lifecycles
-│       │   └── test_triage.py
-│       │
-│       ├── Dockerfile              # Multi-stage container file
-│       └── requirements.txt
-│
-├── tests/e2e/                      # Playwright System Testing (Cross-service integration)
-│   ├── chat-flow.spec.ts
-│   └── meal-generation.spec.ts
-│
-├── docker-compose.yml              # Local Multi-Service Orchestrator (web, core-api, mongodb)
-├── package.json                    # Root monorepo workspace configurations
-└── playwright.config.ts            # High-level cross-domain test engine definitions
+vetify/ # Workspace root
+|
+|-- .github/
+| `-- workflows/
+|       |-- production-deploy.yml     # Production deployment workflow
+|       `-- test-pipeline.yml # CI test pipeline
+|
+|-- .husky/
+| |-- \_/
+| | |-- .gitignore
+| | `-- husky.sh
+|   `-- pre-commit # Local pre-commit hook
+|
+|-- archive/ # Historical backups and retired app files
+| |-- apps-web/
+| | |-- next-env.d.ts
+| | `-- tsconfig.json
+|   |-- backend_backup/
+|   |   `-- .placeholder
+| |-- backend_backup_2026-06-18.zip
+| `-- backup-2026-06-18-src_backup.zip
+|
+|-- backend/
+|   `-- core-api/ # FastAPI backend service
+| |-- app/
+| | |-- **init**.py
+| | |-- main.py # API application entry point
+| | |-- core/
+| | | |-- **init**.py
+| | | |-- config.py # Backend configuration
+| | | `-- security.py        # Security helpers
+|       |   |-- domains/
+|       |   |   |-- __init__.py
+|       |   |   |-- locator/
+|       |   |   |   |-- __init__.py
+|       |   |   |   |-- router.py
+|       |   |   |   `-- services.py
+| | | |-- nutrition/
+| | | | |-- **init**.py
+| | | | |-- router.py
+| | | | `-- services.py
+|       |   |   `-- triage/
+| | | |-- **init**.py
+| | | |-- router.py
+| | | |-- schemas.py
+| | | `-- services.py
+|       |   `-- infra/
+| | |-- **init**.py
+| | |-- ai_clients.py
+| | |-- database.py
+| | `-- langchain_client.py
+|       |-- apps/
+|       |   `-- web/
+| | `-- package-lock.json
+|       |-- scripts/
+|       |   |-- run_migration.py
+|       |   `-- migrations/
+| | |-- **init**.py
+| | `-- 2026_06_18_init_pet_avatar_defaults.py
+|       |-- tests/
+|       |   |-- __init__.py
+|       |   |-- conftest.py
+|       |   |-- test_locator.py
+|       |   |-- test_nutrition.py
+|       |   `-- test_triage.py
+| |-- .env.example
+| |-- .gitignore
+| |-- Dockerfile
+| `-- requirements.txt
+|
+|-- docs/
+|   |-- PRD.md
+|   |-- TDD.md
+|   |-- architecture.md
+|   |-- flowchart.md
+|   |-- landing-page-design.md
+|   `-- masterplan.md
+|
+|-- prisma/
+| |-- schema.prisma # Prisma schema
+| `-- seed.ts                       # Database seed script
+|
+|-- public/
+|   `-- favicon.ico
+|
+|-- src/ # Next.js frontend app
+| |-- **tests**/
+| | |-- ChatWindow.test.tsx
+| | |-- MealCalendar.test.tsx
+| | `-- setup.ts
+|   |-- app/
+|   |   |-- chat/
+|   |   |   `-- page.tsx
+| | |-- map/
+| | | `-- page.tsx
+|   |   |-- planner/
+|   |   |   `-- page.tsx
+| | |-- globals.css
+| | |-- layout.tsx
+| | `-- page.tsx
+|   |-- components/
+|   |   |-- ui/
+|   |   |   |-- Button.tsx
+|   |   |   `-- Input.tsx
+| | |-- ChatWindow.tsx
+| | `-- MapClient.tsx
+|   |-- core/
+|   |   `-- api-client.ts
+| `-- types/
+|       |-- generated.ts
+|       `-- index.ts
+|
+|-- tests/
+| `-- e2e/
+|       |-- chat-flow.spec.ts
+|       `-- meal-generation.spec.ts
+|
+|-- types/
+| |-- global-css.d.ts
+| `-- prisma-client.d.ts
+|
+|-- .env.example
+|-- .gitignore
+|-- .prettierrc
+|-- docker-compose.yml
+|-- next-env.d.ts
+|-- next.config.js
+|-- package-lock.json
+|-- package.json
+|-- playwright.config.ts
+|-- postcss.config.js
+|-- README.md
+|-- tailwind.config.ts
+|-- tsconfig.json
+|-- tsconfig.tsbuildinfo
+`-- vitest.config.ts
 
-*** End Patch
+Generated dependency and build-output directories are intentionally omitted from this map:
+
+- `.git/`
+- `.next/`
+- `.venv/`
+- `node_modules/`
+- Python `__pycache__/` folders
