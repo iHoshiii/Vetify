@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 interface Clinic {
   id: string;
@@ -26,7 +26,7 @@ export default function MapClient({ clinics = [] }: MapClientProps) {
     <div
       ref={mapRef}
       id="map-canvas"
-      style={{ width: "100%", height: "500px", background: "#e5e7eb" }}
+      style={{ width: '100%', height: '500px', background: '#e5e7eb' }}
       aria-label="Geospatial vet finder map"
     >
       {/* Map renders here via useEffect */}

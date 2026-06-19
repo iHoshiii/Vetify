@@ -1,48 +1,45 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 interface Message {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
 }
 
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = bottomRef.current as unknown as { scrollIntoView?: Function } | null;
-    if (el && typeof el.scrollIntoView === "function") {
-      el.scrollIntoView({ behavior: "smooth" });
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    setInput('');
     setLoading(true);
 
     try {
-      const res = await fetch("/api/triage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/triage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input }),
       });
       const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply },
-      ]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, something went wrong." },
+        { role: 'assistant', content: 'Sorry, something went wrong.' },
       ]);
     } finally {
       setLoading(false);
@@ -66,7 +63,7 @@ export default function ChatWindow() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Ask about your pet…"
         />
         <button onClick={sendMessage} disabled={loading}>
