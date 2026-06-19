@@ -1,5 +1,9 @@
 🗺️ The Vetify Masterplan Overview
-Phase | Focus Area | Primary Output -- | -- | -- Phase 1 | Foundation & Docker | A running local monorepo with MongoDB. Phase 2 | The Prisma Bridge | schema.prisma generating TS & Python types. Phase 3 | AI & Backend Logic | FastAPI domains (Triage, Locator, Nutrition). Phase 4 | Next.js Frontend | Interactive UI, Leaflet Map, and AI Chat Stream. Phase 5 | Playwright Testing | Automated E2E tests validating the full system. Phase 6 | Deployment | Multi-stage Dockerfiles pushed to the cloud.
+Phase | Focus Area | Primary Output -- | -- | --
+Phase 1 | Foundation & Docker | A running local monorepo with MongoDB.
+Phase 2 | The Prisma Bridge | schema.prisma generating TS & Python types.
+Phase 3 | AI & Backend Logic | FastAPI domains (Triage, Locator, Nutrition). Phase 4 | Next.js Frontend | Interactive UI, Leaflet Map, and AI Chat Stream. Phase 5 | Playwright Testing | Automated E2E tests validating the full system. Phase 6 | Deployment | Multi-stage Dockerfiles pushed to the cloud.
+
 Phase 1: Workspace Genesis & Infrastructure
 The goal is to wire up the monorepo and get your containerized database running locally.
 
