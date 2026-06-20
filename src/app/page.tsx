@@ -2,7 +2,7 @@ import FloatingBones from '@/components/FloatingBones';
 import ScrollReveal from '@/components/ScrollReveal';
 
 /* ─── Data ──────────────────────────────────────────────────── */
-
+const dogs = 0;
 const features = [
   {
     title: 'AI Vet Assistant',
