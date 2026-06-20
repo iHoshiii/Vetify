@@ -2,7 +2,6 @@
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Facebook } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import React, { useState } from 'react';
@@ -48,15 +47,15 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
-        <div className="text-center">
+      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
+        <div className="text-center animate-slideDown">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Create Account</h1>
           <p className="mt-2 text-sm text-slate-600">Join Vetify to care for your pet</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4 animate-slideUp delay-200">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm animate-shake">
               {error}
             </div>
           )}
@@ -87,22 +86,26 @@ export default function SignupPage() {
 
           <p className="text-xs text-slate-500 mt-2">
             By signing up, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:underline">
+            <a href="#" className="text-blue-600 hover:underline transition-colors">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" className="text-blue-600 hover:underline">
+            <a href="#" className="text-blue-600 hover:underline transition-colors">
               Privacy Policy
             </a>
             .
           </p>
 
-          <Button type="submit" className="w-full" loading={loading}>
+          <Button
+            type="submit"
+            className="w-full transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+            loading={loading}
+          >
             Create Account
           </Button>
         </form>
 
-        <div className="relative my-8">
+        <div className="relative my-8 animate-fadeIn delay-400">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-slate-200"></span>
           </div>
@@ -111,10 +114,10 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 animate-slideUp delay-600">
           <Button
             variant="secondary"
-            className="w-full gap-2"
+            className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
             onClick={() => handleSocialLogin('google')}
           >
             <GoogleIcon />
@@ -122,15 +125,15 @@ export default function SignupPage() {
           </Button>
           <Button
             variant="secondary"
-            className="w-full gap-2"
+            className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
             onClick={() => handleSocialLogin('facebook')}
           >
-            <Facebook className="h-5 w-5 text-[#1877F2]" />
+            <FacebookIcon />
             Facebook
           </Button>
           <Button
             variant="secondary"
-            className="w-full gap-2 col-span-2"
+            className="w-full gap-2 col-span-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
             onClick={() => handleSocialLogin('tiktok')}
           >
             <TikTokIcon />
@@ -138,9 +141,12 @@ export default function SignupPage() {
           </Button>
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-600">
+        <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
           Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-500">
+          <Link
+            href="/login"
+            className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+          >
             Log in
           </Link>
         </p>
@@ -175,7 +181,15 @@ function GoogleIcon() {
 function TikTokIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.59-1.01V14.5c.01 2.22-.5 4.56-2.09 6.19-1.61 1.66-4.13 2.32-6.32 1.88-2.25-.45-4.18-2.21-4.76-4.39-.73-2.63.29-5.69 2.49-7.26 1.48-1.07 3.43-1.46 5.21-1.07v4.1c-.88-.23-1.87-.13-2.65.34-.78.48-1.25 1.39-1.23 2.31.01 1.05.74 2.05 1.76 2.3 1.02.26 2.2-.08 2.84-.93.46-.6.67-1.38.65-2.15V.02z" />
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.59-1.01V14.5c.01 2.22-.5 4.56-2.09 6.19-1.61 1.66-4.13 2.32-6.32 1.88-2.25-.45-4.18-2.21-4.76-4.39-.73-2.63.29-5.69 2.49-7.26 1.48-1.07 3.43-1.46 5.21-1.07v4.1c-.88-.23-1.87-.13-2.65.34-.78.48-1.25 1.39-1.23 2.31.01 1.05.74-2.05 1.76-2.3 1.02-.26 2.2-.08 2.84-.93.46-.6.67-1.38.65-2.15V.02z" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
     </svg>
   );
 }
