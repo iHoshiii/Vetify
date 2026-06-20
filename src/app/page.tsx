@@ -23,29 +23,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,253,253,0.92)_0%,rgba(196,239,240,0.72)_38%,rgba(246,251,251,0.08)_72%)]" />
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/70 to-transparent" />
 
-        <header className="relative z-10">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
-            <a href="/" className="text-xl font-black tracking-tight text-slate-950">
-              Vetify
-            </a>
-            <nav className="flex items-center gap-2 text-sm font-semibold text-slate-700 sm:gap-5">
-              <a className="hidden transition hover:text-slate-950 sm:inline" href="#features">
-                Care tools
-              </a>
-              <a className="hidden transition hover:text-slate-950 sm:inline" href="/map">
-                Vet locator
-              </a>
-              <a
-                href="/chat"
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-950 px-4 text-white shadow-sm transition hover:bg-slate-800"
-              >
-                Open app
-              </a>
-            </nav>
-          </div>
-        </header>
-
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 px-5 pb-12 pt-8 sm:px-8 lg:pt-14">
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 px-5 pb-12 pt-12 sm:px-8 lg:pt-16">
           <div className="max-w-2xl">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
               Everyday pet care
