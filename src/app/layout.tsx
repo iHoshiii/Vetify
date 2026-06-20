@@ -1,3 +1,4 @@
+import RevealObserver from '@/components/RevealObserver';
 import SiteHeader from '@/components/SiteHeader';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import type { Metadata } from 'next';
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
+          <RevealObserver />
           <SiteHeader />
           {children}
         </AuthProvider>
