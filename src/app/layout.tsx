@@ -1,11 +1,16 @@
+import SiteHeader from '@/components/SiteHeader';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import type { Metadata } from 'next';
 import React from 'react';
-import SiteHeader from '@/components/SiteHeader';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Vetify',
   description: "Your pet's health companion",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -16,8 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <SiteHeader />
-        {children}
+        <AuthProvider>
+          <SiteHeader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
