@@ -1,4 +1,5 @@
 import SiteHeader from '@/components/SiteHeader';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import type { Metadata } from 'next';
 import React from 'react';
 import './globals.css';
@@ -20,8 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <SiteHeader />
-        {children}
+        <AuthProvider>
+          <SiteHeader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
