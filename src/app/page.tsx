@@ -65,6 +65,26 @@ const features = [
       </svg>
     ),
   },
+  {
+    title: 'Hire a Professional',
+    description:
+      'Connect directly with licensed veterinarians through our platform for one-on-one consultations.',
+    icon: (
+      <svg
+        className="w-10 h-10 text-pink-500"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+        />
+      </svg>
+    ),
+  },
 ];
 
 const moreFeatures = [
@@ -111,12 +131,12 @@ const moreFeatures = [
     href: '/blogs',
   },
   {
-    title: 'Hire Professionals',
+    title: 'Pet Meal Plan',
     description:
-      'Connect directly with licensed veterinarians through our "Contact a Professional" platform.',
+      "Get custom weekly meal plans designed specifically for your pet's unique dietary needs and preferences.",
     icon: (
       <svg
-        className="w-12 h-12 text-pink-500"
+        className="w-12 h-12 text-blue-600"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -125,11 +145,11 @@ const moreFeatures = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
         />
       </svg>
     ),
-    href: '/services',
+    href: '/planner',
   },
 ];
 
@@ -177,7 +197,7 @@ export default function Home() {
 
       {/* Core Features */}
       <section id="features" className="border-y border-teal-900/10 bg-white">
-        <div className="mx-auto grid max-w-7xl gap-px bg-teal-900/10 px-0 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl gap-px bg-teal-900/10 px-0 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => (
             <article key={feature.title} className="bg-white px-6 py-10 sm:px-8">
               <div className="mb-4">{feature.icon}</div>
