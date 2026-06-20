@@ -1,136 +1,110 @@
+const features = [
+  {
+    title: 'Ask about symptoms',
+    description: 'Get calm, practical guidance when something feels off.',
+  },
+  {
+    title: 'Plan better meals',
+    description: 'Build nutrition ideas around your pet, not generic advice.',
+  },
+  {
+    title: 'Find care nearby',
+    description: 'Move quickly from concern to a local clinic when needed.',
+  },
+];
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <div className="text-xl font-semibold text-blue-700">Vetify</div>
-          <nav className="flex items-center gap-6 text-sm text-slate-600">
-            <a href="#features" className="hover:text-slate-900">
-              Features
-            </a>
-            <a href="#about" className="hover:text-slate-900">
-              About
-            </a>
-            <a
-              href="/chat"
-              className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-            >
-              Open App
-            </a>
-          </nav>
-        </div>
-      </header>
+    <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
+      <section
+        className="relative flex min-h-[760px] flex-col overflow-hidden bg-cover bg-[center_bottom] md:min-h-[820px] md:bg-center"
+        style={{ backgroundImage: "url('/home-bg.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,253,253,0.92)_0%,rgba(196,239,240,0.72)_38%,rgba(246,251,251,0.08)_72%)]" />
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/70 to-transparent" />
 
-      <main className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
-        <section className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">
-              Pet health, redesigned
-            </p>
-            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
-              The easiest way to care for your pet with personalized guidance.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              Vetify combines nutrition planning, symptom triage, and nearby veterinary search into
-              one responsive experience built for confident pet owners.
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+        <header className="relative z-10">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+            <a href="/" className="text-xl font-black tracking-tight text-slate-950">
+              Vetify
+            </a>
+            <nav className="flex items-center gap-2 text-sm font-semibold text-slate-700 sm:gap-5">
+              <a className="hidden transition hover:text-slate-950 sm:inline" href="#features">
+                Care tools
+              </a>
+              <a className="hidden transition hover:text-slate-950 sm:inline" href="/map">
+                Vet locator
+              </a>
               <a
                 href="/chat"
-                className="inline-flex items-center justify-center rounded-full bg-blue-700 px-7 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-950 px-4 text-white shadow-sm transition hover:bg-slate-800"
               >
-                Get started
+                Open app
+              </a>
+            </nav>
+          </div>
+        </header>
+
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 px-5 pb-12 pt-8 sm:px-8 lg:pt-14">
+          <div className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
+              Everyday pet care
+            </p>
+            <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+              Health guidance for pets you love.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700 sm:text-xl">
+              Vetify brings symptom triage, meal planning, and nearby veterinary search into one
+              simple place for busy pet owners.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="/chat"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+              >
+                Start a care chat
               </a>
               <a
-                href="#features"
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                href="/planner"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-900/15 bg-white/75 px-6 text-sm font-bold text-slate-950 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
               >
-                Explore features
+                Plan meals
               </a>
             </div>
           </div>
-
-          <div className="rounded-[2rem] bg-gradient-to-br from-blue-100 via-sky-100 to-white p-8 shadow-[0_40px_120px_-40px_rgba(59,130,246,0.35)]">
-            <div className="rounded-[1.75rem] border border-white/80 bg-white/95 p-8 shadow-lg">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">
-                Care dashboard
-              </p>
-              <h2 className="mt-4 text-2xl font-bold text-slate-950">
-                Everything your pet needs in one place
-              </h2>
-              <p className="mt-4 text-slate-600">
-                Track wellness, get AI-backed advice, and connect with local vets using a calm,
-                modern interface.
-              </p>
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-3xl bg-blue-50 p-5">
-                  <p className="text-sm font-semibold text-blue-700">Nutrition</p>
-                  <p className="mt-2 text-sm text-slate-600">Smart meal plans for every pet.</p>
-                </div>
-                <div className="rounded-3xl bg-blue-50 p-5">
-                  <p className="text-sm font-semibold text-blue-700">Health</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Symptom triage and wellness insights.
-                  </p>
-                </div>
-                <div className="rounded-3xl bg-blue-50 p-5">
-                  <p className="text-sm font-semibold text-blue-700">Locator</p>
-                  <p className="mt-2 text-sm text-slate-600">Find vets and clinics nearby.</p>
-                </div>
-                <div className="rounded-3xl bg-blue-50 p-5">
-                  <p className="text-sm font-semibold text-blue-700">History</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Keep your pet’s care record organized.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="mt-20">
-          <div className="flex flex-col gap-4 text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">
-              Features
-            </p>
-            <h2 className="text-3xl font-bold text-slate-950">Built for reliable pet care</h2>
-            <p className="mx-auto max-w-2xl text-slate-600">
-              Trusted tools for pet owners who want smarter nutrition guidance, faster vet
-              discovery, and easier everyday care.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                title: 'AI-powered nutrition',
-                description: 'Get meal guidance tailored to breed, age, and health.',
-              },
-              {
-                title: 'Symptom triage',
-                description: 'Understand common issues quickly with confidence.',
-              },
-              {
-                title: 'Vet locator',
-                description: 'Find nearby clinics and trusted care providers fast.',
-              },
-            ].map((item) => (
-              <article
-                key={item.title}
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <h3 className="text-xl font-semibold text-slate-950">{item.title}</h3>
-                <p className="mt-3 text-slate-600">{item.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-slate-200 bg-white py-8">
-        <div className="mx-auto max-w-6xl px-6 text-sm text-slate-500">
-          © {new Date().getFullYear()} Vetify — Designed for pet wellbeing.
         </div>
-      </footer>
-    </div>
+      </section>
+
+      <section id="features" className="border-y border-teal-900/10 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-px bg-teal-900/10 px-0 sm:grid-cols-3">
+          {features.map((feature) => (
+            <article key={feature.title} className="bg-white px-6 py-8 sm:px-8">
+              <h2 className="text-lg font-black tracking-tight text-slate-950">{feature.title}</h2>
+              <p className="mt-3 max-w-sm leading-7 text-slate-600">{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-[#f6fbfb] px-5 py-14 sm:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
+              Built for real decisions
+            </p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+              Move from “is this normal?” to a clear next step.
+            </h2>
+          </div>
+          <a
+            href="/map"
+            className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-900/30 md:w-auto"
+          >
+            Find nearby vets
+          </a>
+        </div>
+      </section>
+    </main>
   );
 }
