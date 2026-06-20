@@ -96,32 +96,32 @@ export default function Home() {
         />
         <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-12 pt-8 sm:px-8">
           <div className="max-w-3xl text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800 animate-slideDown">
               Everyday pet care
             </p>
-            <h1 className="mt-5 text-5xl font-black leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 text-5xl font-black leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl animate-fadeIn delay-200">
               Health guidance for pets you love.
             </h1>
-            <p className="mt-6 text-lg leading-8 text-slate-700 sm:text-xl">
+            <p className="mt-6 text-lg leading-8 text-slate-700 sm:text-xl animate-slideUp delay-400">
               Vetify brings symptom triage, meal planning, anatomy education, and nearby veterinary
               search into one simple place for busy pet owners.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center animate-slideUp delay-600">
               <a
                 href="/chat"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-1 hover:bg-slate-800 hover:shadow-xl"
               >
                 Start a care chat
               </a>
               <a
                 href="/planner"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-1 hover:bg-slate-800 hover:shadow-xl"
               >
                 Plan meals
               </a>
               <a
                 href="/map"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-1 hover:bg-slate-800 hover:shadow-xl"
               >
                 Nearest Vets
               </a>
@@ -132,9 +132,22 @@ export default function Home() {
 
       <section id="features" className="border-y border-teal-900/10 bg-white">
         <div className="mx-auto grid max-w-7xl gap-px bg-teal-900/10 px-0 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
-            <article key={feature.title} className="bg-white px-6 py-10 sm:px-8">
-              <div className="mb-4">{feature.icon}</div>
+          {features.map((feature, index) => (
+            <article
+              key={feature.title}
+              className={`bg-white px-6 py-10 sm:px-8 animate-slideUp ${
+                index === 0
+                  ? 'delay-100'
+                  : index === 1
+                  ? 'delay-200'
+                  : index === 2
+                  ? 'delay-300'
+                  : 'delay-400'
+              }`}
+            >
+              <div className="mb-4 transition-transform duration-300 hover:scale-110">
+                {feature.icon}
+              </div>
               <h2 className="text-lg font-black tracking-tight text-slate-950">{feature.title}</h2>
               <p className="mt-3 max-w-sm leading-7 text-slate-600">{feature.description}</p>
             </article>
@@ -144,7 +157,7 @@ export default function Home() {
 
       <section className="bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 animate-fadeIn">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
               More for your pet
             </p>
@@ -153,16 +166,20 @@ export default function Home() {
             </h2>
           </div>
           <div className="grid gap-8 md:grid-cols-3">
-            {moreFeatures.map((feature) => (
+            {moreFeatures.map((feature, index) => (
               <a
                 key={feature.title}
                 href={feature.href}
-                className="group bg-[#f6fbfb] p-8 rounded-2xl border border-teal-900/10 transition hover:-translate-y-1 hover:shadow-lg"
+                className={`group bg-[#f6fbfb] p-8 rounded-2xl border border-teal-900/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl animate-scaleIn ${
+                  index === 0 ? 'delay-200' : index === 1 ? 'delay-400' : 'delay-600'
+                }`}
               >
-                <div className="mb-4 group-hover:scale-110 transition">{feature.icon}</div>
+                <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
                 <h3 className="text-xl font-bold text-slate-950">{feature.title}</h3>
                 <p className="mt-3 text-slate-600 leading-relaxed">{feature.description}</p>
-                <div className="mt-4 flex items-center text-teal-700 font-semibold text-sm">
+                <div className="mt-4 flex items-center text-teal-700 font-semibold text-sm group-hover:translate-x-1 transition-transform duration-300">
                   Explore
                   <span className="ml-1">→</span>
                 </div>
@@ -172,7 +189,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#f6fbfb] px-5 py-14 sm:px-8">
+      <section className="bg-[#f6fbfb] px-5 py-14 sm:px-8 animate-fadeIn delay-700">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
@@ -184,7 +201,7 @@ export default function Home() {
           </div>
           <a
             href="/map"
-            className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-900/30 md:w-auto"
+            className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-950 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-900/30 hover:shadow-md md:w-auto"
           >
             Find nearby vets
           </a>
