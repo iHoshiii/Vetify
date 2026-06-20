@@ -1,59 +1,57 @@
 # Vetify
 
-Monorepo for the Vetify project — frontend (`apps/web`) and backend (`apps/core-api`). See `docs/architecture.md` for the full canonical layout.
+Development workspace for the Vetify project: a Next.js frontend at the repo root and a Python backend in `backend/`.
 
-Quick start
+## Quick Start
 
-Prerequisites
-- Node 16+ (or 18+), npm/pnpm
+### Prerequisites
+
+- Node 16+ or 18+
+- npm
 - Python 3.10+ and virtualenv
-- Docker (optional)
+- Docker, optional
 
-Frontend (development)
+### Frontend Development
+
 ```bash
-cd apps/web
 npm install
 npm run dev
 ```
 
-Frontend (build)
-```bash
-cd apps/web
-npm install
-npm run build
-npm run start
-```
+### Backend Development
 
-Backend (development)
 ```powershell
-cd apps/core-api
+cd backend
 python -m venv .venv
 . .venv/Scripts/Activate.ps1
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Run tests
-- Frontend (Vitest):
+### Run Tests
+
+Frontend:
+
 ```bash
-cd apps/web
-npx vitest
+npm run test
 ```
-- Backend (Pytest):
+
+Backend:
+
 ```powershell
-cd apps/core-api
+cd backend
 . .venv/Scripts/Activate.ps1
-pytest
+pytest tests/ -v
 ```
 
-Docker (local)
+### Docker Local Development
+
 ```bash
-docker-compose up --build
+docker-compose up
 ```
 
-Notes
-- The legacy `backend/` and root `src/` were consolidated into `apps/core-api/` and `apps/web/` respectively. Backups are in the `archive/` folder (timestamped zips).
-- CI workflows live in `.github/workflows/` and were updated to reference the `apps/*` layout.
-- For schema generation and client types, see `apps/core-api/scripts/generate_ts.py` and `apps/web/types/generated.ts`.
+## CI
 
-If you want, I can also update `docker-compose.yml` or the CI workflows further, and run the backend tests in a venv.
+CI lives in `.github/workflows/ci.yml` and runs tests only.
+
+CD and deployment are intentionally not configured yet.
