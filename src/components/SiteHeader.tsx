@@ -13,14 +13,16 @@ export default function SiteHeader() {
           Vetify
         </a>
         <nav className="flex flex-1 items-center justify-end gap-3 text-sm font-semibold text-slate-700 sm:gap-5">
-          {navItems.map((item) => (
-            <a key={item.href} className="transition hover:text-slate-950" href={item.href}>
-              {item.label}
-            </a>
-          ))}
+          <div className="flex items-center gap-3 sm:gap-5 mr-2">
+            {navItems.map((item) => (
+              <a key={item.href} className="transition hover:text-slate-950" href={item.href}>
+                {item.label}
+              </a>
+            ))}
+          </div>
           <a
             href="/book-appointment"
-            className="ml-auto inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 px-3 text-center text-white shadow-sm transition hover:bg-slate-800 sm:px-4"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 px-3 text-center text-white shadow-sm transition hover:bg-slate-800 sm:px-4"
           >
             Book Appointment
           </a>
