@@ -14,7 +14,7 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
-          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 0 012-2h14a2 0 012 2v8a2 0 01-2 2h-5l-5 5v-5z"
         />
       </svg>
     ),
@@ -34,7 +34,7 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
-          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 0 11-4 0 2 2 0 014 0z"
         />
       </svg>
     ),
@@ -80,7 +80,7 @@ const features = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
-          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 0 11-4 0 2 2 0 014 0zM7 10a2 0 11-4 0 2 0 0 014 0z"
         />
       </svg>
     ),
@@ -145,7 +145,7 @@ const moreFeatures = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2"
-          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 0 11-4 0 2 0 014 0z"
         />
       </svg>
     ),
@@ -161,23 +161,28 @@ export default function Home() {
         className="relative flex min-h-[760px] flex-col overflow-hidden bg-cover bg-[center_bottom] md:min-h-[820px] md:bg-center"
         style={{ backgroundImage: "url('/home-bg.jpg')" }}
       >
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(247,253,253,0.92)_0%,rgba(196,239,240,0.72)_38%,rgba(246,251,251,0.08)_72%)]" />
-        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/70 to-transparent" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 50% 50% at 50% 25%, rgba(246,251,251,0.98) 0%, rgba(246,251,251,0.85) 30%, rgba(246,251,251,0.4) 50%, rgba(246,251,251,0) 65%)',
+          }}
+        />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 px-5 pb-12 pt-12 sm:px-8 lg:pt-16">
-          <div className="max-w-2xl">
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-12 pt-8 sm:px-8">
+          <div className="max-w-3xl text-center ">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">
               Everyday pet care
             </p>
-            <h1 className="mt-5 max-w-3xl text-5xl font-black leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 text-5xl font-black leading-[0.98] tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
               Health guidance for pets you love.
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-700 sm:text-xl">
+            <p className="mt-6 text-lg leading-8 text-slate-700 sm:text-xl">
               Vetify brings symptom triage, meal planning, anatomy education, and nearby veterinary
               search into one simple place for busy pet owners.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <a
                 href="/chat"
                 className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
@@ -186,13 +191,13 @@ export default function Home() {
               </a>
               <a
                 href="/planner"
-                className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-900/15 bg-white/75 px-6 text-sm font-bold text-slate-950 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
               >
                 Plan meals
               </a>
               <a
                 href="/map"
-                className="inline-flex h-12 items-center justify-center rounded-lg bg-teal-600 px-6 text-sm font-bold text-white shadow-lg shadow-teal-900/15 transition hover:-translate-y-0.5 hover:bg-teal-700"
+                className="inline-flex h-12 items-center justify-center rounded-lg bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-slate-800"
               >
                 Nearest Vets
               </a>
@@ -297,7 +302,7 @@ export default function Home() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth="2"
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 0 012-2h14a2 0 012 2v8a2 0 01-2 2h-5l-5 5v-5z"
                     />
                   </svg>
                 </div>
