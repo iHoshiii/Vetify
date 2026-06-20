@@ -86,6 +86,7 @@ export default function Home() {
         className="relative flex min-h-[760px] flex-col overflow-hidden bg-cover bg-[center_bottom] md:min-h-[820px] md:bg-center"
         style={{ backgroundImage: "url('/home-bg.jpg')" }}
       >
+        <FloatingBones />
         <div
           className="absolute inset-0"
           style={{
@@ -93,7 +94,6 @@ export default function Home() {
               'radial-gradient(ellipse 50% 50% at 50% 25%, rgba(246,251,251,0.98) 0%, rgba(246,251,251,0.85) 30%, rgba(246,251,251,0.4) 50%, rgba(246,251,251,0) 65%)',
           }}
         />
-        <FloatingBones />
         <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-12 pt-8 sm:px-8">
           <div className="max-w-3xl text-center">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">

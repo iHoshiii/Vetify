@@ -17,6 +17,7 @@ const FloatingBones = () => {
 
   const options: ISourceOptions = useMemo(
     () => ({
+      fullScreen: { enable: false },
       fpsLimit: 120,
       interactivity: {
         events: {
@@ -91,7 +92,7 @@ const FloatingBones = () => {
         id="tsparticles"
         particlesLoaded={particlesLoaded}
         options={options}
-        className="absolute inset-0 z-10"
+        className="absolute inset-0"
       />
     </ParticlesProvider>
   );

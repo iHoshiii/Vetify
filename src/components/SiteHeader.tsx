@@ -7,7 +7,7 @@ const navItems = [
 
 export default function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-900/10 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-slate-900/10 bg-white/90 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-5 py-4 sm:px-8">
         <a href="/" className="shrink-0 text-xl font-black tracking-tight text-slate-950">
           Vetify
