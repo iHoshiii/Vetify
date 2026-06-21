@@ -1,7 +1,10 @@
 [] create a landing page / design
 [] home
 [] blogs
-[] reservation
+[] reservation / appoinment
+[] anatomy
+[] map
+[] meal planner
 
 [] login/signup
 [] create the "map" feature
