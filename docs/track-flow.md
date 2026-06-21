@@ -14,6 +14,6 @@
 [] create the AI chatbot
 
 home page:
-[] "how to become part of Vetify (professional)" section
+[x] "how to become part of Vetify (professional)" section
 [x] about us
 [] contact us
