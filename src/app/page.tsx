@@ -138,7 +138,7 @@ export default function Home() {
         />
 
         {/* Content */}
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-16 pt-10 sm:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-6 pt-10 sm:px-8">
           <div className="flex max-w-3xl flex-col items-center text-center">
             {/* Eyebrow */}
             <span className="hero-tag inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-teal-700 shadow-sm">
@@ -162,21 +162,15 @@ export default function Home() {
             <div className="hero-cta mt-10 flex flex-wrap justify-center gap-3">
               <a
                 href="/chat"
-                className="btn-glow inline-flex h-12 items-center justify-center rounded-xl bg-slate-950 px-7 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
+                className="btn-glow inline-flex h-12 items-center justify-center rounded-xl bg-slate-950 px-8 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
               >
-                Start a care chat
+                Ask AI now →
               </a>
               <a
-                href="/planner"
-                className="btn-glow inline-flex h-12 items-center justify-center rounded-xl bg-teal-600 px-7 text-sm font-bold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700"
+                href="#how-it-works"
+                className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-900/15 bg-white/80 px-8 text-sm font-bold text-slate-700 backdrop-blur-sm shadow-sm transition-all hover:-translate-y-1 hover:border-slate-900/30 hover:shadow-md"
               >
-                Plan meals
-              </a>
-              <a
-                href="/map"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-900/15 bg-white/80 px-7 text-sm font-bold text-slate-900 backdrop-blur-sm shadow-sm transition-all hover:-translate-y-1 hover:border-slate-900/30 hover:shadow-md"
-              >
-                Nearest Vets
+                How it works ↓
               </a>
             </div>
 
@@ -304,7 +298,7 @@ export default function Home() {
       </section>
 
       {/* ══ HOW IT WORKS ══════════════════════════════════════ */}
-      <section className="bg-white py-20 sm:py-28">
+      <section id="how-it-works" className="bg-white py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <ScrollReveal variant="reveal" className="mb-14 text-center">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-700">
