@@ -241,12 +241,6 @@ export default function Home() {
                 >
                   Our full story
                 </a>
-                <a
-                  href="/contact"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-900 shadow-sm transition-all hover:-translate-y-1 hover:border-slate-900/30 hover:shadow-md"
-                >
-                  Contact us
-                </a>
               </div>
             </ScrollReveal>
 
