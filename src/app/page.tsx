@@ -43,16 +43,6 @@ const features = [
 
 const moreFeatures = [
   {
-    title: 'Interactive Anatomy',
-    description:
-      'Explore the anatomy of dogs, cats, and birds. Click on different parts to learn about their health and function.',
-    icon: '🦴',
-    bg: 'from-indigo-500 to-indigo-700',
-    shadow: 'shadow-indigo-500/30',
-    hover: 'group-hover:text-indigo-600',
-    href: '/chat?anatomy=true',
-  },
-  {
     title: 'Veterinary Blogs',
     description:
       'Read articles from veterinary professionals about pet health, behavior, and local clinic spotlights.',
@@ -63,14 +53,34 @@ const moreFeatures = [
     href: '/blogs',
   },
   {
-    title: 'Pet Meal Plan',
+    title: 'Find Nearby Vets',
     description:
-      "Get custom weekly meal plans designed specifically for your pet's unique dietary needs and preferences.",
-    icon: '🥗',
-    bg: 'from-blue-500 to-blue-700',
-    shadow: 'shadow-blue-500/30',
-    hover: 'group-hover:text-blue-600',
-    href: '/planner',
+      'Locate verified veterinary clinics in your area with our interactive map. Get directions instantly.',
+    icon: '📍',
+    bg: 'from-orange-400 to-orange-600',
+    shadow: 'shadow-orange-500/30',
+    hover: 'group-hover:text-orange-600',
+    href: '/map',
+  },
+  {
+    title: 'Interactive Anatomy',
+    description:
+      'Explore the anatomy of dogs, cats, and birds. Click on different parts to learn about their health and function.',
+    icon: '🦴',
+    bg: 'from-indigo-500 to-indigo-700',
+    shadow: 'shadow-indigo-500/30',
+    hover: 'group-hover:text-indigo-600',
+    href: '/chat?anatomy=true',
+  },
+  {
+    title: 'Join as a Professional',
+    description:
+      'Are you a licensed veterinarian? Partner with Vetify to reach pet owners who need your expertise — on your schedule.',
+    icon: '👩‍⚕️',
+    bg: 'from-pink-500 to-rose-600',
+    shadow: 'shadow-pink-500/30',
+    hover: 'group-hover:text-pink-600',
+    href: '/contact',
   },
 ];
 
@@ -347,7 +357,7 @@ export default function Home() {
             </p>
           </ScrollReveal>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {moreFeatures.map((f, i) => (
               <ScrollReveal key={f.title} variant="reveal-scale" delay={i * 110}>
                 <a
@@ -398,17 +408,18 @@ export default function Home() {
           <div className="relative mx-auto flex max-w-7xl flex-col items-center gap-8 text-center md:flex-row md:justify-between md:text-left">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-400">
-                Built for real decisions
+                Vet Professional? Be part of Vetify!
               </p>
-              <h2 className="mt-3 max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl">
-                Move from &ldquo;is this normal?&rdquo; to a clear next step.
+              <h2 className="mt-3 max-w-2xl text-xl font-semibold leading-8 tracking-tight text-white/90">
+                Join a community of dedicated veterinary professionals providing trusted, accessible
+                guidance to pet parents when they need it most.
               </h2>
             </div>
             <a
-              href="/map"
+              href="/professionals"
               className="btn-glow inline-flex h-12 w-full shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white px-8 text-sm font-bold text-slate-950 shadow-lg transition-all hover:bg-teal-50 md:w-auto"
             >
-              Find nearby vets
+              See more
             </a>
           </div>
         </section>
