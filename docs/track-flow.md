@@ -15,5 +15,5 @@
 
 home page:
 [] "how to become part of Vetify (professional)" section
-[] about us
+[x] about us
 [] contact us
