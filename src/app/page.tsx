@@ -115,6 +115,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
       {/* ══ HERO ══════════════════════════════════════════════ */}
       <section
+        id="home"
         className="relative flex min-h-[780px] flex-col overflow-hidden bg-cover bg-[center_bottom] md:min-h-[860px] md:bg-center"
         style={{ backgroundImage: "url('/home-bg.jpg')" }}
       >
@@ -457,7 +458,7 @@ export default function Home() {
               <h3 className="mb-6 text-lg font-bold text-white">Quick Links</h3>
               <ul className="space-y-4">
                 {[
-                  { label: 'Home', href: '/' },
+                  { label: 'Home', href: '/#home' },
                   { label: 'Services', href: '/services' },
                   { label: 'Find Vets', href: '/map' },
                   { label: 'Book Appointment', href: '/book-appointment' },
