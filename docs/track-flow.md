@@ -13,7 +13,12 @@
 [] meal planner
 [] create the AI chatbot
 
+[] about us content
+[] contact us details
+[] how to be a professional details
+[] services details
+
 home page:
-[] "how to become part of Vetify (professional)" section
-[] about us
-[] contact us
+[x] "how to become part of Vetify (professional)" section
+[x] about us
+[x] contact us
