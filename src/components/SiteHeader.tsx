@@ -4,7 +4,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 
 const navItems = [
-  { label: 'Home', href: '/' },
+  { label: 'Home', href: '/#home' },
   { label: 'About Us', href: '/#about' },
   { label: 'Services', href: '/services' },
   { label: 'Blogs', href: '/blogs' },
