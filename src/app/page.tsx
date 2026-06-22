@@ -115,6 +115,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
       {/* ══ HERO ══════════════════════════════════════════════ */}
       <section
+        id="home"
         className="relative flex min-h-[780px] flex-col overflow-hidden bg-cover bg-[center_bottom] md:min-h-[860px] md:bg-center"
         style={{ backgroundImage: "url('/home-bg.jpg')" }}
       >
@@ -216,7 +217,7 @@ export default function Home() {
       </section>
 
       {/* ══ ABOUT US ══════════════════════════════════════════ */}
-      <section className="bg-[#f6fbfb] py-20 sm:py-28">
+      <section id="about" className="bg-[#f6fbfb] py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             {/* Left — text */}
@@ -240,7 +241,7 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
-                  href="/about"
+                  href="/#about"
                   className="btn-glow inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
                 >
                   Our full story
@@ -457,7 +458,7 @@ export default function Home() {
               <h3 className="mb-6 text-lg font-bold text-white">Quick Links</h3>
               <ul className="space-y-4">
                 {[
-                  { label: 'Home', href: '/' },
+                  { label: 'Home', href: '/#home' },
                   { label: 'Services', href: '/services' },
                   { label: 'Find Vets', href: '/map' },
                   { label: 'Book Appointment', href: '/book-appointment' },
@@ -499,7 +500,7 @@ export default function Home() {
               <h3 className="mb-6 text-lg font-bold text-white">Legal</h3>
               <ul className="space-y-4">
                 {[
-                  { label: 'About Us', href: '/about' },
+                  { label: 'About Us', href: '/#about' },
                   { label: 'Privacy Policy', href: '/privacy' },
                   { label: 'Terms of Service', href: '/terms' },
                   { label: 'Contact Us', href: '/contact' },
