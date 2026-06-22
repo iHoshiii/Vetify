@@ -16,7 +16,7 @@
 [] about us content
 [] contact us details
 [] how to be a professional details
-[] services details
+[x] services details
 
 home page:
 [x] "how to become part of Vetify (professional)" section
