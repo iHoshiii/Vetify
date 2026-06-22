@@ -142,7 +142,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 justify-center px-5 pb-6 pt-10 sm:px-8">
           <div className="flex max-w-3xl flex-col items-center text-center">
             {/* Eyebrow */}
-            <span className="hero-tag inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-teal-700 shadow-sm">
+            <span className="hero-tag text-sm font-bold uppercase tracking-[0.22em] text-teal-700">
               Everyday pet care
             </span>
 
@@ -241,7 +241,7 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
-                  href="/#about"
+                  href="/about"
                   className="btn-glow inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
                 >
                   Our full story
