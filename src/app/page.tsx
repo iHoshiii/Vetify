@@ -216,7 +216,7 @@ export default function Home() {
       </section>
 
       {/* ══ ABOUT US ══════════════════════════════════════════ */}
-      <section className="bg-[#f6fbfb] py-20 sm:py-28">
+      <section id="about" className="bg-[#f6fbfb] py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="grid items-center gap-14 lg:grid-cols-2">
             {/* Left — text */}
@@ -240,7 +240,7 @@ export default function Home() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <a
-                  href="/about"
+                  href="/#about"
                   className="btn-glow inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-6 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
                 >
                   Our full story
@@ -499,7 +499,7 @@ export default function Home() {
               <h3 className="mb-6 text-lg font-bold text-white">Legal</h3>
               <ul className="space-y-4">
                 {[
-                  { label: 'About Us', href: '/about' },
+                  { label: 'About Us', href: '/#about' },
                   { label: 'Privacy Policy', href: '/privacy' },
                   { label: 'Terms of Service', href: '/terms' },
                   { label: 'Contact Us', href: '/contact' },
