@@ -1,3 +1,5 @@
+'use client';
+
 const socials = [
   {
     name: 'TikTok',
@@ -51,86 +53,135 @@ const socials = [
       </svg>
     ),
   },
-  {
-    name: 'Email',
-    handle: 'hello@vetify.com',
-    href: 'mailto:hello@vetify.com',
-    bg: 'from-teal-500 to-teal-700',
-    shadow: 'shadow-teal-500/30',
-    hoverBorder: 'hover:border-teal-400/50',
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="h-6 w-6"
-      >
-        <path
-          d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <polyline points="22,6 12,13 2,6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Website',
-    handle: 'vetify.com',
-    href: 'https://vetify.com',
-    bg: 'from-indigo-500 to-indigo-700',
-    shadow: 'shadow-indigo-500/30',
-    hoverBorder: 'hover:border-indigo-400/50',
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="h-6 w-6"
-      >
-        <circle cx="12" cy="12" r="10" strokeLinecap="round" strokeLinejoin="round" />
-        <line x1="2" y1="12" x2="22" y2="12" strokeLinecap="round" />
-        <path
-          d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
 ];
 
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-slate-950 px-5 py-20 sm:px-8 sm:py-28">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full bg-teal-500/20 blur-[100px]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-blue-500/20 blur-[100px]"
-        />
-        <div className="relative mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-teal-400">
+      <section className="pt-20 pb-16 sm:pt-28 sm:pb-24">
+        <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-700">
             Get in touch
-          </span>
-          <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Contact Us
+          </p>
+          <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+            We&apos;re here to help.
           </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-400">
-            Have a question, partnership inquiry, or just want to say hello? Find us on any of our
-            channels below.
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+            Whether you need help navigating the platform, have a question about our professional
+            partnerships, or just want to share feedback, we&apos;d love to hear from you.
           </p>
         </div>
       </section>
 
+      {/* ── DETAILED CONTACT SECTION ─────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-5 sm:px-8 pb-20 sm:pb-28">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+          {/* Left Side: Contact Information */}
+          <div className="flex flex-col justify-center">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950 mb-8">
+              Reach out directly
+            </h2>
+
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">General Support</h3>
+                <p className="mt-2 text-slate-600 leading-relaxed">
+                  Having trouble with your account or a specific feature? Our support team is ready
+                  to assist you during business hours.
+                </p>
+                <a
+                  href="mailto:support@vetify.com"
+                  className="mt-3 inline-block font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-4"
+                >
+                  support@vetify.com
+                </a>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Professional Partnerships</h3>
+                <p className="mt-2 text-slate-600 leading-relaxed">
+                  Are you a licensed veterinarian looking to join the platform? Let&apos;s talk
+                  about how we can work together.
+                </p>
+                <a
+                  href="mailto:partners@vetify.com"
+                  className="mt-3 inline-block font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-4"
+                >
+                  partners@vetify.com
+                </a>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Media & Press</h3>
+                <p className="mt-2 text-slate-600 leading-relaxed">
+                  For press inquiries, brand assets, or media interview requests, please reach out
+                  to our communications team.
+                </p>
+                <a
+                  href="mailto:press@vetify.com"
+                  className="mt-3 inline-block font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-4"
+                >
+                  press@vetify.com
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side: Quick Contact Form */}
+          <div className="rounded-3xl border border-teal-900/10 bg-white p-8 sm:p-10 shadow-xl shadow-slate-200/40">
+            <h2 className="text-2xl font-bold text-slate-950 mb-6">Send us a message</h2>
+            <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                    placeholder="Jane"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                  placeholder="jane@example.com"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Message</label>
+                <textarea
+                  rows={4}
+                  className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                  placeholder="How can we help you?"
+                ></textarea>
+              </div>
+              <button className="w-full rounded-xl bg-slate-950 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 hover:-translate-y-0.5 mt-2">
+                Send Message
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       {/* ── SOCIAL LINKS ─────────────────────────────────────── */}
-      <section className="bg-white py-20 sm:py-28">
+      <section className="bg-white py-20 sm:py-28 border-t border-slate-100">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
           <div className="mb-14 text-center">
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-700">
@@ -144,58 +195,32 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {socials.map((s) => (
               <a
                 key={s.name}
                 href={s.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`group flex items-center gap-4 rounded-2xl border border-teal-900/10 bg-[#f6fbfb] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.hoverBorder}`}
+                className={`group flex flex-col items-center gap-4 rounded-2xl border border-teal-900/10 bg-[#f6fbfb] p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${s.hoverBorder}`}
               >
                 {/* Icon bubble */}
                 <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.bg} text-white shadow-lg ${s.shadow} transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}
+                  className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${s.bg} text-white shadow-lg ${s.shadow} transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}
                 >
                   {s.icon}
                 </div>
 
                 {/* Text */}
-                <div className="min-w-0">
+                <div>
                   <p className="text-sm font-bold uppercase tracking-widest text-slate-400">
                     {s.name}
                   </p>
-                  <p className="mt-0.5 truncate text-lg font-black text-slate-950">{s.handle}</p>
+                  <p className="mt-1 font-black text-slate-950">{s.handle}</p>
                 </div>
-
-                {/* Arrow */}
-                <svg
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-all duration-300 group-hover:translate-x-1 group-hover:text-teal-500"
-                >
-                  <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
               </a>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── BOTTOM NOTE ──────────────────────────────────────── */}
-      <section className="bg-[#f6fbfb] px-5 py-16 sm:px-8">
-        <div className="mx-auto max-w-xl text-center">
-          <p className="text-slate-500">
-            For professional partnership or media inquiries, reach us directly at{' '}
-            <a
-              href="mailto:hello@vetify.com"
-              className="font-semibold text-teal-700 underline-offset-2 hover:underline"
-            >
-              hello@vetify.com
-            </a>
-          </p>
         </div>
       </section>
     </main>
