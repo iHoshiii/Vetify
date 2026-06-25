@@ -49,7 +49,7 @@ export default function MapPage() {
           </div>
 
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.061730045437!2d-122.40428588468205!3d37.7818469797587!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8085808620248c81%3A0x86134b22c836dbf1!2sSan%20Francisco%2C%20CA!5e0!3m2!1sen!2sus!4v1629830537021!5m2!1sen!2sus"
+            src="https://maps.google.com/maps?q=Nueva+Vizcaya,+Philippines&t=&z=11&ie=UTF8&iwloc=&output=embed"
             width="100%"
             height="100%"
             style={{ border: 0 }}
@@ -85,9 +85,9 @@ export default function MapPage() {
               <p className="text-slate-600 leading-relaxed text-sm">
                 123 Vetify Lane
                 <br />
-                San Francisco, CA 94103
+                Bayombong, Nueva Vizcaya 3700
                 <br />
-                United States
+                Philippines
               </p>
             </div>
           </div>
