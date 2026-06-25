@@ -1,63 +1,79 @@
 'use client';
 
-export default function MapPage() {
-  return (
-    <main className="relative min-h-screen bg-[#f6fbfb] text-slate-950 overflow-hidden selection:bg-blue-500/30">
-      {/* ── BACKGROUND ACCENTS ───────────────────────────────── */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[800px] bg-gradient-to-b from-blue-100/50 via-transparent to-transparent opacity-70 blur-3xl -z-10 pointer-events-none" />
-      <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-      <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-teal-400/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+import { useState, useEffect } from 'react';
 
-      {/* ── HERO SECTION ─────────────────────────────────────── */}
-      <section className="pt-28 pb-16 sm:pt-36 sm:pb-24 text-center px-5 relative z-10">
-        <h1 className="text-5xl font-black tracking-tight sm:text-7xl lg:text-8xl text-slate-900 pb-4">
+const MAP_SRC =
+  'https://maps.google.com/maps?q=Nueva+Vizcaya,+Philippines&t=&z=11&ie=UTF8&iwloc=&output=embed';
+
+export default function MapPage() {
+  const [expanded, setExpanded] = useState(false);
+
+  // Close on ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Lock body scroll when expanded
+  useEffect(() => {
+    document.body.style.overflow = expanded ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [expanded]);
+
+  return (
+    <main className="min-h-screen bg-[#f6fbfb] text-slate-950 overflow-hidden">
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <section className="pt-28 pb-12 sm:pt-36 sm:pb-16 text-center px-5">
+        <h1 className="text-4xl font-black tracking-tight sm:text-6xl text-slate-900">
           Find us on the map
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg sm:text-xl leading-relaxed text-slate-600 font-medium">
-          Experience world-class veterinary care at our flagship clinic. We are conveniently located
-          in the heart of the city with premium facilities for you and your pets.
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-500">
+          Explore veterinary clinics and pet services in Nueva Vizcaya. Click the map to expand it.
         </p>
       </section>
 
-      {/* ── MAP & INFO SECTION ───────────────────────────────── */}
-      <section className="w-full px-5 pb-32 max-w-7xl mx-auto relative z-10">
-        {/* The Map */}
-        <div className="relative w-full h-[65vh] min-h-[500px] rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/5 group transform transition-all duration-700 hover:border-blue-500/30 hover:shadow-blue-900/10">
-          <div className="absolute inset-0 bg-white z-0 flex flex-col items-center justify-center text-slate-500 transition-opacity duration-1000 group-hover:opacity-0">
-            <svg
-              className="w-12 h-12 mb-4 text-blue-600 animate-bounce"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            <span className="font-semibold tracking-widest uppercase text-sm text-blue-900">
-              Loading Interactive Map
-            </span>
+      {/* ── MAP PREVIEW ──────────────────────────────────────── */}
+      <section className="pb-24 px-5 max-w-7xl mx-auto">
+        <div
+          onClick={() => setExpanded(true)}
+          className="relative cursor-pointer rounded-3xl overflow-hidden border border-blue-900/10 bg-white shadow-xl shadow-blue-900/5 group transition-all duration-300 hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-1 hover:border-blue-400/30"
+          style={{ height: '340px' }}
+        >
+          {/* Overlay with click hint */}
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-900/0 group-hover:bg-slate-900/20 transition-all duration-300 pointer-events-none">
+            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 border border-white/60 shadow-lg backdrop-blur-md text-slate-800 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                />
+              </svg>
+              Click to expand
+            </div>
           </div>
 
           <iframe
-            src="https://maps.google.com/maps?q=Nueva+Vizcaya,+Philippines&t=&z=11&ie=UTF8&iwloc=&output=embed"
+            src={MAP_SRC}
             width="100%"
             height="100%"
-            style={{ border: 0 }}
-            allowFullScreen={true}
+            style={{ border: 0, pointerEvents: 'none' }}
+            allowFullScreen={false}
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            className="absolute inset-0 z-10 transition-opacity duration-500"
-          ></iframe>
+            className="absolute inset-0 z-10"
+          />
         </div>
 
         {/* Info Cards */}
@@ -107,9 +123,9 @@ export default function MapPage() {
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">Hours</h3>
               <p className="text-slate-600 leading-relaxed text-sm">
-                Mon-Fri: 8:00 AM - 8:00 PM
+                Mon–Fri: 8:00 AM – 8:00 PM
                 <br />
-                Saturday: 9:00 AM - 5:00 PM
+                Saturday: 9:00 AM – 5:00 PM
                 <br />
                 Sunday: Closed
               </p>
@@ -141,6 +157,72 @@ export default function MapPage() {
           </div>
         </div>
       </section>
+
+      {/* ── FULLSCREEN MAP MODAL ──────────────────────────────── */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setExpanded(false)}
+        >
+          <div
+            className="relative w-full h-full max-w-[100vw] max-h-[100vh] animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setExpanded(false)}
+              className="absolute top-4 right-4 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-white/60 shadow-lg backdrop-blur-md text-slate-800 text-sm font-semibold hover:bg-white transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Close
+            </button>
+
+            <iframe
+              src={MAP_SRC}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes scale-in {
+          from {
+            transform: scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.25s ease both;
+        }
+        .animate-scale-in {
+          animation: scale-in 0.25s ease both;
+        }
+      `}</style>
     </main>
   );
 }
