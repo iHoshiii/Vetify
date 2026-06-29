@@ -28,49 +28,49 @@ const HOTSPOTS: Record<
       {
         id: 'skull',
         x: 22,
-        y: 15,
+        y: 20,
         title: 'Skull (Cranium)',
         desc: 'Protects the brain and supports facial structures.',
       },
       {
         id: 'jaw',
         x: 24,
-        y: 22,
+        y: 29,
         title: 'Mandible (Jaw)',
         desc: 'Crucial for chewing and holding prey.',
       },
       {
         id: 'cervical',
-        x: 32,
-        y: 20,
+        x: 30,
+        y: 30,
         title: 'Cervical Vertebrae',
         desc: 'The neck bones connecting the skull to the spine.',
       },
       {
         id: 'spine',
         x: 50,
-        y: 22,
+        y: 32,
         title: 'Thoracic & Lumbar Spine',
         desc: 'Provides structural support and houses the spinal cord.',
       },
       {
         id: 'ribs',
         x: 45,
-        y: 38,
+        y: 45,
         title: 'Rib Cage',
         desc: 'Protects vital internal organs like the heart and lungs.',
       },
-      { id: 'pelvis', x: 70, y: 25, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
+      { id: 'pelvis', x: 70, y: 35, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
       {
         id: 'femur',
-        x: 75,
-        y: 45,
+        x: 70,
+        y: 50,
         title: 'Femur',
         desc: 'The long bone of the hind leg, essential for movement and support.',
       },
-      { id: 'tibia', x: 72, y: 65, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
+      { id: 'tibia', x: 75, y: 70, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
       { id: 'humerus', x: 35, y: 48, title: 'Humerus', desc: 'The upper front leg bone.' },
-      { id: 'radius', x: 32, y: 65, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
+      { id: 'radius', x: 40, y: 64, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
     ],
     muscular: [
       {
@@ -368,80 +368,17 @@ export default function AnatomyPage() {
 
         {/* ══ MAIN VIEWER AREA ════════════════════════════════════════ */}
         <div className="flex-1 relative flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-20 overflow-hidden">
-          {/* Mock Viewer Toolbar */}
-          <div className="absolute top-6 right-6 z-10 flex gap-2">
-            <div className="flex items-center rounded-xl border border-white/10 bg-slate-900/80 p-1 backdrop-blur-md">
-              <button
-                onClick={handleZoomOut}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-                title="Zoom Out"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"
-                  />
-                </svg>
-              </button>
-              <div className="w-px h-5 bg-white/10 mx-1" />
-              <button
-                onClick={handleZoomIn}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-                title="Zoom In"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"
-                  />
-                </svg>
-              </button>
-            </div>
-            <button
-              className="flex items-center justify-center rounded-xl border border-white/10 bg-slate-900/80 p-3 text-slate-400 hover:text-white backdrop-blur-md transition-colors"
-              title="Reset View"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="h-5 w-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Model Display Placeholder */}
           <div
-            className="relative flex items-center justify-center transition-transform duration-500 ease-out w-full max-w-[800px] h-[500px]"
+            className="relative flex items-center justify-center transition-transform duration-500 ease-out w-[800px] h-[500px] flex-shrink-0"
             style={{ transform: `scale(${zoomLevel})` }}
           >
             {/* Glowing orb effect behind model */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
 
+            {/* Skeleton Image */}
             <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pointer-events-none">
               {ANIMALS.find((a) => a.id === selectedAnimal)?.skeletonImage ? (
-                <div className="relative w-full h-full mb-8">
+                <div className="relative w-full h-full">
                   <Image
                     src={ANIMALS.find((a) => a.id === selectedAnimal)!.skeletonImage!}
                     alt="Skeleton"
@@ -451,18 +388,10 @@ export default function AnatomyPage() {
                   />
                 </div>
               ) : (
-                <div className="text-[180px] leading-none mb-8 opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
+                <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
                   {ANIMALS.find((a) => a.id === selectedAnimal)?.icon}
                 </div>
               )}
-
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 backdrop-blur-md">
-                <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-                <span className="text-sm font-semibold text-indigo-300">
-                  {ANIMALS.find((a) => a.id === selectedAnimal)?.name} •{' '}
-                  {BODY_SYSTEMS.find((s) => s.id === selectedSystem)?.name}
-                </span>
-              </div>
             </div>
 
             {/* Interactive Hotspots */}
@@ -502,9 +431,6 @@ export default function AnatomyPage() {
           </div>
 
           {/* Instructions Overlay */}
-          <div className="absolute bottom-8 text-center text-slate-500 text-sm max-w-md pointer-events-none">
-            <p>Drag to rotate • Scroll to zoom • Click structures for detailed information</p>
-          </div>
         </div>
       </div>
     </main>
