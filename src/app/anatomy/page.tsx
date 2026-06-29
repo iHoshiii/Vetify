@@ -273,7 +273,7 @@ export default function AnatomyPage() {
         {/* ══ SIDEBAR CONTROLS ════════════════════════════════════════ */}
         <aside className="w-full lg:w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
           {/* Animal Selection */}
-          <ScrollReveal variant="fade">
+          <ScrollReveal variant="reveal">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
                 Select Species
@@ -298,7 +298,7 @@ export default function AnatomyPage() {
           </ScrollReveal>
 
           {/* Body System Selection */}
-          <ScrollReveal variant="fade" delay={100}>
+          <ScrollReveal variant="reveal" delay={100}>
             <div>
               <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
                 Body System
@@ -340,7 +340,7 @@ export default function AnatomyPage() {
           </ScrollReveal>
 
           {/* Info Card */}
-          <ScrollReveal variant="fade" delay={200} className="mt-auto">
+          <ScrollReveal variant="reveal" delay={200} className="mt-auto">
             <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-5">
               <h3 className="flex items-center gap-2 text-sm font-bold text-teal-400 mb-2">
                 <svg
