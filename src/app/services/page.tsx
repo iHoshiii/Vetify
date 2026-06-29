@@ -18,7 +18,7 @@ const services = [
     icon: '🦴',
     bg: 'from-indigo-500 to-indigo-700',
     shadow: 'shadow-indigo-500/30',
-    href: '/chat?anatomy=true',
+    href: '/anatomy',
     actionText: 'Explore anatomy',
   },
   {
