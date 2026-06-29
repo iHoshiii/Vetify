@@ -238,9 +238,9 @@ export default function AnatomyPage() {
   const handleZoomOut = () => setZoomLevel((z) => Math.max(z - 0.2, 0.5));
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50 selection:bg-teal-500/30">
+    <main className="h-screen overflow-hidden flex flex-col bg-slate-950 text-slate-50 selection:bg-teal-500/30">
       {/* ══ HEADER ════════════════════════════════════════════════════ */}
-      <div className="border-b border-white/10 bg-slate-900/50 backdrop-blur-xl">
+      <div className="flex-shrink-0 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-lg shadow-indigo-500/20">
@@ -269,11 +269,11 @@ export default function AnatomyPage() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)]">
+      <div className="flex-1 w-full mx-auto flex max-w-[1600px] flex-col lg:flex-row overflow-hidden">
         {/* ══ SIDEBAR CONTROLS ════════════════════════════════════════ */}
-        <aside className="w-full lg:w-96 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
+        <aside className="w-full lg:w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar h-full">
           {/* Animal Selection */}
-          <ScrollReveal variant="reveal">
+          <div className="animate-in fade-in slide-in-from-left-4 duration-500">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
                 Select Species
@@ -295,10 +295,10 @@ export default function AnatomyPage() {
                 ))}
               </div>
             </div>
-          </ScrollReveal>
+          </div>
 
           {/* Body System Selection */}
-          <ScrollReveal variant="reveal" delay={100}>
+          <div className="animate-in fade-in slide-in-from-left-4 duration-500 delay-100 fill-mode-both">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
                 Body System
@@ -337,10 +337,10 @@ export default function AnatomyPage() {
                 ))}
               </div>
             </div>
-          </ScrollReveal>
+          </div>
 
           {/* Info Card */}
-          <ScrollReveal variant="reveal" delay={200} className="mt-auto">
+          <div className="mt-auto animate-in fade-in slide-in-from-left-4 duration-500 delay-200 fill-mode-both">
             <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-5">
               <h3 className="flex items-center gap-2 text-sm font-bold text-teal-400 mb-2">
                 <svg
@@ -363,7 +363,7 @@ export default function AnatomyPage() {
                 unusual swelling or discomfort, consult a professional immediately.
               </p>
             </div>
-          </ScrollReveal>
+          </div>
         </aside>
 
         {/* ══ MAIN VIEWER AREA ════════════════════════════════════════ */}
