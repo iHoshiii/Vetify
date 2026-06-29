@@ -269,9 +269,9 @@ export default function AnatomyPage() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row h-[calc(100vh-64px)]">
+      <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)]">
         {/* ══ SIDEBAR CONTROLS ════════════════════════════════════════ */}
-        <aside className="w-full lg:w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
+        <aside className="w-full lg:w-96 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
           {/* Animal Selection */}
           <ScrollReveal variant="reveal">
             <div>
@@ -433,7 +433,7 @@ export default function AnatomyPage() {
 
           {/* Model Display Placeholder */}
           <div
-            className="relative flex items-center justify-center transition-transform duration-500 ease-out w-[600px] h-[400px]"
+            className="relative flex items-center justify-center transition-transform duration-500 ease-out w-full max-w-[800px] h-[500px]"
             style={{ transform: `scale(${zoomLevel})` }}
           >
             {/* Glowing orb effect behind model */}
@@ -469,28 +469,29 @@ export default function AnatomyPage() {
             {HOTSPOTS[selectedAnimal]?.[selectedSystem]?.map((spot) => (
               <div
                 key={spot.id}
-                className="absolute z-20 group"
+                className={`absolute z-20 group ${hoveredSpot === spot.id ? 'z-50' : ''}`}
                 style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
                 onMouseEnter={() => setHoveredSpot(spot.id)}
                 onMouseLeave={() => setHoveredSpot(null)}
+                onClick={() => setHoveredSpot(hoveredSpot === spot.id ? null : spot.id)}
               >
                 {/* Hotspot Dot */}
-                <div className="relative flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75"></span>
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(45,212,191,0.8)] transition-transform duration-200 group-hover:scale-150"></span>
+                <div className="relative flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center">
+                  <span className="absolute inline-flex h-6 w-6 animate-ping rounded-full bg-teal-400 opacity-60 group-hover:opacity-100 transition-opacity"></span>
+                  <span className="relative inline-flex h-4 w-4 rounded-full bg-teal-500 shadow-[0_0_15px_rgba(45,212,191,0.9)] transition-transform duration-200 group-hover:scale-125 border-2 border-white/20"></span>
                 </div>
 
                 {/* Tooltip Bubble */}
                 <div
-                  className={`absolute left-1/2 bottom-full mb-3 w-48 -translate-x-1/2 pointer-events-none transition-all duration-300 origin-bottom ${
+                  className={`absolute left-1/2 bottom-full mb-3 w-64 -translate-x-1/2 pointer-events-none transition-all duration-300 origin-bottom ${
                     hoveredSpot === spot.id
                       ? 'opacity-100 scale-100 translate-y-0'
                       : 'opacity-0 scale-95 translate-y-2'
                   }`}
                 >
-                  <div className="relative rounded-xl border border-white/10 bg-slate-800/95 p-3 shadow-xl backdrop-blur-xl">
+                  <div className="relative rounded-xl border border-white/10 bg-slate-800/95 p-4 shadow-2xl backdrop-blur-xl">
                     <h4 className="text-sm font-bold text-teal-400">{spot.title}</h4>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-300">{spot.desc}</p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{spot.desc}</p>
 
                     {/* Tooltip arrow/triangle */}
                     <div className="absolute left-1/2 top-full -mt-px h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-white/10 bg-slate-800/95" />
