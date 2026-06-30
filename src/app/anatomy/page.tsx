@@ -1,14 +1,40 @@
 'use client';
 
 import { useState } from 'react';
-import ScrollReveal from '@/components/ScrollReveal';
 
 import Image from 'next/image';
 
 const ANIMALS = [
-  { id: 'dog', name: 'Dog', icon: '🐕', skeletonImage: '/anatomy/dog-skeleton.png' },
-  { id: 'cat', name: 'Cat', icon: '🐈' },
-  { id: 'bird', name: 'Bird', icon: '🦜' },
+  {
+    id: 'dog',
+    name: 'Dog',
+    icon: '🐕',
+    systemImages: {
+      skeletal: '/anatomy/dog-skeleton.png',
+      muscular: '/anatomy/dog-muscles.png',
+      digestive: '/anatomy/dog-digestive.png',
+      cardiovascular: '/anatomy/dog-cardiovascular.png',
+      nervous: '/anatomy/dog-nervous.png',
+    } as Record<string, string>,
+    systemScales: {
+      nervous: 1,
+      skeletal: 1.4,
+    } as Record<string, number>,
+  },
+  {
+    id: 'cat',
+    name: 'Cat',
+    icon: '🐈',
+    systemImages: {} as Record<string, string>,
+    systemScales: {} as Record<string, number>,
+  },
+  {
+    id: 'bird',
+    name: 'Bird',
+    icon: '🦜',
+    systemImages: {} as Record<string, string>,
+    systemScales: {} as Record<string, number>,
+  },
 ];
 
 const BODY_SYSTEMS = [
@@ -27,29 +53,29 @@ const HOTSPOTS: Record<
     skeletal: [
       {
         id: 'skull',
-        x: 22,
-        y: 20,
+        x: 25,
+        y: 23,
         title: 'Skull (Cranium)',
         desc: 'Protects the brain and supports facial structures.',
       },
       {
         id: 'jaw',
-        x: 24,
-        y: 29,
+        x: 25,
+        y: 32,
         title: 'Mandible (Jaw)',
         desc: 'Crucial for chewing and holding prey.',
       },
       {
         id: 'cervical',
-        x: 30,
-        y: 30,
+        x: 32,
+        y: 34,
         title: 'Cervical Vertebrae',
         desc: 'The neck bones connecting the skull to the spine.',
       },
       {
         id: 'spine',
         x: 50,
-        y: 32,
+        y: 37,
         title: 'Thoracic & Lumbar Spine',
         desc: 'Provides structural support and houses the spinal cord.',
       },
@@ -60,7 +86,7 @@ const HOTSPOTS: Record<
         title: 'Rib Cage',
         desc: 'Protects vital internal organs like the heart and lungs.',
       },
-      { id: 'pelvis', x: 70, y: 35, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
+      { id: 'pelvis', x: 69, y: 42, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
       {
         id: 'femur',
         x: 70,
@@ -69,56 +95,56 @@ const HOTSPOTS: Record<
         desc: 'The long bone of the hind leg, essential for movement and support.',
       },
       { id: 'tibia', x: 75, y: 70, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
-      { id: 'humerus', x: 35, y: 48, title: 'Humerus', desc: 'The upper front leg bone.' },
-      { id: 'radius', x: 40, y: 64, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
+      { id: 'humerus', x: 35, y: 57, title: 'Humerus', desc: 'The upper front leg bone.' },
+      { id: 'radius', x: 40, y: 67, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
     ],
     muscular: [
       {
         id: 'masseter',
-        x: 22,
-        y: 20,
+        x: 25,
+        y: 23,
         title: 'Masseter Muscle',
         desc: 'Primary muscle used for chewing and closing the jaw.',
       },
       {
         id: 'brachiocephalicus',
-        x: 30,
-        y: 30,
+        x: 33,
+        y: 28,
         title: 'Neck Muscles',
         desc: 'Moves the head and neck, extends the front leg.',
       },
       {
         id: 'latissimus',
-        x: 50,
-        y: 25,
+        x: 45,
+        y: 30,
         title: 'Latissimus Dorsi',
         desc: 'Retracts the forelimb and flexes the shoulder.',
       },
       {
         id: 'pectorals',
-        x: 38,
-        y: 45,
+        x: 32,
+        y: 55,
         title: 'Pectoral Muscles',
         desc: 'Chest muscles used for adduction of the forelimbs.',
       },
       {
         id: 'gluteal',
         x: 70,
-        y: 28,
+        y: 33,
         title: 'Gluteal Muscles',
         desc: 'Powerful muscles for running, jumping, and stability.',
       },
       {
         id: 'hamstring',
-        x: 78,
-        y: 45,
+        x: 73,
+        y: 50,
         title: 'Hamstring',
         desc: 'Located on the back of the thigh, crucial for propulsion.',
       },
       {
         id: 'quadriceps',
-        x: 70,
-        y: 45,
+        x: 67,
+        y: 54,
         title: 'Quadriceps',
         desc: 'Front of the thigh, extends the knee joint.',
       },
@@ -126,60 +152,60 @@ const HOTSPOTS: Record<
     digestive: [
       {
         id: 'esophagus',
-        x: 35,
-        y: 28,
+        x: 30,
+        y: 35,
         title: 'Esophagus',
         desc: 'Transports food from the mouth to the stomach.',
       },
       {
         id: 'stomach',
-        x: 50,
-        y: 40,
+        x: 55,
+        y: 50,
         title: 'Stomach',
         desc: 'Where primary food breakdown occurs.',
       },
       {
         id: 'liver',
-        x: 45,
+        x: 53,
         y: 42,
         title: 'Liver',
         desc: 'Filters toxins, produces bile, and aids in digestion.',
       },
       {
         id: 'intestines',
-        x: 58,
+        x: 65,
         y: 42,
         title: 'Small/Large Intestines',
         desc: 'Absorbs nutrients and water from food.',
       },
-      { id: 'colon', x: 68, y: 35, title: 'Colon', desc: 'Final segment of the digestive tract.' },
+      { id: 'colon', x: 73, y: 42, title: 'Colon', desc: 'Final segment of the digestive tract.' },
     ],
     cardiovascular: [
       {
         id: 'heart',
-        x: 42,
-        y: 40,
+        x: 47,
+        y: 50,
         title: 'Heart',
         desc: 'Pumps oxygen-rich blood throughout the body.',
       },
       {
         id: 'aorta',
         x: 45,
-        y: 35,
+        y: 45,
         title: 'Aorta',
         desc: 'The main artery carrying blood away from the heart.',
       },
       {
         id: 'jugular',
         x: 32,
-        y: 28,
+        y: 33,
         title: 'Jugular Vein',
         desc: 'Major blood vessel in the neck returning blood to the heart.',
       },
       {
         id: 'femoral_artery',
-        x: 72,
-        y: 42,
+        x: 65,
+        y: 55,
         title: 'Femoral Artery',
         desc: 'Supplies blood to the hind limbs.',
       },
@@ -187,21 +213,21 @@ const HOTSPOTS: Record<
     nervous: [
       {
         id: 'brain',
-        x: 22,
-        y: 14,
+        x: 31,
+        y: 10,
         title: 'Brain',
         desc: 'The central control system for all bodily functions.',
       },
       {
         id: 'spinal_cord',
         x: 50,
-        y: 22,
+        y: 32,
         title: 'Spinal Cord',
         desc: 'The main pathway for information connecting the brain and peripheral nerves.',
       },
       {
         id: 'sciatic',
-        x: 72,
+        x: 58,
         y: 35,
         title: 'Sciatic Nerve',
         desc: 'Major nerve serving the hind limbs.',
@@ -367,7 +393,7 @@ export default function AnatomyPage() {
         </aside>
 
         {/* ══ MAIN VIEWER AREA ════════════════════════════════════════ */}
-        <div className="flex-1 relative flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-20 overflow-hidden">
+        <div className="flex-1 relative flex flex-col items-center justify-center bg-slate-950 overflow-hidden">
           <div
             className="relative flex items-center justify-center transition-transform duration-500 ease-out w-[800px] h-[500px] flex-shrink-0"
             style={{ transform: `scale(${zoomLevel})` }}
@@ -375,23 +401,29 @@ export default function AnatomyPage() {
             {/* Glowing orb effect behind model */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
 
-            {/* Skeleton Image */}
-            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pointer-events-none">
-              {ANIMALS.find((a) => a.id === selectedAnimal)?.skeletonImage ? (
-                <div className="relative w-full h-full">
+            {/* System Image */}
+            <div className="relative z-10 flex items-center justify-center w-full h-full pointer-events-none">
+              {(() => {
+                const animal = ANIMALS.find((a) => a.id === selectedAnimal);
+                const imgSrc = animal?.systemImages?.[selectedSystem];
+                const imgScale = animal?.systemScales?.[selectedSystem] ?? 1;
+                return imgSrc ? (
                   <Image
-                    src={ANIMALS.find((a) => a.id === selectedAnimal)!.skeletonImage!}
-                    alt="Skeleton"
-                    fill
-                    className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen"
+                    key={`${selectedAnimal}-${selectedSystem}`}
+                    src={imgSrc}
+                    alt={`${selectedAnimal} ${selectedSystem}`}
+                    width={720}
+                    height={460}
+                    className="object-contain w-[720px] h-[460px] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen transition-transform duration-300"
+                    style={{ transform: `scale(${imgScale})` }}
                     unoptimized
                   />
-                </div>
-              ) : (
-                <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
-                  {ANIMALS.find((a) => a.id === selectedAnimal)?.icon}
-                </div>
-              )}
+                ) : (
+                  <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
+                    {animal?.icon}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Interactive Hotspots */}
