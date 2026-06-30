@@ -17,7 +17,8 @@ const ANIMALS = [
       nervous: '/anatomy/dog-nervous.png',
     } as Record<string, string>,
     systemScales: {
-      nervous: 1.6,
+      nervous: 1,
+      skeletal: 1.4,
     } as Record<string, number>,
   },
   {
@@ -52,29 +53,29 @@ const HOTSPOTS: Record<
     skeletal: [
       {
         id: 'skull',
-        x: 22,
-        y: 20,
+        x: 25,
+        y: 23,
         title: 'Skull (Cranium)',
         desc: 'Protects the brain and supports facial structures.',
       },
       {
         id: 'jaw',
-        x: 24,
-        y: 29,
+        x: 25,
+        y: 32,
         title: 'Mandible (Jaw)',
         desc: 'Crucial for chewing and holding prey.',
       },
       {
         id: 'cervical',
-        x: 30,
-        y: 30,
+        x: 32,
+        y: 34,
         title: 'Cervical Vertebrae',
         desc: 'The neck bones connecting the skull to the spine.',
       },
       {
         id: 'spine',
         x: 50,
-        y: 32,
+        y: 37,
         title: 'Thoracic & Lumbar Spine',
         desc: 'Provides structural support and houses the spinal cord.',
       },
@@ -85,7 +86,7 @@ const HOTSPOTS: Record<
         title: 'Rib Cage',
         desc: 'Protects vital internal organs like the heart and lungs.',
       },
-      { id: 'pelvis', x: 70, y: 35, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
+      { id: 'pelvis', x: 69, y: 42, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
       {
         id: 'femur',
         x: 70,
@@ -94,8 +95,8 @@ const HOTSPOTS: Record<
         desc: 'The long bone of the hind leg, essential for movement and support.',
       },
       { id: 'tibia', x: 75, y: 70, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
-      { id: 'humerus', x: 35, y: 48, title: 'Humerus', desc: 'The upper front leg bone.' },
-      { id: 'radius', x: 40, y: 64, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
+      { id: 'humerus', x: 35, y: 57, title: 'Humerus', desc: 'The upper front leg bone.' },
+      { id: 'radius', x: 40, y: 67, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
     ],
     muscular: [
       {
@@ -212,21 +213,21 @@ const HOTSPOTS: Record<
     nervous: [
       {
         id: 'brain',
-        x: 22,
-        y: 14,
+        x: 31,
+        y: 10,
         title: 'Brain',
         desc: 'The central control system for all bodily functions.',
       },
       {
         id: 'spinal_cord',
         x: 50,
-        y: 22,
+        y: 32,
         title: 'Spinal Cord',
         desc: 'The main pathway for information connecting the brain and peripheral nerves.',
       },
       {
         id: 'sciatic',
-        x: 72,
+        x: 58,
         y: 35,
         title: 'Sciatic Nerve',
         desc: 'Major nerve serving the hind limbs.',
