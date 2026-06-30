@@ -1,14 +1,39 @@
 'use client';
 
 import { useState } from 'react';
-import ScrollReveal from '@/components/ScrollReveal';
 
 import Image from 'next/image';
 
 const ANIMALS = [
-  { id: 'dog', name: 'Dog', icon: '🐕', skeletonImage: '/anatomy/dog-skeleton.png' },
-  { id: 'cat', name: 'Cat', icon: '🐈' },
-  { id: 'bird', name: 'Bird', icon: '🦜' },
+  {
+    id: 'dog',
+    name: 'Dog',
+    icon: '🐕',
+    systemImages: {
+      skeletal: '/anatomy/dog-skeleton.png',
+      muscular: '/anatomy/dog-muscles.png',
+      digestive: '/anatomy/dog-digestive.png',
+      cardiovascular: '/anatomy/dog-cardiovascular.png',
+      nervous: '/anatomy/dog-nervous.png',
+    } as Record<string, string>,
+    systemScales: {
+      nervous: 1.6,
+    } as Record<string, number>,
+  },
+  {
+    id: 'cat',
+    name: 'Cat',
+    icon: '🐈',
+    systemImages: {} as Record<string, string>,
+    systemScales: {} as Record<string, number>,
+  },
+  {
+    id: 'bird',
+    name: 'Bird',
+    icon: '🦜',
+    systemImages: {} as Record<string, string>,
+    systemScales: {} as Record<string, number>,
+  },
 ];
 
 const BODY_SYSTEMS = [
@@ -75,8 +100,8 @@ const HOTSPOTS: Record<
     muscular: [
       {
         id: 'masseter',
-        x: 22,
-        y: 20,
+        x: 23,
+        y: 25,
         title: 'Masseter Muscle',
         desc: 'Primary muscle used for chewing and closing the jaw.',
       },
@@ -89,15 +114,15 @@ const HOTSPOTS: Record<
       },
       {
         id: 'latissimus',
-        x: 50,
-        y: 25,
+        x: 45,
+        y: 33,
         title: 'Latissimus Dorsi',
         desc: 'Retracts the forelimb and flexes the shoulder.',
       },
       {
         id: 'pectorals',
-        x: 38,
-        y: 45,
+        x: 32,
+        y: 55,
         title: 'Pectoral Muscles',
         desc: 'Chest muscles used for adduction of the forelimbs.',
       },
@@ -367,7 +392,7 @@ export default function AnatomyPage() {
         </aside>
 
         {/* ══ MAIN VIEWER AREA ════════════════════════════════════════ */}
-        <div className="flex-1 relative flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-opacity-20 overflow-hidden">
+        <div className="flex-1 relative flex flex-col items-center justify-center bg-slate-950 overflow-hidden">
           <div
             className="relative flex items-center justify-center transition-transform duration-500 ease-out w-[800px] h-[500px] flex-shrink-0"
             style={{ transform: `scale(${zoomLevel})` }}
@@ -375,23 +400,29 @@ export default function AnatomyPage() {
             {/* Glowing orb effect behind model */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
 
-            {/* Skeleton Image */}
-            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full pointer-events-none">
-              {ANIMALS.find((a) => a.id === selectedAnimal)?.skeletonImage ? (
-                <div className="relative w-full h-full">
+            {/* System Image */}
+            <div className="relative z-10 flex items-center justify-center w-full h-full pointer-events-none">
+              {(() => {
+                const animal = ANIMALS.find((a) => a.id === selectedAnimal);
+                const imgSrc = animal?.systemImages?.[selectedSystem];
+                const imgScale = animal?.systemScales?.[selectedSystem] ?? 1;
+                return imgSrc ? (
                   <Image
-                    src={ANIMALS.find((a) => a.id === selectedAnimal)!.skeletonImage!}
-                    alt="Skeleton"
-                    fill
-                    className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen"
+                    key={`${selectedAnimal}-${selectedSystem}`}
+                    src={imgSrc}
+                    alt={`${selectedAnimal} ${selectedSystem}`}
+                    width={720}
+                    height={460}
+                    className="object-contain w-[720px] h-[460px] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen transition-transform duration-300"
+                    style={{ transform: `scale(${imgScale})` }}
                     unoptimized
                   />
-                </div>
-              ) : (
-                <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
-                  {ANIMALS.find((a) => a.id === selectedAnimal)?.icon}
-                </div>
-              )}
+                ) : (
+                  <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
+                    {animal?.icon}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Interactive Hotspots */}
