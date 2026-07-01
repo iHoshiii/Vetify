@@ -21,25 +21,25 @@ function img(
 
 const IMAGE_CONFIG: Record<string, Partial<Record<string, ImageConfig>>> = {
   dog: {
-    skeletal: img('/anatomy/dog-skeleton.png', 1.4),
-    muscular: img('/anatomy/dog-muscles.png'),
-    digestive: img('/anatomy/dog-digestive.png'),
-    cardiovascular: img('/anatomy/dog-cardiovascular.png'),
-    nervous: img('/anatomy/dog-nervous.png'),
+    skeletal: img('/anatomy/dog/dog-skeleton.png', 1.4),
+    muscular: img('/anatomy/dog/dog-muscles.png'),
+    digestive: img('/anatomy/dog/dog-digestive.png'),
+    cardiovascular: img('/anatomy/dog/dog-cardiovascular.png'),
+    nervous: img('/anatomy/dog/dog-nervous.png'),
   },
   cat: {
-    skeletal: img('/anatomy/cat-skeleton.png'),
-    muscular: img('/anatomy/cat-muscles.png'),
-    digestive: img('/anatomy/cat-digestive.png', 1.2),
-    cardiovascular: img('/anatomy/cat-cardiovascular.png'),
-    nervous: img('/anatomy/cat-nervous.png'),
+    skeletal: img('/anatomy/cat/cat-skeleton.png'),
+    muscular: img('/anatomy/cat/cat-muscles.png'),
+    digestive: img('/anatomy/cat/cat-digestive.png', 1.2),
+    cardiovascular: img('/anatomy/cat/cat-cardiovascular.png'),
+    nervous: img('/anatomy/cat/cat-nervous.png'),
   },
   bird: {
-    skeletal: img('/anatomy/bird-skeleton.png'),
-    muscular: img('/anatomy/bird-muscles.png'),
-    digestive: img('/anatomy/bird-digestive.png'),
-    cardiovascular: img('/anatomy/bird-cardiovascular.png'),
-    nervous: img('/anatomy/bird-nervous.png'),
+    skeletal: img('/anatomy/bird/bird-skeleton.png'),
+    muscular: img('/anatomy/bird/bird-muscles.png'),
+    digestive: img('/anatomy/bird/bird-digestive.png'),
+    cardiovascular: img('/anatomy/bird/bird-cardiovascular.png'),
+    nervous: img('/anatomy/bird/bird-nervous.png'),
   },
 };
 
