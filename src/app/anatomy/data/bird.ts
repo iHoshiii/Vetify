@@ -1,0 +1,170 @@
+import type { AnatomySystem } from './types';
+
+const bird: Record<string, AnatomySystem[]> = {
+  skeletal: [
+    {
+      id: 'skull',
+      x: 28,
+      y: 20,
+      title: 'Skull',
+      desc: 'Lightweight skull with a large braincase and fused bones for flight efficiency.',
+    },
+    {
+      id: 'beak',
+      x: 22,
+      y: 28,
+      title: 'Beak (Rostrum)',
+      desc: 'Keratinous beak adapted for cracking seeds and foraging.',
+    },
+    {
+      id: 'keel',
+      x: 45,
+      y: 50,
+      title: 'Keel (Sternum)',
+      desc: 'Large breastbone providing attachment for powerful flight muscles.',
+    },
+    {
+      id: 'furcula',
+      x: 38,
+      y: 40,
+      title: 'Furcula (Wishbone)',
+      desc: 'Fused clavicles that act as a spring during the wing stroke.',
+    },
+    {
+      id: 'humerus',
+      x: 35,
+      y: 45,
+      title: 'Humerus',
+      desc: 'Upper wing bone; hollow to reduce weight for flight.',
+    },
+    {
+      id: 'spine',
+      x: 55,
+      y: 38,
+      title: 'Vertebral Column',
+      desc: 'Many vertebrae are fused for rigidity during flight.',
+    },
+    {
+      id: 'pelvis',
+      x: 65,
+      y: 42,
+      title: 'Synsacrum',
+      desc: 'Fused pelvic vertebrae providing a rigid frame for landing.',
+    },
+  ],
+  muscular: [
+    {
+      id: 'pectoralis',
+      x: 43,
+      y: 50,
+      title: 'Pectoralis Major',
+      desc: 'The largest muscle; powers the downstroke of the wings.',
+    },
+    {
+      id: 'supracoracoideus',
+      x: 43,
+      y: 44,
+      title: 'Supracoracoideus',
+      desc: 'Lifts the wing on the upstroke via a pulley-like tendon.',
+    },
+    {
+      id: 'neck_muscles',
+      x: 32,
+      y: 30,
+      title: 'Neck Muscles',
+      desc: 'Highly mobile neck muscles compensate for fixed eye sockets.',
+    },
+    {
+      id: 'leg_muscles',
+      x: 68,
+      y: 55,
+      title: 'Leg Muscles',
+      desc: "Positioned close to the body's center of gravity for balance.",
+    },
+  ],
+  digestive: [
+    {
+      id: 'beak_mouth',
+      x: 22,
+      y: 28,
+      title: 'Beak / Mouth',
+      desc: 'No teeth; food is swallowed whole or in pieces.',
+    },
+    {
+      id: 'crop',
+      x: 36,
+      y: 38,
+      title: 'Crop',
+      desc: 'Expandable pouch that stores and softens food before digestion.',
+    },
+    {
+      id: 'proventriculus',
+      x: 44,
+      y: 44,
+      title: 'Proventriculus',
+      desc: 'Glandular stomach that secretes digestive enzymes.',
+    },
+    {
+      id: 'gizzard',
+      x: 50,
+      y: 50,
+      title: 'Gizzard (Ventriculus)',
+      desc: 'Muscular stomach that grinds food, replacing the function of teeth.',
+    },
+    {
+      id: 'intestines',
+      x: 60,
+      y: 48,
+      title: 'Intestines',
+      desc: 'Relatively short intestines suited to a high-energy diet.',
+    },
+  ],
+  cardiovascular: [
+    {
+      id: 'heart',
+      x: 45,
+      y: 46,
+      title: 'Heart',
+      desc: 'Four-chambered heart with a very high resting rate to support flight.',
+    },
+    {
+      id: 'aorta',
+      x: 43,
+      y: 41,
+      title: 'Aorta',
+      desc: 'Right aortic arch (unique to birds) distributes oxygenated blood.',
+    },
+    {
+      id: 'air_sacs',
+      x: 52,
+      y: 42,
+      title: 'Air Sacs',
+      desc: 'Nine air sacs create a unidirectional airflow for highly efficient respiration.',
+    },
+  ],
+  nervous: [
+    {
+      id: 'brain',
+      x: 28,
+      y: 15,
+      title: 'Brain',
+      desc: 'Enlarged optic lobes and cerebellum support visual acuity and flight coordination.',
+    },
+    {
+      id: 'optic_nerve',
+      x: 26,
+      y: 22,
+      title: 'Optic Nerve',
+      desc: 'Large optic nerves connected to eyes that can make up 15% of head mass.',
+    },
+    {
+      id: 'spinal_cord',
+      x: 53,
+      y: 35,
+      title: 'Spinal Cord',
+      desc: 'Coordinates wing and leg movements during flight and perching.',
+    },
+  ],
+};
+
+export default bird;
