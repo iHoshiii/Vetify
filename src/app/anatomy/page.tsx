@@ -7,38 +7,12 @@ import Image from 'next/image';
 import dog from './data/dog';
 import cat from './data/cat';
 import bird from './data/bird';
+import IMAGE_CONFIG from './data/image-config';
 
 const ANIMALS = [
-  {
-    id: 'dog',
-    name: 'Dog',
-    icon: '🐕',
-    systemImages: {
-      skeletal: '/anatomy/dog-skeleton.png',
-      muscular: '/anatomy/dog-muscles.png',
-      digestive: '/anatomy/dog-digestive.png',
-      cardiovascular: '/anatomy/dog-cardiovascular.png',
-      nervous: '/anatomy/dog-nervous.png',
-    } as Record<string, string>,
-    systemScales: {
-      nervous: 1,
-      skeletal: 1.4,
-    } as Record<string, number>,
-  },
-  {
-    id: 'cat',
-    name: 'Cat',
-    icon: '🐈',
-    systemImages: {} as Record<string, string>,
-    systemScales: {} as Record<string, number>,
-  },
-  {
-    id: 'bird',
-    name: 'Bird',
-    icon: '🦜',
-    systemImages: {} as Record<string, string>,
-    systemScales: {} as Record<string, number>,
-  },
+  { id: 'dog', name: 'Dog', icon: '🐕' },
+  { id: 'cat', name: 'Cat', icon: '🐈' },
+  { id: 'bird', name: 'Bird', icon: '🦜' },
 ];
 
 const BODY_SYSTEMS = [
@@ -205,17 +179,20 @@ export default function AnatomyPage() {
             <div className="relative z-10 flex items-center justify-center w-full h-full pointer-events-none">
               {(() => {
                 const animal = ANIMALS.find((a) => a.id === selectedAnimal);
-                const imgSrc = animal?.systemImages?.[selectedSystem];
-                const imgScale = animal?.systemScales?.[selectedSystem] ?? 1;
-                return imgSrc ? (
+                const imgCfg = IMAGE_CONFIG[selectedAnimal]?.[selectedSystem];
+                return imgCfg ? (
                   <Image
                     key={`${selectedAnimal}-${selectedSystem}`}
-                    src={imgSrc}
+                    src={imgCfg.src}
                     alt={`${selectedAnimal} ${selectedSystem}`}
-                    width={720}
-                    height={460}
-                    className="object-contain w-[720px] h-[460px] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen transition-transform duration-300"
-                    style={{ transform: `scale(${imgScale})` }}
+                    width={imgCfg.width}
+                    height={imgCfg.height}
+                    className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen transition-transform duration-300"
+                    style={{
+                      width: imgCfg.width,
+                      height: imgCfg.height,
+                      transform: `scale(${imgCfg.scale})`,
+                    }}
                     unoptimized
                   />
                 ) : (
