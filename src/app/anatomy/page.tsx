@@ -4,37 +4,15 @@ import { useState } from 'react';
 
 import Image from 'next/image';
 
+import bird from './data/bird';
+import cat from './data/cat';
+import dog from './data/dog';
+import IMAGE_CONFIG from './data/image-config';
+
 const ANIMALS = [
-  {
-    id: 'dog',
-    name: 'Dog',
-    icon: '🐕',
-    systemImages: {
-      skeletal: '/anatomy/dog-skeleton.png',
-      muscular: '/anatomy/dog-muscles.png',
-      digestive: '/anatomy/dog-digestive.png',
-      cardiovascular: '/anatomy/dog-cardiovascular.png',
-      nervous: '/anatomy/dog-nervous.png',
-    } as Record<string, string>,
-    systemScales: {
-      nervous: 1,
-      skeletal: 1.4,
-    } as Record<string, number>,
-  },
-  {
-    id: 'cat',
-    name: 'Cat',
-    icon: '🐈',
-    systemImages: {} as Record<string, string>,
-    systemScales: {} as Record<string, number>,
-  },
-  {
-    id: 'bird',
-    name: 'Bird',
-    icon: '🦜',
-    systemImages: {} as Record<string, string>,
-    systemScales: {} as Record<string, number>,
-  },
+  { id: 'dog', name: 'Dog', icon: '🐕' },
+  { id: 'cat', name: 'Cat', icon: '🐈' },
+  { id: 'bird', name: 'Bird', icon: '🦜' },
 ];
 
 const BODY_SYSTEMS = [
@@ -48,211 +26,7 @@ const BODY_SYSTEMS = [
 const HOTSPOTS: Record<
   string,
   Record<string, { id: string; x: number; y: number; title: string; desc: string }[]>
-> = {
-  dog: {
-    skeletal: [
-      {
-        id: 'skull',
-        x: 25,
-        y: 23,
-        title: 'Skull (Cranium)',
-        desc: 'Protects the brain and supports facial structures.',
-      },
-      {
-        id: 'jaw',
-        x: 25,
-        y: 32,
-        title: 'Mandible (Jaw)',
-        desc: 'Crucial for chewing and holding prey.',
-      },
-      {
-        id: 'cervical',
-        x: 32,
-        y: 34,
-        title: 'Cervical Vertebrae',
-        desc: 'The neck bones connecting the skull to the spine.',
-      },
-      {
-        id: 'spine',
-        x: 50,
-        y: 37,
-        title: 'Thoracic & Lumbar Spine',
-        desc: 'Provides structural support and houses the spinal cord.',
-      },
-      {
-        id: 'ribs',
-        x: 45,
-        y: 45,
-        title: 'Rib Cage',
-        desc: 'Protects vital internal organs like the heart and lungs.',
-      },
-      { id: 'pelvis', x: 69, y: 42, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
-      {
-        id: 'femur',
-        x: 70,
-        y: 50,
-        title: 'Femur',
-        desc: 'The long bone of the hind leg, essential for movement and support.',
-      },
-      { id: 'tibia', x: 75, y: 70, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
-      { id: 'humerus', x: 35, y: 57, title: 'Humerus', desc: 'The upper front leg bone.' },
-      { id: 'radius', x: 40, y: 67, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
-    ],
-    muscular: [
-      {
-        id: 'masseter',
-        x: 25,
-        y: 23,
-        title: 'Masseter Muscle',
-        desc: 'Primary muscle used for chewing and closing the jaw.',
-      },
-      {
-        id: 'brachiocephalicus',
-        x: 33,
-        y: 28,
-        title: 'Neck Muscles',
-        desc: 'Moves the head and neck, extends the front leg.',
-      },
-      {
-        id: 'latissimus',
-        x: 45,
-        y: 30,
-        title: 'Latissimus Dorsi',
-        desc: 'Retracts the forelimb and flexes the shoulder.',
-      },
-      {
-        id: 'pectorals',
-        x: 32,
-        y: 55,
-        title: 'Pectoral Muscles',
-        desc: 'Chest muscles used for adduction of the forelimbs.',
-      },
-      {
-        id: 'gluteal',
-        x: 70,
-        y: 33,
-        title: 'Gluteal Muscles',
-        desc: 'Powerful muscles for running, jumping, and stability.',
-      },
-      {
-        id: 'hamstring',
-        x: 73,
-        y: 50,
-        title: 'Hamstring',
-        desc: 'Located on the back of the thigh, crucial for propulsion.',
-      },
-      {
-        id: 'quadriceps',
-        x: 67,
-        y: 54,
-        title: 'Quadriceps',
-        desc: 'Front of the thigh, extends the knee joint.',
-      },
-    ],
-    digestive: [
-      {
-        id: 'esophagus',
-        x: 30,
-        y: 35,
-        title: 'Esophagus',
-        desc: 'Transports food from the mouth to the stomach.',
-      },
-      {
-        id: 'stomach',
-        x: 55,
-        y: 50,
-        title: 'Stomach',
-        desc: 'Where primary food breakdown occurs.',
-      },
-      {
-        id: 'liver',
-        x: 53,
-        y: 42,
-        title: 'Liver',
-        desc: 'Filters toxins, produces bile, and aids in digestion.',
-      },
-      {
-        id: 'intestines',
-        x: 65,
-        y: 42,
-        title: 'Small/Large Intestines',
-        desc: 'Absorbs nutrients and water from food.',
-      },
-      { id: 'colon', x: 73, y: 42, title: 'Colon', desc: 'Final segment of the digestive tract.' },
-    ],
-    cardiovascular: [
-      {
-        id: 'heart',
-        x: 47,
-        y: 50,
-        title: 'Heart',
-        desc: 'Pumps oxygen-rich blood throughout the body.',
-      },
-      {
-        id: 'aorta',
-        x: 45,
-        y: 45,
-        title: 'Aorta',
-        desc: 'The main artery carrying blood away from the heart.',
-      },
-      {
-        id: 'jugular',
-        x: 32,
-        y: 33,
-        title: 'Jugular Vein',
-        desc: 'Major blood vessel in the neck returning blood to the heart.',
-      },
-      {
-        id: 'femoral_artery',
-        x: 65,
-        y: 55,
-        title: 'Femoral Artery',
-        desc: 'Supplies blood to the hind limbs.',
-      },
-    ],
-    nervous: [
-      {
-        id: 'brain',
-        x: 31,
-        y: 10,
-        title: 'Brain',
-        desc: 'The central control system for all bodily functions.',
-      },
-      {
-        id: 'spinal_cord',
-        x: 50,
-        y: 32,
-        title: 'Spinal Cord',
-        desc: 'The main pathway for information connecting the brain and peripheral nerves.',
-      },
-      {
-        id: 'sciatic',
-        x: 58,
-        y: 35,
-        title: 'Sciatic Nerve',
-        desc: 'Major nerve serving the hind limbs.',
-      },
-    ],
-  },
-  cat: {
-    skeletal: [
-      {
-        id: 'skull',
-        x: 30,
-        y: 35,
-        title: 'Skull',
-        desc: 'Features large eye sockets for enhanced night vision.',
-      },
-      {
-        id: 'spine',
-        x: 55,
-        y: 40,
-        title: 'Flexible Spine',
-        desc: 'Highly flexible, allowing cats to land on their feet.',
-      },
-    ],
-  },
-};
+> = { dog, cat, bird };
 
 export default function AnatomyPage() {
   const [selectedAnimal, setSelectedAnimal] = useState(ANIMALS[0].id);
@@ -264,30 +38,32 @@ export default function AnatomyPage() {
   const handleZoomOut = () => setZoomLevel((z) => Math.max(z - 0.2, 0.5));
 
   return (
-    <main className="h-screen overflow-hidden flex flex-col bg-slate-950 text-slate-50 selection:bg-teal-500/30">
-      {/* ══ HEADER ════════════════════════════════════════════════════ */}
-      <div className="flex-shrink-0 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-lg shadow-indigo-500/20">
-              <span className="text-xl">🦴</span>
+    <main className="h-[calc(100vh-57px)] overflow-hidden flex flex-col bg-slate-50">
+      {/* ══ HEADER ══════════════════════════════════════════════════ */}
+      <div className="flex-shrink-0 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm">
+              <span className="text-sm">🦴</span>
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-white">Interactive Anatomy</h1>
-              <p className="text-xs font-medium text-slate-400">Explore pet biology in 3D</p>
+              <h1 className="text-sm font-bold tracking-tight text-slate-900">
+                Interactive Anatomy
+              </h1>
+              <p className="text-[11px] text-slate-400">Explore pet biology</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <a
               href="/chat"
-              className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
+              className="text-sm font-semibold text-slate-500 hover:text-teal-600 transition-colors"
             >
               Ask AI Assistant
             </a>
-            <div className="h-4 w-px bg-white/10" />
+            <div className="h-4 w-px bg-slate-200" />
             <a
               href="/services"
-              className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
+              className="text-sm font-semibold text-slate-500 hover:text-teal-600 transition-colors"
             >
               Back to Services
             </a>
@@ -295,138 +71,118 @@ export default function AnatomyPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full mx-auto flex max-w-[1600px] flex-col lg:flex-row overflow-hidden">
-        {/* ══ SIDEBAR CONTROLS ════════════════════════════════════════ */}
-        <aside className="w-full lg:w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar h-full">
-          {/* Animal Selection */}
-          <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
-                Select Species
-              </h2>
-              <div className="grid grid-cols-3 gap-3">
-                {ANIMALS.map((animal) => (
-                  <button
-                    key={animal.id}
-                    onClick={() => setSelectedAnimal(animal.id)}
-                    className={`flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition-all duration-300 ${
-                      selectedAnimal === animal.id
-                        ? 'bg-indigo-500/10 border-indigo-500/50 border text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
-                        : 'bg-white/5 border border-transparent hover:bg-white/10 text-slate-400'
-                    }`}
-                  >
-                    <span className="text-2xl">{animal.icon}</span>
-                    <span className="text-xs font-bold">{animal.name}</span>
-                  </button>
-                ))}
-              </div>
+      <div className="flex-1 flex overflow-hidden">
+        {/* ══ SIDEBAR ═════════════════════════════════════════════════ */}
+        <aside className="w-72 flex-shrink-0 border-r border-slate-200 bg-white px-5 py-5 flex flex-col gap-6 overflow-hidden">
+          {/* Species */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Species
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {ANIMALS.map((animal) => (
+                <button
+                  key={animal.id}
+                  onClick={() => setSelectedAnimal(animal.id)}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl py-3 px-2 border transition-all duration-200 ${
+                    selectedAnimal === animal.id
+                      ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-teal-300 hover:bg-teal-50/50'
+                  }`}
+                >
+                  <span className="text-2xl">{animal.icon}</span>
+                  <span className="text-xs font-semibold">{animal.name}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Body System Selection */}
-          <div className="animate-in fade-in slide-in-from-left-4 duration-500 delay-100 fill-mode-both">
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
-                Body System
-              </h2>
-              <div className="flex flex-col gap-2">
-                {BODY_SYSTEMS.map((system) => (
-                  <button
-                    key={system.id}
-                    onClick={() => setSelectedSystem(system.id)}
-                    className={`flex items-center gap-4 rounded-xl p-3 transition-all duration-300 text-left ${
-                      selectedSystem === system.id
-                        ? 'bg-indigo-500/10 border-indigo-500/50 border shadow-[0_0_15px_rgba(99,102,241,0.1)]'
-                        : 'bg-white/5 border border-transparent hover:bg-white/10'
+          {/* Divider */}
+          <div className="h-px bg-slate-100" />
+
+          {/* Body Systems */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+              Body System
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {BODY_SYSTEMS.map((system) => (
+                <button
+                  key={system.id}
+                  onClick={() => setSelectedSystem(system.id)}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-all duration-200 text-left ${
+                    selectedSystem === system.id
+                      ? 'border-teal-500 bg-teal-50 shadow-sm'
+                      : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-base transition-colors ${
+                      selectedSystem === system.id ? 'bg-teal-100' : 'bg-slate-100'
                     }`}
                   >
+                    {system.icon}
+                  </div>
+                  <div>
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                        selectedSystem === system.id
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'bg-black/20 text-slate-400'
+                      className={`text-sm font-semibold ${
+                        selectedSystem === system.id ? 'text-teal-700' : 'text-slate-700'
                       }`}
                     >
-                      <span className="text-lg">{system.icon}</span>
+                      {system.name}
                     </div>
-                    <div>
-                      <div
-                        className={`text-sm font-bold ${
-                          selectedSystem === system.id ? 'text-indigo-400' : 'text-slate-200'
-                        }`}
-                      >
-                        {system.name}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">View internal structures</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Info Card */}
-          <div className="mt-auto animate-in fade-in slide-in-from-left-4 duration-500 delay-200 fill-mode-both">
-            <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-5">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-teal-400 mb-2">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Did you know?
-              </h3>
-              <p className="text-xs leading-relaxed text-teal-100/70">
-                Understanding your pet's anatomy helps identify abnormalities earlier. If you notice
-                unusual swelling or discomfort, consult a professional immediately.
-              </p>
+                    <div className="text-[11px] text-slate-400">View structures</div>
+                  </div>
+                  {selectedSystem === system.id && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </aside>
 
-        {/* ══ MAIN VIEWER AREA ════════════════════════════════════════ */}
-        <div className="flex-1 relative flex flex-col items-center justify-center bg-slate-950 overflow-hidden">
+        {/* ══ VIEWER ══════════════════════════════════════════════════ */}
+        <div className="flex-1 relative flex flex-col items-center justify-center bg-slate-50 overflow-hidden">
+          {/* Subtle grid background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.15)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+
+          {/* Soft glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-teal-400/10 rounded-full blur-[80px] pointer-events-none" />
+
           <div
             className="relative flex items-center justify-center transition-transform duration-500 ease-out w-[800px] h-[500px] flex-shrink-0"
             style={{ transform: `scale(${zoomLevel})` }}
           >
-            {/* Glowing orb effect behind model */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
-
             {/* System Image */}
             <div className="relative z-10 flex items-center justify-center w-full h-full pointer-events-none">
               {(() => {
                 const animal = ANIMALS.find((a) => a.id === selectedAnimal);
-                const imgSrc = animal?.systemImages?.[selectedSystem];
-                const imgScale = animal?.systemScales?.[selectedSystem] ?? 1;
-                return imgSrc ? (
+                const imgCfg = IMAGE_CONFIG[selectedAnimal]?.[selectedSystem];
+                return imgCfg ? (
                   <Image
                     key={`${selectedAnimal}-${selectedSystem}`}
-                    src={imgSrc}
+                    src={imgCfg.src}
                     alt={`${selectedAnimal} ${selectedSystem}`}
-                    width={720}
-                    height={460}
-                    className="object-contain w-[720px] h-[460px] drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] opacity-90 mix-blend-screen transition-transform duration-300"
-                    style={{ transform: `scale(${imgScale})` }}
+                    width={imgCfg.width}
+                    height={imgCfg.height}
+                    className="object-contain drop-shadow-md transition-transform duration-300"
+                    style={{
+                      width: imgCfg.width,
+                      height: imgCfg.height,
+                      transform: `scale(${imgCfg.scale})`,
+                    }}
                     unoptimized
                   />
                 ) : (
-                  <div className="text-[180px] leading-none opacity-80 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] select-none">
+                  <div className="text-[160px] leading-none select-none drop-shadow-sm">
                     {animal?.icon}
                   </div>
                 );
               })()}
             </div>
 
-            {/* Interactive Hotspots */}
+            {/* Hotspots */}
             {HOTSPOTS[selectedAnimal]?.[selectedSystem]?.map((spot) => (
               <div
                 key={spot.id}
@@ -436,33 +192,44 @@ export default function AnatomyPage() {
                 onMouseLeave={() => setHoveredSpot(null)}
                 onClick={() => setHoveredSpot(hoveredSpot === spot.id ? null : spot.id)}
               >
-                {/* Hotspot Dot */}
                 <div className="relative flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center">
-                  <span className="absolute inline-flex h-6 w-6 animate-ping rounded-full bg-teal-400 opacity-60 group-hover:opacity-100 transition-opacity"></span>
-                  <span className="relative inline-flex h-4 w-4 rounded-full bg-teal-500 shadow-[0_0_15px_rgba(45,212,191,0.9)] transition-transform duration-200 group-hover:scale-125 border-2 border-white/20"></span>
+                  <span className="absolute inline-flex h-5 w-5 animate-ping rounded-full bg-teal-400 opacity-50 group-hover:opacity-75 transition-opacity" />
+                  <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-teal-500 shadow-[0_0_10px_rgba(13,148,136,0.6)] border-2 border-white transition-transform duration-200 group-hover:scale-125" />
                 </div>
 
-                {/* Tooltip Bubble */}
+                {/* Tooltip */}
                 <div
-                  className={`absolute left-1/2 bottom-full mb-3 w-64 -translate-x-1/2 pointer-events-none transition-all duration-300 origin-bottom ${
+                  className={`absolute left-1/2 bottom-full mb-3 w-56 -translate-x-1/2 pointer-events-none transition-all duration-200 origin-bottom ${
                     hoveredSpot === spot.id
                       ? 'opacity-100 scale-100 translate-y-0'
-                      : 'opacity-0 scale-95 translate-y-2'
+                      : 'opacity-0 scale-95 translate-y-1'
                   }`}
                 >
-                  <div className="relative rounded-xl border border-white/10 bg-slate-800/95 p-4 shadow-2xl backdrop-blur-xl">
-                    <h4 className="text-sm font-bold text-teal-400">{spot.title}</h4>
-                    <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{spot.desc}</p>
-
-                    {/* Tooltip arrow/triangle */}
-                    <div className="absolute left-1/2 top-full -mt-px h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-white/10 bg-slate-800/95" />
+                  <div className="relative rounded-xl border border-slate-200 bg-white p-3.5 shadow-lg">
+                    <h4 className="text-xs font-bold text-teal-700">{spot.title}</h4>
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{spot.desc}</p>
+                    <div className="absolute left-1/2 top-full -mt-px h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-b border-r border-slate-200 bg-white" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Instructions Overlay */}
+          {/* Zoom controls */}
+          <div className="absolute bottom-6 right-6 flex flex-col gap-1.5">
+            <button
+              onClick={handleZoomIn}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors text-lg font-light"
+            >
+              +
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-teal-400 hover:text-teal-600 transition-colors text-lg font-light"
+            >
+              −
+            </button>
+          </div>
         </div>
       </div>
     </main>
