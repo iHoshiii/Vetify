@@ -38,7 +38,7 @@ export default function AnatomyPage() {
   const handleZoomOut = () => setZoomLevel((z) => Math.max(z - 0.2, 0.5));
 
   return (
-    <main className="h-screen overflow-hidden flex flex-col bg-slate-950 text-slate-50 selection:bg-teal-500/30">
+    <main className="h-[calc(100vh-57px)] overflow-hidden flex flex-col bg-slate-950 text-slate-50 selection:bg-teal-500/30">
       {/* ══ HEADER ════════════════════════════════════════════════════ */}
       <div className="flex-shrink-0 border-b border-white/10 bg-slate-900/50 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6">
@@ -69,21 +69,21 @@ export default function AnatomyPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full mx-auto flex max-w-[1600px] flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 w-full mx-auto flex max-w-[1600px] flex-row overflow-hidden">
         {/* ══ SIDEBAR CONTROLS ════════════════════════════════════════ */}
-        <aside className="w-full lg:w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 p-6 flex flex-col gap-8 overflow-y-auto custom-scrollbar h-full">
+        <aside className="w-80 flex-shrink-0 border-r border-white/10 bg-slate-900/30 px-5 py-4 flex flex-col gap-4 overflow-hidden h-full">
           {/* Animal Selection */}
           <div className="animate-in fade-in slide-in-from-left-4 duration-500">
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
                 Select Species
               </h2>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {ANIMALS.map((animal) => (
                   <button
                     key={animal.id}
                     onClick={() => setSelectedAnimal(animal.id)}
-                    className={`flex flex-col items-center justify-center gap-2 rounded-xl p-3 transition-all duration-300 ${
+                    className={`flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all duration-300 ${
                       selectedAnimal === animal.id
                         ? 'bg-indigo-500/10 border-indigo-500/50 border text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
                         : 'bg-white/5 border border-transparent hover:bg-white/10 text-slate-400'
@@ -100,28 +100,28 @@ export default function AnatomyPage() {
           {/* Body System Selection */}
           <div className="animate-in fade-in slide-in-from-left-4 duration-500 delay-100 fill-mode-both">
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
                 Body System
               </h2>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 {BODY_SYSTEMS.map((system) => (
                   <button
                     key={system.id}
                     onClick={() => setSelectedSystem(system.id)}
-                    className={`flex items-center gap-4 rounded-xl p-3 transition-all duration-300 text-left ${
+                    className={`flex items-center gap-3 rounded-xl p-2.5 transition-all duration-300 text-left ${
                       selectedSystem === system.id
                         ? 'bg-indigo-500/10 border-indigo-500/50 border shadow-[0_0_15px_rgba(99,102,241,0.1)]'
                         : 'bg-white/5 border border-transparent hover:bg-white/10'
                     }`}
                   >
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                         selectedSystem === system.id
                           ? 'bg-indigo-500/20 text-indigo-400'
                           : 'bg-black/20 text-slate-400'
                       }`}
                     >
-                      <span className="text-lg">{system.icon}</span>
+                      <span className="text-base">{system.icon}</span>
                     </div>
                     <div>
                       <div
@@ -131,37 +131,11 @@ export default function AnatomyPage() {
                       >
                         {system.name}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">View internal structures</div>
+                      <div className="text-xs text-slate-500">View internal structures</div>
                     </div>
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* Info Card */}
-          <div className="mt-auto animate-in fade-in slide-in-from-left-4 duration-500 delay-200 fill-mode-both">
-            <div className="rounded-xl border border-teal-500/20 bg-teal-500/10 p-5">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-teal-400 mb-2">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Did you know?
-              </h3>
-              <p className="text-xs leading-relaxed text-teal-100/70">
-                Understanding your pet's anatomy helps identify abnormalities earlier. If you notice
-                unusual swelling or discomfort, consult a professional immediately.
-              </p>
             </div>
           </div>
         </aside>

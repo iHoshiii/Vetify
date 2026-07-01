@@ -30,7 +30,7 @@ const IMAGE_CONFIG: Record<string, Partial<Record<string, ImageConfig>>> = {
   cat: {
     skeletal: img('/anatomy/cat-skeleton.png'),
     muscular: img('/anatomy/cat-muscles.png'),
-    digestive: img('/anatomy/cat-digestive.png'),
+    digestive: img('/anatomy/cat-digestive.png', 1.2),
     cardiovascular: img('/anatomy/cat-cardiovascular.png'),
     nervous: img('/anatomy/cat-nervous.png'),
   },
