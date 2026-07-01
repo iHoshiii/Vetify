@@ -4,9 +4,9 @@ import { useState } from 'react';
 
 import Image from 'next/image';
 
-import dog from './data/dog';
-import cat from './data/cat';
 import bird from './data/bird';
+import cat from './data/cat';
+import dog from './data/dog';
 import IMAGE_CONFIG from './data/image-config';
 
 const ANIMALS = [
