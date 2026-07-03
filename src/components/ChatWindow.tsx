@@ -2,11 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import type { Message } from '@/lib/chat-storage';
 
 const SUGGESTIONS = [
   'My dog is scratching a lot, what could it be?',
@@ -17,16 +13,21 @@ const SUGGESTIONS = [
 
 function stripMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
-    .replace(/\*(.+?)\*/g, '$1') // italic
-    .replace(/^#{1,6}\s+/gm, '') // headers
-    .replace(/^[\*\-]\s+/gm, '') // bullet points
-    .replace(/^\d+\.\s+/gm, '') // numbered lists
-    .replace(/`(.+?)`/g, '$1') // inline code
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[\*\-]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/`(.+?)`/g, '$1')
     .trim();
 }
-export default function ChatWindow() {
-  const [messages, setMessages] = useState<Message[]>([]);
+
+interface Props {
+  messages: Message[];
+  onMessagesChange: (messages: Message[]) => void;
+}
+
+export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
@@ -43,8 +44,8 @@ export default function ChatWindow() {
     if (!content || loading) return;
 
     const userMessage: Message = { role: 'user', content };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const updated = [...messages, userMessage];
+    onMessagesChange(updated);
     setInput('');
     setLoading(true);
 
@@ -52,13 +53,18 @@ export default function ChatWindow() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, session_id: sessionId }),
+        body: JSON.stringify({
+          message: content,
+          session_id: sessionId,
+          // Send full history for context awareness
+          history: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: stripMarkdown(data.reply) }]);
+      onMessagesChange([...updated, { role: 'assistant', content: stripMarkdown(data.reply) }]);
     } catch {
-      setMessages((prev) => [
-        ...prev,
+      onMessagesChange([
+        ...updated,
         { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
       ]);
     } finally {
