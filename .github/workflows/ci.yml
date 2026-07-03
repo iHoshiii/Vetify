@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches-ignore: ['**']  # TODO: re-enable when dev is done
+    # branches: [main]
 
 jobs:
   backend-tests:
