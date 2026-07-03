@@ -30,6 +30,7 @@ interface Props {
 export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const { data: session } = useSession();
   const sessionId = (session?.user as any)?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -39,14 +40,20 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const sendMessage = async (text?: string) => {
+  // Index of the last user message
+  const lastUserIndex = messages.reduce((last, m, i) => (m.role === 'user' ? i : last), -1);
+
+  const sendMessage = async (text?: string, replaceFromIndex?: number) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
     const userMessage: Message = { role: 'user', content };
-    const updated = [...messages, userMessage];
+    // If editing, slice off the old user message + its AI reply
+    const base = replaceFromIndex != null ? messages.slice(0, replaceFromIndex) : messages;
+    const updated = [...base, userMessage];
     onMessagesChange(updated);
     setInput('');
+    setEditingIndex(null);
     setLoading(true);
 
     try {
@@ -56,8 +63,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
         body: JSON.stringify({
           message: content,
           session_id: sessionId,
-          // Send full history for context awareness
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
+          history: base.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const data = await res.json();
@@ -73,10 +79,20 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     }
   };
 
+  const startEdit = (index: number) => {
+    setEditingIndex(index);
+    setInput(messages[index].content);
+    inputRef.current?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      editingIndex != null ? sendMessage(input, editingIndex) : sendMessage();
+    }
+    if (e.key === 'Escape' && editingIndex != null) {
+      setEditingIndex(null);
+      setInput('');
     }
   };
 
@@ -122,13 +138,45 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
                   </div>
                 )}
                 <div
-                  className={`max-w-[65%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                    m.role === 'user'
-                      ? 'bg-teal-600 text-white rounded-tr-sm'
-                      : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                  className={`flex flex-col items-end gap-1 max-w-[65%] ${
+                    m.role === 'user' ? 'items-end' : 'items-start'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                      m.role === 'user'
+                        ? 'bg-teal-600 text-white rounded-tr-sm'
+                        : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{m.content}</p>
+                  </div>
+                  {m.role === 'user' && i === lastUserIndex && !loading && (
+                    <button
+                      onClick={() => startEdit(i)}
+                      className="text-[11px] text-slate-400 hover:text-teal-600 flex items-center gap-1 transition-colors"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-3 h-3"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Edit
+                    </button>
+                  )}
                 </div>
                 {m.role === 'user' && (
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-xs font-bold mt-1">
@@ -174,11 +222,25 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your pet…"
+            placeholder={editingIndex != null ? 'Edit your message…' : 'Ask about your pet…'}
             className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
           />
+          {editingIndex != null && (
+            <button
+              onClick={() => {
+                setEditingIndex(null);
+                setInput('');
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 px-1"
+              title="Cancel edit"
+            >
+              ✕
+            </button>
+          )}
           <button
-            onClick={() => sendMessage()}
+            onClick={() =>
+              editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
+            }
             disabled={loading || !input.trim()}
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
           >
