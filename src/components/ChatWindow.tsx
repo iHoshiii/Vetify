@@ -15,6 +15,16 @@ const SUGGESTIONS = [
   'My bird stopped eating, should I be worried?',
 ];
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
+    .replace(/\*(.+?)\*/g, '$1') // italic
+    .replace(/^#{1,6}\s+/gm, '') // headers
+    .replace(/^[\*\-]\s+/gm, '') // bullet points
+    .replace(/^\d+\.\s+/gm, '') // numbered lists
+    .replace(/`(.+?)`/g, '$1') // inline code
+    .trim();
+}
 export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -45,7 +55,7 @@ export default function ChatWindow() {
         body: JSON.stringify({ message: content, session_id: sessionId }),
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: stripMarkdown(data.reply) }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -112,7 +122,7 @@ export default function ChatWindow() {
                       : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                   }`}
                 >
-                  {m.content}
+                  <p className="whitespace-pre-wrap">{m.content}</p>
                 </div>
                 {m.role === 'user' && (
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-xs font-bold mt-1">

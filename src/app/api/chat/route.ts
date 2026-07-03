@@ -14,7 +14,9 @@ const SYSTEM_PROMPT =
   '3. ESCALATE WHEN NEEDED: If the situation sounds serious or complex (severe symptoms, emergencies, unusual behavior, possible poisoning, difficulty breathing, seizures, etc.), ' +
   'do NOT attempt to diagnose. Clearly tell the user this is beyond what you can safely assess and they must contact a licensed veterinarian immediately.\n' +
   '4. FUTURE FEATURE: In the future, you will be able to recommend the nearest verified vet clinic from our database. For now, advise users to search for a local vet if urgent.\n' +
-  '5. Always be warm, calm, and empathetic — pet owners are often worried. Keep responses concise and easy to understand.';
+  '5. Always be warm, calm, and empathetic — pet owners are often worried. Keep responses concise and easy to understand.\n' +
+  '6. FORMATTING: Write in plain conversational paragraphs only. Do NOT use markdown, bullet points, numbered lists, bold (**), italics (*), headers, or any special formatting. ' +
+  'Use natural line breaks between thoughts instead. Write like a caring vet speaking directly to the owner.';
 
 // GoogleGenAI reads GEMINI_API_KEY from the environment
 const geminiClient = new GoogleGenAI({});
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.7,
-        maxOutputTokens: 512,
+        maxOutputTokens: 2048,
       },
     });
 
