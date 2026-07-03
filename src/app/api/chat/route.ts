@@ -13,10 +13,8 @@ const geminiClient = new GoogleGenAI({});
 
 // Wrap with LangSmith tracing
 const client = wrappers.wrapSDK(geminiClient, {
-  tracing_extra: {
-    tags: ['gemini', 'vetify', 'triage'],
-    metadata: { integration: 'google-genai' },
-  },
+  tags: ['gemini', 'vetify', 'triage'],
+  metadata: { integration: 'google-genai' },
 });
 
 export async function POST(req: NextRequest) {
@@ -37,7 +35,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const response = await client.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.5-flash',
       contents,
       config: {
         systemInstruction: SYSTEM_PROMPT,
