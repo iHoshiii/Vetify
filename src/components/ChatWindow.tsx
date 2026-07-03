@@ -79,7 +79,7 @@ export default function ChatWindow() {
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-lg shadow-teal-500/20">
@@ -116,7 +116,7 @@ export default function ChatWindow() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                  className={`max-w-[65%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                     m.role === 'user'
                       ? 'bg-teal-600 text-white rounded-tr-sm'
                       : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
@@ -160,8 +160,8 @@ export default function ChatWindow() {
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-4 py-3">
-        <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-3">
+        <div className="mx-auto max-w-3xl flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
           <textarea
             ref={inputRef}
             rows={1}
