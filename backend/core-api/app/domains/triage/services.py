@@ -1,23 +1,17 @@
-from app.infra.ai_clients import get_groq_client
+from app.infra.langchain_client import get_triage_chain
 
 
-async def run_triage(message: str) -> str:
-    """Send user message through the LangChain triage pipeline and return a reply."""
-    client = get_groq_client()
+async def run_triage(message: str, session_id: str = "default", history: list[dict] | None = None) -> str:
+    """Run the triage LangChain chain and return the assistant reply.
 
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are Vetify, an AI veterinary assistant. "
-                    "Provide helpful, empathetic, and accurate pet health guidance. "
-                    "Always recommend a real vet for serious concerns."
-                ),
-            },
-            {"role": "user", "content": message},
-        ],
+    `session_id` scopes the conversation memory per user.
+    `history` is accepted for API compatibility but memory is managed by LangChain internally.
+    """
+    chain = get_triage_chain()
+
+    response = await chain.ainvoke(
+        {"input": message},
+        config={"configurable": {"session_id": session_id}},
     )
 
-    return response.choices[0].message.content or "I could not generate a response."
+    return response.content or "I could not generate a response."
