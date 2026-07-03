@@ -1,8 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import type { Message } from '@/lib/chat-storage';
+import { useSession } from 'next-auth/react';
 
 const SUGGESTIONS = [
   'My dog is scratching a lot, what could it be?',
@@ -11,30 +13,27 @@ const SUGGESTIONS = [
   'My bird stopped eating, should I be worried?',
 ];
 
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[\*\-]\s+/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/`(.+?)`/g, '$1')
-    .trim();
-}
-
 interface Props {
   messages: Message[];
   onMessagesChange: (messages: Message[]) => void;
 }
 
 export default function ChatWindow({ messages, onMessagesChange }: Props) {
+  const MODELS = [
+    { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
+    { label: 'Gemini 2.5 Flash', value: 'gemini-2.5-flash' },
+    { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite' },
+  ];
+
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [model, setModel] = useState(MODELS[0].value);
   const { data: session } = useSession();
   const sessionId = (session?.user as any)?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,13 +47,15 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     if (!content || loading) return;
 
     const userMessage: Message = { role: 'user', content };
-    // If editing, slice off the old user message + its AI reply
     const base = replaceFromIndex != null ? messages.slice(0, replaceFromIndex) : messages;
     const updated = [...base, userMessage];
     onMessagesChange(updated);
     setInput('');
     setEditingIndex(null);
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat', {
@@ -64,16 +65,25 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
           message: content,
           session_id: sessionId,
           history: base.map((m) => ({ role: m.role, content: m.content })),
+          model,
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
-      onMessagesChange([...updated, { role: 'assistant', content: stripMarkdown(data.reply) }]);
-    } catch {
-      onMessagesChange([
-        ...updated,
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
-      ]);
+      onMessagesChange([...updated, { role: 'assistant', content: data.reply }]);
+    } catch (err) {
+      if ((err as any)?.name === 'AbortError') {
+        // Restore the input with the cancelled message and roll back
+        onMessagesChange(base);
+        setInput(content);
+      } else {
+        onMessagesChange([
+          ...updated,
+          { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+        ]);
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
       inputRef.current?.focus();
     }
@@ -95,6 +105,19 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
       setInput('');
     }
   };
+
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setModelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const isEmpty = messages.length === 0;
 
@@ -149,7 +172,24 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
                         : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    <ReactMarkdown
+                      components={{
+                        h3: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="font-semibold text-slate-800 mt-2 mb-1">{children}</p>
+                        ),
+                        ul: ({ children }: { children?: React.ReactNode }) => (
+                          <ul className="list-disc list-inside space-y-1">{children}</ul>
+                        ),
+                        li: ({ children }: { children?: React.ReactNode }) => (
+                          <li className="text-sm">{children}</li>
+                        ),
+                        p: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="whitespace-pre-wrap">{children}</p>
+                        ),
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
                   </div>
                   {m.role === 'user' && i === lastUserIndex && !loading && (
                     <button
@@ -205,59 +245,105 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
         )}
       </div>
 
-      {/* Disclaimer */}
-      {!isEmpty && (
-        <p className="text-center text-[11px] text-slate-400 px-4 pb-1">
+      {/* Input */}
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-2">
+        <div className="flex items-center gap-2">
+          {/* Chatbox */}
+          <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={editingIndex != null ? 'Edit your message…' : 'Ask about your pet…'}
+              className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
+            />
+            {editingIndex != null && (
+              <button
+                onClick={() => {
+                  setEditingIndex(null);
+                  setInput('');
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600 px-1"
+                title="Cancel edit"
+              >
+                ✕
+              </button>
+            )}
+            {loading ? (
+              <button
+                onClick={() => abortRef.current?.abort()}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition-all hover:bg-red-600"
+                title="Cancel"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() =>
+                  editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
+                }
+                disabled={!input.trim()}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4 rotate-90"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {/* Model selector */}
+          <div ref={modelRef} className="relative flex-shrink-0">
+            <button
+              onClick={() => setModelOpen((o) => !o)}
+              disabled={loading}
+              className="text-[11px] text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none hover:border-teal-400 focus:border-teal-400 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {MODELS.find((m) => m.value === model)?.label}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`w-3 h-3 transition-transform ${modelOpen ? 'rotate-180' : 'rotate-0'}`}
+              >
+                <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {modelOpen && (
+              <div className="absolute bottom-full right-0 mb-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-10">
+                {MODELS.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => {
+                      setModel(m.value);
+                      setModelOpen(false);
+                    }}
+                    className={`w-full text-left text-[11px] px-4 py-2 whitespace-nowrap transition-colors ${
+                      m.value === model
+                        ? 'bg-teal-50 text-teal-700 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-1 text-center">
           Vetify AI provides general guidance only — always consult a licensed vet for medical
           decisions.
-        </p>
-      )}
-
-      {/* Input */}
-      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-3">
-        <div className="mx-auto max-w-3xl flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={editingIndex != null ? 'Edit your message…' : 'Ask about your pet…'}
-            className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
-          />
-          {editingIndex != null && (
-            <button
-              onClick={() => {
-                setEditingIndex(null);
-                setInput('');
-              }}
-              className="text-xs text-slate-400 hover:text-slate-600 px-1"
-              title="Cancel edit"
-            >
-              ✕
-            </button>
-          )}
-          <button
-            onClick={() =>
-              editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
-            }
-            disabled={loading || !input.trim()}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-4 w-4 rotate-90"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-        <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-          Press <kbd className="font-mono">Enter</kbd> to send ·{' '}
-          <kbd className="font-mono">Shift+Enter</kbd> for new line
         </p>
       </div>
     </div>
