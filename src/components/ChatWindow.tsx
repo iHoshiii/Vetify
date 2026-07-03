@@ -237,17 +237,9 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
         )}
       </div>
 
-      {/* Disclaimer */}
-      {!isEmpty && (
-        <p className="text-center text-[11px] text-slate-400 px-4 pb-1">
-          Vetify AI provides general guidance only — always consult a licensed vet for medical
-          decisions.
-        </p>
-      )}
-
       {/* Input */}
-      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-3">
-        <div className="mx-auto max-w-3xl flex items-center gap-2">
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-2">
+        <div className="flex items-center gap-2">
           {/* Chatbox */}
           <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
             <textarea
@@ -314,7 +306,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className={`w-3 h-3 transition-transform ${modelOpen ? 'rotate-0' : 'rotate-180'}`}
+                className={`w-3 h-3 transition-transform ${modelOpen ? 'rotate-180' : 'rotate-0'}`}
               >
                 <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -341,9 +333,9 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
             )}
           </div>
         </div>
-        <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-          Press <kbd className="font-mono">Enter</kbd> to send ·{' '}
-          <kbd className="font-mono">Shift+Enter</kbd> for new line
+        <p className="text-[11px] text-slate-400 mt-1 text-center">
+          Vetify AI provides general guidance only — always consult a licensed vet for medical
+          decisions.
         </p>
       </div>
     </div>
