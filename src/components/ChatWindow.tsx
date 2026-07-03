@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import type { Message } from '@/lib/chat-storage';
 import { useSession } from 'next-auth/react';
-import { useEffect, useRef, useState } from 'react';
 
 const SUGGESTIONS = [
   'My dog is scratching a lot, what could it be?',
@@ -10,17 +12,6 @@ const SUGGESTIONS = [
   'How often should I deworm my pet?',
   'My bird stopped eating, should I be worried?',
 ];
-
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^[\*\-]\s+/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/`(.+?)`/g, '$1')
-    .trim();
-}
 
 interface Props {
   messages: Message[];
@@ -79,7 +70,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
         signal: controller.signal,
       });
       const data = await res.json();
-      onMessagesChange([...updated, { role: 'assistant', content: stripMarkdown(data.reply) }]);
+      onMessagesChange([...updated, { role: 'assistant', content: data.reply }]);
     } catch (err) {
       if ((err as any)?.name === 'AbortError') {
         // Restore the input with the cancelled message and roll back
@@ -181,7 +172,24 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
                         : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    <ReactMarkdown
+                      components={{
+                        h3: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="font-semibold text-slate-800 mt-2 mb-1">{children}</p>
+                        ),
+                        ul: ({ children }: { children?: React.ReactNode }) => (
+                          <ul className="list-disc list-inside space-y-1">{children}</ul>
+                        ),
+                        li: ({ children }: { children?: React.ReactNode }) => (
+                          <li className="text-sm">{children}</li>
+                        ),
+                        p: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="whitespace-pre-wrap">{children}</p>
+                        ),
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
                   </div>
                   {m.role === 'user' && i === lastUserIndex && !loading && (
                     <button
