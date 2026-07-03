@@ -1,12 +1,10 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
+import type { Message } from '@/lib/chat-storage';
+import { useSession } from 'next-auth/react';
 
 const SUGGESTIONS = [
   'My dog is scratching a lot, what could it be?',
@@ -15,71 +13,118 @@ const SUGGESTIONS = [
   'My bird stopped eating, should I be worried?',
 ];
 
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '$1') // bold
-    .replace(/\*(.+?)\*/g, '$1') // italic
-    .replace(/^#{1,6}\s+/gm, '') // headers
-    .replace(/^[\*\-]\s+/gm, '') // bullet points
-    .replace(/^\d+\.\s+/gm, '') // numbered lists
-    .replace(/`(.+?)`/g, '$1') // inline code
-    .trim();
+interface Props {
+  messages: Message[];
+  onMessagesChange: (messages: Message[]) => void;
 }
-export default function ChatWindow() {
-  const [messages, setMessages] = useState<Message[]>([]);
+
+export default function ChatWindow({ messages, onMessagesChange }: Props) {
+  const MODELS = [
+    { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
+    { label: 'Gemini 2.5 Flash', value: 'gemini-2.5-flash' },
+    { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite' },
+  ];
+
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [model, setModel] = useState(MODELS[0].value);
   const { data: session } = useSession();
   const sessionId = (session?.user as any)?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const sendMessage = async (text?: string) => {
+  // Index of the last user message
+  const lastUserIndex = messages.reduce((last, m, i) => (m.role === 'user' ? i : last), -1);
+
+  const sendMessage = async (text?: string, replaceFromIndex?: number) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
     const userMessage: Message = { role: 'user', content };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const base = replaceFromIndex != null ? messages.slice(0, replaceFromIndex) : messages;
+    const updated = [...base, userMessage];
+    onMessagesChange(updated);
     setInput('');
+    setEditingIndex(null);
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, session_id: sessionId }),
+        body: JSON.stringify({
+          message: content,
+          session_id: sessionId,
+          history: base.map((m) => ({ role: m.role, content: m.content })),
+          model,
+        }),
+        signal: controller.signal,
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: stripMarkdown(data.reply) }]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
-      ]);
+      onMessagesChange([...updated, { role: 'assistant', content: data.reply }]);
+    } catch (err) {
+      if ((err as any)?.name === 'AbortError') {
+        // Restore the input with the cancelled message and roll back
+        onMessagesChange(base);
+        setInput(content);
+      } else {
+        onMessagesChange([
+          ...updated,
+          { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+        ]);
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
       inputRef.current?.focus();
     }
   };
 
+  const startEdit = (index: number) => {
+    setEditingIndex(index);
+    setInput(messages[index].content);
+    inputRef.current?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      editingIndex != null ? sendMessage(input, editingIndex) : sendMessage();
+    }
+    if (e.key === 'Escape' && editingIndex != null) {
+      setEditingIndex(null);
+      setInput('');
     }
   };
+
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setModelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const isEmpty = messages.length === 0;
 
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-lg shadow-teal-500/20">
@@ -116,13 +161,62 @@ export default function ChatWindow() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                    m.role === 'user'
-                      ? 'bg-teal-600 text-white rounded-tr-sm'
-                      : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                  className={`flex flex-col items-end gap-1 max-w-[65%] ${
+                    m.role === 'user' ? 'items-end' : 'items-start'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{m.content}</p>
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                      m.role === 'user'
+                        ? 'bg-teal-600 text-white rounded-tr-sm'
+                        : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'
+                    }`}
+                  >
+                    <ReactMarkdown
+                      components={{
+                        h3: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="font-semibold text-slate-800 mt-2 mb-1">{children}</p>
+                        ),
+                        ul: ({ children }: { children?: React.ReactNode }) => (
+                          <ul className="list-disc list-inside space-y-1">{children}</ul>
+                        ),
+                        li: ({ children }: { children?: React.ReactNode }) => (
+                          <li className="text-sm">{children}</li>
+                        ),
+                        p: ({ children }: { children?: React.ReactNode }) => (
+                          <p className="whitespace-pre-wrap">{children}</p>
+                        ),
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                  {m.role === 'user' && i === lastUserIndex && !loading && (
+                    <button
+                      onClick={() => startEdit(i)}
+                      className="text-[11px] text-slate-400 hover:text-teal-600 flex items-center gap-1 transition-colors"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-3 h-3"
+                      >
+                        <path
+                          d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Edit
+                    </button>
+                  )}
                 </div>
                 {m.role === 'user' && (
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 text-xs font-bold mt-1">
@@ -151,45 +245,105 @@ export default function ChatWindow() {
         )}
       </div>
 
-      {/* Disclaimer */}
-      {!isEmpty && (
-        <p className="text-center text-[11px] text-slate-400 px-4 pb-1">
+      {/* Input */}
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-2">
+        <div className="flex items-center gap-2">
+          {/* Chatbox */}
+          <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={editingIndex != null ? 'Edit your message…' : 'Ask about your pet…'}
+              className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
+            />
+            {editingIndex != null && (
+              <button
+                onClick={() => {
+                  setEditingIndex(null);
+                  setInput('');
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600 px-1"
+                title="Cancel edit"
+              >
+                ✕
+              </button>
+            )}
+            {loading ? (
+              <button
+                onClick={() => abortRef.current?.abort()}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition-all hover:bg-red-600"
+                title="Cancel"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={() =>
+                  editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
+                }
+                disabled={!input.trim()}
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4 rotate-90"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {/* Model selector */}
+          <div ref={modelRef} className="relative flex-shrink-0">
+            <button
+              onClick={() => setModelOpen((o) => !o)}
+              disabled={loading}
+              className="text-[11px] text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none hover:border-teal-400 focus:border-teal-400 transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+            >
+              {MODELS.find((m) => m.value === model)?.label}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className={`w-3 h-3 transition-transform ${modelOpen ? 'rotate-180' : 'rotate-0'}`}
+              >
+                <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {modelOpen && (
+              <div className="absolute bottom-full right-0 mb-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-10">
+                {MODELS.map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => {
+                      setModel(m.value);
+                      setModelOpen(false);
+                    }}
+                    className={`w-full text-left text-[11px] px-4 py-2 whitespace-nowrap transition-colors ${
+                      m.value === model
+                        ? 'bg-teal-50 text-teal-700 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-1 text-center">
           Vetify AI provides general guidance only — always consult a licensed vet for medical
           decisions.
-        </p>
-      )}
-
-      {/* Input */}
-      <div className="flex-shrink-0 border-t border-slate-200 bg-white px-4 py-3">
-        <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your pet…"
-            className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={loading || !input.trim()}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-4 w-4 rotate-90"
-            >
-              <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-        <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-          Press <kbd className="font-mono">Enter</kbd> to send ·{' '}
-          <kbd className="font-mono">Shift+Enter</kbd> for new line
         </p>
       </div>
     </div>
