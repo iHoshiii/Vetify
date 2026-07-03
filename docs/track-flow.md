@@ -1,21 +1,21 @@
 [] create a landing page / design
 [] home
 [] blogs
-[] reservation / appoinment
-[] anatomy
+[] reservation / appointment
+[x] anatomy
 [] map
 [] meal planner
 
 [] login/signup
 [] create the "map" feature
-[] anatomy feature
+[x] anatomy feature - july 01, 2026 (done)
 [] hire a professional
 [] meal planner
-[] create the AI chatbot
+[] create the AI chatbot - july 2, 2026 (target)
 
-[] about us content
-[] contact us details
-[] how to be a professional details
+[x] about us content
+[x] contact us details
+[x] how to be a professional details
 [x] services details
 
 home page:
