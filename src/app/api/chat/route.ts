@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { NextRequest, NextResponse } from 'next/server';
 import * as wrappers from 'langsmith/wrappers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const SYSTEM_PROMPT =
   'You are Vetify, a knowledgeable and empathetic AI veterinary assistant. ' +
@@ -45,7 +45,18 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ reply: response.text ?? 'I could not generate a response.' });
-  } catch {
-    return NextResponse.json({ reply: 'Something went wrong. Please try again.' }, { status: 500 });
+  } catch (err: any) {
+    const msg = err?.message ?? '';
+    console.error('[chat/route] error:', err);
+    if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+      return NextResponse.json(
+        { reply: '⏳ The AI is temporarily rate-limited. Please wait a moment and try again.' },
+        { status: 429 }
+      );
+    }
+    return NextResponse.json(
+      { reply: `Error: ${msg || 'Something went wrong. Please try again.'}` },
+      { status: 500 }
+    );
   }
 }
