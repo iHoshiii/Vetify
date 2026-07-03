@@ -35,6 +35,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const sessionId = (session?.user as any)?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,13 +49,15 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     if (!content || loading) return;
 
     const userMessage: Message = { role: 'user', content };
-    // If editing, slice off the old user message + its AI reply
     const base = replaceFromIndex != null ? messages.slice(0, replaceFromIndex) : messages;
     const updated = [...base, userMessage];
     onMessagesChange(updated);
     setInput('');
     setEditingIndex(null);
     setLoading(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat', {
@@ -65,15 +68,23 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
           session_id: sessionId,
           history: base.map((m) => ({ role: m.role, content: m.content })),
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
       onMessagesChange([...updated, { role: 'assistant', content: stripMarkdown(data.reply) }]);
-    } catch {
-      onMessagesChange([
-        ...updated,
-        { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
-      ]);
+    } catch (err) {
+      if ((err as any)?.name === 'AbortError') {
+        // Restore the input with the cancelled message and roll back
+        onMessagesChange(base);
+        setInput(content);
+      } else {
+        onMessagesChange([
+          ...updated,
+          { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' },
+        ]);
+      }
     } finally {
+      abortRef.current = null;
       setLoading(false);
       inputRef.current?.focus();
     }
@@ -237,23 +248,35 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
               ✕
             </button>
           )}
-          <button
-            onClick={() =>
-              editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
-            }
-            disabled={loading || !input.trim()}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="h-4 w-4 rotate-90"
+          {loading ? (
+            <button
+              onClick={() => abortRef.current?.abort()}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500 text-white transition-all hover:bg-red-600"
+              title="Cancel"
             >
-              <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() =>
+                editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
+              }
+              disabled={!input.trim()}
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4 rotate-90"
+              >
+                <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
         </div>
         <p className="text-[11px] text-slate-400 mt-1.5 text-center">
           Press <kbd className="font-mono">Enter</kbd> to send ·{' '}
