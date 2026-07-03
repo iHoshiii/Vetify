@@ -1,5 +1,6 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Message {
@@ -18,6 +19,8 @@ export default function ChatWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const sessionId = (session?.user as any)?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,10 +42,7 @@ export default function ChatWindow() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: content,
-          history: messages.map((m) => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify({ message: content, session_id: sessionId }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);

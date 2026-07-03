@@ -7,7 +7,6 @@ router = APIRouter(prefix="/triage", tags=["Triage"])
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(body: ChatRequest) -> ChatResponse:
-    """Receive a user message with optional history and return an AI reply."""
-    history = [{"role": m.role, "content": m.content} for m in body.history]
-    reply = await run_triage(body.message, history=history)
+    """Receive a user message and return an AI reply via LangChain."""
+    reply = await run_triage(body.message, session_id=body.session_id)
     return ChatResponse(reply=reply)

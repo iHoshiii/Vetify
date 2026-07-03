@@ -8,6 +8,7 @@ class HistoryMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: str = "default"
     history: list[HistoryMessage] = []
 
 
