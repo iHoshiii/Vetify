@@ -1,68 +1,90 @@
-"""Simple LangChain client factories and helpers.
+"""LangChain chain factory for Vetify.
 
-This file provides lightweight, lazy-loading factories so the rest of the
-backend can obtain model clients without importing heavy SDKs at module
-import time. It falls back to a small dict when the provider package
-isn't installed (so CI / editor won't fail).
+Current: conversational triage chain backed by Gemini.
+Future:  swap `_build_chain` to inject a retriever for RAG
+         (professional profiles, vet knowledge base, etc.)
 """
-from typing import Any, Dict
-import os
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import BaseMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import BaseModel
+
+from app.core.config import settings
+
+# ---------------------------------------------------------------------------
+# In-memory session store (replace with MongoDB-backed store when DB is ready)
+# ---------------------------------------------------------------------------
+_session_store: dict[str, "InMemoryHistory"] = {}
 
 
-def _env(key: str) -> str:
-    val = os.getenv(key)
-    if not val:
-        raise RuntimeError(f"Environment variable {key} is not set")
-    return val
+class InMemoryHistory(BaseChatMessageHistory, BaseModel):
+    messages: list[BaseMessage] = []
+
+    def add_messages(self, messages: list[BaseMessage]) -> None:
+        self.messages.extend(messages)
+
+    def clear(self) -> None:
+        self.messages = []
 
 
-def get_groq_client() -> Any:
-    """Return a Groq client instance or a lightweight dict fallback.
+def _get_session_history(session_id: str) -> InMemoryHistory:
+    if session_id not in _session_store:
+        _session_store[session_id] = InMemoryHistory()
+    return _session_store[session_id]
 
-    Expects `GROQ_API_KEY` in env. Uses lazy import so tests/editors don't
-    require the Groq package to be installed.
+
+# ---------------------------------------------------------------------------
+# Chain factory
+# ---------------------------------------------------------------------------
+SYSTEM_PROMPT = (
+    "You are Vetify, a knowledgeable and empathetic AI veterinary assistant. "
+    "Help pet owners with questions about their pet's health, symptoms, nutrition, and care. "
+    "Be concise, warm, and practical. "
+    "Always remind users to consult a licensed veterinarian for diagnosis or emergencies."
+)
+
+
+def _build_chain() -> RunnableWithMessageHistory:
+    """Build and return the triage LangChain chain.
+
+    Structure (RAG slot is commented — uncomment and pass a retriever when ready):
+        prompt | [retriever |] llm
     """
-    key = _env("GROQ_API_KEY")
-    try:
-        # langchain-groq provides adapters; import lazily
-        from langchain_groq import GroqClient  # type: ignore
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-flash",
+        google_api_key=settings.GEMINI_API_KEY,
+        temperature=0.7,
+        max_output_tokens=512,
+    )
 
-        return GroqClient(api_key=key)
-    except Exception:
-        return {"provider": "groq", "api_key": key}
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", SYSTEM_PROMPT),
+        # --- RAG slot ---
+        # When professionals DB is ready, inject retrieved context here:
+        # ("system", "Relevant professionals near the user:\n{context}"),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{input}"),
+    ])
+
+    chain = prompt | llm
+
+    return RunnableWithMessageHistory(
+        chain,
+        _get_session_history,
+        input_messages_key="input",
+        history_messages_key="history",
+    )
 
 
-def get_gemini_client() -> Any:
-    """Return a Gemini/Google GenAI client instance or a fallback dict.
-
-    Expects `GEMINI_API_KEY` in env.
-    """
-    key = _env("GEMINI_API_KEY")
-    try:
-        from langchain_google_genai import GoogleGenAI  # type: ignore
-
-        return GoogleGenAI(api_key=key)
-    except Exception:
-        return {"provider": "gemini", "api_key": key}
+# Singleton chain instance
+_chain: RunnableWithMessageHistory | None = None
 
 
-def run_prompt(client: Any, prompt: str, **kwargs) -> Dict[str, Any]:
-    """Try to run a simple prompt against common client shapes.
-
-    This helper normalizes a few common client APIs into a consistent dict
-    response for quick integration in domain services.
-    """
-    # Known adapter: langchain-like objects with an `run` method
-    if hasattr(client, "run"):
-        try:
-            result = client.run(prompt, **kwargs)
-            return {"text": result}
-        except Exception as e:
-            return {"error": str(e)}
-
-    # Fallback: if we returned a dict earlier
-    if isinstance(client, dict):
-        return {"text": f"(mock response from {client.get('provider')}) {prompt}"}
-
-    # Unknown client shape
-    return {"error": "Unsupported client type"}
+def get_triage_chain() -> RunnableWithMessageHistory:
+    global _chain
+    if _chain is None:
+        _chain = _build_chain()
+    return _chain
