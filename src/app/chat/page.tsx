@@ -14,7 +14,6 @@ export default function ChatPage() {
             </div>
             <div>
               <h1 className="text-sm font-bold text-slate-900">Vetify AI Assistant</h1>
-              <p className="text-[11px] text-slate-400">Powered by Gemini 2.5 Flash</p>
             </div>
           </div>
           <span className="flex items-center gap-1.5 text-xs font-medium text-teal-600">
