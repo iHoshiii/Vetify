@@ -5,8 +5,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "Vetify Core API"
     DEBUG: bool = False
 
-    MONGODB_URI: str
-    MONGODB_DB_NAME: str = "vetify"
+    DATABASE_URL: str
+    DIRECT_URL: str = ""
 
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
