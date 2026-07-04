@@ -7,20 +7,22 @@ from app.core.security import configure_cors
 from app.domains.locator.router import router as locator_router
 from app.domains.nutrition.router import router as nutrition_router
 from app.domains.triage.router import router as triage_router
-from app.infra.database import get_mongo_client
+from app.infra.database import create_pool, close_pool
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and graceful shutdown."""
-    # Startup: verify database connectivity
-    client = get_mongo_client()
-    await client.admin.command("ping")
-    print(f"✓ Connected to MongoDB: {settings.MONGODB_DB_NAME}")
+    # Startup: create Supabase PostgreSQL connection pool
+    pool = await create_pool()
+    conn = await pool.acquire()
+    await conn.execute("SELECT 1")
+    await pool.release(conn)
+    print(f"✓ Connected to Supabase PostgreSQL ({settings.APP_NAME})")
     yield
     # Shutdown: release all connections
-    client.close()
-    print("✓ MongoDB connection closed.")
+    await close_pool()
+    print("✓ PostgreSQL connection pool closed.")
 
 
 app = FastAPI(
