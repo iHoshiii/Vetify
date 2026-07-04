@@ -1,9 +1,11 @@
 name: CI
 
 on:
-  push:
-    branches-ignore: ['**']  # TODO: re-enable when dev is done
-    # branches: [main]
+  workflow_dispatch: # disabled: re-enable push triggers when ready
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
 
 jobs:
   backend-tests:
