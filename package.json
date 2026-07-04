@@ -11,17 +11,21 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
+    "@prisma/client": "^7.8.0",
+    "@supabase/supabase-js": "^2.50.0",
     "@tsparticles/all": "^4.2.1",
     "@tsparticles/react": "^4.2.1",
     "@tsparticles/slim": "^4.2.1",
     "langsmith": "^0.7.15",
     "lucide-react": "^1.21.0",
-    "mongodb": "^7.4.0",
-    "mongoose": "^9.7.3",
     "next": "14.2.26",
     "next-auth": "^4.24.14",
     "react": "18.3.1",
@@ -30,7 +34,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "@prisma/client": "^7.8.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
