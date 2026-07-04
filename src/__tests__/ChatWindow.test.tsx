@@ -4,14 +4,19 @@ import ChatWindow from '../components/ChatWindow';
 
 vi.stubGlobal('fetch', vi.fn());
 
+const defaultProps = {
+  messages: [],
+  onMessagesChange: vi.fn(),
+};
+
 describe('ChatWindow', () => {
   it('renders the input field', () => {
-    render(<ChatWindow />);
+    render(<ChatWindow {...defaultProps} />);
     expect(screen.getByPlaceholderText(/ask about your pet/i)).toBeDefined();
   });
 
   it('renders the send button', () => {
-    render(<ChatWindow />);
+    render(<ChatWindow {...defaultProps} />);
     expect(screen.getByRole('button', { name: /send/i })).toBeDefined();
   });
 
@@ -21,7 +26,7 @@ describe('ChatWindow', () => {
       json: async () => ({ reply: 'Hello!' }),
     });
 
-    render(<ChatWindow />);
+    render(<ChatWindow {...defaultProps} />);
     const input = screen.getByPlaceholderText(/ask about your pet/i);
     fireEvent.change(input, { target: { value: 'Is my dog healthy?' } });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
