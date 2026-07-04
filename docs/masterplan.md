@@ -1,6 +1,6 @@
 🗺️ The Vetify Masterplan Overview
 Phase | Focus Area | Primary Output -- | -- | --
-Phase 1 | Foundation & Docker | A running local monorepo with MongoDB.
+Phase 1 | Foundation & Docker | A running local monorepo with Supabase PostgreSQL.
 Phase 2 | The Prisma Bridge | schema.prisma generating TS & Python types.
 Phase 3 | AI & Backend Logic | FastAPI domains (Triage, Locator, Nutrition). Phase 4 | Next.js Frontend | Interactive UI, Leaflet Map, and AI Chat Stream. Phase 5 | Playwright Testing | Automated E2E tests validating the full system. Phase 6 | Deployment | Multi-stage Dockerfiles pushed to the cloud.
 
@@ -11,7 +11,7 @@ Step 1.1: Initialize the root directory (vetify/). Create your root package.json
 
 Step 1.2: Scaffold your two applications. Run the Next.js setup inside apps/web/ and initialize a standard Python virtual environment inside apps/core-api/.
 
-Step 1.3: Create the root docker-compose.yml file. Configure a local MongoDB instance and a Mongo-Express viewer so you can easily inspect your database through your browser.
+Step 1.3: Create the root docker-compose.yml file. Configure the Next.js frontend and FastAPI backend services. Use Supabase as your hosted PostgreSQL database (no local DB container needed).
 
 Step 1.4: Run docker-compose up -d. Verify that your local database is spinning up successfully in isolation.
 
@@ -22,7 +22,7 @@ Step 2.1: Inside apps/core-api/, install prisma and prisma-client-py. Initialize
 
 Step 2.2: Write your schema models (User, Pet, Clinic, Appointment). Ensure your generators are set up to output the Python client locally and the TypeScript definitions to ../../web/src/types/prisma.
 
-Step 2.3: Run prisma db push to sync your models with your running local Docker MongoDB instance.
+Step 2.3: Run `prisma migrate dev` to apply your models to the Supabase PostgreSQL instance.
 
 Step 2.4: Run prisma generate. Verify that apps/web/src/types/ now contains your strict TypeScript definitions, confirming the frontend and backend are perfectly synced.
 
@@ -33,7 +33,7 @@ Step 3.1 (Infrastructure): Build apps/core-api/app/infra/database.py to initiali
 
 Step 3.2 (Nutrition): Build domains/nutrition/services.py. Implement the standard metabolic formula (RER = 70 \* (weight_in_kg)0.75) and expose it via a FastAPI router.
 
-Step 3.3 (Locator): Build domains/locator/services.py. Write a script to seed test clinics with GeoJSON coordinate data into your database, and create the MongoDB 2dsphere index required for spatial math.
+Step 3.3 (Locator): Build domains/locator/services.py. Write a script to seed test clinics with coordinate data into your database, and use PostGIS `ST_DWithin` for spatial queries.
 
 Step 3.4 (Triage/AI): Build domains/triage/services.py. Initialize your LLM provider (Groq/OpenRouter) using LangChain. Build a custom LangChain tool that allows the AI to query your locator service.
 
@@ -68,6 +68,6 @@ Step 6.2: Write a multi-stage Dockerfile inside apps/core-api/ optimized for Pyt
 
 Step 6.3: Connect your GitHub repository to Vercel to host the Next.js frontend application (leveraging their CDN).
 
-Step 6.4: Deploy your Python backend container to a persistent hosting provider (e.g., Render, Railway, or AWS) and connect it to a production MongoDB Atlas cluster.
+Step 6.4: Deploy your Python backend container to a persistent hosting provider (e.g., Render, Railway, or AWS) and connect it to your production Supabase PostgreSQL project.
 
 Step 6.5: Add your production API keys, database URLs, and environment variables to both platforms. Verify the live application!
