@@ -19,6 +19,10 @@ interface VetMapProps {
   showOverlay?: boolean;
   /** If false, disables all map interactions (zooming, dragging, clicking pins) */
   interactive?: boolean;
+  /** If false, the map will not fetch any clinic data (useful for static preview maps) */
+  fetchData?: boolean;
+  /** Callback fired when the map (and data if fetched) is fully loaded */
+  onReady?: () => void;
 }
 
 const OVERPASS_QUERY = `
@@ -213,6 +217,8 @@ export default function VetMap({
   className = '',
   showOverlay = true,
   interactive = true,
+  fetchData = true,
+  onReady,
 }: VetMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<import('leaflet').Map | null>(null);
@@ -226,6 +232,7 @@ export default function VetMap({
 
     async function init() {
       const L = (await import('leaflet')).default;
+      await import('leaflet.markercluster');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -264,15 +271,48 @@ export default function VetMap({
       }).addTo(map);
 
       const icon = createMarkerIcon(L);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const markers = (L as any).markerClusterGroup({
+        chunkedLoading: true,
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+      });
+
+      if (!fetchData) {
+        if (!cancelled) {
+          setStatus('done');
+          onReady?.();
+        }
+        return;
+      }
 
       try {
-        const res = await fetch('https://overpass-api.de/api/interpreter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
-        });
-        if (!res.ok) throw new Error('Overpass fetch failed');
-        const data = await res.json();
+        const endpoints = [
+          'https://lz4.overpass-api.de/api/interpreter',
+          'https://overpass-api.de/api/interpreter',
+          'https://overpass.kumi.systems/api/interpreter',
+        ];
+
+        let data = null;
+        for (const endpoint of endpoints) {
+          if (cancelled) break;
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
+            });
+            if (res.ok) {
+              data = await res.json();
+              break; // Success!
+            }
+          } catch (e) {
+            console.warn(`Overpass fetch failed for ${endpoint}`, e);
+          }
+        }
+
+        if (!data) throw new Error('All Overpass API endpoints failed');
 
         if (cancelled) return;
 
@@ -308,7 +348,6 @@ export default function VetMap({
           const marker = L.marker([clinic.lat, clinic.lon], { icon });
 
           marker.bindTooltip(clinic.name, {
-            permanent: true,
             direction: 'top',
             offset: [0, -46],
             className: 'vet-label',
@@ -324,20 +363,33 @@ export default function VetMap({
             ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">🕐 ${clinic.opening_hours}</p>`
             : '';
 
+          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.lat},${clinic.lon}`;
+
           marker.bindPopup(
-            `<div style="font-family:system-ui,sans-serif;min-width:160px;">
+            `<div style="font-family:system-ui,sans-serif;min-width:180px;padding-bottom:4px;">
               <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${clinic.name}</p>
               ${addressHtml}${phoneHtml}${hoursHtml}
-              <p style="margin:8px 0 0;font-size:11px;color:#94a3b8;">🐾 Veterinary Clinic</p>
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+                <p style="margin:0;font-size:11px;color:#94a3b8;font-weight:600;">🐾 Vet Clinic</p>
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                  Open in Maps
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              </div>
             </div>`,
-            { maxWidth: 260 }
+            { maxWidth: 280 }
           );
 
-          marker.addTo(map);
+          markers.addLayer(marker);
         });
 
-        if (!cancelled) setStatus('done');
-      } catch {
+        map.addLayer(markers);
+
+        if (!cancelled) {
+          setStatus('done');
+          onReady?.();
+        }
+      } catch (e) {
         if (!cancelled) setStatus('error');
       }
     }
@@ -358,6 +410,16 @@ export default function VetMap({
       <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossOrigin=""
+      />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        crossOrigin=""
+      />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
         crossOrigin=""
       />
 
@@ -383,6 +445,14 @@ export default function VetMap({
           border: 1px solid #e2e8f0 !important;
         }
         .leaflet-popup-tip-container { display: none !important; }
+        
+        /* Custom Marker Cluster Styles */
+        .marker-cluster-small { background-color: rgba(191, 219, 254, 0.6) !important; }
+        .marker-cluster-small div { background-color: rgba(59, 130, 246, 0.8) !important; color: white; font-weight: bold; }
+        .marker-cluster-medium { background-color: rgba(147, 197, 253, 0.6) !important; }
+        .marker-cluster-medium div { background-color: rgba(37, 99, 235, 0.9) !important; color: white; font-weight: bold; }
+        .marker-cluster-large { background-color: rgba(96, 165, 250, 0.6) !important; }
+        .marker-cluster-large div { background-color: rgba(29, 78, 216, 0.9) !important; color: white; font-weight: bold; }
       `}</style>
 
       {/* ── Skeleton: shown while loading or on error. Sits above map. ── */}
@@ -400,7 +470,7 @@ export default function VetMap({
         style={{
           opacity: status === 'done' ? 1 : 0,
           transition: 'opacity 0.5s ease',
-          pointerEvents: status === 'done' ? (interactive ? 'auto' : 'none') : 'none',
+          pointerEvents: status === 'done' ? 'auto' : 'none',
         }}
       />
 
