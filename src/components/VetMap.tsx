@@ -17,20 +17,20 @@ interface VetMapProps {
   center?: [number, number];
   className?: string;
   showOverlay?: boolean;
+  /** If false, disables all map interactions (zooming, dragging, clicking pins) */
+  interactive?: boolean;
 }
 
-const OVERPASS_URL =
-  'https://overpass-api.de/api/interpreter?data=' +
-  encodeURIComponent(`
+const OVERPASS_QUERY = `
 [out:json][timeout:25];
 (
-  node["amenity"="veterinary"](15.5,120.6,17.0,121.5);
-  way["amenity"="veterinary"](15.5,120.6,17.0,121.5);
-  node["amenity"="animal_shelter"](15.5,120.6,17.0,121.5);
-  node["shop"="veterinary"](15.5,120.6,17.0,121.5);
+  node["amenity"="veterinary"](4.5,116.9,21.4,126.6);
+  way["amenity"="veterinary"](4.5,116.9,21.4,126.6);
+  node["amenity"="animal_shelter"](4.5,116.9,21.4,126.6);
+  node["shop"="veterinary"](4.5,116.9,21.4,126.6);
 );
 out center;
-`);
+`;
 
 function createMarkerIcon(L: typeof import('leaflet')) {
   return L.divIcon({
@@ -186,7 +186,7 @@ function MapSkeleton({ error }: { error?: boolean }) {
 
           <div>
             <p className="text-sm font-bold text-slate-800 leading-snug">Loading vet locations…</p>
-            <p className="text-xs text-slate-400 mt-1">Fetching clinics in Nueva Vizcaya</p>
+            <p className="text-xs text-slate-400 mt-1">Fetching clinics</p>
           </div>
 
           {/* Dot progress */}
@@ -211,6 +211,8 @@ export default function VetMap({
   zoom = 11,
   center = [16.32, 121.1],
   className = '',
+  showOverlay = true,
+  interactive = true,
 }: VetMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<import('leaflet').Map | null>(null);
@@ -238,8 +240,10 @@ export default function VetMap({
       const map = L.map(mapRef.current, {
         center,
         zoom,
-        zoomControl: true,
-        scrollWheelZoom: true,
+        zoomControl: interactive,
+        scrollWheelZoom: interactive,
+        doubleClickZoom: interactive,
+        dragging: interactive,
       });
 
       leafletMap.current = map;
@@ -261,7 +265,11 @@ export default function VetMap({
       const icon = createMarkerIcon(L);
 
       try {
-        const res = await fetch(OVERPASS_URL);
+        const res = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
+        });
         if (!res.ok) throw new Error('Overpass fetch failed');
         const data = await res.json();
 
@@ -288,8 +296,8 @@ export default function VetMap({
             id: 0,
             lat: center[0],
             lon: center[1],
-            name: 'Nueva Vizcaya Vet Services',
-            address: 'Bayombong, Nueva Vizcaya',
+            name: 'Default Vet Services',
+            address: 'Philippines',
           });
         }
 
@@ -391,7 +399,7 @@ export default function VetMap({
         style={{
           opacity: status === 'done' ? 1 : 0,
           transition: 'opacity 0.5s ease',
-          pointerEvents: status === 'done' ? 'auto' : 'none',
+          pointerEvents: status === 'done' ? (interactive ? 'auto' : 'none') : 'none',
         }}
       />
 

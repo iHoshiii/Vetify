@@ -25,34 +25,28 @@ export default function MapPage() {
   }, [expanded]);
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
+    <main className="min-h-[calc(100vh-80px)] bg-[#f6fbfb] text-slate-950 flex flex-col justify-center">
       {/* ── HERO + MAP ───────────────────────────────────────── */}
-      <section className="min-h-screen flex items-center px-5 sm:px-10 max-w-7xl mx-auto py-28 gap-12 lg:gap-20">
+      <section className="flex items-center px-5 sm:px-10 max-w-7xl mx-auto py-8 gap-8 lg:gap-12 w-full">
         {/* LEFT — Text + Info */}
-        <div className="flex-1 flex flex-col gap-10">
-          {/* Tag */}
-          <div className="inline-flex w-fit items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-[0.2em]">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            Nueva Vizcaya, PH
-          </div>
-
+        <div className="flex-1 flex flex-col gap-6">
           {/* Heading */}
           <div>
-            <h1 className="text-5xl font-black tracking-tight leading-[1.1] text-slate-900 sm:text-6xl">
+            <h1 className="text-4xl font-black tracking-tight leading-[1.1] text-slate-900 sm:text-5xl">
               Find a vet
               <br />
               <span className="text-blue-600">near you.</span>
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-slate-500 max-w-md">
-              Discover veterinary clinics and pet care services across Nueva Vizcaya. Pins are
-              sourced live from OpenStreetMap — click any marker for details.
+            <p className="mt-4 text-base leading-relaxed text-slate-500 max-w-md">
+              Discover veterinary clinics and pet care services. Pins are sourced live from
+              OpenStreetMap — click any marker for details.
             </p>
           </div>
 
           {/* Info cards */}
-          <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
-            <div className="flex items-start gap-5 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-              <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-transform duration-300 group-hover:scale-110">
+          <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-1 xl:grid-cols-1">
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+              <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 transition-transform duration-300 group-hover:scale-110">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
@@ -69,16 +63,16 @@ export default function MapPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                   Address
                 </p>
                 <p className="text-sm font-semibold text-slate-800">123 Vetify Lane, Bayombong</p>
-                <p className="text-sm text-slate-500">Nueva Vizcaya 3700, Philippines</p>
+                <p className="text-xs text-slate-500">Nueva Vizcaya 3700, Philippines</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-5 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-              <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100 transition-transform duration-300 group-hover:scale-110">
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+              <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100 transition-transform duration-300 group-hover:scale-110">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
@@ -89,18 +83,18 @@ export default function MapPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                   Hours
                 </p>
                 <p className="text-sm font-semibold text-slate-800">Mon–Fri: 8:00 AM – 8:00 PM</p>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs text-slate-500">
                   Saturday: 9:00 AM – 5:00 PM · Sunday: Closed
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-5 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-              <div className="w-11 h-11 flex-shrink-0 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 transition-transform duration-300 group-hover:scale-110">
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+              <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 transition-transform duration-300 group-hover:scale-110">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
@@ -111,20 +105,18 @@ export default function MapPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">
                   Contact
                 </p>
-                <p className="text-sm font-semibold text-slate-800">
-                  (555) 123-4567 · Emergency: (555) 911-VETS
-                </p>
-                <p className="text-sm text-slate-500">clinic@vetify.com</p>
+                <p className="text-sm font-semibold text-slate-800">(555) 123-4567</p>
+                <p className="text-xs text-slate-500">clinic@vetify.com</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* RIGHT — Interactive Vet Map */}
-        <div className="hidden lg:block flex-shrink-0 w-[480px] xl:w-[560px]">
+        <div className="hidden lg:block flex-shrink-0 w-[400px] xl:w-[480px]">
           <div
             onClick={() => setExpanded(true)}
             style={{ aspectRatio: '1 / 1' }}
@@ -159,15 +151,13 @@ export default function MapPage() {
               className="absolute inset-0"
               style={{ pointerEvents: 'none', isolation: 'isolate' }}
             >
-              <VetMap zoom={11} center={[16.32, 121.1]} showOverlay />
+              <VetMap zoom={11} center={[16.32, 121.1]} showOverlay interactive={false} />
             </div>
           </div>
 
           {/* Caption below map */}
           <div className="flex items-center justify-between mt-4 px-1">
-            <p className="text-xs text-slate-400 font-medium">
-              🐾 Vet clinics · Nueva Vizcaya, Philippines
-            </p>
+            <p className="text-xs text-slate-400 font-medium">🐾 Vet clinics · Philippines</p>
             <button
               onClick={() => setExpanded(true)}
               className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline underline-offset-4 transition-colors"
