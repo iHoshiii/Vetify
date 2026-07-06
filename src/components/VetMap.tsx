@@ -244,6 +244,7 @@ export default function VetMap({
         scrollWheelZoom: interactive,
         doubleClickZoom: interactive,
         dragging: interactive,
+        attributionControl: false,
       });
 
       leafletMap.current = map;
