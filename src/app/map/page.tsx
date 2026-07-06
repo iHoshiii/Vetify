@@ -119,17 +119,14 @@ export default function MapPage() {
         <div className="hidden lg:block flex-shrink-0 w-[400px] xl:w-[480px]">
           <div
             style={{ aspectRatio: '1 / 1' }}
-            className="relative w-full rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/8 transition-all duration-500"
+            className="relative w-full rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/8 transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(59,130,246,0.2)] hover:-translate-y-2 hover:border-blue-400/40"
           >
             {/* Decorative gradient frame */}
             <div className="absolute inset-0 z-10 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
 
             {/* Interactive map — pointer events disabled so click expands */}
             {/* isolation:isolate creates a stacking context that contains Leaflet's internal z-indices */}
-            <div
-              className="absolute inset-0"
-              style={{ pointerEvents: 'none', isolation: 'isolate' }}
-            >
+            <div className="absolute inset-0" style={{ isolation: 'isolate' }}>
               <VetMap zoom={11} center={[16.32, 121.1]} showOverlay interactive={false} />
             </div>
           </div>
