@@ -19,6 +19,8 @@ interface VetMapProps {
   showOverlay?: boolean;
   /** If false, disables all map interactions (zooming, dragging, clicking pins) */
   interactive?: boolean;
+  /** If false, the map will not fetch any clinic data (useful for static preview maps) */
+  fetchData?: boolean;
 }
 
 const OVERPASS_QUERY = `
@@ -213,6 +215,7 @@ export default function VetMap({
   className = '',
   showOverlay = true,
   interactive = true,
+  fetchData = true,
 }: VetMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<import('leaflet').Map | null>(null);
@@ -272,6 +275,11 @@ export default function VetMap({
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
       });
+
+      if (!fetchData) {
+        if (!cancelled) setStatus('done');
+        return;
+      }
 
       try {
         const endpoints = [
