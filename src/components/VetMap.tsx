@@ -21,6 +21,8 @@ interface VetMapProps {
   interactive?: boolean;
   /** If false, the map will not fetch any clinic data (useful for static preview maps) */
   fetchData?: boolean;
+  /** Callback fired when the map (and data if fetched) is fully loaded */
+  onReady?: () => void;
 }
 
 const OVERPASS_QUERY = `
@@ -216,6 +218,7 @@ export default function VetMap({
   showOverlay = true,
   interactive = true,
   fetchData = true,
+  onReady,
 }: VetMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<import('leaflet').Map | null>(null);
@@ -277,7 +280,10 @@ export default function VetMap({
       });
 
       if (!fetchData) {
-        if (!cancelled) setStatus('done');
+        if (!cancelled) {
+          setStatus('done');
+          onReady?.();
+        }
         return;
       }
 
@@ -379,8 +385,11 @@ export default function VetMap({
 
         map.addLayer(markers);
 
-        if (!cancelled) setStatus('done');
-      } catch {
+        if (!cancelled) {
+          setStatus('done');
+          onReady?.();
+        }
+      } catch (e) {
         if (!cancelled) setStatus('error');
       }
     }
