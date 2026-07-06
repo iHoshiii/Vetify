@@ -349,13 +349,21 @@ export default function VetMap({
             ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">🕐 ${clinic.opening_hours}</p>`
             : '';
 
+          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.lat},${clinic.lon}`;
+
           marker.bindPopup(
-            `<div style="font-family:system-ui,sans-serif;min-width:160px;">
+            `<div style="font-family:system-ui,sans-serif;min-width:180px;padding-bottom:4px;">
               <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${clinic.name}</p>
               ${addressHtml}${phoneHtml}${hoursHtml}
-              <p style="margin:8px 0 0;font-size:11px;color:#94a3b8;">🐾 Veterinary Clinic</p>
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+                <p style="margin:0;font-size:11px;color:#94a3b8;font-weight:600;">🐾 Vet Clinic</p>
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                  Open in Maps
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              </div>
             </div>`,
-            { maxWidth: 260 }
+            { maxWidth: 280 }
           );
 
           markers.addLayer(marker);
