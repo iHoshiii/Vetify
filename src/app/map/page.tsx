@@ -154,7 +154,11 @@ export default function MapPage() {
             <div className="absolute inset-0 z-10 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
 
             {/* Interactive map — pointer events disabled so click expands */}
-            <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+            {/* isolation:isolate creates a stacking context that contains Leaflet's internal z-indices */}
+            <div
+              className="absolute inset-0"
+              style={{ pointerEvents: 'none', isolation: 'isolate' }}
+            >
               <VetMap zoom={11} center={[16.32, 121.1]} showOverlay />
             </div>
           </div>
@@ -177,7 +181,7 @@ export default function MapPage() {
       {/* ── FULLSCREEN MAP MODAL ──────────────────────────────── */}
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/75 backdrop-blur-md"
           style={{ animation: 'fadeIn 0.2s ease both' }}
           onClick={() => setExpanded(false)}
         >
@@ -189,7 +193,7 @@ export default function MapPage() {
             {/* Close */}
             <button
               onClick={() => setExpanded(false)}
-              className="absolute top-5 right-5 z-[500] flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150"
+              className="absolute top-5 right-5 z-[2100] flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
