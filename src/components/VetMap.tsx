@@ -445,7 +445,7 @@ export default function VetMap({
         style={{
           opacity: status === 'done' ? 1 : 0,
           transition: 'opacity 0.5s ease',
-          pointerEvents: status === 'done' ? (interactive ? 'auto' : 'none') : 'none',
+          pointerEvents: status === 'done' ? 'auto' : 'none',
         }}
       />
 
