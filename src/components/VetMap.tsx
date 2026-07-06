@@ -226,6 +226,7 @@ export default function VetMap({
 
     async function init() {
       const L = (await import('leaflet')).default;
+      await import('leaflet.markercluster');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -264,15 +265,40 @@ export default function VetMap({
       }).addTo(map);
 
       const icon = createMarkerIcon(L);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const markers = (L as any).markerClusterGroup({
+        chunkedLoading: true,
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+      });
 
       try {
-        const res = await fetch('https://overpass-api.de/api/interpreter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
-        });
-        if (!res.ok) throw new Error('Overpass fetch failed');
-        const data = await res.json();
+        const endpoints = [
+          'https://lz4.overpass-api.de/api/interpreter',
+          'https://overpass-api.de/api/interpreter',
+          'https://overpass.kumi.systems/api/interpreter',
+        ];
+
+        let data = null;
+        for (const endpoint of endpoints) {
+          if (cancelled) break;
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
+            });
+            if (res.ok) {
+              data = await res.json();
+              break; // Success!
+            }
+          } catch (e) {
+            console.warn(`Overpass fetch failed for ${endpoint}`, e);
+          }
+        }
+
+        if (!data) throw new Error('All Overpass API endpoints failed');
 
         if (cancelled) return;
 
@@ -308,7 +334,6 @@ export default function VetMap({
           const marker = L.marker([clinic.lat, clinic.lon], { icon });
 
           marker.bindTooltip(clinic.name, {
-            permanent: true,
             direction: 'top',
             offset: [0, -46],
             className: 'vet-label',
@@ -333,8 +358,10 @@ export default function VetMap({
             { maxWidth: 260 }
           );
 
-          marker.addTo(map);
+          markers.addLayer(marker);
         });
+
+        map.addLayer(markers);
 
         if (!cancelled) setStatus('done');
       } catch {
@@ -360,6 +387,16 @@ export default function VetMap({
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         crossOrigin=""
       />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        crossOrigin=""
+      />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+        crossOrigin=""
+      />
 
       {/* Custom marker / popup styles */}
       <style>{`
@@ -383,6 +420,14 @@ export default function VetMap({
           border: 1px solid #e2e8f0 !important;
         }
         .leaflet-popup-tip-container { display: none !important; }
+        
+        /* Custom Marker Cluster Styles */
+        .marker-cluster-small { background-color: rgba(191, 219, 254, 0.6) !important; }
+        .marker-cluster-small div { background-color: rgba(59, 130, 246, 0.8) !important; color: white; font-weight: bold; }
+        .marker-cluster-medium { background-color: rgba(147, 197, 253, 0.6) !important; }
+        .marker-cluster-medium div { background-color: rgba(37, 99, 235, 0.9) !important; color: white; font-weight: bold; }
+        .marker-cluster-large { background-color: rgba(96, 165, 250, 0.6) !important; }
+        .marker-cluster-large div { background-color: rgba(29, 78, 216, 0.9) !important; color: white; font-weight: bold; }
       `}</style>
 
       {/* ── Skeleton: shown while loading or on error. Sits above map. ── */}
