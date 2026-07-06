@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 
-const MAP_SRC =
-  'https://maps.google.com/maps?q=Nueva+Vizcaya,+Philippines&t=&z=11&ie=UTF8&iwloc=&output=embed';
+// Leaflet must be loaded client-side only (no SSR)
+const VetMap = dynamic(() => import('@/components/VetMap'), { ssr: false });
 
 export default function MapPage() {
   const [expanded, setExpanded] = useState(false);
@@ -43,8 +44,8 @@ export default function MapPage() {
               <span className="text-blue-600">near you.</span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-slate-500 max-w-md">
-              Discover veterinary clinics and pet care services across Nueva Vizcaya. Click the map
-              to explore the full interactive view.
+              Discover veterinary clinics and pet care services across Nueva Vizcaya. Pins are
+              sourced live from OpenStreetMap — click any marker for details.
             </p>
           </div>
 
@@ -122,7 +123,7 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* RIGHT — Square Map */}
+        {/* RIGHT — Interactive Vet Map */}
         <div className="hidden lg:block flex-shrink-0 w-[480px] xl:w-[560px]">
           <div
             onClick={() => setExpanded(true)}
@@ -152,21 +153,17 @@ export default function MapPage() {
             {/* Decorative gradient frame */}
             <div className="absolute inset-0 z-10 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
 
-            <iframe
-              src={MAP_SRC}
-              width="100%"
-              height="100%"
-              style={{ border: 0, pointerEvents: 'none' }}
-              allowFullScreen={false}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute inset-0"
-            />
+            {/* Interactive map — pointer events disabled so click expands */}
+            <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
+              <VetMap zoom={11} center={[16.32, 121.1]} showOverlay />
+            </div>
           </div>
 
           {/* Caption below map */}
           <div className="flex items-center justify-between mt-4 px-1">
-            <p className="text-xs text-slate-400 font-medium">Nueva Vizcaya, Philippines</p>
+            <p className="text-xs text-slate-400 font-medium">
+              🐾 Vet clinics · Nueva Vizcaya, Philippines
+            </p>
             <button
               onClick={() => setExpanded(true)}
               className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline underline-offset-4 transition-colors"
@@ -192,7 +189,7 @@ export default function MapPage() {
             {/* Close */}
             <button
               onClick={() => setExpanded(false)}
-              className="absolute top-5 right-5 z-10 flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150"
+              className="absolute top-5 right-5 z-[500] flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -205,15 +202,8 @@ export default function MapPage() {
               Close
             </button>
 
-            <iframe
-              src={MAP_SRC}
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+            {/* Full interactive map */}
+            <VetMap zoom={11} center={[16.32, 121.1]} showOverlay />
           </div>
         </div>
       )}
