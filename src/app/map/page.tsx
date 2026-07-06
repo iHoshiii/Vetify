@@ -118,30 +118,9 @@ export default function MapPage() {
         {/* RIGHT — Interactive Vet Map */}
         <div className="hidden lg:block flex-shrink-0 w-[400px] xl:w-[480px]">
           <div
-            onClick={() => setExpanded(true)}
             style={{ aspectRatio: '1 / 1' }}
-            className="relative w-full cursor-pointer rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/8 group transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(59,130,246,0.2)] hover:-translate-y-2 hover:border-blue-400/40"
+            className="relative w-full rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/8 transition-all duration-500"
           >
-            {/* Expand hint overlay */}
-            <div className="absolute inset-0 z-20 flex flex-col items-end justify-end p-5 pointer-events-none">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 border border-white/80 shadow-lg backdrop-blur-sm text-slate-700 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                <svg
-                  className="w-3.5 h-3.5 text-blue-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                  />
-                </svg>
-                Expand map
-              </div>
-            </div>
-
             {/* Decorative gradient frame */}
             <div className="absolute inset-0 z-10 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
 
