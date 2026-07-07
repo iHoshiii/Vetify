@@ -2,18 +2,10 @@
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { supabase } from '@/lib/supabaseClient';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
-
-const PASSWORD_CRITERIA = [
-  { key: 'length', label: 'At least 8 characters' },
-  { key: 'uppercase', label: 'One uppercase letter' },
-  { key: 'number', label: 'One number' },
-  { key: 'special', label: 'One special character' },
-] as const;
-
-type PasswordCriterionKey = (typeof PASSWORD_CRITERIA)[number]['key'];
 
 type PasswordStrength = {
   score: number;
@@ -21,7 +13,6 @@ type PasswordStrength = {
   barClass: string;
   labelClass: string;
   progress: number;
-  criteria: Record<PasswordCriterionKey, boolean>;
   weakOverride: boolean;
   overrideReason?: string;
 };
@@ -35,7 +26,7 @@ function evaluatePasswordStrength(password: string, email: string, name: string)
     .split(/\s+/)
     .filter((part) => part.length >= 3);
 
-  const criteria: PasswordStrength['criteria'] = {
+  const criteria = {
     length: normalizedPassword.length >= 8,
     uppercase: /[A-Z]/.test(normalizedPassword),
     number: /[0-9]/.test(normalizedPassword),
@@ -102,28 +93,9 @@ function evaluatePasswordStrength(password: string, email: string, name: string)
     barClass,
     labelClass,
     progress: (score / 4) * 100,
-    criteria,
     weakOverride,
     overrideReason,
   };
-}
-
-function CriteriaItem({ passed, label }: { passed: boolean; label: string }) {
-  return (
-    <li className="flex items-start gap-3 text-sm">
-      <span
-        className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-semibold ${
-          passed
-            ? 'border-emerald-500 bg-emerald-500 text-white'
-            : 'border-slate-300 bg-white text-slate-400'
-        }`}
-        aria-hidden="true"
-      >
-        {passed ? '✓' : '–'}
-      </span>
-      <span className={passed ? 'text-slate-900' : 'text-slate-500'}>{label}</span>
-    </li>
-  );
 }
 
 export default function SignupPage() {
@@ -133,11 +105,13 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
@@ -145,21 +119,23 @@ export default function SignupPage() {
       return;
     }
 
-    // In a real app, you would call your API to create the user
-    // For now, we'll just simulate a successful signup and then sign in
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { error } = await (supabase.auth as any).signUp(
+        {
+          email,
+          password,
+        },
+        {
+          emailRedirectTo: `${window.location.origin}/login`,
+        }
+      );
 
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: true,
-        callbackUrl: '/',
-      });
-
-      if (result?.error) {
-        setError('Signup failed. Please try again.');
+      if (error) {
+        setError(error.message || 'Signup failed. Please try again.');
+      } else {
+        setSuccess('Check your email for a verification link before you can sign in.');
+        setPassword('');
+        setConfirmPassword('');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
@@ -189,6 +165,11 @@ export default function SignupPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm animate-shake">
               {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-sm">
+              {success}
             </div>
           )}
           <Input
