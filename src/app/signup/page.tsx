@@ -4,12 +4,133 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+
+const PASSWORD_CRITERIA = [
+  { key: 'length', label: 'At least 8 characters' },
+  { key: 'uppercase', label: 'One uppercase letter' },
+  { key: 'number', label: 'One number' },
+  { key: 'special', label: 'One special character' },
+] as const;
+
+type PasswordCriterionKey = (typeof PASSWORD_CRITERIA)[number]['key'];
+
+type PasswordStrength = {
+  score: number;
+  label: 'Weak' | 'Fair' | 'Good' | 'Strong';
+  barClass: string;
+  labelClass: string;
+  progress: number;
+  criteria: Record<PasswordCriterionKey, boolean>;
+  weakOverride: boolean;
+  overrideReason?: string;
+};
+
+function evaluatePasswordStrength(password: string, email: string, name: string): PasswordStrength {
+  const normalizedPassword = password.trim();
+  const normalizedLower = normalizedPassword.toLowerCase();
+  const emailPrefix = email.split('@')[0].toLowerCase();
+  const nameParts = name
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((part) => part.length >= 3);
+
+  const criteria: PasswordStrength['criteria'] = {
+    length: normalizedPassword.length >= 8,
+    uppercase: /[A-Z]/.test(normalizedPassword),
+    number: /[0-9]/.test(normalizedPassword),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(normalizedPassword),
+  };
+
+  const baseScore = Object.values(criteria).filter(Boolean).length;
+
+  const sequentialPatterns = [
+    '123',
+    '234',
+    '345',
+    '456',
+    '567',
+    '678',
+    '789',
+    '012',
+    'abc',
+    'bcd',
+    'cde',
+    'qwerty',
+    'asdf',
+    'password',
+    'admin',
+  ];
+
+  const sequentialDetected = sequentialPatterns.some((pattern) =>
+    normalizedLower.includes(pattern)
+  );
+  const includesEmailPrefix = emailPrefix.length >= 3 && normalizedLower.includes(emailPrefix);
+  const includesNamePart = nameParts.some((part) => normalizedLower.includes(part));
+  const weakOverride = sequentialDetected || includesEmailPrefix || includesNamePart;
+
+  const overrideReason = weakOverride
+    ? sequentialDetected
+      ? 'Password contains a common sequence.'
+      : includesEmailPrefix
+      ? 'Password includes your email username.'
+      : 'Password includes part of your name.'
+    : undefined;
+
+  const score = weakOverride && baseScore > 1 ? 1 : baseScore;
+  const label = score <= 1 ? 'Weak' : score === 2 ? 'Fair' : score === 3 ? 'Good' : 'Strong';
+  const labelClass =
+    score <= 1
+      ? 'bg-red-100 text-red-700'
+      : score === 2
+      ? 'bg-amber-100 text-amber-800'
+      : score === 3
+      ? 'bg-emerald-100 text-emerald-800'
+      : 'bg-emerald-700 text-white';
+  const barClass =
+    score <= 1
+      ? 'bg-red-500'
+      : score === 2
+      ? 'bg-amber-400'
+      : score === 3
+      ? 'bg-emerald-300'
+      : 'bg-emerald-600';
+
+  return {
+    score,
+    label,
+    barClass,
+    labelClass,
+    progress: (score / 4) * 100,
+    criteria,
+    weakOverride,
+    overrideReason,
+  };
+}
+
+function CriteriaItem({ passed, label }: { passed: boolean; label: string }) {
+  return (
+    <li className="flex items-start gap-3 text-sm">
+      <span
+        className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border text-xs font-semibold ${
+          passed
+            ? 'border-emerald-500 bg-emerald-500 text-white'
+            : 'border-slate-300 bg-white text-slate-400'
+        }`}
+        aria-hidden="true"
+      >
+        {passed ? '✓' : '–'}
+      </span>
+      <span className={passed ? 'text-slate-900' : 'text-slate-500'}>{label}</span>
+    </li>
+  );
+}
 
 export default function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,6 +138,12 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
 
     // In a real app, you would call your API to create the user
     // For now, we'll just simulate a successful signup and then sign in
@@ -44,6 +171,11 @@ export default function SignupPage() {
   const handleSocialLogin = (provider: string) => {
     signIn(provider, { callbackUrl: '/' });
   };
+
+  const passwordStrength = useMemo(
+    () => evaluatePasswordStrength(password, email, name),
+    [password, email, name]
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
@@ -83,6 +215,61 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+
+          {password && (
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Password strength</p>
+                  <p className="text-xs text-slate-500">
+                    Use a strong password to protect your account.
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${passwordStrength.labelClass}`}
+                  aria-live="polite"
+                >
+                  {passwordStrength.label}
+                </span>
+              </div>
+
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${passwordStrength.barClass}`}
+                  style={{ width: `${passwordStrength.progress}%` }}
+                />
+              </div>
+
+              <p className="text-xs text-slate-500">Score: {passwordStrength.score} / 4</p>
+
+              <ul className="space-y-2" aria-live="polite" aria-atomic="true">
+                {PASSWORD_CRITERIA.map((criterion) => (
+                  <CriteriaItem
+                    key={criterion.key}
+                    passed={passwordStrength.criteria[criterion.key]}
+                    label={criterion.label}
+                  />
+                ))}
+              </ul>
+
+              {passwordStrength.weakOverride && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {passwordStrength.overrideReason}
+                </div>
+              )}
+            </div>
+          )}
+
+          {password && (
+            <Input
+              label="Re-enter password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          )}
 
           <p className="text-xs text-slate-500 mt-2">
             By signing up, you agree to our{' '}
