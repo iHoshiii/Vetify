@@ -56,7 +56,7 @@ function evaluatePasswordStrength(password: string, email: string, name: string)
   const sequentialDetected = sequentialPatterns.some((pattern) =>
     normalizedLower.includes(pattern)
   );
-  const includesEmailPrefix = emailPrefix.length >= 3 && normalizedLower.includes(emailPrefix);
+  const includesEmailPrefix = emailPrefix.length >= 4 && normalizedLower.includes(emailPrefix);
   const includesNamePart = nameParts.some((part) => normalizedLower.includes(part));
   const weakOverride = sequentialDetected || includesEmailPrefix || includesNamePart;
 
@@ -64,8 +64,8 @@ function evaluatePasswordStrength(password: string, email: string, name: string)
     ? sequentialDetected
       ? 'Password contains a common sequence.'
       : includesEmailPrefix
-      ? 'Password includes your email username.'
-      : 'Password includes part of your name.'
+      ? 'Password contains part of your email address.'
+      : 'Password contains part of your name.'
     : undefined;
 
   const score = weakOverride && baseScore > 1 ? 1 : baseScore;
@@ -220,14 +220,6 @@ export default function SignupPage() {
                   style={{ width: `${passwordStrength.progress}%` }}
                 />
               </div>
-
-              <p className="text-xs text-slate-500">Score: {passwordStrength.score} / 4</p>
-
-              {passwordStrength.weakOverride && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {passwordStrength.overrideReason}
-                </div>
-              )}
             </div>
           )}
 
