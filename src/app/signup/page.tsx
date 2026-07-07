@@ -242,16 +242,6 @@ export default function SignupPage() {
 
               <p className="text-xs text-slate-500">Score: {passwordStrength.score} / 4</p>
 
-              <ul className="space-y-2" aria-live="polite" aria-atomic="true">
-                {PASSWORD_CRITERIA.map((criterion) => (
-                  <CriteriaItem
-                    key={criterion.key}
-                    passed={passwordStrength.criteria[criterion.key]}
-                    label={criterion.label}
-                  />
-                ))}
-              </ul>
-
               {passwordStrength.weakOverride && (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {passwordStrength.overrideReason}
