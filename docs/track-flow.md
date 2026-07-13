@@ -22,3 +22,5 @@ home page:
 [x] "how to become part of Vetify (professional)" section
 [x] about us
 [x] contact us
+
+[x] google oauth
