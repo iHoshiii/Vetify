@@ -1,6 +1,7 @@
 import RevealObserver from '@/components/RevealObserver';
 import SiteHeader from '@/components/SiteHeader';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import FloatingSettings from '@/components/FloatingSettings';
 import type { Metadata } from 'next';
 import React from 'react';
 import './globals.css';
@@ -25,6 +26,7 @@ export default function RootLayout({
         <AuthProvider>
           <RevealObserver />
           <SiteHeader />
+          <FloatingSettings />
           {children}
         </AuthProvider>
       </body>
