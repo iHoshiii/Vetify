@@ -122,37 +122,24 @@ export default function SiteHeader() {
           >
             Book Appointment
           </a>
-          <div className="h-5 w-px bg-slate-200" />
-          {session ? (
-            <div className="flex items-center gap-3">
+          {session ? null : (
+            <>
+              <div className="h-5 w-px bg-slate-200" />
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-100 to-blue-100 text-sm font-bold text-teal-700 ring-2 ring-teal-200 transition-transform hover:scale-105">
-                  {session.user?.name?.charAt(0).toUpperCase() ?? 'U'}
-                </div>
-                <span className="text-sm font-semibold text-slate-800">{session.user?.name}</span>
+                <a
+                  href="/login"
+                  className="px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-teal-700"
+                >
+                  Log in
+                </a>
+                <a
+                  href="/signup"
+                  className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
+                >
+                  Sign up
+                </a>
               </div>
-              <button
-                onClick={() => signOut()}
-                className="text-sm font-semibold text-slate-500 transition-colors hover:text-red-500"
-              >
-                Sign out
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <a
-                href="/login"
-                className="px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-teal-700"
-              >
-                Log in
-              </a>
-              <a
-                href="/signup"
-                className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md"
-              >
-                Sign up
-              </a>
-            </div>
+            </>
           )}
         </div>
 
@@ -228,17 +215,7 @@ export default function SiteHeader() {
           >
             Book Appointment
           </a>
-          {session ? (
-            <button
-              onClick={() => {
-                signOut();
-                setMenuOpen(false);
-              }}
-              className="mt-1 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
-            >
-              Sign out
-            </button>
-          ) : (
+          {session ? null : (
             <div className="mt-1 flex gap-2">
               <a
                 href="/login"
