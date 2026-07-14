@@ -8,7 +8,11 @@ interface SectionProps {
 export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
   const items = [
     { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.' },
-    { label: 'Terms & Conditions', desc: 'Read our terms of service and usage rules.' },
+    {
+      label: 'Terms & Conditions',
+      desc: 'Read our terms of service and usage rules.',
+      href: '/terms',
+    },
     { label: 'Privacy Policy', desc: 'Learn how we handle your personal data.', href: '/privacy' },
     { label: 'App Info', desc: 'Display the current software version number.' },
   ];
