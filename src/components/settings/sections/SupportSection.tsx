@@ -7,10 +7,13 @@ interface SectionProps {
 
 export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
   const items = [
-    { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.' },
-    { label: 'Terms & Conditions', desc: 'Read our terms of service and usage rules.' },
-    { label: 'Privacy Policy', desc: 'Learn how we handle your personal data.' },
-    { label: 'App Info', desc: 'Display the current software version number.' },
+    { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.', href: '/help' },
+    {
+      label: 'Terms & Conditions',
+      desc: 'Read our terms of service and usage rules.',
+      href: '/terms',
+    },
+    { label: 'Privacy Policy', desc: 'Learn how we handle your personal data.', href: '/privacy' },
   ];
 
   return (
@@ -19,7 +22,7 @@ export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
         onClick={onToggle}
         className="flex w-full items-center justify-between px-3 py-3 text-left transition-colors hover:bg-slate-50"
       >
-        <span className="text-sm font-bold text-slate-700">ℹ️ Support & About</span>
+        <span className="text-sm font-bold text-slate-700">ℹ️ Support</span>
         <svg
           className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
             isExpanded ? 'rotate-180' : ''
@@ -37,15 +40,31 @@ export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
         }`}
       >
         <div className="flex flex-col gap-1 px-2 pb-2">
-          {items.map((item, idx) => (
-            <button
-              key={idx}
-              className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
-            >
-              <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-              <span className="text-xs text-slate-500">{item.desc}</span>
-            </button>
-          ))}
+          {items.map((item, idx) => {
+            const innerContent = (
+              <>
+                <span className="text-sm font-semibold text-slate-800">{item.label}</span>
+                <span className="text-xs text-slate-500">{item.desc}</span>
+              </>
+            );
+
+            const className =
+              'flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50 w-full';
+
+            if (item.href) {
+              return (
+                <a key={idx} href={item.href} className={className}>
+                  {innerContent}
+                </a>
+              );
+            }
+
+            return (
+              <button key={idx} className={className}>
+                {innerContent}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
