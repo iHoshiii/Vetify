@@ -9,6 +9,7 @@ export default function FloatingSettings() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,6 +21,17 @@ export default function FloatingSettings() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (showLogoutModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showLogoutModal]);
 
   if (status !== 'authenticated' || !session) return null;
 
@@ -143,7 +155,10 @@ export default function FloatingSettings() {
 
           <div className="mt-2 border-t border-slate-100 px-2 pt-2 pb-1">
             <button
-              onClick={() => signOut()}
+              onClick={() => {
+                setIsOpen(false);
+                setShowLogoutModal(true);
+              }}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
             >
               <LogOut size={16} />
@@ -164,6 +179,30 @@ export default function FloatingSettings() {
           }`}
         />
       </button>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all">
+          <div className="w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl transition-transform">
+            <h3 className="mb-2 text-xl font-bold text-slate-800">Log Out</h3>
+            <p className="mb-6 text-sm text-slate-600">Are you sure you want to log out?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-red-700 hover:shadow-lg"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
