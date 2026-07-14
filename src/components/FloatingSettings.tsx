@@ -85,8 +85,17 @@ export default function FloatingSettings() {
         }`}
       >
         <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200">
-          <div className="p-3 mb-2 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-lg">Settings</h3>
+          <div className="p-3 mb-2 border-b border-slate-100 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-100 to-blue-100 text-lg font-bold text-teal-700 ring-2 ring-teal-200">
+              {session.user?.name?.charAt(0).toUpperCase() ?? 'U'}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-800">{session.user?.name ?? 'User'}</span>
+              <span className="text-xs text-slate-500">{session.user?.email ?? 'Settings'}</span>
+            </div>
+          </div>
+          <div className="px-3 pb-2 mb-2 border-b border-slate-100">
+            <h3 className="font-bold text-slate-800 text-sm">Settings</h3>
             <p className="text-xs text-slate-500">Manage your account and app preferences</p>
           </div>
 
