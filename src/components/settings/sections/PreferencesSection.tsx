@@ -45,14 +45,6 @@ export default function PreferencesSection({
               Choose the preferred display language and time zone formatting.
             </span>
           </button>
-
-          {/* Media Quality */}
-          <button className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50">
-            <span className="text-sm font-semibold text-slate-800">Media Quality</span>
-            <span className="text-xs text-slate-500">
-              Select data-saving options or high-definition streaming/upload modes.
-            </span>
-          </button>
         </div>
       </div>
     </div>
