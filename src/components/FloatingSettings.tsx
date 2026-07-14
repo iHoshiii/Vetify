@@ -9,12 +9,14 @@ import NotificationsSection from './settings/sections/NotificationsSection';
 import PrivacySection from './settings/sections/PrivacySection';
 import SupportSection from './settings/sections/SupportSection';
 import LogoutModal from './settings/LogoutModal';
+import LanguageModal from './settings/LanguageModal';
 
 export default function FloatingSettings() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +56,10 @@ export default function FloatingSettings() {
             <PreferencesSection
               isExpanded={expandedSection === 1}
               onToggle={() => setExpandedSection(expandedSection === 1 ? null : 1)}
+              onOpenLanguageModal={() => {
+                setIsOpen(false);
+                setShowLanguageModal(true);
+              }}
             />
             <NotificationsSection
               isExpanded={expandedSection === 2}
@@ -82,6 +88,7 @@ export default function FloatingSettings() {
       </div>
 
       <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
+      <LanguageModal isOpen={showLanguageModal} onClose={() => setShowLanguageModal(false)} />
 
       <button
         onClick={() => setIsOpen((v) => !v)}
