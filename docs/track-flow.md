@@ -24,3 +24,9 @@ home page:
 [x] contact us
 
 [x] google oauth
+
+[] settings
+[x] preferences
+[x] support
+[x] privacy and permission
+July 14, 2026
