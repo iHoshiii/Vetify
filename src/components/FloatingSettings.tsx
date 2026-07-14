@@ -6,7 +6,7 @@ import { Settings, User, Settings2, Bell, Shield, HelpCircle, LogOut } from 'luc
 import { signOut } from 'next-auth/react';
 
 export default function FloatingSettings() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -20,7 +20,7 @@ export default function FloatingSettings() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (!session) return null;
+  if (status !== 'authenticated' || !session) return null;
 
   const sections = [
     {
