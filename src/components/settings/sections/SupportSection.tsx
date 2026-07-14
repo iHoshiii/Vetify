@@ -7,14 +7,13 @@ interface SectionProps {
 
 export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
   const items = [
-    { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.' },
+    { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.', href: '/help' },
     {
       label: 'Terms & Conditions',
       desc: 'Read our terms of service and usage rules.',
       href: '/terms',
     },
     { label: 'Privacy Policy', desc: 'Learn how we handle your personal data.', href: '/privacy' },
-    { label: 'App Info', desc: 'Display the current software version number.' },
   ];
 
   return (
@@ -23,7 +22,7 @@ export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
         onClick={onToggle}
         className="flex w-full items-center justify-between px-3 py-3 text-left transition-colors hover:bg-slate-50"
       >
-        <span className="text-sm font-bold text-slate-700">ℹ️ Support & About</span>
+        <span className="text-sm font-bold text-slate-700">ℹ️ Support</span>
         <svg
           className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
             isExpanded ? 'rotate-180' : ''
