@@ -72,7 +72,8 @@ export default function FloatingSettings() {
       title: 'ℹ️ Support & About',
       items: [
         { label: 'Help Center', desc: 'Links to FAQs, user guides, or support.' },
-        { label: 'Legal', desc: 'View the Terms of Service, Privacy Policy.' },
+        { label: 'Terms & Conditions', desc: 'Read our terms of service and usage rules.' },
+        { label: 'Privacy Policy', desc: 'Learn how we handle your personal data.' },
         { label: 'App Info', desc: 'Display the current software version number.' },
       ],
     },
