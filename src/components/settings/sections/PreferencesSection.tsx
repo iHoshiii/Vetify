@@ -3,21 +3,14 @@
 interface SectionProps {
   isExpanded: boolean;
   onToggle: () => void;
+  onOpenLanguageModal: () => void;
 }
 
-export default function PreferencesSection({ isExpanded, onToggle }: SectionProps) {
-  const items = [
-    { label: 'Appearance', desc: 'Toggle between light mode, dark mode, or system default.' },
-    {
-      label: 'Language & Region',
-      desc: 'Choose the preferred display language and time zone formatting.',
-    },
-    {
-      label: 'Media Quality',
-      desc: 'Select data-saving options or high-definition streaming/upload modes.',
-    },
-  ];
-
+export default function PreferencesSection({
+  isExpanded,
+  onToggle,
+  onOpenLanguageModal,
+}: SectionProps) {
   return (
     <div className="border-b border-slate-100 last:border-0">
       <button
@@ -42,15 +35,16 @@ export default function PreferencesSection({ isExpanded, onToggle }: SectionProp
         }`}
       >
         <div className="flex flex-col gap-1 px-2 pb-2">
-          {items.map((item, idx) => (
-            <button
-              key={idx}
-              className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
-            >
-              <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-              <span className="text-xs text-slate-500">{item.desc}</span>
-            </button>
-          ))}
+          {/* Language & Region */}
+          <button
+            onClick={onOpenLanguageModal}
+            className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
+          >
+            <span className="text-sm font-semibold text-slate-800">Language & Region</span>
+            <span className="text-xs text-slate-500">
+              Choose the preferred display language and time zone formatting.
+            </span>
+          </button>
         </div>
       </div>
     </div>
