@@ -8,6 +8,7 @@ import { signOut } from 'next-auth/react';
 export default function FloatingSettings() {
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,27 +95,50 @@ export default function FloatingSettings() {
               <span className="text-xs text-slate-500">{session.user?.email ?? 'Settings'}</span>
             </div>
           </div>
-          <div className="px-3 pb-2 mb-2 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-sm">Settings</h3>
-            <p className="text-xs text-slate-500">Manage your account and app preferences</p>
-          </div>
-
-          {sections.map((section, idx) => (
-            <div key={idx} className="mb-4 last:mb-2 px-2">
-              <h4 className="mb-2 text-sm font-bold text-slate-700">{section.title}</h4>
-              <div className="flex flex-col gap-1">
-                {section.items.map((item, itemIdx) => (
-                  <button
-                    key={itemIdx}
-                    className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
+          <div className="flex flex-col">
+            {sections.map((section, idx) => (
+              <div key={idx} className="border-b border-slate-100 last:border-0">
+                <button
+                  onClick={() => setExpandedSection(expandedSection === idx ? null : idx)}
+                  className="flex w-full items-center justify-between px-3 py-3 text-left transition-colors hover:bg-slate-50"
+                >
+                  <span className="text-sm font-bold text-slate-700">{section.title}</span>
+                  <svg
+                    className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                      expandedSection === idx ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                    <span className="text-xs text-slate-500">{item.desc}</span>
-                  </button>
-                ))}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                <div
+                  className={`overflow-hidden transition-all duration-300 ${
+                    expandedSection === idx ? 'max-h-[500px]' : 'max-h-0'
+                  }`}
+                >
+                  <div className="flex flex-col gap-1 px-2 pb-2">
+                    {section.items.map((item, itemIdx) => (
+                      <button
+                        key={itemIdx}
+                        className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
+                      >
+                        <span className="text-sm font-semibold text-slate-800">{item.label}</span>
+                        <span className="text-xs text-slate-500">{item.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           <div className="mt-2 border-t border-slate-100 px-2 pt-2 pb-1">
             <button
