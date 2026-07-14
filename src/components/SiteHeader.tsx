@@ -131,12 +131,6 @@ export default function SiteHeader() {
                 </div>
                 <span className="text-sm font-semibold text-slate-800">{session.user?.name}</span>
               </div>
-              <button
-                onClick={() => signOut()}
-                className="text-sm font-semibold text-slate-500 transition-colors hover:text-red-500"
-              >
-                Sign out
-              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -229,15 +223,9 @@ export default function SiteHeader() {
             Book Appointment
           </a>
           {session ? (
-            <button
-              onClick={() => {
-                signOut();
-                setMenuOpen(false);
-              }}
-              className="mt-1 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-500 transition-colors hover:bg-red-50"
-            >
-              Sign out
-            </button>
+            <div className="mt-1 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-slate-700">
+              Logged in as {session.user?.name}
+            </div>
           ) : (
             <div className="mt-1 flex gap-2">
               <a
