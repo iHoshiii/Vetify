@@ -480,7 +480,7 @@ export default function Home() {
               <ul className="space-y-4">
                 {[
                   { label: 'Blogs', href: '/blogs' },
-                  { label: 'FAQs', href: '/faqs' },
+                  { label: 'FAQs', href: '/help' },
                   { label: 'Anatomy Guide', href: '/chat?anatomy=true' },
                   { label: 'Meal Planner', href: '/planner' },
                 ].map((link) => (

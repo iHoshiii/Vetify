@@ -1,6 +1,6 @@
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 
 const navItems = [
@@ -15,7 +15,7 @@ const toolsItems = [
   { label: '📍 Find Vets', href: '/map', desc: 'Locate nearby clinics' },
   { label: '🥗 Meal Planner', href: '/planner', desc: 'Custom pet meal plans' },
   { label: '🦴 Anatomy', href: '/anatomy', desc: 'Explore pet anatomy' },
-  { label: '❓ FAQs', href: '/faqs', desc: 'Common questions answered' },
+  { label: '❓ FAQs', href: '/help', desc: 'Common questions answered' },
 ];
 
 export default function SiteHeader() {
