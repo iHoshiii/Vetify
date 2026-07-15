@@ -19,7 +19,8 @@ const toolsItems = [
 ];
 
 export default function SiteHeader() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const showAuthActions = status === 'unauthenticated';
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -122,7 +123,7 @@ export default function SiteHeader() {
           >
             Book Appointment
           </a>
-          {session ? null : (
+          {showAuthActions ? (
             <>
               <div className="h-5 w-px bg-slate-200" />
               <div className="flex items-center gap-2">
@@ -140,7 +141,7 @@ export default function SiteHeader() {
                 </a>
               </div>
             </>
-          )}
+          ) : null}
         </div>
 
         {/* Mobile hamburger */}
@@ -215,7 +216,7 @@ export default function SiteHeader() {
           >
             Book Appointment
           </a>
-          {session ? null : (
+          {showAuthActions ? (
             <div className="mt-1 flex gap-2">
               <a
                 href="/login"
@@ -232,7 +233,7 @@ export default function SiteHeader() {
                 Sign up
               </a>
             </div>
-          )}
+          ) : null}
         </nav>
       </div>
     </header>
