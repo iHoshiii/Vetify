@@ -30,3 +30,6 @@ home page:
 [x] support
 [x] privacy and permission
 July 14, 2026
+
+[x] navbars checkpoint
+July 15, 2026

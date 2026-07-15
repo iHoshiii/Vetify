@@ -12,7 +12,6 @@ const navItems = [
 ];
 
 const toolsItems = [
-  { label: '📍 Find Vets', href: '/map', desc: 'Locate nearby clinics' },
   { label: '🥗 Meal Planner', href: '/planner', desc: 'Custom pet meal plans' },
   { label: '🦴 Anatomy', href: '/anatomy', desc: 'Explore pet anatomy' },
   { label: '❓ FAQs', href: '/help', desc: 'Common questions answered' },
@@ -21,6 +20,7 @@ const toolsItems = [
 export default function SiteHeader() {
   const { data: session, status } = useSession();
   const showAuthActions = status === 'unauthenticated';
+  const isAuthenticated = status === 'authenticated';
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -100,6 +100,16 @@ export default function SiteHeader() {
                 toolsOpen ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0'
               }`}
             >
+              {!isAuthenticated ? (
+                <a
+                  href="/map"
+                  onClick={() => setToolsOpen(false)}
+                  className="flex flex-col rounded-xl px-4 py-3 transition-colors hover:bg-teal-50"
+                >
+                  <span className="text-sm font-bold text-slate-800">📍 Find Vets</span>
+                  <span className="mt-0.5 text-xs text-slate-500">Locate nearby clinics</span>
+                </a>
+              ) : null}
               {toolsItems.map((item) => (
                 <a
                   key={item.href}
@@ -117,6 +127,14 @@ export default function SiteHeader() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
+          {isAuthenticated ? (
+            <a
+              href="/map"
+              className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-lg"
+            >
+              Find Vets
+            </a>
+          ) : null}
           <a
             href="/book-appointment"
             className="inline-flex h-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-5 text-sm font-bold text-white shadow-md shadow-teal-500/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-teal-500/30"
@@ -197,6 +215,15 @@ export default function SiteHeader() {
           <p className="px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-400">
             Tools
           </p>
+          {!isAuthenticated ? (
+            <a
+              href="/map"
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+            >
+              📍 Find Vets
+            </a>
+          ) : null}
           {toolsItems.map((item) => (
             <a
               key={item.href}
