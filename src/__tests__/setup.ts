@@ -1,5 +1,7 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
+import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 
-// Global test setup can go here (e.g., global mocks)
-// Example: make fetch available if needed by older environments
-// if (!globalThis.fetch) globalThis.fetch = require('node-fetch');
+afterEach(() => {
+  cleanup();
+});

@@ -1,9 +1,10 @@
+import FloatingSettings from '@/components/FloatingSettings';
 import RevealObserver from '@/components/RevealObserver';
 import SiteHeader from '@/components/SiteHeader';
 import { AuthProvider } from '@/components/providers/AuthProvider';
-import FloatingSettings from '@/components/FloatingSettings';
 import type { Metadata } from 'next';
 import React from 'react';
+import { ReactQueryProvider } from '../components/providers/ReactQueryProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,10 +25,12 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <RevealObserver />
-          <SiteHeader />
-          <FloatingSettings />
-          {children}
+          <ReactQueryProvider>
+            <RevealObserver />
+            <SiteHeader />
+            <FloatingSettings />
+            {children}
+          </ReactQueryProvider>
         </AuthProvider>
       </body>
     </html>
