@@ -2,6 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import * as wrappers from 'langsmith/wrappers';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { chatRequestSchema } from '@/lib/schemas';
+
 const SYSTEM_PROMPT =
   'You are Vetify, a specialized AI veterinary assistant. Your knowledge is strictly limited to pet and animal health topics only. ' +
   "You help pet owners with questions about their pet's health, symptoms, nutrition, behavior, and general care. " +
@@ -34,23 +36,24 @@ const client = wrappers.wrapSDK(geminiClient, {
 
 export async function POST(req: NextRequest) {
   try {
-    const {
-      message,
-      history = [],
-      session_id = 'anonymous',
-      model = 'gemini-3.5-flash',
-    } = await req.json();
+    const body = await req.json();
+    const parsed = chatRequestSchema.safeParse(body);
 
-    const ALLOWED_MODELS = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite'];
-    const safeModel = ALLOWED_MODELS.includes(model) ? model : 'gemini-3.5-flash';
-
-    if (!message?.trim()) {
-      return NextResponse.json({ reply: 'Message cannot be empty.' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          reply: 'Invalid request payload.',
+          issues: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
     }
+
+    const { message, history, session_id, model } = parsed.data;
 
     // Build conversation contents for Gemini
     const contents = [
-      ...history.map((m: { role: string; content: string }) => ({
+      ...history.map((m) => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }],
       })),
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const response = await client.models.generateContent({
-      model: safeModel,
+      model,
       contents,
       config: {
         systemInstruction: SYSTEM_PROMPT,
