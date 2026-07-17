@@ -2,6 +2,7 @@
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { signupSchema } from '@/lib/schemas';
 import { supabase } from '@/lib/supabaseClient';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -15,6 +16,13 @@ type PasswordStrength = {
   progress: number;
   weakOverride: boolean;
   overrideReason?: string;
+};
+
+type SignupFormErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
 };
 
 function evaluatePasswordStrength(password: string, email: string, name: string): PasswordStrength {
@@ -106,15 +114,26 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<SignupFormErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
+    setFieldErrors({});
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+    const parsed = signupSchema.safeParse({ name, email, password, confirmPassword });
+
+    if (!parsed.success) {
+      const flattened = parsed.error.flatten().fieldErrors;
+      setFieldErrors({
+        name: flattened.name?.[0],
+        email: flattened.email?.[0],
+        password: flattened.password?.[0],
+        confirmPassword: flattened.confirmPassword?.[0],
+      });
+      setError('Please correct the highlighted fields.');
       setLoading(false);
       return;
     }
@@ -122,8 +141,8 @@ export default function SignupPage() {
     try {
       const { error } = await (supabase.auth as any).signUp(
         {
-          email,
-          password,
+          email: parsed.data.email,
+          password: parsed.data.password,
         },
         {
           emailRedirectTo: `${window.location.origin}/login`,
@@ -178,6 +197,7 @@ export default function SignupPage() {
             placeholder="John Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            error={fieldErrors.name}
             required
           />
           <Input
@@ -186,6 +206,7 @@ export default function SignupPage() {
             placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={fieldErrors.email}
             required
           />
           <Input
@@ -194,6 +215,7 @@ export default function SignupPage() {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={fieldErrors.password}
             required
           />
 
@@ -230,6 +252,7 @@ export default function SignupPage() {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              error={fieldErrors.confirmPassword}
               required
             />
           )}

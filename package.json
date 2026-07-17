@@ -22,6 +22,7 @@
     "@prisma/client": "^7.8.0",
     "@supabase/auth-js": "^2.110.1",
     "@supabase/supabase-js": "^2.50.0",
+    "@tanstack/react-query": "^5.101.2",
     "@tsparticles/all": "^4.2.1",
     "@tsparticles/react": "^4.2.1",
     "@tsparticles/slim": "^4.2.1",
@@ -35,7 +36,8 @@
     "next-auth": "^4.24.14",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
