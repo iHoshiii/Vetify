@@ -177,9 +177,6 @@ export default function Home() {
 
             {/* Scroll nudge */}
             <div className="hero-scroll-badge mt-14 flex flex-col items-center gap-1.5 text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-widest">
-                Scroll to explore
-              </span>
               <div className="scroll-indicator h-5 w-5">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M10 4v12M4 10l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -480,7 +477,7 @@ export default function Home() {
               <ul className="space-y-4">
                 {[
                   { label: 'Blogs', href: '/blogs' },
-                  { label: 'FAQs', href: '/faqs' },
+                  { label: 'FAQs', href: '/help' },
                   { label: 'Anatomy Guide', href: '/chat?anatomy=true' },
                   { label: 'Meal Planner', href: '/planner' },
                 ].map((link) => (
