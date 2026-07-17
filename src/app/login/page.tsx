@@ -2,25 +2,46 @@
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { loginSchema } from '@/lib/schemas';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import React, { useState } from 'react';
+
+type LoginFormErrors = {
+  email?: string;
+  password?: string;
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<LoginFormErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setFieldErrors({});
+
+    const parsed = loginSchema.safeParse({ email, password });
+
+    if (!parsed.success) {
+      const flattened = parsed.error.flatten().fieldErrors;
+      setFieldErrors({
+        email: flattened.email?.[0],
+        password: flattened.password?.[0],
+      });
+      setError('Please correct the highlighted fields.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const result = await signIn('credentials', {
-        email,
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
         redirect: true,
         callbackUrl: '/',
       });
@@ -59,6 +80,7 @@ export default function LoginPage() {
             placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={fieldErrors.email}
             required
           />
           <Input
@@ -67,6 +89,7 @@ export default function LoginPage() {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={fieldErrors.password}
             required
           />
 
