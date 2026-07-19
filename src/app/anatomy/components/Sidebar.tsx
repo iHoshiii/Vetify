@@ -1,11 +1,12 @@
+import type { AnimalId, SystemId } from '../types';
 import { ANIMALS, BODY_SYSTEMS } from '../types';
 
-type SidebarProps = {
-  selectedAnimal: string;
-  setSelectedAnimal: (id: string) => void;
-  selectedSystem: string;
-  setSelectedSystem: (id: string) => void;
-};
+interface SidebarProps {
+  selectedAnimal: AnimalId;
+  setSelectedAnimal: (id: AnimalId) => void;
+  selectedSystem: SystemId;
+  setSelectedSystem: (id: SystemId) => void;
+}
 
 export default function Sidebar({
   selectedAnimal,
