@@ -10,18 +10,21 @@ import bird from './data/bird';
 import cat from './data/cat';
 import dog from './data/dog';
 
-import type { AnatomySystem } from './types';
+// 1. Import AnimalId and SystemId alongside your other setups
+import type { AnatomySystem, AnimalId, SystemId } from './types';
 import { ANIMALS, BODY_SYSTEMS } from './types';
 
-const HOTSPOTS: Record<string, Record<string, AnatomySystem[]>> = { dog, cat, bird };
+// 2. Type your config map cleanly using the strict IDs
+const HOTSPOTS: Record<AnimalId, Record<SystemId, AnatomySystem[]>> = { dog, cat, bird };
 
 export default function AnatomyPage() {
-  const [selectedAnimal, setSelectedAnimal] = useState(ANIMALS[0].id);
-  const [selectedSystem, setSelectedSystem] = useState(BODY_SYSTEMS[0].id);
+  // 3. Explicitly tell useState to accept any valid ID from the union, not just the first one
+  const [selectedAnimal, setSelectedAnimal] = useState<AnimalId>(ANIMALS[0].id);
+  const [selectedSystem, setSelectedSystem] = useState<SystemId>(BODY_SYSTEMS[0].id);
 
   // Deriving the active data object maps directly inside the render stack
   // keeps us clear of asynchronous synchronizing errors.
-  const dynamicHotspots = HOTSPOTS[selectedAnimal]?.[selectedSystem] || [];
+  const dynamicHotspots = HOTSPOTS[selectedAnimal][selectedSystem];
 
   return (
     <main className="h-[calc(100vh-57px)] overflow-hidden flex flex-col bg-slate-50">
