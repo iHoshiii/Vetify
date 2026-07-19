@@ -1,32 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-
 import Image from 'next/image';
-
+import { useState } from 'react';
 import bird from './data/bird';
 import cat from './data/cat';
 import dog from './data/dog';
 import IMAGE_CONFIG from './data/image-config';
+import type { AnatomySystem } from './types';
+import { ANIMALS, BODY_SYSTEMS } from './types';
 
-const ANIMALS = [
-  { id: 'dog', name: 'Dog', icon: '🐕' },
-  { id: 'cat', name: 'Cat', icon: '🐈' },
-  { id: 'bird', name: 'Bird', icon: '🦜' },
-];
-
-const BODY_SYSTEMS = [
-  { id: 'skeletal', name: 'Skeletal System', icon: '🦴' },
-  { id: 'muscular', name: 'Muscular System', icon: '💪' },
-  { id: 'digestive', name: 'Digestive System', icon: '🥩' },
-  { id: 'cardiovascular', name: 'Cardiovascular', icon: '❤️' },
-  { id: 'nervous', name: 'Nervous System', icon: '🧠' },
-];
-
-const HOTSPOTS: Record<
-  string,
-  Record<string, { id: string; x: number; y: number; title: string; desc: string }[]>
-> = { dog, cat, bird };
+const HOTSPOTS: Record<string, Record<string, AnatomySystem[]>> = { dog, cat, bird };
 
 export default function AnatomyPage() {
   const [selectedAnimal, setSelectedAnimal] = useState(ANIMALS[0].id);

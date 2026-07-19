@@ -1,4 +1,4 @@
-import type { AnatomySystem } from './types';
+import type { AnatomySystem } from '../types';
 
 const bird: Record<string, AnatomySystem[]> = {
   skeletal: [
