@@ -36,4 +36,10 @@ July 14, 2026
 July 15, 2026
 =======
 
+[x] update PRD/TDD
+july 19, 2026
+
+[x] modulate anatomy and about
+july 20, 2026
+
 > > > > > > > origin/dev
