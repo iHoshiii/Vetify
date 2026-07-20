@@ -1,183 +1,82 @@
-import type { AnatomySystem } from './types';
+import type { AnatomySystem, SpotDetails } from '../types';
+
+const createSystem = (data: readonly SpotDetails[]): AnatomySystem[] =>
+  data.map(([id, x, y, title, desc]) => ({ id, x, y, title, desc }));
 
 const dog: Record<string, AnatomySystem[]> = {
-  skeletal: [
-    {
-      id: 'skull',
-      x: 25,
-      y: 23,
-      title: 'Skull (Cranium)',
-      desc: 'Protects the brain and supports facial structures.',
-    },
-    {
-      id: 'jaw',
-      x: 25,
-      y: 32,
-      title: 'Mandible (Jaw)',
-      desc: 'Crucial for chewing and holding prey.',
-    },
-    {
-      id: 'cervical',
-      x: 32,
-      y: 34,
-      title: 'Cervical Vertebrae',
-      desc: 'The neck bones connecting the skull to the spine.',
-    },
-    {
-      id: 'spine',
-      x: 50,
-      y: 37,
-      title: 'Thoracic & Lumbar Spine',
-      desc: 'Provides structural support and houses the spinal cord.',
-    },
-    {
-      id: 'ribs',
-      x: 45,
-      y: 45,
-      title: 'Rib Cage',
-      desc: 'Protects vital internal organs like the heart and lungs.',
-    },
-    { id: 'pelvis', x: 69, y: 42, title: 'Pelvis', desc: 'Connects the spine to the hind legs.' },
-    {
-      id: 'femur',
-      x: 70,
-      y: 50,
-      title: 'Femur',
-      desc: 'The long bone of the hind leg, essential for movement and support.',
-    },
-    { id: 'tibia', x: 75, y: 70, title: 'Tibia/Fibula', desc: 'The lower hind leg bones.' },
-    { id: 'humerus', x: 35, y: 57, title: 'Humerus', desc: 'The upper front leg bone.' },
-    { id: 'radius', x: 40, y: 67, title: 'Radius/Ulna', desc: 'The lower front leg bones.' },
-  ],
-  muscular: [
-    {
-      id: 'masseter',
-      x: 25,
-      y: 23,
-      title: 'Masseter Muscle',
-      desc: 'Primary muscle used for chewing and closing the jaw.',
-    },
-    {
-      id: 'brachiocephalicus',
-      x: 33,
-      y: 28,
-      title: 'Neck Muscles',
-      desc: 'Moves the head and neck, extends the front leg.',
-    },
-    {
-      id: 'latissimus',
-      x: 45,
-      y: 30,
-      title: 'Latissimus Dorsi',
-      desc: 'Retracts the forelimb and flexes the shoulder.',
-    },
-    {
-      id: 'pectorals',
-      x: 32,
-      y: 55,
-      title: 'Pectoral Muscles',
-      desc: 'Chest muscles used for adduction of the forelimbs.',
-    },
-    {
-      id: 'gluteal',
-      x: 70,
-      y: 33,
-      title: 'Gluteal Muscles',
-      desc: 'Powerful muscles for running, jumping, and stability.',
-    },
-    {
-      id: 'hamstring',
-      x: 73,
-      y: 50,
-      title: 'Hamstring',
-      desc: 'Located on the back of the thigh, crucial for propulsion.',
-    },
-    {
-      id: 'quadriceps',
-      x: 67,
-      y: 54,
-      title: 'Quadriceps',
-      desc: 'Front of the thigh, extends the knee joint.',
-    },
-  ],
-  digestive: [
-    {
-      id: 'esophagus',
-      x: 30,
-      y: 35,
-      title: 'Esophagus',
-      desc: 'Transports food from the mouth to the stomach.',
-    },
-    { id: 'stomach', x: 55, y: 50, title: 'Stomach', desc: 'Where primary food breakdown occurs.' },
-    {
-      id: 'liver',
-      x: 53,
-      y: 42,
-      title: 'Liver',
-      desc: 'Filters toxins, produces bile, and aids in digestion.',
-    },
-    {
-      id: 'intestines',
-      x: 65,
-      y: 42,
-      title: 'Small/Large Intestines',
-      desc: 'Absorbs nutrients and water from food.',
-    },
-    { id: 'colon', x: 73, y: 42, title: 'Colon', desc: 'Final segment of the digestive tract.' },
-  ],
-  cardiovascular: [
-    {
-      id: 'heart',
-      x: 47,
-      y: 50,
-      title: 'Heart',
-      desc: 'Pumps oxygen-rich blood throughout the body.',
-    },
-    {
-      id: 'aorta',
-      x: 45,
-      y: 45,
-      title: 'Aorta',
-      desc: 'The main artery carrying blood away from the heart.',
-    },
-    {
-      id: 'jugular',
-      x: 32,
-      y: 33,
-      title: 'Jugular Vein',
-      desc: 'Major blood vessel in the neck returning blood to the heart.',
-    },
-    {
-      id: 'femoral_artery',
-      x: 65,
-      y: 55,
-      title: 'Femoral Artery',
-      desc: 'Supplies blood to the hind limbs.',
-    },
-  ],
-  nervous: [
-    {
-      id: 'brain',
-      x: 31,
-      y: 10,
-      title: 'Brain',
-      desc: 'The central control system for all bodily functions.',
-    },
-    {
-      id: 'spinal_cord',
-      x: 50,
-      y: 32,
-      title: 'Spinal Cord',
-      desc: 'The main pathway for information connecting the brain and peripheral nerves.',
-    },
-    {
-      id: 'sciatic',
-      x: 58,
-      y: 35,
-      title: 'Sciatic Nerve',
-      desc: 'Major nerve serving the hind limbs.',
-    },
-  ],
+  skeletal: createSystem([
+    ['skull', 25, 23, 'Skull (Cranium)', 'Protects the brain and supports facial structures.'],
+    ['jaw', 25, 32, 'Mandible (Jaw)', 'Crucial for chewing and holding prey.'],
+    ['cervical', 32, 34, 'Cervical Vertebrae', 'The neck bones connecting the skull to the spine.'],
+    [
+      'spine',
+      50,
+      37,
+      'Thoracic & Lumbar Spine',
+      'Provides structural support and houses the spinal cord.',
+    ],
+    ['ribs', 45, 45, 'Rib Cage', 'Protects vital internal organs like the heart and lungs.'],
+    ['pelvis', 69, 42, 'Pelvis', 'Connects the spine to the hind legs.'],
+    [
+      'femur',
+      70,
+      50,
+      'Femur',
+      'The long bone of the hind leg, essential for movement and support.',
+    ],
+    ['tibia', 75, 70, 'Tibia/Fibula', 'The lower hind leg bones.'],
+    ['humerus', 35, 57, 'Humerus', 'The upper front leg bone.'],
+    ['radius', 40, 67, 'Radius/Ulna', 'The lower front leg bones.'],
+  ] as const),
+
+  muscular: createSystem([
+    ['masseter', 25, 23, 'Masseter Muscle', 'Primary muscle used for chewing and closing the jaw.'],
+    [
+      'brachiocephalicus',
+      33,
+      28,
+      'Neck Muscles',
+      'Moves the head and neck, extends the front leg.',
+    ],
+    ['latissimus', 45, 30, 'Latissimus Dorsi', 'Retracts the forelimb and flexes the shoulder.'],
+    ['pectorals', 32, 55, 'Pectoral Muscles', 'Chest muscles used for adduction of the forelimbs.'],
+    ['gluteal', 70, 33, 'Gluteal Muscles', 'Powerful muscles for running, jumping, and stability.'],
+    ['hamstring', 73, 50, 'Hamstring', 'Located on the back of the thigh, crucial for propulsion.'],
+    ['quadriceps', 67, 54, 'Quadriceps', 'Front of the thigh, extends the knee joint.'],
+  ] as const),
+
+  digestive: createSystem([
+    ['esophagus', 30, 35, 'Esophagus', 'Transports food from the mouth to the stomach.'],
+    ['stomach', 55, 50, 'Stomach', 'Where primary food breakdown occurs.'],
+    ['liver', 53, 42, 'Liver', 'Filters toxins, produces bile, and aids in digestion.'],
+    ['intestines', 65, 42, 'Small/Large Intestines', 'Absorbs nutrients and water from food.'],
+    ['colon', 73, 42, 'Colon', 'Final segment of the digestive tract.'],
+  ] as const),
+
+  cardiovascular: createSystem([
+    ['heart', 47, 50, 'Heart', 'Pumps oxygen-rich blood throughout the body.'],
+    ['aorta', 45, 45, 'Aorta', 'The main artery carrying blood away from the heart.'],
+    [
+      'jugular',
+      32,
+      33,
+      'Jugular Vein',
+      'Major blood vessel in the neck returning blood to the heart.',
+    ],
+    ['femoral_artery', 65, 55, 'Femoral Artery', 'Supplies blood to the hind limbs.'],
+  ] as const),
+
+  nervous: createSystem([
+    ['brain', 31, 10, 'Brain', 'The central control system for all bodily functions.'],
+    [
+      'spinal_cord',
+      50,
+      32,
+      'Spinal Cord',
+      'The main pathway for information connecting the brain and peripheral nerves.',
+    ],
+    ['sciatic', 58, 35, 'Sciatic Nerve', 'Major nerve serving the hind limbs.'],
+  ] as const),
 };
 
 export default dog;

@@ -1,149 +1,68 @@
-import type { AnatomySystem } from './types';
+import type { AnatomySystem, SpotDetails } from '../types';
 
+// 2. A simple conversion helper function
+const createSystem = (data: SpotDetails[]): AnatomySystem[] =>
+  data.map(([id, x, y, title, desc]) => ({ id, x, y, title, desc }));
+
+// 3. Clean, tabular structural layout
 const cat: Record<string, AnatomySystem[]> = {
-  skeletal: [
-    {
-      id: 'skull',
-      x: 28,
-      y: 48,
-      title: 'Skull',
-      desc: 'Features large eye sockets for enhanced night vision.',
-    },
-    {
-      id: 'spine',
-      x: 55,
-      y: 28,
-      title: 'Flexible Spine',
-      desc: 'Highly flexible, allowing cats to land on their feet.',
-    },
-    {
-      id: 'clavicle',
-      x: 45,
-      y: 58,
-      title: 'Vestigial Clavicle',
-      desc: 'A small floating collarbone that allows cats to squeeze through tight spaces.',
-    },
-    {
-      id: 'pelvis',
-      x: 67,
-      y: 45,
-      title: 'Pelvis',
-      desc: 'Connects the spine to the powerful hind legs.',
-    },
-    {
-      id: 'femur',
-      x: 68,
-      y: 51,
-      title: 'Femur',
-      desc: 'Long hind leg bone enabling powerful leaps.',
-    },
-  ],
-  muscular: [
-    {
-      id: 'masseter',
-      x: 29,
-      y: 39,
-      title: 'Masseter Muscle',
-      desc: 'Strong jaw muscle for gripping and killing prey.',
-    },
-    {
-      id: 'trapezius',
-      x: 44,
-      y: 42,
-      title: 'Trapezius',
-      desc: 'Stabilizes the shoulder blades during pouncing.',
-    },
-    {
-      id: 'gluteal',
-      x: 73,
-      y: 38,
-      title: 'Gluteal Muscles',
-      desc: 'Power the explosive jumping ability of cats.',
-    },
-    {
-      id: 'gastrocnemius',
-      x: 76,
-      y: 62,
-      title: 'Gastrocnemius',
-      desc: 'Calf muscle enabling silent, precise landings.',
-    },
-  ],
-  digestive: [
-    {
-      id: 'esophagus',
-      x: 33,
-      y: 48,
-      title: 'Esophagus',
-      desc: 'Short esophagus suited for an obligate carnivore diet.',
-    },
-    {
-      id: 'stomach',
-      x: 51,
-      y: 58,
-      title: 'Stomach',
-      desc: 'Highly acidic stomach for digesting raw meat and bones.',
-    },
-    {
-      id: 'liver',
-      x: 49,
-      y: 57,
-      title: 'Liver',
-      desc: 'Processes proteins and fats from a meat-heavy diet.',
-    },
-    {
-      id: 'intestines',
-      x: 58,
-      y: 58,
-      title: 'Intestines',
-      desc: 'Shorter than dogs, reflecting a carnivorous digestive tract.',
-    },
-  ],
-  cardiovascular: [
-    {
-      id: 'heart',
-      x: 38,
-      y: 48,
-      title: 'Heart',
-      desc: 'Pumps blood efficiently; cats are prone to hypertrophic cardiomyopathy.',
-    },
-    {
-      id: 'aorta',
-      x: 40,
-      y: 43,
-      title: 'Aorta',
-      desc: 'Main artery distributing oxygenated blood from the heart.',
-    },
-    {
-      id: 'jugular',
-      x: 35,
-      y: 35,
-      title: 'Jugular Vein',
-      desc: 'Common site for blood draws in feline patients.',
-    },
-  ],
-  nervous: [
-    {
-      id: 'brain',
-      x: 31,
-      y: 30,
-      title: 'Brain',
-      desc: 'Highly developed cerebral cortex supporting complex sensory processing.',
-    },
-    {
-      id: 'spinal_cord',
-      x: 48,
-      y: 40,
-      title: 'Spinal Cord',
-      desc: "Transmits signals enabling the cat's agile reflexes.",
-    },
-    {
-      id: 'optic_nerve',
-      x: 33,
-      y: 34,
-      title: 'Optic Nerve',
-      desc: 'Large optic nerves support exceptional low-light vision.',
-    },
-  ],
+  skeletal: createSystem([
+    ['skull', 28, 48, 'Skull', 'Features large eye sockets for enhanced night vision.'],
+    ['spine', 55, 28, 'Flexible Spine', 'Highly flexible, allowing cats to land on their feet.'],
+    [
+      'clavicle',
+      45,
+      58,
+      'Vestigial Clavicle',
+      'Floating collarbone that allows squeezing through tight spaces.',
+    ],
+    ['pelvis', 67, 45, 'Pelvis', 'Connects the spine to the powerful hind legs.'],
+    ['femur', 68, 51, 'Femur', 'Long hind leg bone enabling powerful leaps.'],
+  ]),
+
+  muscular: createSystem([
+    ['masseter', 29, 39, 'Masseter Muscle', 'Strong jaw muscle for gripping and killing prey.'],
+    ['trapezius', 44, 42, 'Trapezius', 'Stabilizes the shoulder blades during pouncing.'],
+    ['gluteal', 73, 38, 'Gluteal Muscles', 'Power the explosive jumping ability of cats.'],
+    ['gastrocnemius', 76, 62, 'Gastrocnemius', 'Calf muscle enabling silent, precise landings.'],
+  ]),
+
+  digestive: createSystem([
+    ['esophagus', 33, 48, 'Esophagus', 'Short esophagus suited for an obligate carnivore diet.'],
+    ['stomach', 51, 58, 'Stomach', 'Highly acidic stomach for digesting raw meat and bones.'],
+    ['liver', 49, 57, 'Liver', 'Processes proteins and fats from a meat-heavy diet.'],
+    [
+      'intestines',
+      58,
+      58,
+      'Intestines',
+      'Shorter than dogs, reflecting a carnivorous digestive tract.',
+    ],
+  ]),
+
+  cardiovascular: createSystem([
+    ['heart', 38, 48, 'Heart', 'Pumps blood efficiently; prone to hypertrophic cardiomyopathy.'],
+    ['aorta', 40, 43, 'Aorta', 'Main artery distributing oxygenated blood from the heart.'],
+    ['jugular', 35, 35, 'Jugular Vein', 'Common site for blood draws in feline patients.'],
+  ]),
+
+  nervous: createSystem([
+    [
+      'brain',
+      31,
+      30,
+      'Brain',
+      'Highly developed cerebral cortex supporting complex sensory processing.',
+    ],
+    ['spinal_cord', 48, 40, 'Spinal Cord', "Transmits signals enabling the cat's agile reflexes."],
+    [
+      'optic_nerve',
+      33,
+      34,
+      'Optic Nerve',
+      'Large optic nerves support exceptional low-light vision.',
+    ],
+  ]),
 };
 
 export default cat;
