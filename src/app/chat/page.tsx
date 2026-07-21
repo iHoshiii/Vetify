@@ -1,8 +1,8 @@
 'use client';
 
 import ChatWindow from '@/components/ChatWindow';
-import ChatSidebar from './cust_hooks/chat-sidebar';
-import { useChatStorage } from './cust_hooks/use-chat-storage';
+import ChatSidebar from './_hooks/chat-sidebar';
+import { useChatStorage } from './_hooks/use-chat-storage';
 
 export default function ChatPage() {
   const {
