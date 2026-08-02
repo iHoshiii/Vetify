@@ -2,7 +2,7 @@
 
 import ChatWindow from '@/components/ChatWindow';
 import { useChatStorage } from '@/hooks/useChatStorage';
-import ChatSidebar from './_hooks/chat-sidebar';
+import ChatSidebar from './_components/chat-sidebar';
 
 export default function ChatPage() {
   const {
