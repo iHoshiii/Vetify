@@ -1,4 +1,4 @@
-import type { AnatomySystem, SpotDetails } from '../types';
+import type { AnatomySystem, SpotDetails } from '@/types/anatomy';
 
 const createSystem = (data: readonly SpotDetails[]): AnatomySystem[] =>
   data.map(([id, x, y, title, desc]) => ({ id, x, y, title, desc }));

@@ -11,8 +11,8 @@ import cat from './data/cat';
 import dog from './data/dog';
 
 // 1. Import AnimalId and SystemId alongside your other setups
-import type { AnatomySystem, AnimalId, SystemId } from './types';
-import { ANIMALS, BODY_SYSTEMS } from './types';
+import type { AnatomySystem, AnimalId, SystemId } from '@/types/anatomy';
+import { ANIMALS, BODY_SYSTEMS } from '@/types/anatomy';
 
 // 2. Type your config map cleanly using the strict IDs
 const HOTSPOTS: Record<AnimalId, Record<SystemId, AnatomySystem[]>> = { dog, cat, bird };
