@@ -1,4 +1,4 @@
-import { eligibility } from '@/types/professional';
+import { eligibility } from '../data/prof-data';
 
 export default function EligibilitySection() {
   return (
