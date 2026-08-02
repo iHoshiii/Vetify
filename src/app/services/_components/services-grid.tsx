@@ -1,5 +1,5 @@
 import ScrollReveal from '@/components/ScrollReveal';
-import { services } from '../data/services';
+import { services } from '../data/services-data';
 
 export default function ServicesGrid() {
   return (
