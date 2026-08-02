@@ -1,4 +1,4 @@
-import type { AnatomySystem, SpotDetails } from '../types';
+import type { AnatomySystem, SpotDetails } from '@/types/anatomy';
 
 // 2. A simple conversion helper function
 const createSystem = (data: SpotDetails[]): AnatomySystem[] =>

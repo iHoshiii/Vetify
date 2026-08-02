@@ -26,7 +26,6 @@ export type Hotspot = {
   desc: string;
 };
 
-// 1. Added 'readonly' here so it matches the 'as const' configuration in your data arrays
 export type SpotDetails = readonly [
   AnatomySystem['id'],
   AnatomySystem['x'],
