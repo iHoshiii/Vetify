@@ -1,7 +1,7 @@
+import { ANIMALS, type AnatomySystem } from '@/types/anatomy';
 import Image from 'next/image';
 import { useState } from 'react';
 import IMAGE_CONFIG from '../data/image-config';
-import { ANIMALS, type AnatomySystem } from '../types';
 
 type ViewerProps = {
   selectedAnimal: string;

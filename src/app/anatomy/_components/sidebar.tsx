@@ -1,5 +1,5 @@
-import type { AnimalId, SystemId } from '../types';
-import { ANIMALS, BODY_SYSTEMS } from '../types';
+import type { AnimalId, SystemId } from '@/types/anatomy';
+import { ANIMALS, BODY_SYSTEMS } from '@/types/anatomy';
 
 interface SidebarProps {
   selectedAnimal: AnimalId;
