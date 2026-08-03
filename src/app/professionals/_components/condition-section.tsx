@@ -1,4 +1,4 @@
-import { conditions } from '@/types/professional';
+import { conditions } from '../data/prof-data';
 
 export default function ConditionsSection() {
   return (

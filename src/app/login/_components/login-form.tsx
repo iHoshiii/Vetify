@@ -3,13 +3,9 @@
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { loginSchema } from '@/lib/schemas';
+import type { LoginFormErrors } from '@/types/login';
 import { signIn } from 'next-auth/react';
 import React, { useState } from 'react';
-
-type LoginFormErrors = {
-  email?: string;
-  password?: string;
-};
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
