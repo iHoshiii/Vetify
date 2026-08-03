@@ -43,3 +43,8 @@ july 19, 2026
 july 20, 2026
 
 > > > > > > > origin/dev
+
+S3 + CloudFront for frontend
+API Gateway + Lambda for backend
+OCI Autonomous Database for data
+Replace Supabase/Postgres assumptions in the backend

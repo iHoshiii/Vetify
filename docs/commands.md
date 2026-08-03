@@ -16,7 +16,7 @@ Quick reference for all dev commands used in this project.
 
 ---
 
-## 🗄️ Database (Prisma + Supabase)
+## 🗄️ Database (Prisma + OCI Autonomous Database)
 
 | Command              | Description                                                 |
 | -------------------- | ----------------------------------------------------------- |
