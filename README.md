@@ -2,6 +2,17 @@
 
 Development workspace for the Vetify project: a Next.js frontend at the repo root and a Python backend in `backend/`.
 
+## Tech Stack
+
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Frontend hosting: S3 + CloudFront
+- Backend: FastAPI on Python
+- Backend hosting: API Gateway + Lambda
+- Database: OCI Autonomous Database
+- Auth / APIs: NextAuth, Supabase client usage, and backend API routes
+- AI / integrations: Google GenAI, Groq, LangChain
+- Testing: Vitest, Playwright, Pytest
+
 ## Quick Start
 
 ### Prerequisites
