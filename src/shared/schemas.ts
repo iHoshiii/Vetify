@@ -62,3 +62,6 @@ export const chatRequestSchema = z
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type ChatRequestInput = z.infer<typeof chatRequestSchema>;
+
+/** Post-parse chat payload: defaults applied, model normalised. */
+export type ChatRequest = z.output<typeof chatRequestSchema>;
