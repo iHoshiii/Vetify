@@ -47,4 +47,3 @@ july 20, 2026
 S3 + CloudFront for frontend
 API Gateway + Lambda for backend
 OCI Autonomous Database for data
-Replace Supabase/Postgres assumptions in the backend
