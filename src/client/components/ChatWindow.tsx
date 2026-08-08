@@ -1,11 +1,9 @@
+import { readAuthState } from '@/lib/auth';
+import type { Message } from '@/lib/chat-storage';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import type { Components } from 'react-markdown';
-import type { Message } from '@/lib/chat-storage';
-import { useSession } from 'next-auth/react';
 
 import { ApiError } from '@/services/api';
-import { sendMessage } from '@/services/chat.service';
 
 const SUGGESTIONS = [
   'My dog is scratching a lot, what could it be?',
@@ -30,8 +28,8 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [model, setModel] = useState(MODELS[0].value);
-  const { data: session } = useSession();
-  const sessionId = (session?.user as any)?.id ?? 'anonymous';
+  const authState = readAuthState();
+  const sessionId = authState?.user?.id ?? 'anonymous';
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);

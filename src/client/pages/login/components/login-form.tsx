@@ -2,7 +2,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { loginSchema } from '@shared/schemas';
 import type { LoginFormErrors } from '@/types/login';
-import { signIn } from 'next-auth/react';
+import { loginWithEmail } from '@/lib/auth';
+import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
 export default function LoginForm() {
@@ -11,6 +12,7 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<LoginFormErrors>({});
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,18 +34,10 @@ export default function LoginForm() {
     }
 
     try {
-      const result = await signIn('credentials', {
-        email: parsed.data.email,
-        password: parsed.data.password,
-        redirect: true,
-        callbackUrl: '/',
-      });
-
-      if (result?.error) {
-        setError('Invalid email or password');
-      }
+      await loginWithEmail(parsed.data.email, parsed.data.password);
+      navigate('/');
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

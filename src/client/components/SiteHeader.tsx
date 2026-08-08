@@ -1,6 +1,6 @@
-import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { readAuthState } from '@/lib/auth';
 
 const navItems = [
   { label: 'Home', href: '/#home' },
@@ -17,9 +17,12 @@ const toolsItems = [
 ];
 
 export default function SiteHeader() {
-  const { data: session, status } = useSession();
-  const showAuthActions = status === 'unauthenticated';
-  const isAuthenticated = status === 'authenticated';
+  const [authState, setAuthState] = useState(() => readAuthState());
+  useEffect(() => {
+    setAuthState(readAuthState());
+  }, []);
+  const showAuthActions = !authState?.user;
+  const isAuthenticated = Boolean(authState?.user);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
