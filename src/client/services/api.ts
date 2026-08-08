@@ -1,4 +1,3 @@
-/** Base path for the Express API. The Vite dev proxy forwards /api to :8000. */
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
 export type ApiErrorBody = {
