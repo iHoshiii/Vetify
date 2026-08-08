@@ -7,7 +7,11 @@
     "types": ["node"],
     "outDir": "dist/server",
     "rootDir": "src",
-    "composite": true
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["./src/shared/*"]
+    }
   },
   "include": ["src/server", "src/shared"]
 }

@@ -1,9 +1,10 @@
 import Button from '@/components/ui/Button';
-import { signIn } from 'next-auth/react';
+import { apiFetch } from '@/services/api';
 
 export default function SocialLogins() {
   const handleSocialLogin = (provider: string) => {
-    signIn(provider, { callbackUrl: '/' });
+    // OAuth social login — redirect to server-side OAuth endpoint
+    window.location.href = `/api/v1/auth/${provider}`;
   };
 
   return (

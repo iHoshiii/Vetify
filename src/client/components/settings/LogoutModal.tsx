@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { signOut } from 'next-auth/react';
+import { logoutFromServer } from '@/lib/auth';
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -33,7 +33,7 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
             Cancel
           </button>
           <button
-            onClick={() => signOut()}
+            onClick={() => logoutFromServer()}
             className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-red-700 hover:shadow-lg"
           >
             Yes, Log Out

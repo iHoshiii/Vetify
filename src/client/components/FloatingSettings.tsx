@@ -1,4 +1,4 @@
-import { useSession } from 'next-auth/react';
+import { readAuthState } from '@/lib/auth';
 import { useState, useRef, useEffect } from 'react';
 import { Settings, LogOut } from 'lucide-react';
 import AccountSection from './settings/sections/AccountSection';
@@ -10,7 +10,7 @@ import LogoutModal from './settings/LogoutModal';
 import LanguageModal from './settings/LanguageModal';
 
 export default function FloatingSettings() {
-  const { data: session, status } = useSession();
+  const authState = readAuthState();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -27,7 +27,7 @@ export default function FloatingSettings() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (status !== 'authenticated' || !session) return null;
+  if (!authState?.user) return null;
 
   return (
     <div ref={menuRef} className="fixed bottom-6 left-6 z-50">
@@ -39,11 +39,11 @@ export default function FloatingSettings() {
         <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-200">
           <div className="p-3 mb-2 border-b border-slate-100 flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-100 to-blue-100 text-lg font-bold text-teal-700 ring-2 ring-teal-200">
-              {session.user?.name?.charAt(0).toUpperCase() ?? 'U'}
+              {authState.user?.name?.charAt(0).toUpperCase() ?? 'U'}
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-slate-800">{session.user?.name ?? 'User'}</span>
-              <span className="text-xs text-slate-500">{session.user?.email ?? 'Settings'}</span>
+              <span className="font-bold text-slate-800">{authState.user?.name ?? 'User'}</span>
+              <span className="text-xs text-slate-500">{authState.user?.email ?? 'Settings'}</span>
             </div>
           </div>
           <div className="flex flex-col">
