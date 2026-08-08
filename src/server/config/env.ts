@@ -1,0 +1,37 @@
+import { z } from 'zod';
+
+// Node 24 loads .env natively, so no dotenv dependency. Throws when the file is
+// absent (CI, containers with real env vars) — that case is fine, not fatal.
+try {
+  process.loadEnvFile();
+} catch {
+  // no .env on disk; rely on the ambient environment
+}
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(8000),
+
+  MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/vetify'),
+
+  // Only consulted for non-proxied clients. The Vite dev proxy keeps the
+  // browser same-origin, so CORS is a no-op in normal local development.
+  CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
+
+  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  const details = Object.entries(parsed.error.flatten().fieldErrors)
+    .map(([key, errors]) => `  ${key}: ${errors?.join(', ')}`)
+    .join('\n');
+  // Fail at boot rather than at the first request that needs the value.
+  throw new Error(`Invalid environment configuration:\n${details}`);
+}
+
+export const env = parsed.data;
+
+export const isProduction = env.NODE_ENV === 'production';
+export const isTest = env.NODE_ENV === 'test';
