@@ -1,11 +1,47 @@
-import { Schema, model, type HydratedDocument, type InferSchemaType } from 'mongoose';
+import { Schema, Types, model, type HydratedDocument, type Model } from 'mongoose';
+
+export type PetAvatar = {
+  url: string | null;
+  color: string;
+  initials: boolean;
+};
+
+export type PetAttrs = {
+  name: string;
+  species: string;
+  breed?: string | null;
+  age?: number | null;
+  weight?: number | null;
+  owner: Types.ObjectId;
+  avatar?: PetAvatar;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type PublicPet = {
+  id: string;
+  name: string;
+  species: string;
+  breed: string | null;
+  age: number | null;
+  weight: number | null;
+  ownerId: string;
+  avatar: PetAvatar;
+};
+
+export type PetMethods = {
+  toPublic(): PublicPet;
+};
+
+export type PetModel = Model<PetAttrs, Record<string, never>, PetMethods>;
+export type PetDoc = HydratedDocument<PetAttrs, PetMethods>;
 
 /**
  * Defaults carried over from the FastAPI migration
  * 2026_06_18_init_pet_avatar_defaults, which backfilled these onto existing
  * documents. Kept identical so old and new records stay consistent.
  */
-const avatarSchema = new Schema(
+const avatarSchema = new Schema<PetAvatar>(
   {
     url: { type: String, default: null },
     color: { type: String, default: '#A78BFA' },
@@ -14,7 +50,7 @@ const avatarSchema = new Schema(
   { _id: false }
 );
 
-const petSchema = new Schema(
+const petSchema = new Schema<PetAttrs, PetModel, PetMethods>(
   {
     name: {
       type: String,
@@ -49,7 +85,7 @@ const petSchema = new Schema(
   }
 );
 
-petSchema.methods.toPublic = function toPublic(this: HydratedDocument<PetAttrs>) {
+petSchema.methods.toPublic = function toPublic(this: PetDoc): PublicPet {
   return {
     id: this._id.toString(),
     name: this.name,
@@ -66,21 +102,4 @@ petSchema.methods.toPublic = function toPublic(this: HydratedDocument<PetAttrs>)
   };
 };
 
-export type PetAttrs = InferSchemaType<typeof petSchema>;
-
-export type PublicPet = {
-  id: string;
-  name: string;
-  species: string;
-  breed: string | null;
-  age: number | null;
-  weight: number | null;
-  ownerId: string;
-  avatar: { url: string | null; color: string; initials: boolean };
-};
-
-export type PetDoc = HydratedDocument<PetAttrs> & {
-  toPublic(): PublicPet;
-};
-
-export const Pet = model<PetAttrs>('Pet', petSchema);
+export const Pet = model<PetAttrs, PetModel>('Pet', petSchema);

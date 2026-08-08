@@ -1,8 +1,25 @@
-export { Pet, type PetAttrs, type PetDoc, type PublicPet } from './Pet';
+export {
+  Pet,
+  type PetAttrs,
+  type PetAvatar,
+  type PetDoc,
+  type PetMethods,
+  type PetModel,
+  type PublicPet,
+} from './Pet';
 export {
   RefreshToken,
   hashToken,
   type RefreshTokenAttrs,
   type RefreshTokenDoc,
+  type RefreshTokenMethods,
+  type RefreshTokenModel,
 } from './RefreshToken';
-export { User, type PublicUser, type UserAttrs, type UserDoc } from './User';
+export {
+  User,
+  type PublicUser,
+  type UserAttrs,
+  type UserDoc,
+  type UserMethods,
+  type UserModel,
+} from './User';
