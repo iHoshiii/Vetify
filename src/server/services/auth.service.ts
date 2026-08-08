@@ -1,10 +1,9 @@
-import crypto from 'node:crypto';
-import jwt from 'jsonwebtoken';
 import { addDays } from 'date-fns';
+import jwt from 'jsonwebtoken';
+import crypto from 'node:crypto';
 
-import { User } from '../models/User';
-import { RefreshToken, hashToken } from '../models/RefreshToken';
 import { env } from '../config/env';
+import { RefreshToken, hashToken } from '../models/RefreshToken';
 
 export function signAccessToken(payload: object) {
   return jwt.sign(payload, env.JWT_SECRET, {

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 
-import chatRoute from './chat.route';
 import authRoute from './auth.route';
+import chatRoute from './chat.route';
 
 const router = Router();
 
