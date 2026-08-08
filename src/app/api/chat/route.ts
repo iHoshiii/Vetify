@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import * as wrappers from 'langsmith/wrappers';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { chatRequestSchema } from '@/lib/schemas';
+import { chatRequestSchema } from '@shared/schemas';
 
 const SYSTEM_PROMPT =
   'You are Vetify, a specialized AI veterinary assistant. Your knowledge is strictly limited to pet and animal health topics only. ' +

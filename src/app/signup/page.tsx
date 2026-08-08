@@ -2,7 +2,7 @@
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { signupSchema } from '@/lib/schemas';
+import { signupSchema } from '@shared/schemas';
 import { supabase } from '@/lib/supabaseClient';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
