@@ -1,9 +1,34 @@
 import bcrypt from 'bcryptjs';
-import { Schema, model, type HydratedDocument, type InferSchemaType } from 'mongoose';
+import { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 
 const SALT_ROUNDS = 12;
 
-const userSchema = new Schema(
+export type UserAttrs = {
+  email: string;
+  password: string;
+  name?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+/** Shape safe to serialise to a client — never includes the hash. */
+export type PublicUser = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+export type UserMethods = {
+  comparePassword(candidate: string): Promise<boolean>;
+  toPublic(): PublicUser;
+};
+
+// Declared explicitly rather than via InferSchemaType so that documents
+// returned by queries (findById, findOne) carry the instance methods too.
+export type UserModel = Model<UserAttrs, Record<string, never>, UserMethods>;
+export type UserDoc = HydratedDocument<UserAttrs, UserMethods>;
+
+const userSchema = new Schema<UserAttrs, UserModel, UserMethods>(
   {
     email: {
       type: String,
@@ -16,7 +41,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      // Excluded from queries by default so a stray res.json(user) can't leak
+      // Excluded from queries by default so a stray res.json(user) cannot leak
       // the hash. Auth code opts back in with .select('+password').
       select: false,
     },
@@ -42,14 +67,13 @@ userSchema.pre('save', async function hashPassword() {
 });
 
 userSchema.methods.comparePassword = function comparePassword(
-  this: HydratedDocument<UserAttrs>,
+  this: UserDoc,
   candidate: string
 ): Promise<boolean> {
   return bcrypt.compare(candidate, this.password);
 };
 
-/** Shape safe to serialise to a client — never includes the hash. */
-userSchema.methods.toPublic = function toPublic(this: HydratedDocument<UserAttrs>) {
+userSchema.methods.toPublic = function toPublic(this: UserDoc): PublicUser {
   return {
     id: this._id.toString(),
     email: this.email,
@@ -57,17 +81,4 @@ userSchema.methods.toPublic = function toPublic(this: HydratedDocument<UserAttrs
   };
 };
 
-export type UserAttrs = InferSchemaType<typeof userSchema>;
-
-export type PublicUser = {
-  id: string;
-  email: string;
-  name: string | null;
-};
-
-export type UserDoc = HydratedDocument<UserAttrs> & {
-  comparePassword(candidate: string): Promise<boolean>;
-  toPublic(): PublicUser;
-};
-
-export const User = model<UserAttrs>('User', userSchema);
+export const User = model<UserAttrs, UserModel>('User', userSchema);
