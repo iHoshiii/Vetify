@@ -1,6 +1,11 @@
-import { addDays } from 'date-fns';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
 
 import { env } from '../config/env';
 import { RefreshToken, hashToken } from '../models/RefreshToken';

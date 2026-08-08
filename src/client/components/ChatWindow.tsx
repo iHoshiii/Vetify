@@ -1,8 +1,8 @@
 import { readAuthState } from '@/lib/auth';
 import type { Message } from '@/lib/chat-storage';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-
+import { sendMessage as sendChatMessage } from '@/services/chat.service';
 import { ApiError } from '@/services/api';
 
 const SUGGESTIONS = [
@@ -57,7 +57,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     abortRef.current = controller;
 
     try {
-      const reply = await sendMessage({
+      const reply = await sendChatMessage({
         message: content,
         sessionId,
         history: base.map((m) => ({ role: m.role, content: m.content })),
@@ -287,6 +287,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
                   editingIndex != null ? sendMessage(input, editingIndex) : sendMessage()
                 }
                 disabled={!input.trim()}
+                aria-label="Send message"
                 className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-all hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <svg

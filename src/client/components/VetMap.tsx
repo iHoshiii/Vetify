@@ -213,7 +213,7 @@ export default function VetMap({
   zoom = 11,
   center = [16.32, 121.1],
   className = '',
-  showOverlay = true,
+  showOverlay: _showOverlay = true,
   interactive = true,
   fetchData = true,
   onReady,

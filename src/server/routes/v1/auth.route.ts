@@ -5,10 +5,10 @@ import { validate } from '../../middleware/validate';
 import { hashToken } from '../../models/RefreshToken';
 import { User } from '../../models/User';
 import {
-  createAuthPayloadFor,
-  findRefreshTokenByHash,
-  revokeRefreshTokenByHash,
-  signAccessToken,
+    createAuthPayloadFor,
+    findRefreshTokenByHash,
+    revokeRefreshTokenByHash,
+    signAccessToken,
 } from '../../services/auth.service';
 import { fail, ok } from '../../utils/response';
 
@@ -69,7 +69,7 @@ router.post('/refresh', async (req, res) => {
   const rt = await findRefreshTokenByHash(tokenHash);
   if (!rt || !rt.isActive()) return fail(res, 401, 'Invalid or expired refresh token');
 
-  const user = rt.user;
+  const user = rt.user as unknown as { _id: { toString(): string }; email: string };
   const accessToken = signAccessToken({ sub: user._id.toString(), email: user.email });
   ok(res, { accessToken });
 });
