@@ -9,6 +9,11 @@ node_modules/
 /build/
 *.tsbuildinfo
 
+# Next.js (removed in Stage 4; ignored until then)
+/.next/
+/out/
+next-env.d.ts
+
 # Logs
 *.log
 npm-debug.log*
