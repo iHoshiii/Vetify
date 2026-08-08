@@ -38,7 +38,7 @@ const client = wrappers.wrapSDK(geminiClient, {
 export async function generateReply({ message, history, model }: ChatRequest): Promise<string> {
   // Gemini calls the assistant turn "model"; the client and DB call it "assistant".
   const contents = [
-    ...history.map((m) => ({
+    ...history.map((m: { role: string; content: string }) => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }],
     })),
