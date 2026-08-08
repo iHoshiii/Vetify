@@ -1,9 +1,8 @@
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { signupSchema } from '@shared/schemas';
-import { supabase } from '@/lib/supabaseClient';
-import { signIn } from 'next-auth/react';
-import { Link } from 'react-router-dom';
+import { signupWithEmail } from '@/lib/auth';
+import { Link, useNavigate } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
 
 type PasswordStrength = {
@@ -113,6 +112,7 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState<SignupFormErrors>({});
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,32 +137,20 @@ export default function SignupPage() {
     }
 
     try {
-      const { error } = await (supabase.auth as any).signUp(
-        {
-          email: parsed.data.email,
-          password: parsed.data.password,
-        },
-        {
-          emailRedirectTo: `${window.location.origin}/login`,
-        }
-      );
-
-      if (error) {
-        setError(error.message || 'Signup failed. Please try again.');
-      } else {
-        setSuccess('Check your email for a verification link before you can sign in.');
-        setPassword('');
-        setConfirmPassword('');
-      }
+      await signupWithEmail(parsed.data);
+      setSuccess('Account created successfully. Redirecting you to the dashboard...');
+      setPassword('');
+      setConfirmPassword('');
+      window.setTimeout(() => navigate('/'), 600);
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    signIn(provider, { callbackUrl: '/' });
+  const handleSocialLogin = (_provider: string) => {
+    setError('Social sign-in is currently unavailable in the Node/Mongo migration.');
   };
 
   const passwordStrength = useMemo(
