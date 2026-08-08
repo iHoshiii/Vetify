@@ -19,6 +19,10 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
 
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be set and at least 32 characters'),
+  ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
+  REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
+  REFRESH_COOKIE_NAME: z.string().default('refresh_token'),
 });
 
 const parsed = envSchema.safeParse(process.env);
