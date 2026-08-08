@@ -1,1 +1,0 @@
-# Vetify Core API package
