@@ -1,8 +1,8 @@
+import { loginSchema, signupSchema, type LoginInput, type SignupInput } from '@shared/schemas';
 import { Router } from 'express';
-import { signupSchema, loginSchema, type SignupInput, type LoginInput } from '@shared/schemas';
 
 import { validate } from '../../middleware/validate';
-import { ok, fail } from '../../utils/response';
+import { hashToken } from '../../models/RefreshToken';
 import { User } from '../../models/User';
 import {
   createAuthPayloadFor,
@@ -10,7 +10,7 @@ import {
   revokeRefreshTokenByHash,
   signAccessToken,
 } from '../../services/auth.service';
-import { hashToken } from '../../models/RefreshToken';
+import { fail, ok } from '../../utils/response';
 
 const router = Router();
 
