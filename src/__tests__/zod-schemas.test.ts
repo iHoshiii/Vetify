@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { chatRequestSchema, loginSchema, signupSchema } from '@/lib/schemas';
+import { chatRequestSchema, loginSchema, signupSchema } from '@shared/schemas';
 
 describe('Zod schemas', () => {
   it('accepts a valid login payload', () => {
