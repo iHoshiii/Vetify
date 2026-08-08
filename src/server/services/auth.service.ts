@@ -1,0 +1,43 @@
+import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
+import { addDays } from 'date-fns';
+
+import { User } from '../models/User';
+import { RefreshToken, hashToken } from '../models/RefreshToken';
+import { env } from '../config/env';
+
+export function signAccessToken(payload: object) {
+  return jwt.sign(payload, env.JWT_SECRET, {
+    expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
+  });
+}
+
+export async function createRefreshToken(userId: string) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashToken(token);
+
+  const expiresAt = addDays(new Date(), env.REFRESH_TOKEN_DAYS);
+
+  await RefreshToken.create({ tokenHash, user: userId, expiresAt });
+
+  return { token, expiresAt };
+}
+
+export async function revokeRefreshTokenByHash(tokenHash: string) {
+  const rt = await RefreshToken.findOne({ tokenHash });
+  if (!rt) return false;
+  rt.revokedAt = new Date();
+  await rt.save();
+  return true;
+}
+
+export async function findRefreshTokenByHash(tokenHash: string) {
+  return RefreshToken.findOne({ tokenHash }).populate('user');
+}
+
+export async function createAuthPayloadFor(userDoc: any) {
+  const publicUser = userDoc.toPublic();
+  const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
+  const { token: refreshToken, expiresAt } = await createRefreshToken(publicUser.id);
+  return { accessToken, refreshToken, expiresAt, user: publicUser };
+}

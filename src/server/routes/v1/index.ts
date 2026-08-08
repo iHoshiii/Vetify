@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 
 import chatRoute from './chat.route';
+import authRoute from './auth.route';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.get('/health', (_req, res) => {
 });
 
 router.use('/chat', chatRoute);
+router.use('/auth', authRoute);
 
 export default router;
