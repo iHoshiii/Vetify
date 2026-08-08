@@ -8,7 +8,12 @@
     "types": ["vite/client"],
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "composite": true
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/client/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
   },
   "include": ["src/client", "src/shared", "vite.config.ts"]
 }
