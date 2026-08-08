@@ -2,7 +2,13 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ChatWindow from '../components/ChatWindow';
 
-vi.stubGlobal('fetch', vi.fn());
+vi.mock('../services/chat.service', () => ({
+  sendMessage: vi.fn().mockResolvedValue('Hello!'),
+}));
+
+vi.mock('../lib/auth', () => ({
+  readAuthState: vi.fn().mockReturnValue(null),
+}));
 
 const defaultProps = {
   messages: [],
@@ -20,17 +26,13 @@ describe('ChatWindow', () => {
     expect(screen.getByRole('button', { name: /send/i })).toBeDefined();
   });
 
-  it('adds a user message on send', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ reply: 'Hello!' }),
-    });
-
-    render(<ChatWindow {...defaultProps} />);
+  it('calls onMessagesChange on send', () => {
+    const onMessagesChange = vi.fn();
+    render(<ChatWindow messages={[]} onMessagesChange={onMessagesChange} />);
     const input = screen.getByPlaceholderText(/ask about your pet/i);
     fireEvent.change(input, { target: { value: 'Is my dog healthy?' } });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
 
-    expect(await screen.findByText('Is my dog healthy?')).toBeDefined();
+    expect(onMessagesChange).toHaveBeenCalledWith([{ role: 'user', content: 'Is my dog healthy?' }]);
   });
 });

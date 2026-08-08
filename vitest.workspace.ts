@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineWorkspace } from 'vitest/config';
 
 const alias = {
-  '@': path.resolve(__dirname, './src'),
+  '@': path.resolve(__dirname, './src/client'),
   '@shared': path.resolve(__dirname, './src/shared'),
 };
 
@@ -17,8 +17,8 @@ export default defineWorkspace([
       name: 'client',
       environment: 'jsdom',
       globals: true,
-      setupFiles: 'src/__tests__/setup.ts',
-      include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}', 'src/client/**/*.{test,spec}.{ts,tsx}'],
+      setupFiles: 'src/client/__tests__/setup.ts',
+      include: ['src/client/__tests__/**/*.{test,spec}.{ts,tsx}'],
     },
   },
   {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Link } from 'react-router-dom';
 
