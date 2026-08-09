@@ -1,8 +1,7 @@
 import { useState } from 'react';
-
-import Header from './components/header';
-import Sidebar from './components/sidebar';
-import View from './components/view';
+import Header from './_components/header';
+import Sidebar from './_components/sidebar';
+import View from './_components/view';
 
 import bird from './data/bird';
 import cat from './data/cat';

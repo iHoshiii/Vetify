@@ -1,6 +1,4 @@
 import Button from '@/components/ui/Button';
-import { apiFetch } from '@/services/api';
-
 export default function SocialLogins() {
   const handleSocialLogin = (provider: string) => {
     // OAuth social login — redirect to server-side OAuth endpoint

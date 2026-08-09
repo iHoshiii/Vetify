@@ -1,7 +1,7 @@
-import { AboutCTA } from './components/about-cta';
-import { AboutHero } from './components/about-hero';
-import { AboutStory } from './components/about-story';
-import { AboutValues } from './components/about-values';
+import { AboutCTA } from './_components/about-cta';
+import { AboutHero } from './_components/about-hero';
+import { AboutStory } from './_components/about-story';
+import { AboutValues } from './_components/about-values';
 
 export default function AboutPage() {
   return (
