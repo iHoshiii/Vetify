@@ -1,7 +1,7 @@
-import ContactForm from './components/contact-form';
-import ContactHero from './components/contact-hero';
-import ContactInfo from './components/contact-info';
-import SocialLinks from './components/social-links';
+import ContactForm from './_components/contact-form';
+import ContactHero from './_components/contact-hero';
+import ContactInfo from './_components/contact-info';
+import SocialLinks from './_components/social-links';
 
 export default function ContactPage() {
   return (
