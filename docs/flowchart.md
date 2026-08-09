@@ -15,7 +15,7 @@ classDef data fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#000;
     NavigationHub -->|AI Vet Interface| Chat[User submits pet health question]:::ai
     Chat --> Router{LangChain AI Agent:<br/>Analyze Query Complexity}:::ai
 
-    Router -->|Simple Case<br/>e.g., Diet, Habits| RAG[Fetch details via Supabase Vector Store]:::ai
+    Router -->|Simple Case<br/>e.g., Diet, Habits| RAG[Fetch context from MongoDB]:::ai
     RAG --> DisplayAnswer[AI displays safe first-aid advice]:::ai
     DisplayAnswer --> Chat
 
@@ -26,7 +26,7 @@ classDef data fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#000;
 
     %% Feature 2: Map & Professional Search
     NavigationHub -->|Map / Contact Tab| MapTab[Load Interactive Map Engine]:::geo
-    MapTab --> FetchVets[Query Supabase for Registered Clinics & Doctors]:::geo
+    MapTab --> FetchVets[Query MongoDB for Registered Clinics & Doctors]:::geo
     FetchVets --> PinVets[Render Location Pins on UI Map]:::geo
     PinVets --> Interaction{User Interaction}
     Interaction -->|Click Clinic Pin| GetRoute[Get routing directions to Physical Clinic]:::geo
@@ -41,7 +41,7 @@ classDef data fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#000;
     %% Feature 4: Meal Planner
     NavigationHub -->|Meal Plan Tab| InputPet[Enter Pet Details:<br/>Age, Weight, Species, Allergies]:::data
     InputPet --> AIChef[LangChain queries Cloud LLM for Structured JSON]:::ai
-    AIChef --> SavePlan[Store dynamic weekly plan to Supabase PostgreSQL]:::data
+    AIChef --> SavePlan[Store dynamic weekly plan to MongoDB]:::data
     SavePlan --> ShowCalendar[Render structured 7-Day feeding schedule]:::data
 
     %% Feature 5: Blogs
