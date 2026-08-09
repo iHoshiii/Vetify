@@ -387,7 +387,7 @@ export default function VetMap({
           setStatus('done');
           onReady?.();
         }
-      } catch (e) {
+      } catch (_e) {
         if (!cancelled) setStatus('error');
       }
     }
