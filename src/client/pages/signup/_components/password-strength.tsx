@@ -1,12 +1,4 @@
-type PasswordStrength = {
-  score: number;
-  label: 'Weak' | 'Fair' | 'Good' | 'Strong';
-  barClass: string;
-  labelClass: string;
-  progress: number;
-  weakOverride: boolean;
-  overrideReason?: string;
-};
+import { PasswordStrength } from '@/types/signup';
 
 export function evaluatePasswordStrength(
   password: string,
