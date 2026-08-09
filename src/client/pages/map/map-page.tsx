@@ -1,5 +1,5 @@
-import InfoCards from './components/info-cards';
-import InteractiveMap from './components/interactive-map/map-official';
+import InfoCards from './_components/info-cards';
+import InteractiveMap from './_components/interactive-map/map-official';
 
 export default function MapPage() {
   return (
