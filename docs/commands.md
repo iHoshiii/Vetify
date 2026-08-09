@@ -1,81 +1,62 @@
 # Vetify — Command Reference
 
-Quick reference for all dev commands used in this project.
+## General
 
----
+| Command              | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| `npm install`        | Install all dependencies                             |
+| `npm run dev`        | Start client (Vite) + server (Express) concurrently  |
+| `npm run dev:client` | Start Vite dev server only (http://localhost:5173)   |
+| `npm run dev:server` | Start Express + nodemon only (http://localhost:3000) |
+| `npm run build`      | Build client and server                              |
+| `npm run start`      | Run the built server (`dist/server/index.js`)        |
+| `npm run preview`    | Preview the Vite production build                    |
 
-## 📦 General
+## Linting & Types
 
-| Command         | Description                                          |
-| --------------- | ---------------------------------------------------- |
-| `npm install`   | Install all dependencies                             |
-| `npm run dev`   | Start the Next.js dev server (http://localhost:3000) |
-| `npm run build` | Build the production bundle                          |
-| `npm run start` | Start the production server                          |
-| `npm run lint`  | Run ESLint across the project                        |
+| Command             | Description                              |
+| ------------------- | ---------------------------------------- |
+| `npm run lint`      | Run ESLint across `.ts` and `.tsx` files |
+| `npm run lint:fix`  | Run ESLint with auto-fix                 |
+| `npm run typecheck` | Run TypeScript type check (`tsc -b`)     |
 
----
+## Database (Prisma + MongoDB Atlas)
 
-## 🗄️ Database (Prisma + OCI Autonomous Database)
+> MongoDB uses `db push` — there is no `migrate dev`.
 
-| Command              | Description                                                 |
-| -------------------- | ----------------------------------------------------------- |
-| `npm run db:migrate` | Create and apply a new migration (prompts for a name)       |
-| `npm run db:push`    | Push schema changes directly to DB without a migration file |
-| `npm run db:seed`    | Run `prisma/seed.ts` to insert sample/demo data             |
-| `npm run db:studio`  | Open Prisma Studio — visual UI to browse and edit DB tables |
+| Command               | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `npx prisma db push`  | Apply schema changes to MongoDB Atlas         |
+| `npx prisma generate` | Regenerate Prisma client after schema changes |
+| `npx prisma validate` | Check `schema.prisma` for errors              |
+| `npx prisma db pull`  | Introspect existing DB and sync schema        |
+| `npx prisma studio`   | Open Prisma Studio — visual DB browser        |
 
-### Raw Prisma CLI
-
-| Command                     | Description                                               |
-| --------------------------- | --------------------------------------------------------- |
-| `npx prisma generate`       | Regenerate the Prisma Client after schema changes         |
-| `npx prisma validate`       | Check `schema.prisma` for errors                          |
-| `npx prisma migrate status` | Show which migrations have/haven't been applied           |
-| `npx prisma migrate reset`  | ⚠️ Drop all tables and re-run all migrations from scratch |
-| `npx prisma db pull`        | Introspect an existing DB and sync schema to match it     |
-
-### Typical Prisma Workflow
+### Typical workflow
 
 ```bash
 # 1. Edit prisma/schema.prisma
-# 2. Apply migration
-npm run db:migrate   # enter a name like: add_appointments
+# 2. Push changes
+npx prisma db push
 # 3. Regenerate client
 npx prisma generate
 ```
 
----
-
-## 🧪 Testing
+## Testing
 
 | Command                 | Description                            |
 | ----------------------- | -------------------------------------- |
 | `npm run test`          | Run all Vitest unit tests (single run) |
 | `npm run test:watch`    | Run Vitest in watch mode               |
-| `npm run test:coverage` | Run tests with code coverage report    |
-| `npm run test:e2e`      | Run Playwright end-to-end tests        |
+| `npm run test:client`   | Client tests only                      |
+| `npm run test:server`   | Server tests only                      |
+| `npm run test:coverage` | Run tests with coverage report         |
+| `npm run test:e2e`      | Run Playwright E2E tests               |
 
----
+## Git / CI
 
-## 🐍 Backend (FastAPI — Python)
+| Command                    | Description                         |
+| -------------------------- | ----------------------------------- |
+| `git push origin <branch>` | Push branch (CI currently disabled) |
 
-Run from `backend/core-api/`:
-
-| Command                           | Description                                          |
-| --------------------------------- | ---------------------------------------------------- |
-| `python -m venv .venv`            | Create a Python virtual environment                  |
-| `.venv\Scripts\activate`          | Activate the virtual environment (Windows)           |
-| `pip install -r requirements.txt` | Install Python dependencies                          |
-| `uvicorn app.main:app --reload`   | Start the FastAPI dev server (http://localhost:8000) |
-| `pytest tests/ -v`                | Run backend tests                                    |
-
----
-
-## 🐙 Git / CI
-
-| Command                | Description                                 |
-| ---------------------- | ------------------------------------------- |
-| `git push origin main` | Push to main (CI is currently **disabled**) |
-
-> **Re-enable CI:** Uncomment the `push` trigger in `.github/workflows/ci.yml`
+> Re-enable CI: remove `branches-ignore: ['**']` from `.github/workflows/ci.yml`

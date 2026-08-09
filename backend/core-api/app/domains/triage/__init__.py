@@ -1,1 +1,0 @@
-# triage domain package
