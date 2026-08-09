@@ -1,144 +1,133 @@
-vetify/ # Workspace root
-|
-|-- .github/
-| `-- workflows/
-|       |-- production-deploy.yml     # Production deployment workflow
-|       `-- test-pipeline.yml # CI test pipeline
-|
-|-- .husky/
-| |-- \_/
-| | |-- .gitignore
-| | `-- husky.sh
-|   `-- pre-commit # Local pre-commit hook
-|
-|-- archive/ # Historical backups and retired app files
-| |-- apps-web/
-| | |-- next-env.d.ts
-| | `-- tsconfig.json
-|   |-- backend_backup/
-|   |   `-- .placeholder
-| |-- backend_backup_2026-06-18.zip
-| `-- backup-2026-06-18-src_backup.zip
-|
-|-- backend/
-|   `-- core-api/ # FastAPI backend service
-| |-- app/
-| | |-- **init**.py
-| | |-- main.py # API application entry point
-| | |-- core/
-| | | |-- **init**.py
-| | | |-- config.py # Backend configuration
-| | | `-- security.py        # Security helpers
-|       |   |-- domains/
-|       |   |   |-- __init__.py
-|       |   |   |-- locator/
-|       |   |   |   |-- __init__.py
-|       |   |   |   |-- router.py
-|       |   |   |   `-- services.py
-| | | |-- nutrition/
-| | | | |-- **init**.py
-| | | | |-- router.py
-| | | | `-- services.py
-|       |   |   `-- triage/
-| | | |-- **init**.py
-| | | |-- router.py
-| | | |-- schemas.py
-| | | `-- services.py
-|       |   `-- infra/
-| | |-- **init**.py
-| | |-- ai_clients.py
-| | |-- database.py
-| | `-- langchain_client.py
-|       |-- apps/
-|       |   `-- web/
-| | `-- package-lock.json
-|       |-- scripts/
-|       |   |-- run_migration.py
-|       |   `-- migrations/
-| | |-- **init**.py
-| | `-- 2026_06_18_init_pet_avatar_defaults.py
-|       |-- tests/
-|       |   |-- __init__.py
-|       |   |-- conftest.py
-|       |   |-- test_locator.py
-|       |   |-- test_nutrition.py
-|       |   `-- test_triage.py
-| |-- .env.example
-| |-- .gitignore
-| |-- Dockerfile
-| `-- requirements.txt
-|
-|-- docs/
-|   |-- PRD.md
-|   |-- TDD.md
-|   |-- architecture.md
-|   |-- flowchart.md
-|   |-- landing-page-design.md
-|   `-- masterplan.md
-|
-|-- prisma/
-| |-- schema.prisma # Prisma schema
-| `-- seed.ts                       # Database seed script
-|
-|-- public/
-|   `-- favicon.ico
-|
-|-- src/ # Next.js frontend app
-| |-- **tests**/
-| | |-- ChatWindow.test.tsx
-| | |-- MealCalendar.test.tsx
-| | `-- setup.ts
-|   |-- app/
-|   |   |-- chat/
-|   |   |   `-- page.tsx
-| | |-- map/
-| | | `-- page.tsx
-|   |   |-- planner/
-|   |   |   `-- page.tsx
-| | |-- globals.css
-| | |-- layout.tsx
-| | `-- page.tsx
-|   |-- components/
-|   |   |-- ui/
-|   |   |   |-- Button.tsx
-|   |   |   `-- Input.tsx
-| | |-- ChatWindow.tsx
-| | `-- MapClient.tsx
-|   |-- core/
-|   |   `-- api-client.ts
-| `-- types/
-|       |-- generated.ts
-|       `-- index.ts
-|
-|-- tests/
-| `-- e2e/
-|       |-- chat-flow.spec.ts
-|       `-- meal-generation.spec.ts
-|
-|-- types/
-| |-- global-css.d.ts
-| `-- prisma-client.d.ts
-|
-|-- .env.example
-|-- .gitignore
-|-- .prettierrc
-|-- docker-compose.yml
-|-- next-env.d.ts
-|-- next.config.js
-|-- package-lock.json
-|-- package.json
-|-- playwright.config.ts
-|-- postcss.config.js
-|-- README.md
-|-- tailwind.config.ts
-|-- tsconfig.json
-|-- tsconfig.tsbuildinfo
-`-- vitest.config.ts
+# Vetify — Architecture
 
-Generated dependency and build-output directories are intentionally omitted from this map:
+## Overview
 
-- `.git/`
-- `.next/`
-- `.venv/`
-- `node_modules/`
-- Python `__pycache__/` folders
+Vite + React (client) and Express (server) monorepo under a single `src/` directory. Shared Zod schemas live in `src/shared/` and are imported by both sides.
+
+## Hosting (Planned)
+
+```
+User
+ │
+ ├──> CloudFront ──> S3  (React static build)
+ │
+ └──> API Gateway ──> Lambda  (Express app via serverless-express)
+                          │
+                      MongoDB Atlas
+```
+
+- Frontend: S3 bucket (no static hosting) + CloudFront distribution
+- Backend: API Gateway (HTTP API) → Lambda wrapping the Express app
+- Database: MongoDB Atlas — same cluster for both Mongoose (runtime) and Prisma (schema)
+- Custom domains required for httpOnly cookies to work cross-origin (`yourapp.com` + `api.yourapp.com`)
+
+## Directory Map
+
+```
+vetify/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # CI — runs tests only
+├── .husky/
+│   └── pre-commit                  # runs lint-staged (prettier)
+├── archive/                        # historical backups
+├── docs/                           # PRD, TDD, architecture, etc.
+├── prisma/
+│   ├── schema.prisma               # MongoDB schema (Pet, User)
+│   └── prisma.config.ts            # loads .env for Prisma 7
+├── public/                         # static assets
+├── src/
+│   ├── client/                     # React + Vite frontend
+│   │   ├── __tests__/
+│   │   ├── components/             # UI components (ChatWindow, etc.)
+│   │   ├── lib/
+│   │   │   └── auth.ts             # readAuthState, loginWithEmail, etc.
+│   │   ├── pages/                  # route-level page components
+│   │   └── services/
+│   │       ├── api.ts              # apiFetch wrapper + ApiError
+│   │       └── chat.service.ts     # sendMessage → POST /api/v1/chat
+│   ├── server/                     # Express backend
+│   │   ├── config/
+│   │   │   ├── db.ts               # Mongoose connection
+│   │   │   └── env.ts              # Zod-validated env schema
+│   │   ├── middleware/
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── security.ts         # helmet, cors, rate-limit
+│   │   │   └── validate.ts         # Zod request validation middleware
+│   │   ├── models/
+│   │   │   ├── User.ts             # bcrypt password hashing, toPublic()
+│   │   │   ├── Pet.ts
+│   │   │   └── RefreshToken.ts     # hashed token + revocation
+│   │   ├── routes/v1/
+│   │   │   ├── auth.route.ts       # signup, login, refresh, logout
+│   │   │   └── chat.route.ts       # POST /api/v1/chat
+│   │   └── services/
+│   │       ├── auth.service.ts     # JWT signing, refresh token lifecycle
+│   │       └── chat.service.ts     # Gemini generateReply + LangSmith
+│   └── shared/
+│       └── schemas.ts              # Zod schemas used by client + server
+├── tests/
+│   └── e2e/                        # Playwright E2E tests
+├── types/
+│   └── global-css.d.ts
+├── .eslintrc.json
+├── .prettierrc
+├── nodemon.json
+├── package.json
+├── tailwind.config.ts
+├── tsconfig.base.json
+├── tsconfig.client.json
+├── tsconfig.server.json
+├── vite.config.ts
+└── vitest.config.ts
+```
+
+## Auth Flow
+
+```
+Signup / Login
+  → server returns accessToken (response body) + refreshToken (httpOnly cookie)
+  → client stores { accessToken, user } in localStorage (vetify.auth)
+
+Authenticated request
+  → client sends Authorization: Bearer <accessToken>
+
+Token refresh
+  → client hits POST /api/v1/auth/refresh
+  → server reads httpOnly cookie, verifies hash against DB, issues new accessToken
+
+Logout
+  → server revokes refresh token in MongoDB
+  → client clears localStorage
+```
+
+## Shared Schemas (`src/shared/schemas.ts`)
+
+Single source of truth for validation rules used by both sides:
+
+- `loginSchema` — email + password
+- `signupSchema` — name, email, password with strength rules, confirmPassword match
+- `chatRequestSchema` — message, history, session_id, model (whitelisted)
+
+## Key Dependencies
+
+| Package                 | Purpose                       |
+| ----------------------- | ----------------------------- |
+| `express`               | HTTP server                   |
+| `mongoose`              | MongoDB ODM                   |
+| `@google/genai`         | Gemini AI                     |
+| `langsmith`             | AI tracing                    |
+| `jsonwebtoken`          | JWT signing/verification      |
+| `bcryptjs`              | Password hashing              |
+| `zod`                   | Schema validation (shared)    |
+| `react-router-dom`      | Client-side routing           |
+| `react-markdown`        | Render AI markdown responses  |
+| `@tanstack/react-query` | Server state management       |
+| `vite`                  | Frontend build tool           |
+| `vitest`                | Unit testing                  |
+| `playwright`            | E2E testing                   |
+| `prisma`                | Schema management for MongoDB |
+
+## Omitted from map
+
+- `.git/`, `node_modules/`, `dist/`, `.venv/`
