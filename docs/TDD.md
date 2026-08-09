@@ -48,19 +48,21 @@ Test-Driven Development (TDD) means we write a "test" (a mini-check) for a featu
 
 ## 3. Testing Tools
 
-- **Backend:** `pytest` (for checking the logic and AI responses).
-- **Frontend:** `Jest` and `React Testing Library` (for checking the buttons and maps).
-- **AI Validation:** `LangSmith` (to monitor if the AI is giving safe advice).
+- **Unit / Integration:** `Vitest` + `React Testing Library` (client and server)
+- **Server isolation:** `mongodb-memory-server` for in-memory MongoDB in server tests
+- **E2E:** `Playwright`
+- **AI Validation:** `LangSmith` (monitors AI responses in production)
 
 ---
 
 ## 4. How to Run Tests
 
-_(To be updated once code is implemented)_
-
 ```bash
-# Example command to run backend tests
-pytest
+npm run test              # all Vitest unit tests
+npm run test:client       # client tests only
+npm run test:server       # server tests only
+npm run test:coverage     # with coverage report
+npm run test:e2e          # Playwright E2E
 ```
 
 ---
@@ -78,7 +80,7 @@ This section expands the core test scenarios into concrete, actionable tests (un
   5.2 Test Types & Responsibilities
 
 - **Unit tests:** Pure logic—meal calculation, emergency-detection rules, Zod schema tests, utility functions. (Backend: pytest/pytest-mock or Node: vitest)
-- **Integration tests:** Chat API with mocked AI client; vet locator queries over test data; auth complete flows with supabase test instance or mocked responses.
+- **Integration tests:** Chat API with mocked AI client; vet locator queries over test data; auth complete flows with `mongodb-memory-server`.
 - **E2E tests:** User flows using Playwright—signup, ask chat question, find vet, generate meal plan.
 - **Contract tests:** Ensure frontend and API agree on request/response schemas (use the Zod schemas exposed in `src/lib/schemas.ts` as single source-of-truth).
 
@@ -225,7 +227,7 @@ classDiagram
 
 ## 8. Test Implementation Notes
 
-- Use the Zod schemas in `src/lib/schemas.ts` as contract tests: import them in both frontend unit tests and backend integration tests. This ensures schema parity.
+- Use the Zod schemas in `src/shared/schemas.ts` as contract tests: import them in both frontend unit tests and backend integration tests. This ensures schema parity.
 - For AI tests:
   - Create a small fixture set of common/non-emergency/emergency prompts and expected behaviors.
   - Mock the external AI client (LangSmith / Gemini wrapper) for CI to assert behavior and logging.

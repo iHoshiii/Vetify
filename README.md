@@ -1,68 +1,102 @@
 # Vetify
 
-Development workspace for the Vetify project: a Next.js frontend at the repo root and a Python backend in `backend/`.
+A pet care web app — AI chat assistant, vet locator, meal planner, and anatomy viewer.
 
 ## Tech Stack
 
-- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Frontend: React, Vite, TypeScript, Tailwind CSS, React Router
 - Frontend hosting: S3 + CloudFront
-- Backend: FastAPI on Python
+- Backend: Express (Node.js, TypeScript)
 - Backend hosting: API Gateway + Lambda
-- Database: OCI Autonomous Database
-- Auth / APIs: NextAuth, Supabase client usage, and backend API routes
-- AI / integrations: Google GenAI, Groq, LangChain
-- Testing: Vitest, Playwright, Pytest
+- Database: MongoDB Atlas (Mongoose + Prisma for schema management)
+- Auth: Custom JWT — access token + httpOnly refresh cookie
+- AI: Google Gemini (`@google/genai`), LangSmith tracing
+- Validation: Zod (shared between client and server)
+- Testing: Vitest, Playwright
+
+## Project Structure
+
+```
+src/
+├── client/       # React + Vite frontend
+├── server/       # Express backend
+└── shared/       # Zod schemas shared by both
+```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node 16+ or 18+
+- Node 18+
 - npm
-- Python 3.10+ and virtualenv
-- Docker, optional
 
-### Frontend Development
+### Development
 
 ```bash
 npm install
-npm run dev
+npm run dev        # starts client (Vite) + server (Express) concurrently
 ```
 
-### Backend Development
+Client runs on `http://localhost:5173`, server on `http://localhost:3000`.
 
-```powershell
-cd backend
-python -m venv .venv
-. .venv/Scripts/Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Run Tests
-
-Frontend:
+### Individual
 
 ```bash
-npm run test
+npm run dev:client   # Vite only
+npm run dev:server   # Express + nodemon only
 ```
 
-Backend:
-
-```powershell
-cd backend
-. .venv/Scripts/Activate.ps1
-pytest tests/ -v
-```
-
-### Docker Local Development
+### Build
 
 ```bash
-docker-compose up
+npm run build        # builds client (dist/) and server (dist/server/)
+npm run start        # runs built server
 ```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+```
+MONGODB_URI=
+DATABASE_URL=        # same cluster, used by Prisma
+JWT_SECRET=
+GEMINI_API_KEY=
+ACCESS_TOKEN_MINUTES=
+REFRESH_TOKEN_DAYS=
+```
+
+## Database
+
+MongoDB Atlas via Mongoose (runtime) + Prisma (schema management).
+
+```bash
+npx prisma db push   # apply schema changes (no migrate dev for MongoDB)
+npx prisma generate  # regenerate Prisma client
+```
+
+## Testing
+
+```bash
+npm run test              # all Vitest unit tests
+npm run test:client       # client tests only
+npm run test:server       # server tests only
+npm run test:coverage     # with coverage report
+npm run test:e2e          # Playwright E2E tests
+```
+
+## Linting & Formatting
+
+```bash
+npm run lint         # ESLint
+npm run lint:fix     # ESLint with auto-fix
+npm run typecheck    # TypeScript type check
+```
+
+Husky runs `prettier` on staged files automatically on every commit.
 
 ## CI
 
 CI lives in `.github/workflows/ci.yml` and runs tests only.
 
-CD and deployment are intentionally not configured yet.
+CD and deployment are not configured yet.
