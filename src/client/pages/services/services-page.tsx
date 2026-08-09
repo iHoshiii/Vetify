@@ -1,6 +1,6 @@
-import ServicesCta from './components/services-cta';
-import ServicesGrid from './components/services-grid';
-import ServicesHero from './components/services-hero';
+import ServicesCta from './_components/services-cta';
+import ServicesGrid from './_components/services-grid';
+import ServicesHero from './_components/services-hero';
 
 export default function ServicesPage() {
   return (

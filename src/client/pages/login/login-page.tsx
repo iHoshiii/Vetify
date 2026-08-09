@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import LoginForm from './components/login-form';
-import SocialLogins from './components/social-login';
+import LoginForm from './_components/login-form';
+import SocialLogins from './_components/social-login';
 
 export default function LoginPage() {
   return (
