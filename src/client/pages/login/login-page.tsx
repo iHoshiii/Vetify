@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import LoginForm from './components/login-form';
-import SocialLogins from './components/social-login';
+import LoginForm from './_components/login-form';
+import SocialLogins from './_components/social-login';
 
 export default function LoginPage() {
   return (
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
         {/* Footer Link */}
         <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             to="/signup"
             className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"

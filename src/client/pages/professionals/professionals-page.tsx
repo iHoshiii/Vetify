@@ -1,7 +1,7 @@
-import ConditionsSection from './components/condition-section';
-import CtaSection from './components/cta-section';
-import EligibilitySection from './components/eligibility-section';
-import HeroSection from './components/hero-section';
+import ConditionsSection from './_components/condition-section';
+import CtaSection from './_components/cta-section';
+import EligibilitySection from './_components/eligibility-section';
+import HeroSection from './_components/hero-section';
 
 export default function ProfessionalsPage() {
   return (

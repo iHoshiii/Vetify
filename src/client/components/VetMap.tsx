@@ -305,8 +305,8 @@ export default function VetMap({
               data = await res.json();
               break; // Success!
             }
-          } catch (e) {
-            console.warn(`Overpass fetch failed for ${endpoint}`, e);
+          } catch (_e) {
+            console.warn(`Overpass fetch failed for ${endpoint}`, _e);
           }
         }
 
@@ -387,7 +387,7 @@ export default function VetMap({
           setStatus('done');
           onReady?.();
         }
-      } catch (e) {
+      } catch (_e) {
         if (!cancelled) setStatus('error');
       }
     }
