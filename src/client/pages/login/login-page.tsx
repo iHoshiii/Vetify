@@ -20,7 +20,7 @@ export default function LoginPage() {
 
         {/* Footer Link */}
         <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             to="/signup"
             className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"

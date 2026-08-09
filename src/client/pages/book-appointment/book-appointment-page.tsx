@@ -10,7 +10,7 @@ export default function BookAppointmentPage() {
         </h1>
         <form className="mt-10 grid gap-4 rounded-lg border border-slate-900/10 bg-white p-6 shadow-sm">
           <label className="grid gap-2 text-sm font-bold text-slate-700">
-            Pet owner's name
+            Pet owner&apos;s name
             <input className="h-11 rounded-lg border border-slate-900/15 px-3 font-normal" />
           </label>
           <label className="grid gap-2 text-sm font-bold text-slate-700">
