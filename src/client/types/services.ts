@@ -1,4 +1,4 @@
-export interface ServiceItem {
+export type ServiceItem = {
   title: string;
   description: string;
   icon: string;
@@ -6,4 +6,4 @@ export interface ServiceItem {
   shadow: string;
   href: string;
   actionText: string;
-}
+};
