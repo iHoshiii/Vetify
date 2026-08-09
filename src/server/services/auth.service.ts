@@ -9,6 +9,7 @@ function addDays(date: Date, days: number): Date {
 
 import { env } from '../config/env';
 import { RefreshToken, hashToken } from '../models/RefreshToken';
+import type { UserDoc } from '../models/User';
 
 export function signAccessToken(payload: object) {
   return jwt.sign(payload, env.JWT_SECRET, {
@@ -39,7 +40,7 @@ export async function findRefreshTokenByHash(tokenHash: string) {
   return RefreshToken.findOne({ tokenHash }).populate('user');
 }
 
-export async function createAuthPayloadFor(userDoc: any) {
+export async function createAuthPayloadFor(userDoc: UserDoc) {
   const publicUser = userDoc.toPublic();
   const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
   const { token: refreshToken, expiresAt } = await createRefreshToken(publicUser.id);

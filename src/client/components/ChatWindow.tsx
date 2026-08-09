@@ -66,7 +66,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
       });
       onMessagesChange([...updated, { role: 'assistant', content: reply }]);
     } catch (err) {
-      if ((err as any)?.name === 'AbortError') {
+      if ((err as { name?: string })?.name === 'AbortError') {
         // Restore the input with the cancelled message and roll back
         onMessagesChange(base);
         setInput(content);
@@ -98,7 +98,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      editingIndex != null ? sendMessage(input, editingIndex) : sendMessage();
+      void (editingIndex != null ? sendMessage(input, editingIndex) : sendMessage());
     }
     if (e.key === 'Escape' && editingIndex != null) {
       setEditingIndex(null);
@@ -133,7 +133,7 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
             <div>
               <h2 className="text-xl font-bold text-slate-800">Ask Vetify AI</h2>
               <p className="text-sm text-slate-500 mt-1 max-w-sm">
-                Get instant guidance on your pet's health, nutrition, and care.
+                Get instant guidance on your pet&apos;s health, nutrition, and care.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
