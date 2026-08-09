@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import Header from './_components/header';
 import Sidebar from './_components/sidebar';
 import View from './_components/view';
