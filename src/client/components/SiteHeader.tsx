@@ -1,6 +1,6 @@
+import { readAuthState } from '@/lib/auth';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { readAuthState } from '@/lib/auth';
 
 const navItems = [
   { label: 'Home', href: '/#home' },
