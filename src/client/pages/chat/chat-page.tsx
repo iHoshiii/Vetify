@@ -1,4 +1,4 @@
-import ChatWindow from '@/components/ChatWindow';
+import ChatWindow from '@/components/chat-ui';
 import { useChatStorage } from '@/hooks/useChatStorage';
 import ChatSidebar from './_components/chat-sidebar';
 
