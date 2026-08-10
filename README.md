@@ -65,6 +65,14 @@ ACCESS_TOKEN_MINUTES=
 REFRESH_TOKEN_DAYS=
 ```
 
+Generate a secure `JWT_SECRET` (must be 32+ characters):
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Paste the output as the value of `JWT_SECRET` in your `.env`.
+
 ## Database
 
 MongoDB Atlas via Mongoose.
