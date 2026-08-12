@@ -8,7 +8,7 @@ A pet care web app — AI chat assistant, vet locator, meal planner, and anatomy
 - Frontend hosting: S3 + CloudFront
 - Backend: Express (Node.js, TypeScript)
 - Backend hosting: API Gateway + Lambda
-- Database: MongoDB Atlas (Mongoose + Prisma for schema management)
+- Database: MongoDB Atlas (Mongoose)
 - Auth: Custom JWT — access token + httpOnly refresh cookie
 - AI: Google Gemini (`@google/genai`), LangSmith tracing
 - Validation: Zod (shared between client and server)
@@ -59,21 +59,23 @@ Copy `.env.example` to `.env` and fill in:
 
 ```
 MONGODB_URI=
-DATABASE_URL=        # same cluster, used by Prisma
 JWT_SECRET=
 GEMINI_API_KEY=
 ACCESS_TOKEN_MINUTES=
 REFRESH_TOKEN_DAYS=
 ```
 
-## Database
-
-MongoDB Atlas via Mongoose (runtime) + Prisma (schema management).
+Generate a secure `JWT_SECRET` (must be 32+ characters):
 
 ```bash
-npx prisma db push   # apply schema changes (no migrate dev for MongoDB)
-npx prisma generate  # regenerate Prisma client
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
+
+Paste the output as the value of `JWT_SECRET` in your `.env`.
+
+## Database
+
+MongoDB Atlas via Mongoose.
 
 ## Testing
 
