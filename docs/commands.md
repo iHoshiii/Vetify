@@ -20,26 +20,30 @@
 | `npm run lint:fix`  | Run ESLint with auto-fix                 |
 | `npm run typecheck` | Run TypeScript type check (`tsc -b`)     |
 
-## Database (Prisma + MongoDB Atlas)
+## Database (Mongoose + MongoDB Atlas)
 
-> MongoDB uses `db push` — there is no `migrate dev`.
+Vetify uses **Mongoose** for schema definition and MongoDB Atlas as the database. There are no migration CLI commands — schema changes are made directly in the model files under `src/server/models/`.
 
-| Command               | Description                                   |
-| --------------------- | --------------------------------------------- |
-| `npx prisma db push`  | Apply schema changes to MongoDB Atlas         |
-| `npx prisma generate` | Regenerate Prisma client after schema changes |
-| `npx prisma validate` | Check `schema.prisma` for errors              |
-| `npx prisma db pull`  | Introspect existing DB and sync schema        |
-| `npx prisma studio`   | Open Prisma Studio — visual DB browser        |
+### How it works
 
-### Typical workflow
+| Concept        | How it's done in Mongoose                                         |
+| -------------- | ----------------------------------------------------------------- |
+| Define schema  | Edit a model file in `src/server/models/`                         |
+| Apply changes  | Just save and restart the server — no push/migrate needed         |
+| Add a field    | Add it to the Mongoose schema; existing docs won't have it (null) |
+| Remove a field | Remove from schema; existing docs retain the field in MongoDB     |
+| Rename a field | Manual: write a script to update existing documents               |
+| Seed data      | Write a script in `src/server/scripts/` and run with `tsx`        |
+| Inspect data   | Use MongoDB Atlas UI or MongoDB Compass                           |
+
+### Useful one-off commands
 
 ```bash
-# 1. Edit prisma/schema.prisma
-# 2. Push changes
-npx prisma db push
-# 3. Regenerate client
-npx prisma generate
+# Run a seed or migration script manually
+npx tsx src/server/scripts/<script>.ts
+
+# Connect to your Atlas cluster via mongosh
+mongosh "<MONGODB_URI>"
 ```
 
 ## Testing
