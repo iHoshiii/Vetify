@@ -15,19 +15,23 @@ export type SendMessageArgs = {
   signal?: AbortSignal;
 };
 
-/** POST /api/v1/chat — returns the assistant's reply text. */
+export type ChatReply = {
+  reply: string;
+  /** Present only for unauthenticated callers: the server's authoritative count. */
+  anonRemaining?: number;
+};
+
+/** POST /api/v1/chat — the assistant's reply, plus any allowance left. */
 export async function sendMessage({
   message,
   sessionId,
   history,
   model,
   signal,
-}: SendMessageArgs): Promise<string> {
-  const { reply } = await apiFetch<{ reply: string }>('/chat', {
+}: SendMessageArgs): Promise<ChatReply> {
+  return apiFetch<ChatReply>('/chat', {
     method: 'POST',
     body: { message, session_id: sessionId, history, ...(model ? { model } : {}) },
     signal,
   });
-
-  return reply;
 }

@@ -1,13 +1,15 @@
+import { FREE_ANON_QUERIES } from '@shared/limits';
+
 /**
- * Free-question allowance for visitors who have not signed in.
+ * Local mirror of the anonymous allowance, used to render the countdown and to
+ * stop the composer before a doomed request goes out.
  *
- * IMPORTANT: this is a client-side courtesy limit, not a security control. It
- * lives in localStorage, so anyone willing to open devtools can reset it. The
- * chat endpoint still costs real money per call, so a server-side quota is the
- * thing that actually protects the Gemini budget — see the notes in the PR
- * description. Do not treat this file as enforcement.
+ * This is presentation, not enforcement. The number lives in localStorage, so
+ * devtools resets it. The authoritative count is kept server-side against a
+ * signed httpOnly cookie — see services/anon-quota.ts. When the two disagree,
+ * the server wins and the UI is corrected by the 429 it sends back.
  */
-export const FREE_ANON_QUERIES = 5;
+export { FREE_ANON_QUERIES };
 
 const QUOTA_STORAGE_KEY = 'vetify.chat.anonCount';
 
@@ -39,4 +41,13 @@ export function resetAnonQueryCount(): void {
 
 export function anonQueriesRemaining(): number {
   return Math.max(0, FREE_ANON_QUERIES - readAnonQueryCount());
+}
+
+/**
+ * Called when the server reports the allowance is gone. Pins the local counter
+ * to the cap so the UI agrees with the server even if storage was cleared.
+ */
+export function markAnonQuotaExhausted(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(QUOTA_STORAGE_KEY, String(FREE_ANON_QUERIES));
 }

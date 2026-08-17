@@ -5,7 +5,7 @@ import ChatWindow from '../components/chat-ui/chat-windows';
 import { AuthProvider } from '../components/providers/AuthProvider';
 
 vi.mock('../services/chat.service', () => ({
-  sendMessage: vi.fn().mockResolvedValue('Hello!'),
+  sendMessage: vi.fn().mockResolvedValue({ reply: 'Hello!' }),
 }));
 
 vi.mock('../lib/auth', () => ({
