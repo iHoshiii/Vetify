@@ -1,8 +1,10 @@
 import { Route, Routes } from 'react-router-dom';
 
+import { RequireAuth } from '@/components/providers/RequireAuth';
 import RootLayout from '@/layouts/RootLayout';
 import AboutPage from '@/pages/about/about-page';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
+import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
 import BlogsPage from '@/pages/blogs/blogs-page';
 import BookAppointmentPage from '@/pages/book-appointment/book-appointment-page';
 import ChatPage from '@/pages/chat/chat-page';
@@ -30,14 +32,36 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="anatomy" element={<AnatomyPage />} />
+        <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />
-        <Route path="book-appointment" element={<BookAppointmentPage />} />
+        <Route
+          path="book-appointment"
+          element={
+            <RequireAuth>
+              <BookAppointmentPage />
+            </RequireAuth>
+          }
+        />
         <Route path="chat" element={<ChatPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="login" element={<LoginPage />} />
-        <Route path="map" element={<MapPage />} />
-        <Route path="planner" element={<PlannerPage />} />
+        <Route
+          path="map"
+          element={
+            <RequireAuth>
+              <MapPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="planner"
+          element={
+            <RequireAuth>
+              <PlannerPage />
+            </RequireAuth>
+          }
+        />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
         <Route path="services" element={<ServicesPage />} />
