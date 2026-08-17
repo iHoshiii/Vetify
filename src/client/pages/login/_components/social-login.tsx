@@ -1,10 +1,7 @@
 import Button from '@/components/ui/Button';
-export default function SocialLogins() {
-  const handleSocialLogin = (provider: string) => {
-    // OAuth social login — redirect to server-side OAuth endpoint
-    window.location.href = `/api/v1/auth/${provider}`;
-  };
+import { startSocialLogin } from '@/lib/auth';
 
+export default function SocialLogins() {
   return (
     <>
       <div className="relative my-8 animate-fadeIn delay-400">
@@ -20,7 +17,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => handleSocialLogin('google')}
+          onClick={() => startSocialLogin('google')}
         >
           <GoogleIcon />
           Google
@@ -28,7 +25,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => handleSocialLogin('facebook')}
+          onClick={() => startSocialLogin('facebook')}
         >
           <FacebookIcon />
           Facebook
@@ -36,7 +33,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 col-span-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => handleSocialLogin('tiktok')}
+          onClick={() => startSocialLogin('tiktok')}
         >
           <TikTokIcon />
           TikTok

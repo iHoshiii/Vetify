@@ -1,18 +1,53 @@
 import { loginSchema, signupSchema, type LoginInput, type SignupInput } from '@shared/schemas';
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
+import crypto from 'node:crypto';
 
+import { env } from '../../config/env';
 import { validate } from '../../middleware/validate';
 import { hashToken } from '../../models/RefreshToken';
-import { User } from '../../models/User';
+import { User, type UserDoc } from '../../models/User';
 import {
-    createAuthPayloadFor,
-    findRefreshTokenByHash,
-    revokeRefreshTokenByHash,
-    signAccessToken,
+  createAuthPayloadFor,
+  findOrCreateOAuthUser,
+  findRefreshTokenByHash,
+  revokeRefreshTokenByHash,
+  setRefreshCookie,
+  signAccessToken,
 } from '../../services/auth.service';
+import {
+  OAUTH_STATE_COOKIE,
+  sealState,
+  stateCookieOptions,
+  statesMatch,
+  unsealState,
+} from '../../services/oauth-state';
+import {
+  OAuthError,
+  buildAuthorizeUrl,
+  createPkcePair,
+  fetchProfileFromCode,
+  getProviderConfig,
+  isOAuthProviderName,
+} from '../../services/oauth.service';
 import { fail, ok } from '../../utils/response';
 
 const router = Router();
+
+function readRefreshCookie(req: Request): string | undefined {
+  const jar = req.cookies as Record<string, string> | undefined;
+  return jar?.[env.REFRESH_COOKIE_NAME] ?? jar?.refresh_token;
+}
+
+/**
+ * Sends the browser back to the client with a short reason code. Provider and
+ * database detail stays in the server log — the query string is user-visible and
+ * has no business carrying it.
+ */
+function redirectWithError(res: Response, reason: string): void {
+  const url = new URL(env.OAUTH_FAILURE_REDIRECT);
+  url.searchParams.set('reason', reason);
+  res.redirect(url.toString());
+}
 
 // POST /api/v1/auth/signup
 router.post('/signup', validate(signupSchema), async (req, res) => {
@@ -25,17 +60,11 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
     email: payload.email,
     password: payload.password,
     name: payload.name,
+    provider: 'local',
   });
   const auth = await createAuthPayloadFor(user);
 
-  // Set refresh cookie
-  res.cookie('refresh_token', auth.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    expires: auth.expiresAt,
-  });
-
+  setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
 
@@ -49,40 +78,115 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   if (!match) return fail(res, 401, 'Invalid credentials');
 
   const auth = await createAuthPayloadFor(user);
-  res.cookie('refresh_token', auth.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    expires: auth.expiresAt,
-  });
+  setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
 
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
 
-// POST /api/v1/auth/refresh
+/**
+ * POST /api/v1/auth/refresh
+ *
+ * Returns the user alongside the token because it is the only way the OAuth
+ * callback page can learn who just logged in — that flow never sees a JSON login
+ * response, only the refresh cookie the callback planted.
+ */
 router.post('/refresh', async (req, res) => {
-  const raw =
-    req.cookies?.[process.env.REFRESH_COOKIE_NAME ?? 'refresh_token'] || req.cookies?.refresh_token;
+  const raw = readRefreshCookie(req);
   if (!raw) return fail(res, 401, 'Missing refresh token');
 
-  const tokenHash = hashToken(raw as string);
+  const tokenHash = hashToken(raw);
   const rt = await findRefreshTokenByHash(tokenHash);
   if (!rt || !rt.isActive()) return fail(res, 401, 'Invalid or expired refresh token');
 
-  const user = rt.user as unknown as { _id: { toString(): string }; email: string };
-  const accessToken = signAccessToken({ sub: user._id.toString(), email: user.email });
-  ok(res, { accessToken });
+  const user = rt.user as unknown as UserDoc | null;
+  if (!user) return fail(res, 401, 'Refresh token is not attached to a user');
+
+  const publicUser = user.toPublic();
+  const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
+  ok(res, { accessToken, user: publicUser });
 });
 
 // POST /api/v1/auth/logout
 router.post('/logout', async (req, res) => {
-  const raw =
-    req.cookies?.[process.env.REFRESH_COOKIE_NAME ?? 'refresh_token'] || req.cookies?.refresh_token;
+  const raw = readRefreshCookie(req);
   if (raw) {
-    await revokeRefreshTokenByHash(hashToken(raw as string));
+    await revokeRefreshTokenByHash(hashToken(raw));
   }
-  res.clearCookie(process.env.REFRESH_COOKIE_NAME ?? 'refresh_token');
+  res.clearCookie(env.REFRESH_COOKIE_NAME);
   ok(res, { loggedOut: true });
+});
+
+/**
+ * GET /api/v1/auth/:provider
+ *
+ * Starts the dance. Mints a state nonce and a PKCE verifier, seals both into a
+ * signed short-lived cookie, and bounces the browser to the provider.
+ */
+router.get('/:provider', (req, res) => {
+  const name = (req.params.provider ?? '').toLowerCase();
+  if (!isOAuthProviderName(name)) {
+    return fail(res, 404, `Unknown auth provider '${req.params.provider}'`);
+  }
+
+  const config = getProviderConfig(name);
+  if (!config) {
+    return fail(res, 501, `${name} login is not configured on this server`);
+  }
+
+  const state = crypto.randomBytes(16).toString('base64url');
+  const { verifier, challenge } = createPkcePair();
+
+  res.cookie(OAUTH_STATE_COOKIE, sealState(name, state, verifier), stateCookieOptions);
+  res.redirect(buildAuthorizeUrl(name, config, state, challenge));
+});
+
+/**
+ * GET /api/v1/auth/:provider/callback
+ *
+ * Where the provider returns the browser. Ends in a redirect either way — this
+ * is a navigation, not an XHR, so a JSON error body would just be dumped on
+ * screen. The access token deliberately never touches the URL; the client picks
+ * one up from /auth/refresh using the cookie set here.
+ */
+router.get('/:provider/callback', async (req, res) => {
+  const name = (req.params.provider ?? '').toLowerCase();
+  if (!isOAuthProviderName(name)) {
+    return fail(res, 404, `Unknown auth provider '${req.params.provider}'`);
+  }
+
+  // Single use, whatever happens next.
+  res.clearCookie(OAUTH_STATE_COOKIE, { path: stateCookieOptions.path });
+
+  // Set when the user hits "cancel" on the consent screen.
+  if (typeof req.query.error === 'string') {
+    console.warn(`[auth] ${name} consent declined: ${req.query.error}`);
+    return redirectWithError(res, 'denied');
+  }
+
+  const sealed = unsealState(
+    (req.cookies as Record<string, string> | undefined)?.[OAUTH_STATE_COOKIE]
+  );
+  if (!sealed || sealed.provider !== name || !statesMatch(sealed.state, req.query.state)) {
+    return redirectWithError(res, 'state');
+  }
+
+  const code = req.query.code;
+  if (typeof code !== 'string' || !code) return redirectWithError(res, 'code');
+
+  const config = getProviderConfig(name);
+  if (!config) return fail(res, 501, `${name} login is not configured on this server`);
+
+  try {
+    const profile = await fetchProfileFromCode(name, config, code, sealed.codeVerifier);
+    const user = await findOrCreateOAuthUser(name, profile);
+    const auth = await createAuthPayloadFor(user);
+
+    setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
+    return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
+  } catch (err) {
+    console.error(`[auth] ${name} callback failed:`, (err as Error).message);
+    return redirectWithError(res, err instanceof OAuthError ? 'provider' : 'server');
+  }
 });
 
 export default router;
