@@ -1,45 +1,18 @@
 import { apiFetch } from '@/services/api';
 
-export type AuthProviderName = 'local' | 'google' | 'facebook' | 'tiktok';
+import { writeAuthState, type AuthProviderName, type AuthSession } from './auth-storage';
 
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string | null;
-  provider: AuthProviderName;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-};
-
-export type AuthState = {
-  accessToken?: string;
-  user?: AuthUser;
-};
-
-export type AuthSession = { accessToken: string; user: AuthUser };
-
-const AUTH_STORAGE_KEY = 'vetify.auth';
-
-export function readAuthState(): AuthState | null {
-  if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthState;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return null;
-  }
-}
-
-export function writeAuthState(state: AuthState | null) {
-  if (typeof window === 'undefined') return;
-  if (!state?.accessToken || !state.user) {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
-}
+// Storage lives in ./auth-storage so services/api can read the token without a
+// cycle. Re-exported here because everything already imports from '@/lib/auth'.
+export {
+  readAccessToken,
+  readAuthState,
+  writeAuthState,
+  type AuthProviderName,
+  type AuthSession,
+  type AuthState,
+  type AuthUser,
+} from './auth-storage';
 
 export async function loginWithEmail(email: string, password: string) {
   const payload = await apiFetch<AuthSession>('/auth/login', {
