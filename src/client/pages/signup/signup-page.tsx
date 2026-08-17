@@ -1,13 +1,10 @@
 import { Link } from 'react-router-dom';
 
+import { startSocialLogin } from '@/lib/auth';
 import SignupForm from './_components/signup-form';
 import SocialLogin from './_components/social-login';
 
 export default function SignupPage() {
-  const handleSocialLogin = (_provider: string) => {
-    // Social sign-in unavailable during Node/Mongo migration
-  };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
@@ -27,7 +24,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <SocialLogin onLogin={handleSocialLogin} />
+        <SocialLogin onLogin={startSocialLogin} />
 
         <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
           Already have an account?{' '}
