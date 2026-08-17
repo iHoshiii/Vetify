@@ -82,7 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       accessToken,
       status,
-      isAuthenticated: status === 'authenticated' && Boolean(user),
+      // True while a stored session is still being revalidated, so the navbar
+      // does not flash "Log in" on every page load for someone already signed
+      // in. Revalidation failure clears both fields and flips this to false.
+      isAuthenticated: Boolean(user) && status !== 'anonymous',
       setSession,
       logout,
     }),
