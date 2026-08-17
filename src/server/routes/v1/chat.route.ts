@@ -28,7 +28,7 @@ async function enforceAnonQuota(req: Request, res: Response, next: NextFunction)
     failReason(
       res,
       429,
-      `You have used your ${FREE_ANON_QUERIES} free questions. Log in to keep chatting.`,
+      `You have used your ${FREE_ANON_QUERIES} free questions for today. Log in to keep chatting.`,
       'anon-quota'
     );
     return;

@@ -1,4 +1,4 @@
-import { FREE_ANON_QUERIES } from '@shared/limits';
+import { ANON_QUOTA_WINDOW_HOURS, FREE_ANON_QUERIES } from '@shared/limits';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -52,7 +52,7 @@ describe('consumeAnonQuery', () => {
     expect(fresh.used).toBe(1);
   });
 
-  it('creates one record per visitor and refreshes its expiry', async () => {
+  it('pins the window to the first question, not the last', async () => {
     await consumeAnonQuery('visitor-e');
     const first = (await AnonUsage.findOne({ anonId: 'visitor-e' }))!;
     const firstExpiry = first.expiresAt.getTime();
@@ -62,7 +62,32 @@ describe('consumeAnonQuery', () => {
 
     expect(await AnonUsage.countDocuments({ anonId: 'visitor-e' })).toBe(1);
     expect(second.chatCount).toBe(2);
-    expect(second.expiresAt.getTime()).toBeGreaterThanOrEqual(firstExpiry);
+    // Unchanged on purpose: a rolling expiry would never lapse for someone who
+    // kept retrying after being refused, so the allowance would never reset.
+    expect(second.expiresAt.getTime()).toBe(firstExpiry);
+  });
+
+  it('closes the window roughly a day out', async () => {
+    await consumeAnonQuery('visitor-h');
+    const doc = (await AnonUsage.findOne({ anonId: 'visitor-h' }))!;
+
+    const hoursOut = (doc.expiresAt.getTime() - Date.now()) / (60 * 60 * 1000);
+    expect(hoursOut).toBeGreaterThan(ANON_QUOTA_WINDOW_HOURS - 1);
+    expect(hoursOut).toBeLessThanOrEqual(ANON_QUOTA_WINDOW_HOURS);
+  });
+
+  it('hands out a fresh allowance once the window has lapsed', async () => {
+    for (let i = 0; i < FREE_ANON_QUERIES; i++) await consumeAnonQuery('visitor-i');
+    expect((await consumeAnonQuery('visitor-i')).allowed).toBe(false);
+
+    // Stand in for Mongo's TTL sweep, which deletes the record on expiry. The
+    // reset is that deletion — there is no counter to zero.
+    await AnonUsage.deleteOne({ anonId: 'visitor-i' });
+
+    const afterReset = await consumeAnonQuery('visitor-i');
+    expect(afterReset.allowed).toBe(true);
+    expect(afterReset.used).toBe(1);
+    expect(afterReset.remaining).toBe(FREE_ANON_QUERIES - 1);
   });
 
   it('survives concurrent requests without handing out extra questions', async () => {

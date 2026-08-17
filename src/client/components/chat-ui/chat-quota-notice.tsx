@@ -6,7 +6,7 @@ import { FREE_ANON_QUERIES } from '@/lib/chat-quota';
 export function ChatQuotaBanner({ remaining }: { remaining: number }) {
   return (
     <p className="border-t border-slate-100 bg-slate-50 px-6 py-2 text-center text-xs text-slate-500">
-      {remaining === 1 ? '1 free question left' : `${remaining} free questions left`}
+      {remaining === 1 ? '1 free question left today' : `${remaining} free questions left today`}
       {' — '}
       <Link to="/login" className="font-semibold text-teal-700 hover:text-teal-800">
         log in
@@ -25,10 +25,11 @@ export function ChatQuotaLock() {
   return (
     <div className="border-t border-slate-200 bg-slate-50 px-6 py-6 text-center">
       <p className="text-sm font-bold text-slate-800">
-        You have used your {FREE_ANON_QUERIES} free questions
+        You have used your {FREE_ANON_QUERIES} free questions for today
       </p>
       <p className="mx-auto mt-1 max-w-sm text-xs text-slate-600">
-        Log in to keep chatting with the assistant. Your conversation stays right here.
+        Log in to keep chatting without a limit, or come back tomorrow for {FREE_ANON_QUERIES} more.
+        Your conversation stays right here either way.
       </p>
       <div className="mt-4 flex items-center justify-center gap-2">
         <Link

@@ -29,7 +29,7 @@ export default function LoginPage() {
   // The chat page links here with a query flag; RequireAuth uses router state.
   const quotaMessage =
     params.get('reason') === 'chat-quota'
-      ? 'You have used your free questions. Log in to keep chatting with the assistant.'
+      ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
   const from = (location.state as { from?: string } | null)?.from;

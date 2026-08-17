@@ -1,6 +1,6 @@
 export {
   AnonUsage,
-  ANON_USAGE_TTL_MS,
+  ANON_QUOTA_WINDOW_MS,
   type AnonUsageAttrs,
   type AnonUsageDoc,
   type AnonUsageModel,
