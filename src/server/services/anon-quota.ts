@@ -1,23 +1,24 @@
-import { FREE_ANON_QUERIES } from '@shared/limits';
+import { ANON_COOKIE_DAYS, FREE_ANON_QUERIES } from '@shared/limits';
 import type { CookieOptions, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import crypto from 'node:crypto';
 
 import { env, isProduction } from '../config/env';
-import { ANON_USAGE_TTL_MS, AnonUsage } from '../models/AnonUsage';
+import { ANON_QUOTA_WINDOW_MS, AnonUsage } from '../models/AnonUsage';
 
 export const ANON_ID_COOKIE = 'vetify_anon';
 
 /**
- * Long-lived on purpose. The allowance is meant to be per person, so a cookie
- * that lapsed with the browser session would hand out five more questions every
- * time someone closed a tab.
+ * Outlives the allowance window by a wide margin on purpose. This cookie is only
+ * the visitor's identity; the usage record is what expires and resets their
+ * questions. Tying the cookie's life to the window would hand the reset to the
+ * browser instead of the server.
  */
 export const anonCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite: 'lax',
-  maxAge: ANON_USAGE_TTL_MS,
+  maxAge: ANON_COOKIE_DAYS * 24 * 60 * 60 * 1000,
   path: '/',
 };
 
@@ -103,9 +104,11 @@ export async function consumeAnonQuery(anonId: string): Promise<QuotaVerdict> {
     { anonId },
     {
       $inc: { chatCount: 1 },
-      // Refreshed on every hit so an active visitor's record does not lapse
-      // mid-conversation and silently reset their count.
-      $set: { expiresAt: new Date(Date.now() + ANON_USAGE_TTL_MS) },
+      // setOnInsert, not set: the window runs from the first question, so it
+      // still closes on schedule for someone who keeps retrying after being
+      // refused. Refreshing this on every hit would make the allowance
+      // unreachable rather than daily.
+      $setOnInsert: { expiresAt: new Date(Date.now() + ANON_QUOTA_WINDOW_MS) },
     },
     { new: true, upsert: true }
   );
