@@ -1,5 +1,7 @@
-import { useEffect } from 'react';
-import { logoutFromServer } from '@/lib/auth';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -7,6 +9,10 @@ interface LogoutModalProps {
 }
 
 export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [pending, setPending] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -20,6 +26,20 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
 
   if (!isOpen) return null;
 
+  // Goes through the provider so the navbar drops back to "Log in" without a
+  // reload. logout() clears local state even if the server call fails, so the
+  // user is never stranded looking signed in.
+  const handleLogout = async () => {
+    setPending(true);
+    try {
+      await logout();
+      onClose();
+      navigate('/', { replace: true });
+    } finally {
+      setPending(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all">
       <div className="w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl transition-transform">
@@ -28,15 +48,17 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100"
+            disabled={pending}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={() => logoutFromServer()}
-            className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-red-700 hover:shadow-lg"
+            onClick={handleLogout}
+            disabled={pending}
+            className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-red-700 hover:shadow-lg disabled:opacity-70"
           >
-            Yes, Log Out
+            {pending ? 'Logging out…' : 'Yes, Log Out'}
           </button>
         </div>
       </div>

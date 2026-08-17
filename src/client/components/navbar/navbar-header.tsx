@@ -1,4 +1,4 @@
-import { readAuthState } from '@/lib/auth';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useEffect, useState } from 'react';
 import { Hamburger } from './hamburger';
 import { MobileMenu } from './mobile-view';
@@ -7,13 +7,12 @@ import { NavBrand } from './nav-brand';
 import { NavLinks } from './nav-links';
 
 export default function SiteHeader() {
-  const [authState, setAuthState] = useState(() => readAuthState());
+  // Read from the provider, not localStorage. The header outlives every
+  // client-side navigation, so a snapshot taken on mount would keep showing
+  // "Log in" until a full page reload replaced the component.
+  const { isAuthenticated } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setAuthState(readAuthState());
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -21,7 +20,6 @@ export default function SiteHeader() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const isAuthenticated = Boolean(authState?.user);
   const showAuthActions = !isAuthenticated;
 
   return (

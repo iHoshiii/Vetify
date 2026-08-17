@@ -1,4 +1,11 @@
 export {
+  AnonUsage,
+  ANON_QUOTA_WINDOW_MS,
+  type AnonUsageAttrs,
+  type AnonUsageDoc,
+  type AnonUsageModel,
+} from './AnonUsage';
+export {
   Pet,
   type PetAttrs,
   type PetAvatar,

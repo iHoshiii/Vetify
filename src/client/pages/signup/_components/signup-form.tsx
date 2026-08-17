@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { signupWithEmail } from '@/lib/auth';
 import { signupSchema } from '@shared/schemas';
 
@@ -19,6 +20,7 @@ export default function SignupForm() {
   const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState<SignupFormErrors>({});
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +45,7 @@ export default function SignupForm() {
     }
 
     try {
-      await signupWithEmail(parsed.data);
+      setSession(await signupWithEmail(parsed.data));
       setSuccess('Account created successfully. Redirecting you to the dashboard...');
       setPassword('');
       setConfirmPassword('');

@@ -76,7 +76,14 @@ describe('User', () => {
     const user = await User.create(attrs);
     const pub = user.toPublic();
 
-    expect(pub).toEqual({ id: user._id.toString(), email: 'owner@example.com', name: 'Ada' });
+    expect(pub).toEqual({
+      id: user._id.toString(),
+      email: 'owner@example.com',
+      name: 'Ada',
+      provider: 'local',
+      avatarUrl: null,
+      emailVerified: false,
+    });
     expect(JSON.stringify(pub)).not.toContain('$2');
   });
 });
