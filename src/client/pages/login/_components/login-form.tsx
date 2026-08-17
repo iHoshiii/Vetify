@@ -1,5 +1,6 @@
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { loginSchema } from '@shared/schemas';
 import type { LoginFormErrors } from '@/types/login';
 import { loginWithEmail } from '@/lib/auth';
@@ -13,6 +14,7 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<LoginFormErrors>({});
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,10 @@ export default function LoginForm() {
     }
 
     try {
-      await loginWithEmail(parsed.data.email, parsed.data.password);
+      // Push the session into the provider rather than relying on the write to
+      // localStorage: the navbar renders off context, and nothing re-reads
+      // storage on its own.
+      setSession(await loginWithEmail(parsed.data.email, parsed.data.password));
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');

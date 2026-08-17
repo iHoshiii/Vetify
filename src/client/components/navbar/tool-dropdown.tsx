@@ -58,15 +58,15 @@ export function ToolsDropdown({ isAuthenticated }: ToolsDropdownProps) {
           </Link>
         )}
         {TOOLS_ITEMS.map((item) => (
-          <a
+          <Link
             key={item.href}
-            href={item.href}
+            to={item.href}
             onClick={() => setToolsOpen(false)}
             className="flex flex-col rounded-xl px-4 py-3 transition-colors hover:bg-teal-50"
           >
             <span className="text-sm font-bold text-slate-800">{item.label}</span>
             <span className="mt-0.5 text-xs text-slate-500">{item.desc}</span>
-          </a>
+          </Link>
         ))}
       </div>
     </div>
