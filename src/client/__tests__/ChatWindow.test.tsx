@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import ChatWindow from '../components/ChatWindow';
+import ChatWindow from '../components/chat-ui/chat-windows';
 
 vi.mock('../services/chat.service', () => ({
   sendMessage: vi.fn().mockResolvedValue('Hello!'),
@@ -33,6 +33,8 @@ describe('ChatWindow', () => {
     fireEvent.change(input, { target: { value: 'Is my dog healthy?' } });
     fireEvent.click(screen.getByRole('button', { name: /send/i }));
 
-    expect(onMessagesChange).toHaveBeenCalledWith([{ role: 'user', content: 'Is my dog healthy?' }]);
+    expect(onMessagesChange).toHaveBeenCalledWith([
+      { role: 'user', content: 'Is my dog healthy?' },
+    ]);
   });
 });

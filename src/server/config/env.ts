@@ -23,6 +23,30 @@ const envSchema = z.object({
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
   REFRESH_COOKIE_NAME: z.string().default('refresh_token'),
+
+  // Public origin of this API. Provider redirect URIs are derived from it, so it
+  // has to match what each provider console has registered, character for
+  // character.
+  SERVER_URL: z.string().url().default('http://localhost:8000'),
+
+  // Where the OAuth callback sends the browser once it is done. Success lands on
+  // a client route that trades the refresh cookie for an access token.
+  OAUTH_SUCCESS_REDIRECT: z.string().url().default('http://localhost:5173/auth/callback'),
+  OAUTH_FAILURE_REDIRECT: z.string().url().default('http://localhost:5173/login?error=oauth'),
+
+  // Signs the state cookie binding an authorize request to its callback. Every
+  // provider credential below is optional: a provider with no keys is simply
+  // reported as unconfigured instead of taking the whole process down at boot.
+  OAUTH_STATE_SECRET: z.string().min(32).optional(),
+
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+
+  FACEBOOK_APP_ID: z.string().min(1).optional(),
+  FACEBOOK_APP_SECRET: z.string().min(1).optional(),
+
+  TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
+  TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
