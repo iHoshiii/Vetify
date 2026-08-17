@@ -1,4 +1,4 @@
-import { readAuthState } from '@/lib/auth';
+import { useAuth } from '@/components/providers/AuthProvider';
 import type { Message } from '@/lib/chat-storage';
 import { ApiError } from '@/services/api';
 import { sendMessage as sendChatMessage } from '@/services/chat.service';
@@ -18,7 +18,10 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [model, setModel] = useState(CHAT_MODELS[0].value);
-  const sessionId = readAuthState()?.user?.id ?? 'anonymous';
+  const { user } = useAuth();
+  // Was a bare localStorage read, which left messages sent right after logging
+  // in attributed to 'anonymous' until the next reload.
+  const sessionId = user?.id ?? 'anonymous';
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
