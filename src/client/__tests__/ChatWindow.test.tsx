@@ -1,10 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ChatWindow from '../components/chat-ui/chat-windows';
 import { AuthProvider } from '../components/providers/AuthProvider';
 
 vi.mock('../services/chat.service', () => ({
-  sendMessage: vi.fn().mockResolvedValue('Hello!'),
+  sendMessage: vi.fn().mockResolvedValue({ reply: 'Hello!' }),
 }));
 
 vi.mock('../lib/auth', () => ({
@@ -19,14 +20,22 @@ const defaultProps = {
   onMessagesChange: vi.fn(),
 };
 
-/** ChatWindow reads the session id from context, so it needs the provider. */
+/** Needs the provider for the session id and a router for the quota links. */
 function renderChat(props = defaultProps) {
   return render(
-    <AuthProvider>
-      <ChatWindow {...props} />
-    </AuthProvider>
+    <MemoryRouter>
+      <AuthProvider>
+        <ChatWindow {...props} />
+      </AuthProvider>
+    </MemoryRouter>
   );
 }
+
+beforeEach(() => {
+  // The anonymous allowance persists in localStorage; without this the counter
+  // carries between tests in this file.
+  window.localStorage.clear();
+});
 
 describe('ChatWindow', () => {
   it('renders the input field', () => {
