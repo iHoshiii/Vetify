@@ -12,7 +12,7 @@ import { RefreshToken, hashToken } from '../models/RefreshToken';
 import type { UserDoc } from '../models/User';
 
 export function signAccessToken(payload: object) {
-  return jwt.sign(payload, env.JWT_SECRET, {
+  return jwt.sign(payload, env.JWT_SECRET_ACCESS, {
     expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
   });
 }

@@ -1,6 +1,14 @@
 {
+  "//nodeman_condition": "client side should not be watched by nodemon, only server side, because it will crash",
+  "//watch_note": "nodemon watches these files and folders for changes",
   "watch": ["src/server", "src/shared"],
+
+  "//ext_note": "defines which file extensions nodemon should watch",
   "ext": "ts,json",
+
+  "//ignore_note": "nodemon ignores these files and folders",
   "ignore": ["**/*.test.ts", "**/*.spec.ts"],
+
+  "//exec_note": "the server executes everytime i create a change in the codebase",
   "exec": "tsx src/server/index.ts"
 }
