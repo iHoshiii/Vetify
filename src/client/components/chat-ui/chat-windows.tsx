@@ -1,6 +1,11 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import type { Message } from '@/lib/chat-storage';
-import { FREE_ANON_QUERIES, readAnonQueryCount, recordAnonQuery } from '@/lib/chat-quota';
+import {
+  FREE_ANON_QUERIES,
+  markAnonQuotaExhausted,
+  readAnonQueryCount,
+  recordAnonQuery,
+} from '@/lib/chat-quota';
 import { ApiError } from '@/services/api';
 import { sendMessage as sendChatMessage } from '@/services/chat.service';
 import { CHAT_MODELS } from '@/types/chat';
@@ -54,16 +59,25 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
     abortRef.current = controller;
 
     try {
-      const reply = await sendChatMessage({
+      const { reply, anonRemaining } = await sendChatMessage({
         message: content,
         sessionId,
         history: base.map((m) => ({ role: m.role, content: m.content })),
         model,
         signal: controller.signal,
       });
+      // The server's count is authoritative; trust it over the local guess.
+      if (anonRemaining !== undefined) setAnonUsed(FREE_ANON_QUERIES - anonRemaining);
       onMessagesChange([...updated, { role: 'assistant', content: reply }]);
     } catch (err) {
       if ((err as { name?: string })?.name === 'AbortError') {
+        onMessagesChange(base);
+        setInput(content);
+      } else if (err instanceof ApiError && err.reason === 'anon-quota') {
+        // Storage was cleared, or another tab spent the last one. Fall in line
+        // with the server and swap in the login prompt.
+        markAnonQuotaExhausted();
+        setAnonUsed(FREE_ANON_QUERIES);
         onMessagesChange(base);
         setInput(content);
       } else {

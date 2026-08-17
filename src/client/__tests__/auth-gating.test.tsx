@@ -8,7 +8,7 @@ import { RequireAuth } from '../components/providers/RequireAuth';
 import { FREE_ANON_QUERIES, recordAnonQuery } from '../lib/chat-quota';
 
 vi.mock('../services/chat.service', () => ({
-  sendMessage: vi.fn().mockResolvedValue('Hello!'),
+  sendMessage: vi.fn().mockResolvedValue({ reply: 'Hello!' }),
 }));
 
 vi.mock('../lib/auth', () => ({
