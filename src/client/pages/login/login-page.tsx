@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import LoginForm from './_components/login-form';
 import SocialLogins from './_components/social-login';
 
@@ -12,10 +12,35 @@ const OAUTH_ERRORS: Record<string, string> = {
   server: 'Something went wrong on our side. Please try again.',
 };
 
+/** Friendly phrasing for the pages sitting behind RequireAuth. */
+const GATED_PAGES: Record<string, string> = {
+  '/book-appointment': 'book an appointment',
+  '/map': 'find nearby vets',
+  '/planner': 'use the meal planner',
+};
+
 export default function LoginPage() {
   const [params] = useSearchParams();
+  const location = useLocation();
+
   const oauthError = params.get('error') === 'oauth' ? params.get('reason') : null;
-  const message = oauthError ? OAUTH_ERRORS[oauthError] ?? OAUTH_ERRORS.server : null;
+  const oauthMessage = oauthError ? OAUTH_ERRORS[oauthError] ?? OAUTH_ERRORS.server : null;
+
+  // The chat page links here with a query flag; RequireAuth uses router state.
+  const quotaMessage =
+    params.get('reason') === 'chat-quota'
+      ? 'You have used your free questions. Log in to keep chatting with the assistant.'
+      : null;
+
+  const from = (location.state as { from?: string } | null)?.from;
+  const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
+  const gatedMessage = from
+    ? gatedAction
+      ? `Please log in to ${gatedAction}.`
+      : 'Please log in to continue.'
+    : null;
+
+  const notice = oauthMessage ?? quotaMessage ?? gatedMessage;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
@@ -26,12 +51,12 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-600">Log in to your Vetify account</p>
         </div>
 
-        {message ? (
+        {notice ? (
           <p
             role="alert"
             className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
           >
-            {message}
+            {notice}
           </p>
         ) : null}
 
