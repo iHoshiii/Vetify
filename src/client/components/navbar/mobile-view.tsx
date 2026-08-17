@@ -43,14 +43,14 @@ export function MobileMenu({ isOpen, isAuthenticated, showAuthActions, onClose }
         )}
 
         {TOOLS_ITEMS.map((item) => (
-          <a
+          <Link
             key={item.href}
-            href={item.href}
+            to={item.href}
             onClick={onClose}
             className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
           >
             {item.label}
-          </a>
+          </Link>
         ))}
 
         <div className="my-2 h-px bg-slate-100" />
