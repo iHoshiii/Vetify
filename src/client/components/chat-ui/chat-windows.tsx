@@ -1,5 +1,6 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import type { Message } from '@/lib/chat-storage';
+import { FREE_ANON_QUERIES, readAnonQueryCount, recordAnonQuery } from '@/lib/chat-quota';
 import { ApiError } from '@/services/api';
 import { sendMessage as sendChatMessage } from '@/services/chat.service';
 import { CHAT_MODELS } from '@/types/chat';
@@ -7,6 +8,7 @@ import { useRef, useState } from 'react';
 import { ChatEmpty } from './chat-empty';
 import { ChatInput } from './chat-input';
 import { ChatMessages } from './chat-messages';
+import { ChatQuotaBanner, ChatQuotaLock } from './chat-quota-notice';
 
 interface Props {
   messages: Message[];
@@ -18,18 +20,28 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [model, setModel] = useState(CHAT_MODELS[0].value);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   // Was a bare localStorage read, which left messages sent right after logging
   // in attributed to 'anonymous' until the next reload.
   const sessionId = user?.id ?? 'anonymous';
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Seeded from storage so the allowance survives a reload, then kept in state
+  // so spending one re-renders the composer without another read.
+  const [anonUsed, setAnonUsed] = useState(() => readAnonQueryCount());
+  const remaining = Math.max(0, FREE_ANON_QUERIES - anonUsed);
+  const quotaSpent = !isAuthenticated && remaining === 0;
+
   const lastUserIndex = messages.reduce((last, m, i) => (m.role === 'user' ? i : last), -1);
 
   const sendMessage = async (text?: string, replaceFromIndex?: number) => {
     const content = (text ?? input).trim();
-    if (!content || loading) return;
+    if (!content || loading || quotaSpent) return;
+
+    // Counted before the request, so a failed or cancelled call still spends the
+    // question. The alternative — refunding on error — is a free retry loop.
+    if (!isAuthenticated) setAnonUsed(recordAnonQuery());
 
     const base = replaceFromIndex != null ? messages.slice(0, replaceFromIndex) : messages;
     const updated = [...base, { role: 'user' as const, content }];
@@ -95,23 +107,30 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
           />
         )}
       </div>
-      <ChatInput
-        input={input}
-        loading={loading}
-        editingIndex={editingIndex}
-        model={model}
-        onInputChange={setInput}
-        onSend={() =>
-          void (editingIndex != null ? sendMessage(input, editingIndex) : sendMessage())
-        }
-        onCancel={() => abortRef.current?.abort()}
-        onCancelEdit={() => {
-          setEditingIndex(null);
-          setInput('');
-        }}
-        onModelChange={setModel}
-        inputRef={inputRef}
-      />
+      {quotaSpent ? (
+        <ChatQuotaLock />
+      ) : (
+        <>
+          {!isAuthenticated ? <ChatQuotaBanner remaining={remaining} /> : null}
+          <ChatInput
+            input={input}
+            loading={loading}
+            editingIndex={editingIndex}
+            model={model}
+            onInputChange={setInput}
+            onSend={() =>
+              void (editingIndex != null ? sendMessage(input, editingIndex) : sendMessage())
+            }
+            onCancel={() => abortRef.current?.abort()}
+            onCancelEdit={() => {
+              setEditingIndex(null);
+              setInput('');
+            }}
+            onModelChange={setModel}
+            inputRef={inputRef}
+          />
+        </>
+      )}
     </div>
   );
 }
