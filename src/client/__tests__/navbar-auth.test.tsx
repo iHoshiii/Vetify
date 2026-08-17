@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import SiteHeader from '@/components/navbar/navbar-header';
+import FloatingSettings from '@/components/FloatingSettings';
 import { AuthProvider, useAuth } from '@/components/providers/AuthProvider';
 
 vi.mock('@/lib/auth', () => ({
@@ -64,5 +65,25 @@ describe('navbar auth reactivity', () => {
     expect(screen.queryByText('Log in')).toBeNull();
     expect(screen.queryByText('Sign up')).toBeNull();
     expect(screen.getAllByText('Find Vets').length).toBeGreaterThan(0);
+  });
+});
+
+describe('floating settings auth reactivity', () => {
+  it('stays hidden while anonymous and appears once a session arrives', () => {
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <FloatingSettings />
+          <LoginTrigger />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByLabelText('Settings')).toBeNull();
+
+    fireEvent.click(screen.getByText('trigger login'));
+
+    expect(screen.getByLabelText('Settings')).toBeDefined();
+    expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
   });
 });
