@@ -8,7 +8,7 @@ A pet care web app — AI chat assistant, vet locator, meal planner, and anatomy
 - Frontend hosting: S3 + CloudFront
 - Backend: Express (Node.js, TypeScript)
 - Backend hosting: API Gateway + Lambda
-- Database: MongoDB Atlas (Mongoose)
+- Database: MongoDB Atlas (official `mongodb` Node.js driver)
 - Auth: Custom JWT — access token + httpOnly refresh cookie
 - AI: Google Gemini (`@google/genai`), LangSmith tracing
 - Validation: Zod (shared between client and server)
@@ -75,7 +75,11 @@ Paste the output as the value of `JWT_SECRET` in your `.env`.
 
 ## Database
 
-MongoDB Atlas via Mongoose.
+MongoDB Atlas through the official `mongodb` driver — no ODM. `src/server/config/db.ts`
+owns a single `MongoClient`; each file under `src/server/models/` exports a typed
+collection accessor, a Zod schema for its attributes, and its index list. The
+server calls `ensureIndexes()` once at boot, so indexes are created explicitly
+rather than lazily.
 
 ## Testing
 
