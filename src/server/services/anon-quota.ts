@@ -1,10 +1,10 @@
 import { ANON_COOKIE_DAYS, FREE_ANON_QUERIES } from '@shared/limits';
 import type { CookieOptions, Request, Response } from 'express';
-import mongoose from 'mongoose';
 import crypto from 'node:crypto';
 
+import { isDbConnected } from '../config/db';
 import { env, isProduction } from '../config/env';
-import { ANON_QUOTA_WINDOW_MS, AnonUsage } from '../models/AnonUsage';
+import { ANON_QUOTA_WINDOW_MS, anonUsagesCollection } from '../models/AnonUsage';
 
 export const ANON_ID_COOKIE = 'vetify_anon';
 
@@ -89,7 +89,7 @@ let warnedAboutMissingDb = false;
  * is the reason both layers exist.
  */
 export async function consumeAnonQuery(anonId: string): Promise<QuotaVerdict> {
-  if (mongoose.connection.readyState !== 1) {
+  if (!isDbConnected()) {
     if (!warnedAboutMissingDb) {
       warnedAboutMissingDb = true;
       console.warn(
@@ -100,18 +100,30 @@ export async function consumeAnonQuery(anonId: string): Promise<QuotaVerdict> {
     return { allowed: true, used: 0, remaining: FREE_ANON_QUERIES };
   }
 
-  const doc = await AnonUsage.findOneAndUpdate(
+  const now = new Date();
+
+  const doc = await anonUsagesCollection().findOneAndUpdate(
     { anonId },
     {
       $inc: { chatCount: 1 },
+      $set: { updatedAt: now },
       // setOnInsert, not set: the window runs from the first question, so it
       // still closes on schedule for someone who keeps retrying after being
       // refused. Refreshing this on every hit would make the allowance
       // unreachable rather than daily.
-      $setOnInsert: { expiresAt: new Date(Date.now() + ANON_QUOTA_WINDOW_MS) },
+      $setOnInsert: {
+        expiresAt: new Date(now.getTime() + ANON_QUOTA_WINDOW_MS),
+        createdAt: now,
+      },
     },
-    { new: true, upsert: true }
+    // returnDocument: 'after' is the driver's spelling of Mongoose's { new: true }.
+    { upsert: true, returnDocument: 'after' }
   );
+
+  // With upsert and returnDocument 'after' there is always a document; the
+  // driver's type does not know that, and treating the impossible case as an
+  // uncounted question matches the fail-open behaviour above.
+  if (!doc) return { allowed: true, used: 0, remaining: FREE_ANON_QUERIES };
 
   const used = doc.chatCount;
   return {
@@ -123,7 +135,12 @@ export async function consumeAnonQuery(anonId: string): Promise<QuotaVerdict> {
 
 /** Reads the count without spending one. */
 export async function peekAnonUsage(anonId: string): Promise<number> {
-  if (mongoose.connection.readyState !== 1) return 0;
-  const doc = await AnonUsage.findOne({ anonId }).select('chatCount');
+  if (!isDbConnected()) return 0;
+
+  const doc = await anonUsagesCollection().findOne<{ chatCount: number }>(
+    { anonId },
+    { projection: { chatCount: 1, _id: 0 } }
+  );
+
   return doc?.chatCount ?? 0;
 }
