@@ -1,4 +1,10 @@
-import { Schema, Types, model, type HydratedDocument, type Model } from 'mongoose';
+import { ObjectId, type Collection, type IndexDescription } from 'mongodb';
+import { z } from 'zod';
+
+import { getDb } from '../config/db';
+import { isValidObjectId, toObjectId } from './object-id';
+
+export const PETS_COLLECTION = 'pets';
 
 export type PetAvatar = {
   url: string | null;
@@ -6,16 +12,17 @@ export type PetAvatar = {
   initials: boolean;
 };
 
-export type PetAttrs = {
+export type PetDocument = {
+  _id: ObjectId;
   name: string;
   species: string;
-  breed?: string | null;
-  age?: number | null;
-  weight?: number | null;
-  owner: Types.ObjectId;
-  avatar?: PetAvatar;
-  createdAt?: Date;
-  updatedAt?: Date;
+  breed: string | null;
+  age: number | null;
+  weight: number | null;
+  owner: ObjectId;
+  avatar: PetAvatar;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type PublicPet = {
@@ -29,77 +36,76 @@ export type PublicPet = {
   avatar: PetAvatar;
 };
 
-export type PetMethods = {
-  toPublic(): PublicPet;
-};
-
-export type PetModel = Model<PetAttrs, Record<string, never>, PetMethods>;
-export type PetDoc = HydratedDocument<PetAttrs, PetMethods>;
-
 /**
  * Defaults carried over from the FastAPI migration
  * 2026_06_18_init_pet_avatar_defaults, which backfilled these onto existing
  * documents. Kept identical so old and new records stay consistent.
  */
-const avatarSchema = new Schema<PetAvatar>(
-  {
-    url: { type: String, default: null },
-    color: { type: String, default: '#A78BFA' },
-    initials: { type: Boolean, default: true },
-  },
-  { _id: false }
-);
-
-const petSchema = new Schema<PetAttrs, PetModel, PetMethods>(
-  {
-    name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
-    },
-    species: {
-      type: String,
-      required: [true, 'Species is required'],
-      trim: true,
-    },
-    breed: { type: String, trim: true },
-    age: { type: Number, min: [0, 'Age cannot be negative'] },
-    weight: { type: Number, min: [0, 'Weight cannot be negative'] },
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Owner is required'],
-      index: true,
-    },
-    avatar: {
-      type: avatarSchema,
-      default: () => ({}),
-    },
-  },
-  {
-    timestamps: true,
-    // Set explicitly rather than relying on the pluraliser: the collection name
-    // is the one thing here that is expensive to change once data exists, and
-    // the previous Python migration already wrote to 'pets'.
-    collection: 'pets',
-  }
-);
-
-petSchema.methods.toPublic = function toPublic(this: PetDoc): PublicPet {
-  return {
-    id: this._id.toString(),
-    name: this.name,
-    species: this.species,
-    breed: this.breed ?? null,
-    age: this.age ?? null,
-    weight: this.weight ?? null,
-    ownerId: this.owner.toString(),
-    avatar: {
-      url: this.avatar?.url ?? null,
-      color: this.avatar?.color ?? '#A78BFA',
-      initials: this.avatar?.initials ?? true,
-    },
-  };
+export const PET_AVATAR_DEFAULTS: PetAvatar = {
+  url: null,
+  color: '#A78BFA',
+  initials: true,
 };
 
-export const Pet = model<PetAttrs, PetModel>('Pet', petSchema);
+export const petAttrsSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required'),
+  species: z.string().trim().min(1, 'Species is required'),
+  breed: z.string().trim().min(1).nullish(),
+  age: z.number().min(0, 'Age cannot be negative').nullish(),
+  weight: z.number().min(0, 'Weight cannot be negative').nullish(),
+  owner: z.custom<string | ObjectId>(isValidObjectId, 'Owner is required'),
+  avatar: z
+    .object({
+      url: z.string().min(1).nullish(),
+      color: z.string().trim().min(1),
+      initials: z.boolean(),
+    })
+    .partial()
+    .optional(),
+});
+
+export type PetAttrs = z.input<typeof petAttrsSchema>;
+
+export const PET_INDEXES: IndexDescription[] = [{ key: { owner: 1 } }];
+
+export function petsCollection(): Collection<PetDocument> {
+  return getDb().collection<PetDocument>(PETS_COLLECTION);
+}
+
+export async function insertPet(attrs: PetAttrs): Promise<PetDocument> {
+  const parsed = petAttrsSchema.parse(attrs);
+  const now = new Date();
+
+  const doc: PetDocument = {
+    _id: new ObjectId(),
+    name: parsed.name,
+    species: parsed.species,
+    breed: parsed.breed ?? null,
+    age: parsed.age ?? null,
+    weight: parsed.weight ?? null,
+    owner: toObjectId(parsed.owner),
+    avatar: { ...PET_AVATAR_DEFAULTS, ...parsed.avatar },
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await petsCollection().insertOne(doc);
+  return doc;
+}
+
+export function toPublicPet(pet: PetDocument): PublicPet {
+  return {
+    id: pet._id.toString(),
+    name: pet.name,
+    species: pet.species,
+    breed: pet.breed ?? null,
+    age: pet.age ?? null,
+    weight: pet.weight ?? null,
+    ownerId: pet.owner.toString(),
+    avatar: {
+      url: pet.avatar?.url ?? PET_AVATAR_DEFAULTS.url,
+      color: pet.avatar?.color ?? PET_AVATAR_DEFAULTS.color,
+      initials: pet.avatar?.initials ?? PET_AVATAR_DEFAULTS.initials,
+    },
+  };
+}

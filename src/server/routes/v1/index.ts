@@ -1,27 +1,23 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
 
+import { dbStatus } from '../../config/db';
 import authRoute from './auth.route';
 import chatRoute from './chat.route';
 
 const router = Router();
 
-const DB_STATES: Record<number, string> = {
-  0: 'disconnected',
-  1: 'connected',
-  2: 'connecting',
-  3: 'disconnecting',
-  99: 'uninitialized',
-};
-
 /**
  * Liveness plus a DB readiness flag. Returns 200 even when Mongo is down — the
  * chat endpoint has no DB dependency, so the process is still useful.
+ *
+ * The flag now comes from the driver's heartbeat rather than Mongoose's
+ * readyState, so the transient 'connecting' and 'disconnecting' values are gone:
+ * a server that is not currently answering reads as 'disconnected'.
  */
 router.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
-    db: DB_STATES[mongoose.connection.readyState] ?? 'unknown',
+    db: dbStatus(),
     uptime: Math.floor(process.uptime()),
   });
 });

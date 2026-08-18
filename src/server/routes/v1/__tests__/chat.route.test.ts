@@ -1,12 +1,11 @@
 import { FREE_ANON_QUERIES } from '@shared/limits';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../../app';
 import { ANON_ID_COOKIE } from '../../../services/anon-quota';
 import { signAccessToken } from '../../../services/auth.service';
+import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
 // Keeps Gemini out of the test entirely — the point here is the gate in front of
 // it, and a real call would cost money and need a key.
@@ -14,22 +13,11 @@ vi.mock('../../../services/chat.service', () => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
 }));
 
-let mongo: MongoMemoryServer;
 const app = createApp();
 
-beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  await mongoose.connect(mongo.getUri());
-}, 120_000);
-
-afterEach(async () => {
-  await Promise.all(Object.values(mongoose.connection.collections).map((c) => c.deleteMany({})));
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
-});
+beforeAll(startTestDb, 120_000);
+afterEach(clearTestDb);
+afterAll(stopTestDb);
 
 const ask = (agent: request.Agent) => agent.post('/api/v1/chat').send({ message: 'is my dog ok?' });
 
