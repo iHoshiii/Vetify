@@ -1,26 +1,13 @@
 import { ANON_QUOTA_WINDOW_HOURS, FREE_ANON_QUERIES } from '@shared/limits';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { AnonUsage } from '../../models/AnonUsage';
+import { anonUsagesCollection } from '../../models/AnonUsage';
+import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import { consumeAnonQuery, peekAnonUsage } from '../anon-quota';
 
-let mongo: MongoMemoryServer;
-
-beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  await mongoose.connect(mongo.getUri());
-}, 120_000);
-
-afterEach(async () => {
-  await Promise.all(Object.values(mongoose.connection.collections).map((c) => c.deleteMany({})));
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
-});
+beforeAll(startTestDb, 120_000);
+afterEach(clearTestDb);
+afterAll(stopTestDb);
 
 describe('consumeAnonQuery', () => {
   it('allows exactly the free allowance and refuses the next one', async () => {
@@ -54,13 +41,13 @@ describe('consumeAnonQuery', () => {
 
   it('pins the window to the first question, not the last', async () => {
     await consumeAnonQuery('visitor-e');
-    const first = (await AnonUsage.findOne({ anonId: 'visitor-e' }))!;
+    const first = (await anonUsagesCollection().findOne({ anonId: 'visitor-e' }))!;
     const firstExpiry = first.expiresAt.getTime();
 
     await consumeAnonQuery('visitor-e');
-    const second = (await AnonUsage.findOne({ anonId: 'visitor-e' }))!;
+    const second = (await anonUsagesCollection().findOne({ anonId: 'visitor-e' }))!;
 
-    expect(await AnonUsage.countDocuments({ anonId: 'visitor-e' })).toBe(1);
+    expect(await anonUsagesCollection().countDocuments({ anonId: 'visitor-e' })).toBe(1);
     expect(second.chatCount).toBe(2);
     // Unchanged on purpose: a rolling expiry would never lapse for someone who
     // kept retrying after being refused, so the allowance would never reset.
@@ -69,7 +56,7 @@ describe('consumeAnonQuery', () => {
 
   it('closes the window roughly a day out', async () => {
     await consumeAnonQuery('visitor-h');
-    const doc = (await AnonUsage.findOne({ anonId: 'visitor-h' }))!;
+    const doc = (await anonUsagesCollection().findOne({ anonId: 'visitor-h' }))!;
 
     const hoursOut = (doc.expiresAt.getTime() - Date.now()) / (60 * 60 * 1000);
     expect(hoursOut).toBeGreaterThan(ANON_QUOTA_WINDOW_HOURS - 1);
@@ -82,7 +69,7 @@ describe('consumeAnonQuery', () => {
 
     // Stand in for Mongo's TTL sweep, which deletes the record on expiry. The
     // reset is that deletion — there is no counter to zero.
-    await AnonUsage.deleteOne({ anonId: 'visitor-i' });
+    await anonUsagesCollection().deleteOne({ anonId: 'visitor-i' });
 
     const afterReset = await consumeAnonQuery('visitor-i');
     expect(afterReset.allowed).toBe(true);
