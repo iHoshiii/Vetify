@@ -17,7 +17,7 @@
 
 - Vite + React + Express monorepo under `src/client/` and `src/server/`
 - Shared Zod schemas in `src/shared/schemas.ts`
-- MongoDB Atlas via Mongoose
+- MongoDB Atlas via the official `mongodb` driver
 - Prisma for schema management (`npx prisma db push`)
 - `nodemon` + `concurrently` for local dev
 
