@@ -9,8 +9,17 @@ function addDays(date: Date, days: number): Date {
 }
 
 import { env, isProduction } from '../config/env';
-import { RefreshToken, hashToken } from '../models/RefreshToken';
-import { User, type AuthProvider, type UserDoc } from '../models/User';
+import { hashToken, insertRefreshToken } from '../models/RefreshToken';
+import {
+  findUserByEmail,
+  findUserByProviderId,
+  insertUser,
+  toPublicUser,
+  updateUser,
+  type AuthProvider,
+  type User,
+  type UserPatch,
+} from '../models/User';
 import { OAuthError, type OAuthProfile } from './oauth.service';
 
 export function signAccessToken(payload: object) {
@@ -25,25 +34,13 @@ export async function createRefreshToken(userId: string) {
 
   const expiresAt = addDays(new Date(), env.REFRESH_TOKEN_DAYS);
 
-  await RefreshToken.create({ tokenHash, user: userId, expiresAt });
+  await insertRefreshToken({ tokenHash, user: userId, expiresAt });
 
   return { token, expiresAt };
 }
 
-export async function revokeRefreshTokenByHash(tokenHash: string) {
-  const rt = await RefreshToken.findOne({ tokenHash });
-  if (!rt) return false;
-  rt.revokedAt = new Date();
-  await rt.save();
-  return true;
-}
-
-export async function findRefreshTokenByHash(tokenHash: string) {
-  return RefreshToken.findOne({ tokenHash }).populate('user');
-}
-
-export async function createAuthPayloadFor(userDoc: UserDoc) {
-  const publicUser = userDoc.toPublic();
+export async function createAuthPayloadFor(user: User) {
+  const publicUser = toPublicUser(user);
   const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
   const { token: refreshToken, expiresAt } = await createRefreshToken(publicUser.id);
   return { accessToken, refreshToken, expiresAt, user: publicUser };
@@ -81,16 +78,19 @@ export function setRefreshCookie(res: Response, token: string, expiresAt: Date):
 export async function findOrCreateOAuthUser(
   provider: Exclude<AuthProvider, 'local'>,
   profile: OAuthProfile
-): Promise<UserDoc> {
-  const existing = await User.findOne({ provider, providerId: profile.providerId });
+): Promise<User> {
+  const existing = await findUserByProviderId(provider, profile.providerId);
   if (existing) {
-    // Let a changed display name or avatar follow the provider.
-    if (profile.name && profile.name !== existing.name) existing.name = profile.name;
+    // Let a changed display name or avatar follow the provider. Collecting the
+    // changes into a patch and letting an empty one skip the write is what
+    // `doc.isModified()` used to decide.
+    const patch: UserPatch = {};
+    if (profile.name && profile.name !== existing.name) patch.name = profile.name;
     if (profile.avatarUrl && profile.avatarUrl !== existing.avatarUrl) {
-      existing.avatarUrl = profile.avatarUrl;
+      patch.avatarUrl = profile.avatarUrl;
     }
-    if (existing.isModified()) await existing.save();
-    return existing;
+
+    return (await updateUser(existing._id, patch)) ?? { ...existing, ...patch };
   }
 
   if (!profile.email) {
@@ -99,7 +99,7 @@ export async function findOrCreateOAuthUser(
     );
   }
 
-  const byEmail = await User.findOne({ email: profile.email });
+  const byEmail = await findUserByEmail(profile.email);
   if (byEmail) {
     if (!profile.emailVerified) {
       throw new OAuthError(
@@ -107,16 +107,22 @@ export async function findOrCreateOAuthUser(
           'Log in with your password instead.'
       );
     }
-    byEmail.provider = provider;
-    byEmail.providerId = profile.providerId;
-    byEmail.emailVerified = true;
-    if (!byEmail.name && profile.name) byEmail.name = profile.name;
-    if (!byEmail.avatarUrl && profile.avatarUrl) byEmail.avatarUrl = profile.avatarUrl;
-    await byEmail.save();
-    return byEmail;
+
+    const patch: UserPatch = {
+      provider,
+      providerId: profile.providerId,
+      emailVerified: true,
+    };
+    if (!byEmail.name && profile.name) patch.name = profile.name;
+    if (!byEmail.avatarUrl && profile.avatarUrl) patch.avatarUrl = profile.avatarUrl;
+
+    // The fallback only fires if the account was deleted between the read and
+    // the write; merging the patch keeps the returned user consistent with what
+    // was attempted rather than handing back the pre-link provider.
+    return (await updateUser(byEmail._id, patch)) ?? { ...byEmail, ...patch };
   }
 
-  return User.create({
+  return insertUser({
     email: profile.email,
     name: profile.name,
     provider,
