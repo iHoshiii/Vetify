@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+import { dnsFallbackHint } from './dns';
 import { env, isProduction } from './env';
 
 // Reject writes that don't match a schema path instead of silently dropping them.
@@ -28,6 +29,12 @@ export async function connectDb(): Promise<boolean> {
       bufferCommands: isProduction,
     });
   } catch (err) {
+    // Printed before the production branch on purpose: a resolver that cannot
+    // answer SRV queries strands a container just as easily as a laptop, and the
+    // bare ECONNREFUSED names nothing that would point at the cause.
+    const hint = dnsFallbackHint(err as Error);
+    if (hint) console.warn(hint);
+
     if (isProduction) throw err;
     console.warn(
       `[db] could not reach Mongo (${(err as Error).message.split('\n')[0]}).\n` +
