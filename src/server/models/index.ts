@@ -2,7 +2,7 @@ import type { IndexDescription } from 'mongodb';
 
 import { getDb } from '../config/db';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
-import { PETS_COLLECTION, PET_INDEXES } from './Pet';
+import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './RefreshToken';
 import { USERS_COLLECTION, USER_INDEXES } from './User';
 
@@ -26,7 +26,7 @@ export {
   type PetAvatar,
   type PetDocument,
   type PublicPet,
-} from './Pet';
+} from './pets';
 export {
   REFRESH_TOKENS_COLLECTION,
   REFRESH_TOKEN_INDEXES,

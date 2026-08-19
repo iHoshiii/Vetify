@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { PETS_COLLECTION, insertPet, petsCollection, type PetAttrs } from '../Pet';
+import { PETS_COLLECTION, insertPet, petsCollection, type PetAttrs } from '../pets';
 import {
   findRefreshTokenWithOwner,
   hashToken,
