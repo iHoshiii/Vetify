@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { comparePassword, findUserByEmail, insertUser, usersCollection } from '../../models/User';
+import { comparePassword, findUserByEmail, insertUser, usersCollection } from '../../models/users';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import { findOrCreateOAuthUser } from '../auth.service';
 import type { OAuthProfile } from '../oauth.service';

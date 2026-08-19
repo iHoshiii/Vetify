@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 
 import { getDb } from '../config/db';
 import { toObjectId } from './object-id';
-import { USERS_COLLECTION, type User } from './User';
+import { USERS_COLLECTION, type User } from './users';
 
 export const REFRESH_TOKENS_COLLECTION = 'refreshtokens';
 
