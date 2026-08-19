@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb';
-
 /**
  * Coerces an id that arrived as a string — from a JWT subject, a route
  * parameter, a cookie — into the ObjectId the driver needs for an `_id` filter.
