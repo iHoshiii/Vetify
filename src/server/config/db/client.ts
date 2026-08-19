@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { dnsFallbackHint } from '../dns';
 import { env, isProduction } from '../env';
 import { attachHeartbeatListeners } from './listeners';
 import { state } from './state';
@@ -28,6 +29,13 @@ export async function connectDb(uri: string = env.MONGODB_URI): Promise<boolean>
     await mongoClient.db().command({ ping: 1 }); // tries to command a ping to the 'mongoClient' db
   } catch (err) {
     await mongoClient.close().catch(() => {}); // if error 'mongoClient' will be closed
+
+    // Printed before the production branch on purpose: a resolver that cannot
+    // answer SRV queries strands a container just as easily as a laptop, and the
+    // bare ECONNREFUSED names nothing that would point at the cause.
+    const hint = dnsFallbackHint(err as Error);
+    if (hint) console.warn(hint);
+
     if (isProduction) throw err; // if its currently in production
     console.warn(
       `[db] could not reach Mongo (${(err as Error).message.split('\n')[0]}).\n` +

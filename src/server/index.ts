@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import { connectDb, disconnectDb } from './config/db';
+import { applyDnsServers } from './config/dns';
 import { env, isProduction } from './config/env';
 import { ensureIndexes } from './models';
 
@@ -23,6 +24,10 @@ async function buildIndexes(): Promise<void> {
 }
 
 async function main() {
+  // Ahead of connectDb because a mongodb+srv:// URI is resolved the instant the
+  // driver is handed it, and a resolver swap after that point comes too late.
+  applyDnsServers(env.DNS_SERVERS);
+
   const dbUp = await connectDb();
   if (dbUp) await buildIndexes();
 
