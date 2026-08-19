@@ -14,6 +14,21 @@ const envSchema = z.object({
 
   MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/vetify'),
 
+  // Comma-separated resolvers for Node's SRV/TXT lookups. Only needed on
+  // machines where Node cannot read the nameservers itself and falls back to
+  // 127.0.0.1, which strands every mongodb+srv:// connection. See config/dns.ts.
+  DNS_SERVERS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value
+            .split(',')
+            .map((server) => server.trim())
+            .filter(Boolean)
+        : []
+    ),
+
   // Only consulted for non-proxied clients. The Vite dev proxy keeps the
   // browser same-origin, so CORS is a no-op in normal local development.
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),

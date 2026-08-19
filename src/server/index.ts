@@ -1,8 +1,13 @@
 import { createApp } from './app';
 import { connectDb, disconnectDb } from './config/db';
+import { applyDnsServers } from './config/dns';
 import { env } from './config/env';
 
 async function main() {
+  // Ahead of connectDb because a mongodb+srv:// URI is resolved the instant the
+  // driver is handed it, and a resolver swap after that point comes too late.
+  applyDnsServers(env.DNS_SERVERS);
+
   const dbUp = await connectDb();
 
   const app = createApp();
