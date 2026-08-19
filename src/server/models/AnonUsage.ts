@@ -23,7 +23,7 @@ export const ANON_USAGE_INDEXES: IndexDescription[] = [
   { key: { expiresAt: 1 }, expireAfterSeconds: 0 }, // index on expiresAt to automatically delete expired documents
 ];
 
-// resets the quota after 24 hours
+// resets the quota after 86 400 000 ms or 24 hours
 export const ANON_QUOTA_WINDOW_MS = ANON_QUOTA_WINDOW_HOURS * 60 * 60 * 1000;
 
 export function anonUsagesCollection(): Collection<AnonUsageDocument> {
