@@ -19,7 +19,7 @@ import {
   type AuthProvider,
   type User,
   type UserPatch,
-} from '../models/User';
+} from '../models/users';
 import { OAuthError, type OAuthProfile } from './oauth.service';
 
 export function signAccessToken(payload: object) {

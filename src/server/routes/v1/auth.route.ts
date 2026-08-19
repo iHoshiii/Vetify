@@ -16,7 +16,7 @@ import {
   findUserWithPasswordByEmail,
   insertUser,
   toPublicUser,
-} from '../../models/User';
+} from '../../models/users';
 import {
   createAuthPayloadFor,
   findOrCreateOAuthUser,

@@ -18,7 +18,7 @@ import {
   toPublicUser,
   updateUser,
   usersCollection,
-} from '../User';
+} from '../users';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
