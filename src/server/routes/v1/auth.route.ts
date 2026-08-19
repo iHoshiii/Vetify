@@ -4,13 +4,22 @@ import crypto from 'node:crypto';
 
 import { env } from '../../config/env';
 import { validate } from '../../middleware/validate';
-import { hashToken } from '../../models/RefreshToken';
-import { User, type UserDoc } from '../../models/User';
+import {
+  findRefreshTokenWithOwner,
+  hashToken,
+  isRefreshTokenActive,
+  revokeRefreshTokenByHash,
+} from '../../models/RefreshToken';
+import {
+  comparePassword,
+  findUserByEmail,
+  findUserWithPasswordByEmail,
+  insertUser,
+  toPublicUser,
+} from '../../models/users';
 import {
   createAuthPayloadFor,
   findOrCreateOAuthUser,
-  findRefreshTokenByHash,
-  revokeRefreshTokenByHash,
   setRefreshCookie,
   signAccessToken,
 } from '../../services/auth.service';
@@ -53,10 +62,10 @@ function redirectWithError(res: Response, reason: string): void {
 router.post('/signup', validate(signupSchema), async (req, res) => {
   const payload = req.body as SignupInput;
 
-  const existing = await User.findOne({ email: payload.email });
+  const existing = await findUserByEmail(payload.email);
   if (existing) return fail(res, 409, 'User with that email already exists');
 
-  const user = await User.create({
+  const user = await insertUser({
     email: payload.email,
     password: payload.password,
     name: payload.name,
@@ -71,10 +80,11 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
 // POST /api/v1/auth/login
 router.post('/login', validate(loginSchema), async (req, res) => {
   const payload = req.body as LoginInput;
-  const user = await User.findOne({ email: payload.email }).select('+password');
+  // The one read in the codebase that returns the stored hash.
+  const user = await findUserWithPasswordByEmail(payload.email);
   if (!user) return fail(res, 401, 'Invalid credentials');
 
-  const match = await user.comparePassword(payload.password);
+  const match = await comparePassword(user.password, payload.password);
   if (!match) return fail(res, 401, 'Invalid credentials');
 
   const auth = await createAuthPayloadFor(user);
@@ -95,13 +105,14 @@ router.post('/refresh', async (req, res) => {
   if (!raw) return fail(res, 401, 'Missing refresh token');
 
   const tokenHash = hashToken(raw);
-  const rt = await findRefreshTokenByHash(tokenHash);
-  if (!rt || !rt.isActive()) return fail(res, 401, 'Invalid or expired refresh token');
+  const rt = await findRefreshTokenWithOwner(tokenHash);
+  if (!rt || !isRefreshTokenActive(rt)) {
+    return fail(res, 401, 'Invalid or expired refresh token');
+  }
 
-  const user = rt.user as unknown as UserDoc | null;
-  if (!user) return fail(res, 401, 'Refresh token is not attached to a user');
+  if (!rt.owner) return fail(res, 401, 'Refresh token is not attached to a user');
 
-  const publicUser = user.toPublic();
+  const publicUser = toPublicUser(rt.owner);
   const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
   ok(res, { accessToken, user: publicUser });
 });

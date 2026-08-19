@@ -18,7 +18,7 @@ User
 
 - Frontend: S3 bucket (no static hosting) + CloudFront distribution
 - Backend: API Gateway (HTTP API) → Lambda wrapping the Express app
-- Database: MongoDB Atlas — same cluster for both Mongoose (runtime) and Prisma (schema)
+- Database: MongoDB Atlas — same cluster for both the `mongodb` driver (runtime) and Prisma (schema)
 - Custom domains required for httpOnly cookies to work cross-origin (`yourapp.com` + `api.yourapp.com`)
 
 ## Directory Map
@@ -48,15 +48,18 @@ vetify/
 │   │       └── chat.service.ts     # sendMessage → POST /api/v1/chat
 │   ├── server/                     # Express backend
 │   │   ├── config/
-│   │   │   ├── db.ts               # Mongoose connection
+│   │   │   ├── db.ts               # MongoClient singleton + connection state
 │   │   │   └── env.ts              # Zod-validated env schema
 │   │   ├── middleware/
 │   │   │   ├── errorHandler.ts
 │   │   │   ├── security.ts         # helmet, cors, rate-limit
 │   │   │   └── validate.ts         # Zod request validation middleware
 │   │   ├── models/
-│   │   │   ├── User.ts             # bcrypt password hashing, toPublic()
+│   │   │   ├── index.ts            # barrel + ensureIndexes() called at boot
+│   │   │   ├── object-id.ts        # toObjectId / isValidObjectId helpers
+│   │   │   ├── User.ts             # bcrypt hashing, password kept out of reads
 │   │   │   ├── Pet.ts
+│   │   │   ├── AnonUsage.ts        # anonymous chat allowance, TTL on expiresAt
 │   │   │   └── RefreshToken.ts     # hashed token + revocation
 │   │   ├── routes/v1/
 │   │   │   ├── auth.route.ts       # signup, login, refresh, logout
@@ -114,7 +117,7 @@ Single source of truth for validation rules used by both sides:
 | Package                 | Purpose                       |
 | ----------------------- | ----------------------------- |
 | `express`               | HTTP server                   |
-| `mongoose`              | MongoDB ODM                   |
+| `mongodb`               | MongoDB driver                |
 | `@google/genai`         | Gemini AI                     |
 | `langsmith`             | AI tracing                    |
 | `jsonwebtoken`          | JWT signing/verification      |

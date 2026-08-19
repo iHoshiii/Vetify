@@ -1,26 +1,13 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import mongoose from 'mongoose';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { User } from '../../models/User';
+import { comparePassword, findUserByEmail, insertUser, usersCollection } from '../../models/users';
+import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import { findOrCreateOAuthUser } from '../auth.service';
 import type { OAuthProfile } from '../oauth.service';
 
-let mongo: MongoMemoryServer;
-
-beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  await mongoose.connect(mongo.getUri());
-}, 120_000);
-
-afterEach(async () => {
-  await Promise.all(Object.values(mongoose.connection.collections).map((c) => c.deleteMany({})));
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongo.stop();
-});
+beforeAll(startTestDb, 120_000);
+afterEach(clearTestDb);
+afterAll(stopTestDb);
 
 function profile(overrides: Partial<OAuthProfile> = {}): OAuthProfile {
   return {
@@ -33,6 +20,8 @@ function profile(overrides: Partial<OAuthProfile> = {}): OAuthProfile {
   };
 }
 
+const countUsers = () => usersCollection().countDocuments();
+
 describe('findOrCreateOAuthUser', () => {
   it('creates an account with no password from a verified profile', async () => {
     const user = await findOrCreateOAuthUser('google', profile());
@@ -42,16 +31,16 @@ describe('findOrCreateOAuthUser', () => {
     expect(user.providerId).toBe('google-sub-1');
     expect(user.emailVerified).toBe(true);
 
-    const stored = await User.findById(user._id).select('+password');
-    expect(stored!.password).toBeFalsy();
+    const stored = await usersCollection().findOne({ _id: user._id });
+    expect(stored!.password).toBeNull();
   });
 
   it('never matches a password login against an OAuth account', async () => {
     const user = await findOrCreateOAuthUser('google', profile());
-    const stored = (await User.findById(user._id).select('+password'))!;
+    const stored = (await usersCollection().findOne({ _id: user._id }))!;
 
-    await expect(stored.comparePassword('')).resolves.toBe(false);
-    await expect(stored.comparePassword('anything')).resolves.toBe(false);
+    await expect(comparePassword(stored.password, '')).resolves.toBe(false);
+    await expect(comparePassword(stored.password, 'anything')).resolves.toBe(false);
   });
 
   it('returns the same account on a second login and follows profile changes', async () => {
@@ -64,7 +53,7 @@ describe('findOrCreateOAuthUser', () => {
     expect(second._id.toString()).toBe(first._id.toString());
     expect(second.name).toBe('Ada Lovelace');
     expect(second.avatarUrl).toBe('https://cdn.example/b.png');
-    expect(await User.countDocuments()).toBe(1);
+    expect(await countUsers()).toBe(1);
   });
 
   it('matches on providerId even after the provider email changes', async () => {
@@ -72,11 +61,11 @@ describe('findOrCreateOAuthUser', () => {
     const second = await findOrCreateOAuthUser('google', profile({ email: 'new@example.com' }));
 
     expect(second._id.toString()).toBe(first._id.toString());
-    expect(await User.countDocuments()).toBe(1);
+    expect(await countUsers()).toBe(1);
   });
 
   it('links to an existing local account when the provider verified the email', async () => {
-    const local = await User.create({
+    const local = await insertUser({
       email: 'ada@example.com',
       password: 'sup3rsecret',
       name: 'Ada',
@@ -89,11 +78,11 @@ describe('findOrCreateOAuthUser', () => {
     expect(linked.provider).toBe('google');
     expect(linked.providerId).toBe('google-sub-1');
     expect(linked.emailVerified).toBe(true);
-    expect(await User.countDocuments()).toBe(1);
+    expect(await countUsers()).toBe(1);
   });
 
   it('refuses to link an unverified email onto an existing account', async () => {
-    await User.create({
+    await insertUser({
       email: 'ada@example.com',
       password: 'sup3rsecret',
       provider: 'local',
@@ -105,7 +94,7 @@ describe('findOrCreateOAuthUser', () => {
       findOrCreateOAuthUser('google', profile({ emailVerified: false }))
     ).rejects.toThrow(/did not verify/i);
 
-    const untouched = (await User.findOne({ email: 'ada@example.com' }))!;
+    const untouched = (await findUserByEmail('ada@example.com'))!;
     expect(untouched.provider).toBe('local');
     expect(untouched.providerId).toBeNull();
   });
@@ -115,7 +104,7 @@ describe('findOrCreateOAuthUser', () => {
       findOrCreateOAuthUser('tiktok', profile({ email: null, emailVerified: false }))
     ).rejects.toThrow(/does not release an email/i);
 
-    expect(await User.countDocuments()).toBe(0);
+    expect(await countUsers()).toBe(0);
   });
 
   it('keeps two different providers on the same address from silently colliding', async () => {
@@ -127,7 +116,7 @@ describe('findOrCreateOAuthUser', () => {
 
     // Same person, same verified address: one account, now owned by the newer
     // provider rather than duplicated.
-    expect(await User.countDocuments()).toBe(1);
+    expect(await countUsers()).toBe(1);
     expect(linked.provider).toBe('facebook');
     expect(linked.providerId).toBe('fb-1');
   });

@@ -1,55 +1,31 @@
 import { ANON_QUOTA_WINDOW_HOURS } from '@shared/limits';
-import { Schema, model, type HydratedDocument, type Model } from 'mongoose';
+import { ObjectId, type Collection, type IndexDescription } from 'mongodb';
+import { getDb } from '../config/db';
 
-/**
- * Chat usage for a visitor with no account during the current allowance window,
- * keyed by the opaque id in their signed cookie. Deliberately holds nothing else
- * — no IP, no user agent, no message content — so an anonymous visitor stays
- * anonymous.
- */
-export type AnonUsageAttrs = {
+// anonID is stored in a cookie, and the usage record is stored in the database.
+// the cookie is signed to prevent tampering, but it does not expire with the record.
+// this allows the user to continue using the same anonID across multiple sessions, even if the record has expired.
+
+export const ANON_USAGES_COLLECTION = 'anonusages';
+
+export type AnonUsageDocument = {
+  _id: ObjectId;
   anonId: string;
   chatCount: number;
   expiresAt: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-export type AnonUsageModel = Model<AnonUsageAttrs>;
-export type AnonUsageDoc = HydratedDocument<AnonUsageAttrs>;
+// list the anon in ascending order, so that the oldest anon is first.
+export const ANON_USAGE_INDEXES: IndexDescription[] = [
+  { key: { anonId: 1 }, unique: true }, // index on anonId to ensure uniqueness
+  { key: { expiresAt: 1 }, expireAfterSeconds: 0 }, // index on expiresAt to automatically delete expired documents
+];
 
-const anonUsageSchema = new Schema<AnonUsageAttrs, AnonUsageModel>(
-  {
-    anonId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
-    chatCount: {
-      type: Number,
-      required: true,
-      default: 0,
-      min: 0,
-    },
-    expiresAt: {
-      type: Date,
-      required: true,
-    },
-  },
-  {
-    timestamps: true,
-    collection: 'anonusages',
-  }
-);
-
-// Mongo drops the record when the window closes, and the next question inserts a
-// fresh one — that expiry IS the reset, so there is no separate cleanup job.
-// Note the TTL monitor sweeps about once a minute, so a lapsed record can linger
-// briefly past its expiry. A visitor being a minute early to their next
-// allowance is not worth a second mechanism to prevent.
-anonUsageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
+// resets the quota after 86 400 000 ms or 24 hours
 export const ANON_QUOTA_WINDOW_MS = ANON_QUOTA_WINDOW_HOURS * 60 * 60 * 1000;
 
-export const AnonUsage = model<AnonUsageAttrs, AnonUsageModel>('AnonUsage', anonUsageSchema);
+export function anonUsagesCollection(): Collection<AnonUsageDocument> {
+  return getDb().collection<AnonUsageDocument>(ANON_USAGES_COLLECTION);
+}

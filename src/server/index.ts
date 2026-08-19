@@ -1,7 +1,27 @@
 import { createApp } from './app';
 import { connectDb, disconnectDb } from './config/db';
 import { applyDnsServers } from './config/dns';
-import { env } from './config/env';
+import { env, isProduction } from './config/env';
+import { ensureIndexes } from './models';
+
+/**
+ * Mongoose created indexes on its own the first time each model was used. The
+ * driver never does, so uniqueness constraints and the TTL sweeps that reset the
+ * anonymous allowance only exist if they are asked for here.
+ *
+ * Fatal in production, where a missing unique index means duplicate accounts.
+ * In development a conflicting index left over from an earlier schema should not
+ * stop the process from starting.
+ */
+async function buildIndexes(): Promise<void> {
+  try {
+    await ensureIndexes();
+    console.log('[db] indexes ensured');
+  } catch (err) {
+    if (isProduction) throw err;
+    console.warn(`[db] could not create indexes: ${(err as Error).message}`);
+  }
+}
 
 async function main() {
   // Ahead of connectDb because a mongodb+srv:// URI is resolved the instant the
@@ -9,6 +29,7 @@ async function main() {
   applyDnsServers(env.DNS_SERVERS);
 
   const dbUp = await connectDb();
+  if (dbUp) await buildIndexes();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

@@ -20,21 +20,23 @@
 | `npm run lint:fix`  | Run ESLint with auto-fix                 |
 | `npm run typecheck` | Run TypeScript type check (`tsc -b`)     |
 
-## Database (Mongoose + MongoDB Atlas)
+## Database (mongodb driver + MongoDB Atlas)
 
-Vetify uses **Mongoose** for schema definition and MongoDB Atlas as the database. There are no migration CLI commands — schema changes are made directly in the model files under `src/server/models/`.
+Vetify talks to MongoDB Atlas through the official `mongodb` driver — there is no ODM. Each file under `src/server/models/` exports a typed collection accessor, a Zod schema for the attributes it accepts, and the indexes that collection needs. There are no migration CLI commands.
 
 ### How it works
 
-| Concept        | How it's done in Mongoose                                         |
-| -------------- | ----------------------------------------------------------------- |
-| Define schema  | Edit a model file in `src/server/models/`                         |
-| Apply changes  | Just save and restart the server — no push/migrate needed         |
-| Add a field    | Add it to the Mongoose schema; existing docs won't have it (null) |
-| Remove a field | Remove from schema; existing docs retain the field in MongoDB     |
-| Rename a field | Manual: write a script to update existing documents               |
-| Seed data      | Write a script in `src/server/scripts/` and run with `tsx`        |
-| Inspect data   | Use MongoDB Atlas UI or MongoDB Compass                           |
+| Concept        | How it's done with the driver                                                     |
+| -------------- | --------------------------------------------------------------------------------- |
+| Define a shape | Edit the document type and Zod schema in `src/server/models/`                     |
+| Apply changes  | Just save and restart the server — nothing is pushed to Mongo                     |
+| Add a field    | Add it to the document type and Zod schema; existing docs won't have it (null)    |
+| Remove a field | Remove it from both; existing docs retain the field in MongoDB                    |
+| Rename a field | Manual: write a script to update existing documents                               |
+| Add an index   | Add it to that model's `*_INDEXES` array — `ensureIndexes()` creates it at boot   |
+| Validation     | Zod, at the model boundary; a bad write raises `ZodError`, which the handler 400s |
+| Seed data      | Write a script in `src/server/scripts/` and run with `tsx`                        |
+| Inspect data   | Use MongoDB Atlas UI or MongoDB Compass                                           |
 
 ### Useful one-off commands
 
