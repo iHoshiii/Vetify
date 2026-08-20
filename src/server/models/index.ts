@@ -2,7 +2,7 @@ import type { IndexDescription } from 'mongodb';
 import { getDb } from '../config/db';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
-import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './RefreshToken';
+import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
