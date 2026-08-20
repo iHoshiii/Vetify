@@ -9,7 +9,7 @@ import {
   hashToken,
   isRefreshTokenActive,
   revokeRefreshTokenByHash,
-} from '../../models/RefreshToken';
+} from '../../models/refresh-token';
 import {
   comparePassword,
   findUserByEmail,
