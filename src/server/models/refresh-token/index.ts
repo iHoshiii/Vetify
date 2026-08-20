@@ -11,5 +11,10 @@ export {
   refreshTokensCollection,
   revokeRefreshTokenByHash,
 } from './services';
-export * from './types';
-export * from './utils';
+export {
+  REFRESH_TOKEN_INDEXES,
+  REFRESH_TOKENS_COLLECTION,
+  type RefreshTokenDocument,
+  type RefreshTokenWithOwner,
+} from './types';
+export { hashToken, isRefreshTokenActive } from './utils';
