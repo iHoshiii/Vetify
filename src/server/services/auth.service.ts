@@ -9,7 +9,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 import { env, isProduction } from '../config/env';
-import { hashToken, insertRefreshToken } from '../models/RefreshToken';
+import { hashToken, insertRefreshToken } from '../models/refresh-token';
 import {
   findUserByEmail,
   findUserByProviderId,

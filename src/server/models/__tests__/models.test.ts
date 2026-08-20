@@ -10,7 +10,7 @@ import {
   isRefreshTokenActive,
   refreshTokensCollection,
   revokeRefreshTokenByHash,
-} from '../RefreshToken';
+} from '../refresh-token';
 import {
   comparePassword,
   findUserById,
