@@ -41,7 +41,7 @@ export {
   revokeRefreshTokenByHash,
   type RefreshTokenDocument,
   type RefreshTokenWithOwner,
-} from './RefreshToken';
+} from './refresh-token';
 
 export {
   AUTH_PROVIDERS,
