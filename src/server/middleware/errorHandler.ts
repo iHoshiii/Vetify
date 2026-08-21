@@ -6,62 +6,55 @@ import { isProduction } from '../config/env';
 import { AppError } from '../utils/AppError';
 import { fail } from '../utils/response';
 
-/** Duplicate key on a unique index. */
 const DUPLICATE_KEY = 11000;
-/** A write rejected by a collection's own `$jsonSchema` validator. */
 const DOCUMENT_VALIDATION_FAILED = 121;
 
-/**
- * Thrown by the ObjectId constructor for a string that cannot be an id. Matched
- * by name because the driver re-exports ObjectId from `bson` but not the error
- * class, and reaching into `bson` directly would mean depending on a package
- * this project does not declare.
- */
+// return true if err is a kind of Error and err name is strictly equal to 'BSONError'
+// else return false
 function isBsonError(err: unknown): boolean {
   return err instanceof Error && err.name === 'BSONError';
 }
 
+// sends (response) the 404 error to the client (page not found)
 export function notFoundHandler(req: Request, res: Response): void {
   fail(res, 404, `Route not found: ${req.method} ${req.originalUrl}`);
 }
 
-/**
- * Terminal error middleware. Express 5 forwards rejected async handlers here
- * automatically, so route code can throw without a try/catch wrapper.
- */
+// if the response is sent
+// pass the error to the next middleware
 export function errorHandler(err: unknown, _req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
     next(err);
     return;
   }
 
+  // if err is an instance of AppError
   if (err instanceof AppError) {
     fail(res, err.statusCode, err.message);
     return;
   }
 
-  // Replaces Mongoose's ValidationError. Validation now happens in Zod, both at
-  // the route boundary and again in the data layer before a write, so a rejected
-  // document arrives here as a ZodError with the same field-keyed shape.
+  // if err is an instance of ZodError, reponse 'Validation failed.' with status code 400
   if (err instanceof ZodError) {
     fail(res, 400, 'Validation failed.', err.flatten().fieldErrors);
     return;
   }
 
-  // Replaces Mongoose's CastError: an id that cannot be an ObjectId. Mongoose
-  // cast query values implicitly and raised this itself; the driver does not, so
-  // it comes from the explicit conversion in models/object-id.ts.
+  // if the error is a BSONError, response 'invalid id' with status code 400
   if (isBsonError(err)) {
     fail(res, 400, 'Invalid id.');
     return;
   }
 
+  // if the error is MongoServerError,
   if (err instanceof MongoServerError) {
+    // if error code is equal to 11000 (mongodb error for duplicate key)
     if (err.code === DUPLICATE_KEY) {
       fail(res, 409, 'That value is already taken.');
       return;
     }
 
+    // if error is equal to 121 (mongodb error for document validation failed)
     if (err.code === DOCUMENT_VALIDATION_FAILED) {
       fail(res, 400, 'Validation failed.');
       return;
