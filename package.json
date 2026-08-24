@@ -13,6 +13,7 @@
     "start": "node dist/server/index.js",
     "seed:admin": "tsx src/server/scripts/seed-admin.ts",
     "backfill:roles": "tsx src/server/scripts/backfill-roles.ts",
+    "seed:blogs": "tsx src/server/scripts/seed-blogs.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
