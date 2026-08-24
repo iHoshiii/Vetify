@@ -9,6 +9,7 @@ import {
   insertRefreshToken,
   isRefreshTokenActive,
   refreshTokensCollection,
+  revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
 } from '../refresh-token';
 import {
@@ -89,6 +90,26 @@ describe('User', () => {
     expect(after.name).toBe('Ada Lovelace');
     expect(after.password).toBe(hashBefore);
     await expect(comparePassword(after.password, 'sup3rsecret')).resolves.toBe(true);
+  });
+
+  it('lets a second password account exist', async () => {
+    // The compound provider index was declared `sparse`, which does not apply
+    // here: a compound sparse index only skips a document when every indexed
+    // field is missing, and insertUser always writes `provider` plus an explicit
+    // `providerId: null`. Both local accounts indexed as ('local', null), so the
+    // second signup came back as a duplicate-key 409.
+    await insertUser({ email: 'first@example.com', password: 'pw12345678' });
+    await insertUser({ email: 'second@example.com', password: 'pw12345678' });
+
+    expect(await usersCollection().countDocuments()).toBe(2);
+  });
+
+  it('still refuses a second account for the same social identity', async () => {
+    const identity = { provider: 'google' as const, providerId: 'google-sub-1' };
+
+    await insertUser({ email: 'a@example.com', ...identity });
+
+    await expect(insertUser({ email: 'b@example.com', ...identity })).rejects.toThrow();
   });
 
   it('toPublicUser omits the hash', async () => {
@@ -215,6 +236,37 @@ describe('RefreshToken', () => {
 
     expect(found).not.toBeNull();
     expect(found!.owner).toBeNull();
+  });
+
+  it('revokes every live session for one user and leaves other users alone', async () => {
+    // What suspending or banning an account has to do: the access token expires
+    // on its own within minutes, but an unrevoked refresh cookie would keep
+    // minting replacements for the next month.
+    const user = await owner();
+    const other = await insertUser({ email: 'other@example.com', password: 'pw12345678' });
+
+    for (const hash of ['s1', 's2', 's3']) {
+      await insertRefreshToken({ tokenHash: hashToken(hash), user: user._id, expiresAt: future() });
+    }
+    await insertRefreshToken({
+      tokenHash: hashToken('untouched'),
+      user: other._id,
+      expiresAt: future(),
+    });
+    await revokeRefreshTokenByHash(hashToken('s3'));
+
+    // Counts only what this call closed, so an already-revoked token is not
+    // double-counted.
+    expect(await revokeAllRefreshTokensForUser(user._id)).toBe(2);
+    expect(
+      await refreshTokensCollection().countDocuments({ user: user._id, revokedAt: null })
+    ).toBe(0);
+    expect(
+      await refreshTokensCollection().countDocuments({ user: other._id, revokedAt: null })
+    ).toBe(1);
+
+    // Idempotent: re-running closes nothing further.
+    expect(await revokeAllRefreshTokensForUser(user._id)).toBe(0);
   });
 
   it('returns null when no token has that hash', async () => {

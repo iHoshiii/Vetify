@@ -1,4 +1,4 @@
-import type { IndexDescription } from 'mongodb';
+import type { Db, Document, IndexDescription } from 'mongodb';
 import { getDb } from '../config/db';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
@@ -81,11 +81,62 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
 ];
 
+// Mongo refuses to redefine an index whose key already exists with different
+// options (85) or whose name is taken by a different key (86).
+const INDEX_OPTIONS_CONFLICT = 85;
+const INDEX_KEY_SPECS_CONFLICT = 86;
+
+function conflictsWithExistingIndex(err: unknown): boolean {
+  const code = (err as { code?: number }).code;
+  return code === INDEX_OPTIONS_CONFLICT || code === INDEX_KEY_SPECS_CONFLICT;
+}
+
+function sameKey(a: Document, b: IndexDescription['key']): boolean {
+  const left = Object.entries(a);
+  const right = Object.entries(b);
+  if (left.length !== right.length) return false;
+  // Field order is part of a compound index's identity, so compare positionally.
+  return left.every(([field, dir], i) => right[i][0] === field && right[i][1] === dir);
+}
+
+/**
+ * Creates one index, replacing an older definition of the same key when the
+ * options have changed.
+ *
+ * A deployment that already ran an earlier version has the previous definition
+ * sitting in the collection, and `createIndexes` will not quietly upgrade it — it
+ * errors, which used to take out every remaining index in the same call. Dropping
+ * the stale one first is the only way the change reaches an existing database.
+ */
+async function ensureIndex(db: Db, collection: string, index: IndexDescription): Promise<void> {
+  try {
+    await db.collection(collection).createIndexes([index]);
+    return;
+  } catch (err) {
+    if (!conflictsWithExistingIndex(err)) throw err;
+  }
+
+  const existing = await db.collection(collection).indexes();
+  const stale = existing.find(
+    (candidate) => candidate.name !== '_id_' && sameKey(candidate.key, index.key)
+  );
+
+  if (!stale?.name)
+    throw new Error(`Index conflict on ${collection} that no existing index explains`);
+
+  console.warn(`[db] replacing stale index ${collection}.${stale.name} — its options changed`);
+  await db.collection(collection).dropIndex(stale.name);
+  await db.collection(collection).createIndexes([index]);
+}
+
 // get the database
 export async function ensureIndexes(): Promise<void> {
   const db = getDb();
-  // crea indexes for each collection based on the defined INDEX_PLAN
+  // create indexes for each collection based on the defined INDEX_PLAN, one at a
+  // time so a conflict on one does not abandon the rest
   for (const { collection, indexes } of INDEX_PLAN) {
-    await db.collection(collection).createIndexes(indexes);
+    for (const index of indexes) {
+      await ensureIndex(db, collection, index);
+    }
   }
 }

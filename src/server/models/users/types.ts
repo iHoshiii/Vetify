@@ -76,8 +76,17 @@ export type UserPatch = Partial<
 // origanize A-Z
 export const USER_INDEXES: IndexDescription[] = [
   { key: { email: 1 }, unique: true },
-  // skips any document where social login doesnt exist
-  { key: { provider: 1, providerId: 1 }, unique: true, sparse: true },
+  // One identity per social account. Scoped with a partial filter rather than
+  // `sparse`, which does not do what it looks like it does here: a compound
+  // sparse index only skips a document when *every* indexed field is missing,
+  // and insertUser always writes `provider` plus an explicit `providerId: null`.
+  // Every password account therefore indexed as ('local', null) and collided
+  // with the next one, so no second local signup could be created.
+  {
+    key: { provider: 1, providerId: 1 },
+    unique: true,
+    partialFilterExpression: { providerId: { $type: 'string' } },
+  },
   // admin user list is filtered by role and sorted newest-first
   { key: { role: 1, createdAt: -1 } },
   { key: { status: 1 } },
