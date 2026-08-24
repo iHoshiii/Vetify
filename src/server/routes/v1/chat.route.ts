@@ -6,6 +6,7 @@ import { chatRequestSchema, type ChatRequest } from '@shared/schemas';
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { anonChatLimiter, chatLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
+import { recordActivity } from '../../models/activity-event';
 import { consumeAnonQuery, ensureAnonId } from '../../services/anon-quota';
 import { generateReply } from '../../services/chat.service';
 import { failReason, ok } from '../../utils/response';
@@ -35,6 +36,9 @@ async function enforceAnonQuota(req: Request, res: Response, next: NextFunction)
   }
 
   res.locals.anonRemaining = verdict.remaining;
+  // Kept for the activity event below, so an anonymous conversation is still
+  // attributable to one visitor without a second cookie read.
+  res.locals.anonId = anonId;
   next();
 }
 
@@ -55,7 +59,15 @@ router.post(
   enforceAnonQuota,
   validate(chatRequestSchema),
   async (req, res) => {
-    const reply = await generateReply(req.body as ChatRequest);
+    const body = req.body as ChatRequest;
+    const reply = await generateReply(body);
+
+    recordActivity({
+      type: 'chat.message_sent',
+      user: req.auth?.userId ?? null,
+      anonId: (res.locals.anonId as string | undefined) ?? null,
+      metadata: { model: body.model },
+    });
 
     const anonRemaining = res.locals.anonRemaining as number | undefined;
     ok(res, anonRemaining === undefined ? { reply } : { reply, anonRemaining });

@@ -75,3 +75,23 @@ export async function revokeRefreshTokenByHash(tokenHash: string): Promise<boole
   );
   return result.matchedCount > 0;
 }
+
+/**
+ * Kills every live session for one account and reports how many it closed.
+ *
+ * Suspending or banning a user has to come through here. Their access token stays
+ * valid for up to ACCESS_TOKEN_MINUTES, which requireRole catches on the next
+ * request — but the refresh cookie is good for REFRESH_TOKEN_DAYS, so without
+ * this the blocked account simply mints itself a fresh token and carries on.
+ *
+ * Already-revoked tokens are excluded from the filter so the count reflects
+ * sessions actually closed by this call, and re-running it is a no-op.
+ */
+export async function revokeAllRefreshTokensForUser(userId: string | ObjectId): Promise<number> {
+  const now = new Date();
+  const result = await refreshTokensCollection().updateMany(
+    { user: toObjectId(userId), revokedAt: null },
+    { $set: { revokedAt: now, updatedAt: now } }
+  );
+  return result.modifiedCount;
+}

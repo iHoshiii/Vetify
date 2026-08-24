@@ -2,8 +2,18 @@ import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env';
+import type { UserRole } from '../models/users';
 
-export type RequestAuth = { userId: string; email: string };
+export type RequestAuth = {
+  userId: string;
+  email: string;
+  /**
+   * Role as it stood when the token was signed, which can be up to
+   * ACCESS_TOKEN_MINUTES out of date. Fine for cheap branching; never the basis
+   * for granting access. `requireRole` re-reads the stored role for that.
+   */
+  role: UserRole;
+};
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -29,8 +39,19 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
   if (!token) return next();
 
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as { sub?: string; email?: string };
-    if (payload.sub) req.auth = { userId: payload.sub, email: payload.email ?? '' };
+    const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as {
+      sub?: string;
+      email?: string;
+      role?: UserRole;
+    };
+    if (payload.sub) {
+      req.auth = {
+        userId: payload.sub,
+        email: payload.email ?? '',
+        // Tokens minted before the role claim existed read as plain users.
+        role: payload.role ?? 'user',
+      };
+    }
   } catch {
     // Forged, expired, or signed with a rotated secret: stay anonymous.
   }

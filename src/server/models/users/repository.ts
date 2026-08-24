@@ -33,6 +33,11 @@ export async function insertUser(attrs: UserAttrs): Promise<User> {
     providerId: parsed.providerId ?? null,
     avatarUrl: parsed.avatarUrl ?? null,
     emailVerified: parsed.emailVerified,
+    role: parsed.role,
+    status: parsed.status,
+    statusReason: null,
+    statusChangedBy: null,
+    statusChangedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -50,7 +55,8 @@ export async function insertUser(attrs: UserAttrs): Promise<User> {
 
 // find the user by ObjectID
 // returns the user document without the password field
-export function findUserById(id: ObjectId): Promise<User | null> {
+// accepts a string too, since callers hand over a JWT subject or a route param
+export function findUserById(id: string | ObjectId): Promise<User | null> {
   return usersCollection().findOne<User>({ _id: toObjectId(id) }, { projection: WITHOUT_PASSWORD });
 }
 
@@ -93,4 +99,13 @@ export async function updateUser(id: string | ObjectId, patch: UserPatch): Promi
     { $set: { ...patch, updatedAt: new Date() } },
     { returnDocument: 'after', projection: WITHOUT_PASSWORD }
   );
+}
+
+/**
+ * How many admins can still sign in. Guards the demote and ban paths so the last
+ * one standing cannot remove their own access and leave the dashboard
+ * unreachable — recovering from that needs a database shell.
+ */
+export function countActiveAdmins(): Promise<number> {
+  return usersCollection().countDocuments({ role: 'admin', status: 'active' });
 }

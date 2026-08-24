@@ -5,6 +5,7 @@ import RootLayout from '@/layouts/RootLayout';
 import AboutPage from '@/pages/about/about-page';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
+import BlogDetailPage from '@/pages/blogs/blog-detail-page';
 import BlogsPage from '@/pages/blogs/blogs-page';
 import BookAppointmentPage from '@/pages/book-appointment/book-appointment-page';
 import ChatPage from '@/pages/chat/chat-page';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="anatomy" element={<AnatomyPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />
+        <Route path="blogs/:slug" element={<BlogDetailPage />} />
         <Route
           path="book-appointment"
           element={

@@ -3,7 +3,9 @@ import { Router, type Request, type Response } from 'express';
 import crypto from 'node:crypto';
 
 import { env } from '../../config/env';
+import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
+import { recordActivity } from '../../models/activity-event';
 import {
   findRefreshTokenWithOwner,
   hashToken,
@@ -18,6 +20,7 @@ import {
   toPublicUser,
 } from '../../models/users';
 import {
+  accessTokenClaimsFor,
   createAuthPayloadFor,
   findOrCreateOAuthUser,
   setRefreshCookie,
@@ -38,9 +41,20 @@ import {
   getProviderConfig,
   isOAuthProviderName,
 } from '../../services/oauth.service';
-import { fail, ok } from '../../utils/response';
+import { fail, failReason, ok } from '../../utils/response';
 
 const router = Router();
+
+/**
+ * Turns away a caller whose account has been suspended or banned, before any
+ * token is minted. Login and the OAuth callback both come through here — a block
+ * that only cut existing sessions would let the same person sign straight back
+ * in.
+ */
+function accountBlockReason(status: string | undefined): string | null {
+  if (!status || status === 'active') return null;
+  return status;
+}
 
 function readRefreshCookie(req: Request): string | undefined {
   const jar = req.cookies as Record<string, string> | undefined;
@@ -73,6 +87,8 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
   });
   const auth = await createAuthPayloadFor(user);
 
+  recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
+
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
@@ -87,8 +103,17 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   const match = await comparePassword(user.password, payload.password);
   if (!match) return fail(res, 401, 'Invalid credentials');
 
+  // Checked after the password so a wrong guess cannot be used to probe which
+  // addresses belong to suspended accounts.
+  const blocked = accountBlockReason(user.status);
+  if (blocked) {
+    return failReason(res, 403, 'This account is not active.', `account-${blocked}`);
+  }
+
   const auth = await createAuthPayloadFor(user);
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
+
+  recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: 'local' } });
 
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
@@ -112,18 +137,33 @@ router.post('/refresh', async (req, res) => {
 
   if (!rt.owner) return fail(res, 401, 'Refresh token is not attached to a user');
 
+  // Suspending or banning revokes the stored tokens, so this rarely fires. It
+  // stays as the backstop for a token minted in the same moment the status
+  // changed, and it clears the cookie so the client stops retrying.
+  const blocked = accountBlockReason(rt.owner.status);
+  if (blocked) {
+    await revokeRefreshTokenByHash(tokenHash);
+    res.clearCookie(env.REFRESH_COOKIE_NAME);
+    return failReason(res, 403, 'This account is not active.', `account-${blocked}`);
+  }
+
   const publicUser = toPublicUser(rt.owner);
-  const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
+  const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   ok(res, { accessToken, user: publicUser });
 });
 
 // POST /api/v1/auth/logout
-router.post('/logout', async (req, res) => {
+// optionalAuth only so the event can be attributed. It never rejects, so a
+// logout still works for someone whose access token expired first.
+router.post('/logout', optionalAuth, async (req, res) => {
   const raw = readRefreshCookie(req);
   if (raw) {
     await revokeRefreshTokenByHash(hashToken(raw));
   }
   res.clearCookie(env.REFRESH_COOKIE_NAME);
+
+  if (req.auth) recordActivity({ type: 'user.logged_out', user: req.auth.userId });
+
   ok(res, { loggedOut: true });
 });
 
@@ -190,9 +230,17 @@ router.get('/:provider/callback', async (req, res) => {
   try {
     const profile = await fetchProfileFromCode(name, config, code, sealed.codeVerifier);
     const user = await findOrCreateOAuthUser(name, profile);
+
+    // Same block as the password path. Without it, "Continue with Google" is a
+    // way around a ban.
+    if (accountBlockReason(user.status)) return redirectWithError(res, 'blocked');
+
     const auth = await createAuthPayloadFor(user);
 
     setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
+
+    recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: name } });
+
     return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
   } catch (err) {
     console.error(`[auth] ${name} callback failed:`, (err as Error).message);
