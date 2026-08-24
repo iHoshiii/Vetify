@@ -1,0 +1,59 @@
+import { ObjectId, type Collection } from 'mongodb';
+
+import { getDb } from '../../config/db';
+import { toObjectId } from '../object-id';
+import {
+  AUDIT_LOGS_COLLECTION,
+  type AuditAction,
+  type AuditLogDocument,
+  type AuditTargetType,
+} from './types';
+
+export function auditLogsCollection(): Collection<AuditLogDocument> {
+  return getDb().collection<AuditLogDocument>(AUDIT_LOGS_COLLECTION);
+}
+
+export type RecordAuditInput = {
+  action: AuditAction;
+  targetType: AuditTargetType;
+  targetId: string | ObjectId;
+  /** Omitted only for something the system did on its own behalf, like the seed
+   * script granting the first admin. */
+  actor?: string | ObjectId | null;
+  actorEmail?: string | null;
+  reason?: string | null;
+  metadata?: Record<string, unknown>;
+  ip?: string | null;
+};
+
+/**
+ * Records one privileged action.
+ *
+ * The opposite of `recordActivity` in every way that matters: awaited, and
+ * allowed to fail loudly. Activity events are telemetry, so losing one costs a
+ * point on a chart. An audit entry is the reason the action was allowed to be
+ * this powerful, and an admin who deletes an account with no record of it is the
+ * situation the log exists to prevent.
+ *
+ * Callers await this after the mutation lands, which leaves one window: a write
+ * that succeeds while the audit entry fails reports an error for a change that
+ * did happen. That is the right way round — a visible inconsistency the admin can
+ * check beats a silent unaudited change.
+ */
+export async function recordAudit(input: RecordAuditInput): Promise<AuditLogDocument> {
+  const doc: AuditLogDocument = {
+    _id: new ObjectId(),
+    actor: input.actor ? toObjectId(input.actor) : null,
+    actorEmail: input.actorEmail ?? null,
+    action: input.action,
+    targetType: input.targetType,
+    targetId: toObjectId(input.targetId),
+    reason: input.reason ?? null,
+    metadata: input.metadata ?? {},
+    ip: input.ip ?? null,
+    createdAt: new Date(),
+  };
+
+  await auditLogsCollection().insertOne(doc);
+  return doc;
+}

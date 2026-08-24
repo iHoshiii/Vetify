@@ -2,6 +2,7 @@ import type { Db, Document, IndexDescription } from 'mongodb';
 import { getDb } from '../config/db';
 import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-event';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
+import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
@@ -28,6 +29,19 @@ export {
   anonUsagesCollection,
   type AnonUsageDocument,
 } from './AnonUsage';
+
+export {
+  AUDIT_ACTIONS,
+  AUDIT_LOGS_COLLECTION,
+  AUDIT_LOG_INDEXES,
+  AUDIT_TARGET_TYPES,
+  auditLogsCollection,
+  recordAudit,
+  type AuditAction,
+  type AuditLogDocument,
+  type AuditTargetType,
+  type RecordAuditInput,
+} from './audit-log';
 
 export {
   PETS_COLLECTION,
@@ -94,6 +108,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
+  { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different
