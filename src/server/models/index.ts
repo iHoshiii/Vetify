@@ -45,9 +45,12 @@ export {
 
 export {
   AUTH_PROVIDERS,
-  USERS_COLLECTION,
   USER_INDEXES,
+  USER_ROLES,
+  USER_STATUSES,
+  USERS_COLLECTION,
   comparePassword,
+  countActiveAdmins,
   findUserByEmail,
   findUserById,
   findUserByProviderId,
@@ -65,6 +68,8 @@ export {
   type UserAttrs,
   type UserDocument,
   type UserPatch,
+  type UserRole,
+  type UserStatus,
 } from './users';
 
 // list of collections and their corresponding indexes to be created in the database

@@ -102,6 +102,7 @@ describe('User', () => {
       provider: 'local',
       avatarUrl: null,
       emailVerified: false,
+      role: 'user',
     });
     expect(JSON.stringify(pub)).not.toContain('$2');
   });
