@@ -38,6 +38,7 @@ export {
   insertRefreshToken,
   isRefreshTokenActive,
   refreshTokensCollection,
+  revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
   type RefreshTokenDocument,
   type RefreshTokenWithOwner,
