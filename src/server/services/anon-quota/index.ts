@@ -4,5 +4,6 @@
 // anon-crypto is deliberately left out. Sealing and unsealing the id is only
 // ever anon-cookie's business, and keeping the HMAC helpers off the module's
 // surface means no route can hand out a signed id of its own.
-export * from './anon-cookie';
-export * from './anon-quota-services';
+export { ANON_ID_COOKIE, anonCookieOptions, ensureAnonId } from './anon-cookie';
+
+export { consumeAnonQuery, peekAnonUsage, type QuotaVerdict } from './anon-quota-services';
