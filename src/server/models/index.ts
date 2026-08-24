@@ -1,11 +1,25 @@
 import type { Db, Document, IndexDescription } from 'mongodb';
 import { getDb } from '../config/db';
+import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-event';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
+
+export {
+  ACTIVITY_EVENTS_COLLECTION,
+  ACTIVITY_EVENT_INDEXES,
+  ACTIVITY_RETENTION_DAYS,
+  ACTIVITY_TYPES,
+  activityEventsCollection,
+  flushActivity,
+  recordActivity,
+  type ActivityEventDocument,
+  type ActivityType,
+  type RecordActivityInput,
+} from './activity-event';
 
 export {
   ANON_QUOTA_WINDOW_MS,
@@ -79,6 +93,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: PETS_COLLECTION, indexes: PET_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
+  { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different
