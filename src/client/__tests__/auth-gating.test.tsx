@@ -27,6 +27,7 @@ const SESSION = {
     provider: 'local' as const,
     avatarUrl: null,
     emailVerified: true,
+    role: 'user' as const,
   },
 };
 

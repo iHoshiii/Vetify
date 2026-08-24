@@ -3,6 +3,7 @@ export {
   findRefreshTokenWithOwner,
   insertRefreshToken,
   refreshTokensCollection,
+  revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
 } from './services';
 export {

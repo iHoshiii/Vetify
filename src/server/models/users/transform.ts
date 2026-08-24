@@ -10,5 +10,9 @@ export function toPublicUser(user: User | UserDocument): PublicUser {
     provider: user.provider,
     avatarUrl: user.avatarUrl ?? null,
     emailVerified: user.emailVerified,
+    // Falls back for documents written before the role field existed. The
+    // backfill script sets them properly; this keeps a stale read from handing
+    // the client an undefined role in the meantime.
+    role: user.role ?? 'user',
   };
 }

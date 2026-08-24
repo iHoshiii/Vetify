@@ -17,12 +17,30 @@ import {
   toPublicUser,
   updateUser,
   type AuthProvider,
+  type PublicUser,
   type User,
   type UserPatch,
 } from '../models/users';
 import { OAuthError, type OAuthProfile } from './oauth.service';
 
-export function signAccessToken(payload: object) {
+/**
+ * What every access token carries. Named so the two places that mint one — login
+ * and refresh — cannot drift apart and leave a token without its role claim.
+ *
+ * The role here is a hint for the client UI. Authorization reads the stored role
+ * instead, because this claim is frozen for the life of the token.
+ */
+export type AccessTokenClaims = {
+  sub: string;
+  email: string;
+  role: PublicUser['role'];
+};
+
+export function accessTokenClaimsFor(user: PublicUser): AccessTokenClaims {
+  return { sub: user.id, email: user.email, role: user.role };
+}
+
+export function signAccessToken(payload: AccessTokenClaims) {
   return jwt.sign(payload, env.JWT_SECRET_ACCESS, {
     expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
   });
@@ -41,7 +59,7 @@ export async function createRefreshToken(userId: string) {
 
 export async function createAuthPayloadFor(user: User) {
   const publicUser = toPublicUser(user);
-  const accessToken = signAccessToken({ sub: publicUser.id, email: publicUser.email });
+  const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   const { token: refreshToken, expiresAt } = await createRefreshToken(publicUser.id);
   return { accessToken, refreshToken, expiresAt, user: publicUser };
 }
