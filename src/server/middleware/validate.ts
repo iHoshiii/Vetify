@@ -1,7 +1,21 @@
 import type { NextFunction, Request, Response } from 'express';
-import { ZodError, type ZodTypeAny, type z } from 'zod';
+import { ZodError, type ZodTypeAny } from 'zod';
 
 import { fail } from '../utils/response';
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    /**
+     * The parsed query string, left here by `validateQuery` because Express 5
+     * makes `req.query` getter-only.
+     *
+     * Deliberately `unknown`: the middleware is generic over the schema, so the
+     * handler that mounted it is the only place that knows what shape came back,
+     * and is where the cast belongs.
+     */
+    validatedQuery?: unknown;
+  }
+}
 
 /**
  * Replaces req.body with the parsed result, so downstream handlers get the
@@ -33,7 +47,7 @@ export function validateQuery<T extends ZodTypeAny>(schema: T) {
 
     // req.query is a getter-only property in Express 5, so cache the parsed
     // value on the request instead of assigning through it.
-    (req as Request & { validatedQuery?: z.infer<T> }).validatedQuery = parsed.data;
+    req.validatedQuery = parsed.data;
     next();
   };
 }

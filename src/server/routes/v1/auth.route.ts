@@ -3,7 +3,9 @@ import { Router, type Request, type Response } from 'express';
 import crypto from 'node:crypto';
 
 import { env } from '../../config/env';
+import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
+import { recordActivity } from '../../models/activity-event';
 import {
   findRefreshTokenWithOwner,
   hashToken,
@@ -85,6 +87,8 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
   });
   const auth = await createAuthPayloadFor(user);
 
+  recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
+
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
@@ -108,6 +112,8 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
   const auth = await createAuthPayloadFor(user);
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
+
+  recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: 'local' } });
 
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
@@ -147,12 +153,17 @@ router.post('/refresh', async (req, res) => {
 });
 
 // POST /api/v1/auth/logout
-router.post('/logout', async (req, res) => {
+// optionalAuth only so the event can be attributed. It never rejects, so a
+// logout still works for someone whose access token expired first.
+router.post('/logout', optionalAuth, async (req, res) => {
   const raw = readRefreshCookie(req);
   if (raw) {
     await revokeRefreshTokenByHash(hashToken(raw));
   }
   res.clearCookie(env.REFRESH_COOKIE_NAME);
+
+  if (req.auth) recordActivity({ type: 'user.logged_out', user: req.auth.userId });
+
   ok(res, { loggedOut: true });
 });
 
@@ -227,6 +238,9 @@ router.get('/:provider/callback', async (req, res) => {
     const auth = await createAuthPayloadFor(user);
 
     setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
+
+    recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: name } });
+
     return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
   } catch (err) {
     console.error(`[auth] ${name} callback failed:`, (err as Error).message);

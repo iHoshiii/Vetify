@@ -28,3 +28,16 @@ export const ANON_COOKIE_DAYS = 365;
  * NAT — a household, an office, a campus — for one person's allowance.
  */
 export const ANON_CHAT_PER_IP_PER_HOUR = 30;
+
+/**
+ * Posts per page on the public blog list, and the ceiling a caller may ask for.
+ *
+ * Shared because both halves have to agree on it: the client renders a pager
+ * from `pages` in the response, and the server refuses anything above the max so
+ * `?limit=100000` cannot turn a paginated endpoint back into an unbounded scan.
+ */
+export const BLOG_PAGE_SIZE = 9;
+export const BLOG_PAGE_SIZE_MAX = 50;
+
+/** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
+export const BLOG_MAX_TAGS = 8;

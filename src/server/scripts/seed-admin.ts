@@ -14,6 +14,8 @@
  * environment rather than passing it as an argument, so it stays out of the
  * shell history.
  */
+import type { ObjectId } from 'mongodb';
+
 import { connectDb, disconnectDb } from '../config/db';
 import { applyDnsServers } from '../config/dns';
 import { env } from '../config/env';
@@ -23,8 +25,28 @@ import {
   findUserByEmail,
   insertUser,
   normalizeEmail,
+  recordAudit,
   updateUser,
 } from '../models';
+
+/**
+ * Leaves the grant in the audit log with a null actor.
+ *
+ * This is the one privileged action nobody can be held to account for — it runs
+ * before any admin exists — so the record of *when* an account gained the role,
+ * and that it came from the CLI rather than the dashboard, is the only thing
+ * distinguishing a deliberate bootstrap from a compromised one later.
+ */
+async function noteGrant(targetId: ObjectId, from: string | null): Promise<void> {
+  await recordAudit({
+    action: 'user.role.changed',
+    targetType: 'user',
+    targetId,
+    actor: null,
+    reason: 'bootstrap via seed:admin',
+    metadata: { from, to: 'admin', source: 'cli' },
+  });
+}
 
 async function main(): Promise<void> {
   const raw = process.argv[2];
@@ -64,6 +86,7 @@ async function main(): Promise<void> {
       // owns the dashboard.
       emailVerified: true,
     });
+    await noteGrant(created._id, null);
     console.log(`[seed:admin] created ${created.email} as an admin`);
   } else if (existing.role === 'admin' && existing.status === 'active') {
     console.log(`[seed:admin] ${email} is already an active admin, nothing to do`);
@@ -77,6 +100,7 @@ async function main(): Promise<void> {
       statusChangedBy: null,
       statusChangedAt: null,
     });
+    await noteGrant(existing._id, existing.role ?? null);
     console.log(`[seed:admin] promoted ${email} from '${existing.role ?? 'user'}' to 'admin'`);
   }
 
