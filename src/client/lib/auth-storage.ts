@@ -8,6 +8,13 @@
 
 export type AuthProviderName = 'local' | 'google' | 'facebook' | 'tiktok';
 
+/**
+ * Mirrors the server's `UserRole`. Only decides what the UI offers — the server
+ * re-reads the stored role on every protected request, so a tampered
+ * localStorage buys a link, not access.
+ */
+export type UserRole = 'user' | 'professional' | 'admin';
+
 export type AuthUser = {
   id: string;
   email: string;
@@ -15,6 +22,7 @@ export type AuthUser = {
   provider: AuthProviderName;
   avatarUrl: string | null;
   emailVerified: boolean;
+  role: UserRole;
 };
 
 export type AuthState = {

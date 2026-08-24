@@ -28,6 +28,7 @@ function LoginTrigger() {
             provider: 'local',
             avatarUrl: null,
             emailVerified: true,
+            role: 'user' as const,
           },
         })
       }
