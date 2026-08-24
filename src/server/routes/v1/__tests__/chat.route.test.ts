@@ -74,7 +74,11 @@ describe('POST /api/v1/chat anonymous allowance', () => {
 });
 
 describe('POST /api/v1/chat signed in', () => {
-  const token = signAccessToken({ sub: '507f1f77bcf86cd799439011', email: 'ada@example.com' });
+  const token = signAccessToken({
+    sub: '507f1f77bcf86cd799439011',
+    email: 'ada@example.com',
+    role: 'user',
+  });
 
   it('is not subject to the anonymous allowance', async () => {
     const agent = request.agent(app);
