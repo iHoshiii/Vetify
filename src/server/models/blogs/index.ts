@@ -3,6 +3,8 @@ export { BLOG_INDEXES, BLOG_SEARCH_INDEX, BLOGS_COLLECTION } from './constants';
 export {
   blogsCollection,
   countBlogsByStatus,
+  countBlogsBetween,
+  countBlogsPerDay,
   findBlogById,
   findBlogBySlug,
   findBlogs,

@@ -11,6 +11,8 @@ import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
 
+export { dailyCountStages, type DailyCount } from './daily-count';
+
 export { escapeRegex } from './text-search';
 
 export {
@@ -19,6 +21,8 @@ export {
   ACTIVITY_RETENTION_DAYS,
   ACTIVITY_TYPES,
   activityEventsCollection,
+  countActivityBetween,
+  countActivityPerDay,
   flushActivity,
   recordActivity,
   type ActivityEventDocument,
@@ -62,6 +66,8 @@ export {
   blogAttrsSchema,
   blogsCollection,
   countBlogsByStatus,
+  countBlogsBetween,
+  countBlogsPerDay,
   findBlogById,
   findBlogBySlug,
   findBlogs,
