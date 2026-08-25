@@ -17,6 +17,7 @@ export const ACTIVITY_RETENTION_DAYS = 90;
 // free-form string would let a typo quietly create a category of one.
 export const ACTIVITY_TYPES = [
   'chat.message_sent',
+  'professional.applied',
   'user.logged_in',
   'user.logged_out',
   'user.signed_up',
