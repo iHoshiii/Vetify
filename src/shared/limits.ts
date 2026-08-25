@@ -41,3 +41,27 @@ export const BLOG_PAGE_SIZE_MAX = 50;
 
 /** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
 export const BLOG_MAX_TAGS = 8;
+/**
+ * Directory page size, and the ceiling a caller may ask for. Same reasoning as
+ * the blog pager: the client draws its pages from the response, and the server
+ * refuses anything larger, so `?limit=100000` cannot un-paginate the endpoint.
+ */
+export const PROFESSIONAL_PAGE_SIZE = 12;
+export const PROFESSIONAL_PAGE_SIZE_MAX = 50;
+
+/** Specialties one vet may claim. A profile that lists everything says nothing. */
+export const PROFESSIONAL_MAX_SPECIALTIES = 6;
+
+/**
+ * Credential links one application may carry - licence, diploma, board
+ * certifications. Enough for the eligibility list the site already publishes,
+ * few enough that a reviewer can realistically open them all.
+ */
+export const PROFESSIONAL_MAX_CREDENTIALS = 5;
+
+/**
+ * Bounds on the introduction shown in the directory. Shared because the form
+ * counts characters against the same minimum the server rejects below.
+ */
+export const PROFESSIONAL_BIO_MIN = 80;
+export const PROFESSIONAL_BIO_MAX = 1200;

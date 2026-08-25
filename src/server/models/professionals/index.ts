@@ -1,0 +1,32 @@
+export { PROFESSIONAL_INDEXES, PROFESSIONALS_COLLECTION } from './constants';
+
+export {
+  countProfessionalsByStatus,
+  findProfessionalById,
+  findProfessionalByUser,
+  findProfessionals,
+  findVerifiedProfessionals,
+  insertProfessional,
+  isDuplicateApplication,
+  isDuplicateLicense,
+  professionalsCollection,
+  updateProfessional,
+  type FindProfessionalsOptions,
+  type FindVerifiedOptions,
+  type ProfessionalPatch,
+} from './repository';
+
+export { professionalAttrsSchema, type ProfessionalAttrs } from './schema';
+
+export { toOwnProfessional, toProfessionalPage, toPublicProfessional } from './transform';
+
+export {
+  PROFESSIONAL_PUBLIC_STATUSES,
+  PROFESSIONAL_STATUSES,
+  type OwnProfessional,
+  type ProfessionalDocument,
+  type ProfessionalPage,
+  type ProfessionalStatus,
+  type ProfessionalWithAccount,
+  type PublicProfessional,
+} from './types';

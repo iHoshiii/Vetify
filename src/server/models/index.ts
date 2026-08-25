@@ -5,6 +5,7 @@ import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
+import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
@@ -87,6 +88,37 @@ export {
 } from './pets';
 
 export {
+  PROFESSIONALS_COLLECTION,
+  PROFESSIONAL_INDEXES,
+  PROFESSIONAL_PUBLIC_STATUSES,
+  PROFESSIONAL_STATUSES,
+  countProfessionalsByStatus,
+  findProfessionalById,
+  findProfessionalByUser,
+  findProfessionals,
+  findVerifiedProfessionals,
+  insertProfessional,
+  isDuplicateApplication,
+  isDuplicateLicense,
+  professionalAttrsSchema,
+  professionalsCollection,
+  toOwnProfessional,
+  toProfessionalPage,
+  toPublicProfessional,
+  updateProfessional,
+  type FindProfessionalsOptions,
+  type FindVerifiedOptions,
+  type OwnProfessional,
+  type ProfessionalAttrs,
+  type ProfessionalDocument,
+  type ProfessionalPage,
+  type ProfessionalPatch,
+  type ProfessionalStatus,
+  type ProfessionalWithAccount,
+  type PublicProfessional,
+} from './professionals';
+
+export {
   REFRESH_TOKENS_COLLECTION,
   REFRESH_TOKEN_INDEXES,
   findRefreshTokenByHash,
@@ -139,6 +171,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
+  { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different

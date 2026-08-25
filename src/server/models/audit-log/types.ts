@@ -9,12 +9,17 @@ export const AUDIT_LOGS_COLLECTION = 'auditlogs';
  * string would let one caller write 'blog.remove' and another 'blog.removed',
  * and neither would show up under the other's filter.
  */
-export const AUDIT_ACTIONS = ['user.role.changed'] as const;
+export const AUDIT_ACTIONS = [
+  'professional.rejected',
+  'professional.suspended',
+  'professional.verified',
+  'user.role.changed',
+] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** What the action was performed on, so a target can be found without its type
  * being guessed from the id. */
-export const AUDIT_TARGET_TYPES = ['user'] as const;
+export const AUDIT_TARGET_TYPES = ['professional', 'user'] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 
 export type AuditLogDocument = {
