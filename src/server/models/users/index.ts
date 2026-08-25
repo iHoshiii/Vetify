@@ -1,18 +1,21 @@
 export {
   countActiveAdmins,
+  countUsersBy,
   findUserByEmail,
   findUserById,
   findUserByProviderId,
   findUsersByIds,
+  findUsersPaginated,
   findUserWithPasswordByEmail,
   insertUser,
   updateUser,
   usersCollection,
+  type FindUsersOptions,
 } from './repository';
 
 export { comparePassword, hashPassword } from './security';
 
-export { toPublicUser } from './transform';
+export { toAdminUser, toAdminUserPage, toPublicUser } from './transform';
 
 export {
   AUTH_PROVIDERS,
@@ -20,6 +23,8 @@ export {
   USER_ROLES,
   USER_STATUSES,
   USERS_COLLECTION,
+  type AdminUser,
+  type AdminUserPage,
   type AuthProvider,
   type PublicUser,
   type User,

@@ -95,3 +95,35 @@ export const USER_INDEXES: IndexDescription[] = [
   { key: { role: 1, createdAt: -1 } },
   { key: { status: 1 } },
 ];
+
+/**
+ * An account as the admin list shows it.
+ *
+ * Wider than `PublicUser` — the status, the moderation trail and the dates are
+ * the columns a moderator is here for — and still narrower than the document:
+ * `providerId` is an identifier at Google's end that nothing on the screen uses,
+ * and there is no `password` field to forget about because `User` has none.
+ */
+export type AdminUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  provider: AuthProvider;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+  role: UserRole;
+  status: UserStatus;
+  statusReason: string | null;
+  statusChangedBy: string | null;
+  statusChangedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserPage = {
+  items: AdminUser[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
