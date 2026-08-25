@@ -5,10 +5,18 @@ interface MobileMenuProps {
   isOpen: boolean;
   isAuthenticated: boolean;
   showAuthActions: boolean;
+  /** Whether to offer the console. Not a permission - see navbar-header. */
+  isAdmin: boolean;
   onClose: () => void;
 }
 
-export function MobileMenu({ isOpen, isAuthenticated, showAuthActions, onClose }: MobileMenuProps) {
+export function MobileMenu({
+  isOpen,
+  isAuthenticated,
+  showAuthActions,
+  isAdmin,
+  onClose,
+}: MobileMenuProps) {
   return (
     <div
       className={`overflow-hidden transition-all duration-300 md:hidden ${
@@ -52,6 +60,16 @@ export function MobileMenu({ isOpen, isAuthenticated, showAuthActions, onClose }
             {item.label}
           </Link>
         ))}
+
+        {isAdmin && (
+          <Link
+            to="/admin"
+            onClick={onClose}
+            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-50"
+          >
+            Admin console
+          </Link>
+        )}
 
         <div className="my-2 h-px bg-slate-100" />
 

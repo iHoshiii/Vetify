@@ -1,3 +1,4 @@
+import { BLOG_STATUSES, type BlogStatus } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
 /**
@@ -9,8 +10,8 @@ import { ObjectId } from 'mongodb';
  * calls deleteOne on a post — a false positive has to be restorable, and an
  * accountable takedown needs something left to point at.
  */
-export const BLOG_STATUSES = ['draft', 'published', 'hidden', 'removed'] as const;
-export type BlogStatus = (typeof BLOG_STATUSES)[number];
+export { BLOG_STATUSES };
+export type { BlogStatus };
 
 /** The statuses a reader may see. Every public read filters on exactly this. */
 export const BLOG_PUBLIC_STATUSES: BlogStatus[] = ['published'];
@@ -76,6 +77,43 @@ export type BlogSummary = Omit<PublicBlog, 'body'>;
 /** One page of results, plus what the client needs to draw a pager. */
 export type BlogPage = {
   items: BlogSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
+
+/** The author as the dashboard needs them: enough to recognise an account and
+ * enough to write to it. Assembled by the route, so this file stays clear of the
+ * user model. */
+export type AdminBlogAuthor = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+/**
+ * One post as the dashboard sees it: the reader's summary, the moderation trail,
+ * and who wrote it.
+ *
+ * The trail is included here and nowhere public. A takedown decision is made from
+ * exactly this — the status, the previous reason, and the account behind the post.
+ * `author` is null when the account has since been deleted, which is a real state
+ * and not an error: the post outlives the account.
+ */
+export type AdminBlogSummary = BlogSummary & {
+  author: AdminBlogAuthor | null;
+  removedBy: string | null;
+  removedReason: string | null;
+  removedAt: string | null;
+};
+
+/** The same, with the body, for the review screen. Nobody can judge a post they
+ * cannot read. */
+export type AdminBlogDetail = AdminBlogSummary & { body: string };
+
+export type AdminBlogPage = {
+  items: AdminBlogSummary[];
   page: number;
   limit: number;
   total: number;

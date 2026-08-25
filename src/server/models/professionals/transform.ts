@@ -1,4 +1,7 @@
 import type {
+  AdminApplicant,
+  AdminProfessional,
+  AdminProfessionalPage,
   OwnProfessional,
   ProfessionalDocument,
   ProfessionalPage,
@@ -72,6 +75,43 @@ export function toProfessionalPage(input: {
     total: input.total,
     // At least one page, so an empty directory reads as "page 1 of 1" rather
     // than "page 1 of 0".
+    pages: Math.max(1, Math.ceil(input.total / input.limit)),
+  };
+}
+
+/**
+ * The reviewer's view of an application.
+ *
+ * Built on the applicant's own view rather than beside it, so a field added to
+ * the submission shows up on the screen that reviews it instead of being
+ * forgotten in one of two near-identical mappings.
+ */
+export function toAdminProfessional(
+  application: ProfessionalDocument,
+  applicant: AdminApplicant | null
+): AdminProfessional {
+  return {
+    ...toOwnProfessional(application),
+    applicant,
+    reviewedBy: application.reviewedBy?.toString() ?? null,
+  };
+}
+
+/** A page of the review queue, paged like every other admin list. */
+export function toAdminProfessionalPage(input: {
+  items: ProfessionalDocument[];
+  applicants: Map<string, AdminApplicant>;
+  total: number;
+  page: number;
+  limit: number;
+}): AdminProfessionalPage {
+  return {
+    items: input.items.map((application) =>
+      toAdminProfessional(application, input.applicants.get(application.user.toString()) ?? null)
+    ),
+    page: input.page,
+    limit: input.limit,
+    total: input.total,
     pages: Math.max(1, Math.ceil(input.total / input.limit)),
   };
 }

@@ -1,6 +1,7 @@
+import { PROFESSIONAL_STATUSES, type ProfessionalStatus } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
-import type { UserStatus } from '../users/types';
+import type { UserRole, UserStatus } from '../users/types';
 
 /**
  * Where an application sits.
@@ -12,8 +13,8 @@ import type { UserStatus } from '../users/types';
  * never happened. Nothing deletes an application — a rejected applicant may
  * appeal, and a suspension has to be explainable months later.
  */
-export const PROFESSIONAL_STATUSES = ['pending', 'verified', 'rejected', 'suspended'] as const;
-export type ProfessionalStatus = (typeof PROFESSIONAL_STATUSES)[number];
+export { PROFESSIONAL_STATUSES };
+export type { ProfessionalStatus };
 
 /** The only status the public directory reads. */
 export const PROFESSIONAL_PUBLIC_STATUSES: ProfessionalStatus[] = ['verified'];
@@ -110,6 +111,37 @@ export type PublicProfessional = {
 /** One page of directory entries, plus what the client needs to draw a pager. */
 export type ProfessionalPage = {
   items: PublicProfessional[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
+
+/** The applicant, as the review queue needs to see them. */
+export type AdminApplicant = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: UserRole;
+  status: UserStatus;
+};
+
+/**
+ * An application as a reviewer sees it: everything the applicant submitted, plus
+ * who they are, plus who decided and when.
+ *
+ * Wider than either the applicant's own view or the directory entry, and
+ * deliberately so — the licence number and the credential links are the whole
+ * point of the screen, and `reviewedBy` is internal detail that only this
+ * audience is shown.
+ */
+export type AdminProfessional = OwnProfessional & {
+  applicant: AdminApplicant | null;
+  reviewedBy: string | null;
+};
+
+export type AdminProfessionalPage = {
+  items: AdminProfessional[];
   page: number;
   limit: number;
   total: number;

@@ -1,6 +1,7 @@
 import { ObjectId, type Collection } from 'mongodb';
 
 import { getDb, isDbConnected } from '../../config/db';
+import { dailyCountStages, type DailyCount } from '../daily-count';
 import { isValidObjectId, toObjectId } from '../object-id';
 import {
   ACTIVITY_EVENTS_COLLECTION,
@@ -81,4 +82,40 @@ export async function flushActivity(): Promise<void> {
     // clearer than trusting the set not to change under us.
     await Promise.allSettled([...inFlight]);
   }
+}
+/**
+ * How many events of one type fell in a half-open window, [from, to).
+ *
+ * Half-open so two adjacent windows can be compared without the boundary event
+ * being counted in both — which is exactly the arithmetic the overview's "up 12%
+ * on the previous week" depends on.
+ */
+export function countActivityBetween(input: {
+  type: ActivityType;
+  from: Date;
+  to: Date;
+}): Promise<number> {
+  return activityEventsCollection().countDocuments({
+    type: input.type,
+    createdAt: { $gte: input.from, $lt: input.to },
+  });
+}
+
+/**
+ * One row per day for one type, oldest first, since `from`.
+ *
+ * Uses the `{ type: 1, createdAt: -1 }` index for the match. Anything older than
+ * the retention window is simply not there — which is why the chart's own bounds
+ * are derived from that window rather than chosen independently.
+ */
+export function countActivityPerDay(input: {
+  type: ActivityType;
+  from: Date;
+}): Promise<DailyCount[]> {
+  return activityEventsCollection()
+    .aggregate<DailyCount>([
+      { $match: { type: input.type, createdAt: { $gte: input.from } } },
+      ...dailyCountStages('createdAt'),
+    ])
+    .toArray();
 }

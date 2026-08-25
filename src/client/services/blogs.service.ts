@@ -1,6 +1,10 @@
+import type { BlogStatus } from '@shared/schemas';
+
 import { apiFetch } from './api';
 
-export type BlogStatus = 'draft' | 'published' | 'hidden' | 'removed';
+// One list, shared with the server, so a new status cannot appear in a response
+// the client has no type for.
+export type { BlogStatus };
 
 /** A post as the feed returns it: everything except the body. */
 export type BlogSummary = {

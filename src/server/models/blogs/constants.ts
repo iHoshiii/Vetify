@@ -17,6 +17,10 @@ export const BLOG_INDEXES: IndexDescription[] = [
   { key: { status: 1, publishedAt: -1 } },
   // An author's own posts, and the admin view of one person's output.
   { key: { author: 1, createdAt: -1 } },
+  // The moderation list, which sorts by what was touched last rather than by
+  // what is live: a draft and a takedown both have to appear in it, and neither
+  // has a publishedAt to order by.
+  { key: { updatedAt: -1 } },
   // Admin search. Only one text index is allowed per collection, so all three
   // searchable fields share it; the weights decide which match ranks higher.
   {

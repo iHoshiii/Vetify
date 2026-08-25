@@ -4,16 +4,21 @@
  * `services/api` needs the access token to set the Authorization header, and
  * `lib/auth` needs `services/api` to make the login calls. Holding the storage
  * primitives here breaks what would otherwise be an import cycle between them.
+ *
+ * The one exception is the shared vocabulary, which imports nothing itself and so
+ * cannot be part of a cycle.
  */
 
-export type AuthProviderName = 'local' | 'google' | 'facebook' | 'tiktok';
+import type { AuthProvider, UserRole } from '@shared/schemas';
+
+export type AuthProviderName = AuthProvider;
 
 /**
- * Mirrors the server's `UserRole`. Only decides what the UI offers — the server
- * re-reads the stored role on every protected request, so a tampered
- * localStorage buys a link, not access.
+ * The stored role, taken from the shared vocabulary rather than written out again
+ * here. It only decides what the UI offers — the server re-reads the stored role
+ * on every protected request, so a tampered localStorage buys a link, not access.
  */
-export type UserRole = 'user' | 'professional' | 'admin';
+export type { UserRole };
 
 export type AuthUser = {
   id: string;

@@ -2,6 +2,7 @@ import { BLOG_PAGE_SIZE } from '@shared/limits';
 import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
+import { dailyCountStages, type DailyCount } from '../daily-count';
 import { toObjectId } from '../object-id';
 import { BLOGS_COLLECTION } from './constants';
 import { blogAttrsSchema, type BlogAttrs } from './schema';
@@ -209,4 +210,28 @@ export async function countBlogsByStatus(): Promise<Record<string, number>> {
     .toArray();
 
   return Object.fromEntries(rows.map((row) => [row._id, row.count]));
+}
+/**
+ * Posts written in a half-open window, [from, to).
+ *
+ * On `createdAt`, not `publishedAt`: a draft is writing that happened, and it has
+ * no publish date to be counted by. Bucketing on `publishedAt` would also make
+ * the line rewrite itself retroactively every time an old draft goes live.
+ *
+ * Unlike the four series read from activity events, this one survives the
+ * retention window — the post is still here long after any event about it would
+ * have expired.
+ */
+export function countBlogsBetween(input: { from: Date; to: Date }): Promise<number> {
+  return blogsCollection().countDocuments({ createdAt: { $gte: input.from, $lt: input.to } });
+}
+
+/** One row per day of posts written, oldest first, since `from`. */
+export function countBlogsPerDay(input: { from: Date }): Promise<DailyCount[]> {
+  return blogsCollection()
+    .aggregate<DailyCount>([
+      { $match: { createdAt: { $gte: input.from } } },
+      ...dailyCountStages('createdAt'),
+    ])
+    .toArray();
 }
