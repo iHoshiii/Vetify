@@ -97,3 +97,15 @@ export const ACTIVITY_RETENTION_DAYS = 90;
  */
 export const METRIC_MAX_DAYS = ACTIVITY_RETENTION_DAYS;
 export const METRIC_WINDOW_DAYS = 30;
+
+/**
+ * How much of an explanation counts as one, on any moderation decision.
+ *
+ * Shared so the confirm dialog can hold the button until the box is long enough,
+ * rather than letting somebody type 'no' and learn from a 400 that it was not
+ * enough. Ten characters is not a quality bar — it is the difference between a
+ * stated reason and a keypress, which is what the audit entry has to show months
+ * later.
+ */
+export const MODERATION_REASON_MIN = 10;
+export const MODERATION_REASON_MAX = 500;

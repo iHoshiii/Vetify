@@ -8,6 +8,8 @@ import {
   BLOG_PAGE_SIZE_MAX,
   METRIC_MAX_DAYS,
   METRIC_WINDOW_DAYS,
+  MODERATION_REASON_MAX,
+  MODERATION_REASON_MIN,
   PROFESSIONAL_BIO_MAX,
   PROFESSIONAL_BIO_MIN,
   PROFESSIONAL_MAX_CREDENTIALS,
@@ -305,8 +307,8 @@ export type ProfessionalStatus = (typeof PROFESSIONAL_STATUSES)[number];
 export const moderationReason = z
   .string()
   .trim()
-  .min(10, 'Say why in at least 10 characters')
-  .max(500, 'That reason is too long');
+  .min(MODERATION_REASON_MIN, `Say why in at least ${MODERATION_REASON_MIN} characters`)
+  .max(MODERATION_REASON_MAX, 'That reason is too long');
 
 /**
  * The same field where an explanation is welcome but not owed: hiding a post is
@@ -316,11 +318,11 @@ export const moderationReason = z
 export const moderationNote = z
   .string()
   .trim()
-  .max(500, 'That reason is too long')
+  .max(MODERATION_REASON_MAX, 'That reason is too long')
   .optional()
   .transform((value) => (value ? value : undefined))
-  .refine((value) => value === undefined || value.length >= 10, {
-    message: 'Say why in at least 10 characters',
+  .refine((value) => value === undefined || value.length >= MODERATION_REASON_MIN, {
+    message: `Say why in at least ${MODERATION_REASON_MIN} characters`,
   });
 
 /** A reviewer turning an application down or pulling a listing. */
