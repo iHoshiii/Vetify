@@ -1,8 +1,15 @@
 import { Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
+import { RequireRole } from '@/components/providers/RequireRole';
 import RootLayout from '@/layouts/RootLayout';
 import AboutPage from '@/pages/about/about-page';
+import AdminLayout from '@/pages/admin/admin-layout';
+import AdminAuditPage from '@/pages/admin/audit-page';
+import AdminBlogsPage from '@/pages/admin/blogs-page';
+import AdminDashboardPage from '@/pages/admin/dashboard-page';
+import AdminProfessionalsPage from '@/pages/admin/professionals-page';
+import AdminUsersPage from '@/pages/admin/users-page';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
 import BlogDetailPage from '@/pages/blogs/blog-detail-page';
@@ -17,6 +24,7 @@ import MapPage from '@/pages/map/map-page';
 import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
+import ProfessionalApplyPage from '@/pages/professionals/apply-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -32,6 +40,23 @@ export default function App() {
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
+        {/* The only nested branch in the table: the console keeps its own sidebar
+            across every section, and the gate wraps the layout so a child route
+            cannot be reached without passing it. */}
+        <Route
+          path="admin"
+          element={
+            <RequireRole roles={['admin']}>
+              <AdminLayout />
+            </RequireRole>
+          }
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="professionals" element={<AdminProfessionalsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="blogs" element={<AdminBlogsPage />} />
+          <Route path="audit" element={<AdminAuditPage />} />
+        </Route>
         <Route path="anatomy" element={<AnatomyPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />
@@ -66,6 +91,14 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
+        <Route
+          path="professionals/apply"
+          element={
+            <RequireAuth>
+              <ProfessionalApplyPage />
+            </RequireAuth>
+          }
+        />
         <Route path="services" element={<ServicesPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />

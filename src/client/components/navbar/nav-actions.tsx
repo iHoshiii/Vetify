@@ -3,11 +3,21 @@ import { Link } from 'react-router-dom';
 interface NavActionsProps {
   isAuthenticated: boolean;
   showAuthActions: boolean;
+  /** Whether to offer the console. Not a permission - see navbar-header. */
+  isAdmin: boolean;
 }
 
-export function NavActions({ isAuthenticated, showAuthActions }: NavActionsProps) {
+export function NavActions({ isAuthenticated, showAuthActions, isAdmin }: NavActionsProps) {
   return (
     <div className="hidden items-center gap-3 md:flex">
+      {isAdmin && (
+        <Link
+          to="/admin"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-teal-700 bg-teal-900 px-4 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+        >
+          Admin
+        </Link>
+      )}
       {isAuthenticated && (
         <Link
           to="/map"

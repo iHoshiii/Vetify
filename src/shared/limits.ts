@@ -41,3 +41,71 @@ export const BLOG_PAGE_SIZE_MAX = 50;
 
 /** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
 export const BLOG_MAX_TAGS = 8;
+/**
+ * Directory page size, and the ceiling a caller may ask for. Same reasoning as
+ * the blog pager: the client draws its pages from the response, and the server
+ * refuses anything larger, so `?limit=100000` cannot un-paginate the endpoint.
+ */
+export const PROFESSIONAL_PAGE_SIZE = 12;
+export const PROFESSIONAL_PAGE_SIZE_MAX = 50;
+
+/** Specialties one vet may claim. A profile that lists everything says nothing. */
+export const PROFESSIONAL_MAX_SPECIALTIES = 6;
+
+/**
+ * Credential links one application may carry - licence, diploma, board
+ * certifications. Enough for the eligibility list the site already publishes,
+ * few enough that a reviewer can realistically open them all.
+ */
+export const PROFESSIONAL_MAX_CREDENTIALS = 5;
+
+/**
+ * Bounds on the introduction shown in the directory. Shared because the form
+ * counts characters against the same minimum the server rejects below.
+ */
+export const PROFESSIONAL_BIO_MIN = 80;
+export const PROFESSIONAL_BIO_MAX = 1200;
+
+/**
+ * Rows per page on the admin lists, and the ceiling a caller may ask for.
+ *
+ * Smaller than the public pagers on purpose: these rows are wide — a user row
+ * carries a role, a status, a provider and three dates — and an admin scanning
+ * for one account pages through rather than scrolls. The max is what stops a
+ * hand-written `?limit=100000` from turning the user list into a full scan.
+ */
+export const ADMIN_PAGE_SIZE = 20;
+export const ADMIN_PAGE_SIZE_MAX = 100;
+
+/**
+ * How long a raw activity event is kept before the TTL sweep drops it.
+ *
+ * Long enough to cover the dashboard's widest window, short enough that the
+ * collection cannot grow without bound. The counts that must outlive it — "users
+ * who ever signed up" — are read from the collections themselves rather than from
+ * events, so nothing permanent depends on this number.
+ */
+export const ACTIVITY_RETENTION_DAYS = 90;
+
+/**
+ * Widest window a chart may ask for, and the one the dashboard opens on.
+ *
+ * The maximum is the retention window rather than a number of its own: a chart
+ * cannot honestly reach further back than the events exist, and asking for a year
+ * would draw a line that is real for 90 days and flat zero before it — which
+ * reads as "nothing happened" rather than "nothing was kept".
+ */
+export const METRIC_MAX_DAYS = ACTIVITY_RETENTION_DAYS;
+export const METRIC_WINDOW_DAYS = 30;
+
+/**
+ * How much of an explanation counts as one, on any moderation decision.
+ *
+ * Shared so the confirm dialog can hold the button until the box is long enough,
+ * rather than letting somebody type 'no' and learn from a 400 that it was not
+ * enough. Ten characters is not a quality bar — it is the difference between a
+ * stated reason and a keypress, which is what the audit entry has to show months
+ * later.
+ */
+export const MODERATION_REASON_MIN = 10;
+export const MODERATION_REASON_MAX = 500;

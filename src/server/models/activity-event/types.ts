@@ -1,22 +1,19 @@
+import { ACTIVITY_RETENTION_DAYS } from '@shared/limits';
 import { ObjectId, type IndexDescription } from 'mongodb';
 
 // database collection for the raw activity stream behind the dashboard charts
 export const ACTIVITY_EVENTS_COLLECTION = 'activityevents';
 
-/**
- * How long a raw event is kept.
- *
- * Long enough to cover the dashboard's widest window, short enough that the
- * collection cannot grow without bound. The counts that need to outlive this —
- * "users who ever signed up" — are read from the collections themselves rather
- * than from events, so nothing permanent depends on this number.
- */
-export const ACTIVITY_RETENTION_DAYS = 90;
+// The retention window lives in @shared/limits because the dashboard's chart
+// bounds are derived from it: a chart may not ask for a window longer than the
+// events behind it are kept.
+export { ACTIVITY_RETENTION_DAYS };
 
 // what happened. A closed list on purpose: the charts group by this field, and a
 // free-form string would let a typo quietly create a category of one.
 export const ACTIVITY_TYPES = [
   'chat.message_sent',
+  'professional.applied',
   'user.logged_in',
   'user.logged_out',
   'user.signed_up',

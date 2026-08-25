@@ -1,4 +1,5 @@
-import { ObjectId, type Collection } from 'mongodb';
+import { ADMIN_PAGE_SIZE } from '@shared/limits';
+import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
@@ -56,4 +57,55 @@ export async function recordAudit(input: RecordAuditInput): Promise<AuditLogDocu
 
   await auditLogsCollection().insertOne(doc);
   return doc;
+}
+
+/** Newest first, which is the only order an audit trail is read in. */
+const AUDIT_SORT: Sort = { createdAt: -1 };
+
+export type FindAuditOptions = {
+  action?: AuditAction;
+  targetType?: AuditTargetType;
+  /** Everything ever done to one post, account or application. */
+  targetId?: string | ObjectId;
+  /** Everything one admin has done. */
+  actor?: string | ObjectId;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * One page of the trail, filtered the four ways the screen offers.
+ *
+ * Each filter matches an index rather than a scan: `actor` uses
+ * `{ actor: 1, createdAt: -1 }`, `targetType` with `targetId` uses the target
+ * index, and the unfiltered default view uses `{ createdAt: -1 }`. The sort is
+ * that leading field alone, so it stays a walk of the index instead of a sort in
+ * memory — two entries written in the same millisecond can swap places between
+ * pages, which is a fair trade for never loading the collection to order it.
+ *
+ * No projection: unlike the users collection there is nothing here to hide from an
+ * admin, since the row is the record they came to read.
+ */
+export async function findAuditEntries(
+  options: FindAuditOptions = {}
+): Promise<{ items: AuditLogDocument[]; total: number }> {
+  const { action, targetType, targetId, actor, page = 1, limit = ADMIN_PAGE_SIZE } = options;
+
+  const filter: Filter<AuditLogDocument> = {};
+  if (action) filter.action = action;
+  if (targetType) filter.targetType = targetType;
+  if (targetId) filter.targetId = toObjectId(targetId);
+  if (actor) filter.actor = toObjectId(actor);
+
+  const [items, total] = await Promise.all([
+    auditLogsCollection()
+      .find(filter)
+      .sort(AUDIT_SORT)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .toArray(),
+    auditLogsCollection().countDocuments(filter),
+  ]);
+
+  return { items, total };
 }

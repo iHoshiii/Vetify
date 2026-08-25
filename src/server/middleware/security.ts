@@ -46,6 +46,24 @@ export const chatLimiter = rateLimit({
 });
 
 /**
+ * Cap on the admin surface.
+ *
+ * Tighter than the general limiter because these are the destructive endpoints:
+ * a script driving takedowns or role changes in a loop is either a mistake or an
+ * attack, and neither has a legitimate reason to move faster than a person
+ * clicking. Well above what a dashboard session generates, since one page load
+ * fans out into several metrics reads.
+ */
+export const adminLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many admin requests. Please slow down.', reason: 'admin-rate-limit' },
+  skip: () => isTest,
+});
+
+/**
  * Abuse ceiling for chat from callers with no account, on top of the per-visitor
  * cookie allowance. Set well above FREE_ANON_QUERIES on purpose: the cookie is
  * the per-person rule, and matching the two here would mean one person's five

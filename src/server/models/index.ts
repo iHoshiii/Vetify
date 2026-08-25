@@ -5,10 +5,15 @@ import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
+import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
+
+export { dailyCountStages, type DailyCount } from './daily-count';
+
+export { escapeRegex } from './text-search';
 
 export {
   ACTIVITY_EVENTS_COLLECTION,
@@ -16,6 +21,8 @@ export {
   ACTIVITY_RETENTION_DAYS,
   ACTIVITY_TYPES,
   activityEventsCollection,
+  countActivityBetween,
+  countActivityPerDay,
   flushActivity,
   recordActivity,
   type ActivityEventDocument,
@@ -37,10 +44,16 @@ export {
   AUDIT_LOG_INDEXES,
   AUDIT_TARGET_TYPES,
   auditLogsCollection,
+  findAuditEntries,
   recordAudit,
+  toAuditEntry,
+  toAuditPage,
   type AuditAction,
+  type AuditEntry,
   type AuditLogDocument,
+  type AuditPage,
   type AuditTargetType,
+  type FindAuditOptions,
   type RecordAuditInput,
 } from './audit-log';
 
@@ -53,15 +66,24 @@ export {
   blogAttrsSchema,
   blogsCollection,
   countBlogsByStatus,
+  countBlogsBetween,
+  countBlogsPerDay,
   findBlogById,
   findBlogBySlug,
   findBlogs,
   insertBlog,
   slugify,
+  toAdminBlogDetail,
+  toAdminBlogPage,
+  toAdminBlogSummary,
   toBlogPage,
   toBlogSummary,
   toPublicBlog,
   updateBlog,
+  type AdminBlogAuthor,
+  type AdminBlogDetail,
+  type AdminBlogPage,
+  type AdminBlogSummary,
   type BlogAttrs,
   type BlogDocument,
   type BlogPage,
@@ -87,6 +109,42 @@ export {
 } from './pets';
 
 export {
+  PROFESSIONALS_COLLECTION,
+  PROFESSIONAL_INDEXES,
+  PROFESSIONAL_PUBLIC_STATUSES,
+  PROFESSIONAL_STATUSES,
+  countProfessionalsByStatus,
+  findProfessionalById,
+  findProfessionalByUser,
+  findProfessionals,
+  findVerifiedProfessionals,
+  insertProfessional,
+  isDuplicateApplication,
+  isDuplicateLicense,
+  professionalAttrsSchema,
+  professionalsCollection,
+  toAdminProfessional,
+  toAdminProfessionalPage,
+  toOwnProfessional,
+  toProfessionalPage,
+  toPublicProfessional,
+  updateProfessional,
+  type AdminApplicant,
+  type AdminProfessional,
+  type AdminProfessionalPage,
+  type FindProfessionalsOptions,
+  type FindVerifiedOptions,
+  type OwnProfessional,
+  type ProfessionalAttrs,
+  type ProfessionalDocument,
+  type ProfessionalPage,
+  type ProfessionalPatch,
+  type ProfessionalStatus,
+  type ProfessionalWithAccount,
+  type PublicProfessional,
+} from './professionals';
+
+export {
   REFRESH_TOKENS_COLLECTION,
   REFRESH_TOKEN_INDEXES,
   findRefreshTokenByHash,
@@ -109,18 +167,26 @@ export {
   USERS_COLLECTION,
   comparePassword,
   countActiveAdmins,
+  countUsersBy,
   findUserByEmail,
   findUserById,
   findUserByProviderId,
+  findUsersByIds,
+  findUsersPaginated,
   findUserWithPasswordByEmail,
   hashPassword,
   insertUser,
   normalizeEmail,
+  toAdminUser,
+  toAdminUserPage,
   toPublicUser,
   updateUser,
   userAttrsSchema,
   usersCollection,
+  type AdminUser,
+  type AdminUserPage,
   type AuthProvider,
+  type FindUsersOptions,
   type PublicUser,
   type User,
   type UserAttrs,
@@ -139,6 +205,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
+  { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different
