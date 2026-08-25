@@ -1,3 +1,4 @@
+import { BLOG_STATUSES, type BlogStatus } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
 /**
@@ -9,8 +10,8 @@ import { ObjectId } from 'mongodb';
  * calls deleteOne on a post — a false positive has to be restorable, and an
  * accountable takedown needs something left to point at.
  */
-export const BLOG_STATUSES = ['draft', 'published', 'hidden', 'removed'] as const;
-export type BlogStatus = (typeof BLOG_STATUSES)[number];
+export { BLOG_STATUSES };
+export type { BlogStatus };
 
 /** The statuses a reader may see. Every public read filters on exactly this. */
 export const BLOG_PUBLIC_STATUSES: BlogStatus[] = ['published'];

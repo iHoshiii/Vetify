@@ -1,3 +1,4 @@
+import { PROFESSIONAL_STATUSES, type ProfessionalStatus } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
 import type { UserStatus } from '../users/types';
@@ -12,8 +13,8 @@ import type { UserStatus } from '../users/types';
  * never happened. Nothing deletes an application — a rejected applicant may
  * appeal, and a suspension has to be explainable months later.
  */
-export const PROFESSIONAL_STATUSES = ['pending', 'verified', 'rejected', 'suspended'] as const;
-export type ProfessionalStatus = (typeof PROFESSIONAL_STATUSES)[number];
+export { PROFESSIONAL_STATUSES };
+export type { ProfessionalStatus };
 
 /** The only status the public directory reads. */
 export const PROFESSIONAL_PUBLIC_STATUSES: ProfessionalStatus[] = ['verified'];

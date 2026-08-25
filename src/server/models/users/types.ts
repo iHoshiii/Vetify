@@ -1,22 +1,26 @@
+import {
+  AUTH_PROVIDERS,
+  USER_ROLES,
+  USER_STATUSES,
+  type AuthProvider,
+  type UserRole,
+  type UserStatus,
+} from '@shared/schemas';
 import { ObjectId, type IndexDescription } from 'mongodb';
 
 // database collection / table for the users
 export const USERS_COLLECTION = 'users';
 
-// social login providers supported by the application
-export const AUTH_PROVIDERS = ['local', 'google', 'facebook', 'tiktok'] as const;
-export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
-
-// what a user is allowed to do. 'user' is everyone by default, 'professional' is
-// a vet whose licence has been verified, 'admin' runs the dashboard.
-export const USER_ROLES = ['user', 'professional', 'admin'] as const;
-export type UserRole = (typeof USER_ROLES)[number];
-
-// account standing. 'suspended' is meant to be lifted again, 'banned' is not.
-// Both are refused by requireRole, and both revoke the refresh tokens so the
-// block takes hold without waiting for the access token to expire.
-export const USER_STATUSES = ['active', 'suspended', 'banned'] as const;
-export type UserStatus = (typeof USER_STATUSES)[number];
+// The provider, role and status lists come from @shared/schemas: the admin
+// dashboard renders them as filters and badges, so a second copy here would let
+// the server accept a value the UI cannot draw. Re-exported so every existing
+// importer of this module keeps working.
+//
+// 'suspended' and 'banned' are both refused by requireRole, and both revoke the
+// account's refresh tokens, so the block takes hold without waiting for the
+// access token to expire.
+export { AUTH_PROVIDERS, USER_ROLES, USER_STATUSES };
+export type { AuthProvider, UserRole, UserStatus };
 
 // user information/documents field in the db
 export type UserDocument = {

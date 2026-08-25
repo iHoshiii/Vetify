@@ -1,26 +1,19 @@
+import {
+  AUDIT_ACTIONS,
+  AUDIT_TARGET_TYPES,
+  type AuditAction,
+  type AuditTargetType,
+} from '@shared/schemas';
 import { ObjectId, type IndexDescription } from 'mongodb';
 
 // database collection for the record of who did what to whom
 export const AUDIT_LOGS_COLLECTION = 'auditlogs';
 
-/**
- * Every privileged action, named. A closed list because this is the vocabulary
- * the audit screen filters on and the thing a reviewer scans for — a free-form
- * string would let one caller write 'blog.remove' and another 'blog.removed',
- * and neither would show up under the other's filter.
- */
-export const AUDIT_ACTIONS = [
-  'professional.rejected',
-  'professional.suspended',
-  'professional.verified',
-  'user.role.changed',
-] as const;
-export type AuditAction = (typeof AUDIT_ACTIONS)[number];
-
-/** What the action was performed on, so a target can be found without its type
- * being guessed from the id. */
-export const AUDIT_TARGET_TYPES = ['professional', 'user'] as const;
-export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
+// The action and target vocabularies live in @shared/schemas: the audit screen
+// filters on exactly these values, so the list the server can write and the list
+// the UI can offer have to be one list. Re-exported for the existing importers.
+export { AUDIT_ACTIONS, AUDIT_TARGET_TYPES };
+export type { AuditAction, AuditTargetType };
 
 export type AuditLogDocument = {
   _id: ObjectId;
