@@ -82,18 +82,18 @@ export async function moderateBlog(input: ModerateBlogInput): Promise<ModerateBl
   // entire justification for the strongest thing an admin can do to someone's
   // writing, and it must not depend on which caller arrived.
   if (decision === 'removed' && !reason?.trim()) {
-    throw AppError.badRequest('A reason is required to take a post down');
+    throw AppError.badRequest('A reason is required to take a post down', 'reason-required');
   }
 
   if (decision === 'restored' && current.status !== 'hidden' && current.status !== 'removed') {
-    throw AppError.conflict('That post is not under moderation');
+    throw AppError.conflict('That post is not under moderation', 'not-under-moderation');
   }
 
   const statusFrom = current.status;
   const statusTo = nextStatus(decision, current);
 
   if (statusFrom === statusTo) {
-    throw AppError.conflict(`That post is already ${statusFrom}`);
+    throw AppError.conflict(`That post is already ${statusFrom}`, `already-${statusFrom}`);
   }
 
   const patch: BlogPatch = { status: statusTo };

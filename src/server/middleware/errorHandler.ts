@@ -4,7 +4,7 @@ import { ZodError } from 'zod';
 
 import { isProduction } from '../config/env';
 import { AppError } from '../utils/AppError';
-import { fail } from '../utils/response';
+import { fail, failReason } from '../utils/response';
 
 const DUPLICATE_KEY = 11000;
 const DOCUMENT_VALIDATION_FAILED = 121;
@@ -30,7 +30,10 @@ export function errorHandler(err: unknown, _req: Request, res: Response, next: N
 
   // if err is an instance of AppError
   if (err instanceof AppError) {
-    fail(res, err.statusCode, err.message);
+    // The reason is optional, and a body carrying `reason: undefined` is not the
+    // same shape as one without the field, so the two cases stay separate.
+    if (err.reason) failReason(res, err.statusCode, err.message, err.reason);
+    else fail(res, err.statusCode, err.message);
     return;
   }
 

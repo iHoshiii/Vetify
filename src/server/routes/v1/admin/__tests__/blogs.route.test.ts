@@ -239,6 +239,7 @@ describe('PATCH /api/v1/admin/blogs/:id/remove', () => {
       .send({ reason: REASON });
 
     expect(res.status).toBe(409);
+    expect(res.body.reason).toBe('already-removed');
   });
 
   it('404s for a post that does not exist', async () => {
@@ -350,6 +351,7 @@ describe('PATCH /api/v1/admin/blogs/:id/restore', () => {
       .send({});
 
     expect(res.status).toBe(409);
+    expect(res.body.reason).toBe('not-under-moderation');
   });
 
   it('keeps both the takedown and the restore in the audit log', async () => {
