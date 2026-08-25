@@ -326,6 +326,15 @@ export const moderationNote = z
 /** A reviewer turning an application down or pulling a listing. */
 export const professionalRejectSchema = z.object({ reason: moderationReason });
 
+/**
+ * A reviewer approving one.
+ *
+ * The note is optional, because an approval owes nobody an explanation and
+ * "licence checked" is what a required box would actually collect. The audit
+ * entry records the verdict either way.
+ */
+export const professionalVerifySchema = z.object({ reason: moderationNote });
+
 export const professionalListQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
   limit: z.coerce
@@ -342,6 +351,7 @@ export type ProfessionalApplyInput = z.input<typeof professionalApplySchema>;
 /** Post-parse: what reaches the repository, licence and specialties normalised. */
 export type ProfessionalApply = z.output<typeof professionalApplySchema>;
 export type ProfessionalReject = z.output<typeof professionalRejectSchema>;
+export type ProfessionalVerify = z.output<typeof professionalVerifySchema>;
 /** Post-parse directory query: page and limit coerced from strings and defaulted. */
 export type ProfessionalListQuery = z.output<typeof professionalListQuerySchema>;
 

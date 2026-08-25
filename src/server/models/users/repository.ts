@@ -4,6 +4,7 @@ import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
+import { escapeRegex } from '../text-search';
 import { hashPassword } from './security';
 import {
   USERS_COLLECTION,
@@ -130,17 +131,6 @@ export function findUsersByIds(ids: Array<string | ObjectId>): Promise<User[]> {
   return usersCollection()
     .find<User>({ _id: { $in: ids.map(toObjectId) } }, { projection: WITHOUT_PASSWORD })
     .toArray();
-}
-
-/**
- * Turns a search box into something safe to hand a regex engine.
- *
- * Without this, a `q` of `.*` is a filter that matches every account and `(`
- * is an unterminated group the driver rejects — a search field is user input,
- * and the query language it lands in is not one it should be able to write.
- */
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export type FindUsersOptions = {

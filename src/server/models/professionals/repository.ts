@@ -3,6 +3,7 @@ import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
+import { escapeRegex } from '../text-search';
 import { USERS_COLLECTION } from '../users/types';
 import { PROFESSIONALS_COLLECTION } from './constants';
 import { professionalAttrsSchema, type ProfessionalAttrs } from './schema';
@@ -86,6 +87,15 @@ export async function findProfessionalByUser(
 export type FindProfessionalsOptions = {
   /** Restricts the read to these statuses. Omitting it means every status. */
   statuses?: ProfessionalStatus[];
+  /**
+   * Matches a licence number or a clinic name.
+   *
+   * Not the applicant's name or email: those live on the user document, and
+   * searching them from here would mean joining before filtering. A reviewer
+   * looking for a person has the account list for that; from this screen they are
+   * looking up a licence.
+   */
+  q?: string;
   page?: number;
   limit?: number;
   sort?: Sort;
@@ -99,10 +109,19 @@ export type FindProfessionalsOptions = {
 export async function findProfessionals(
   options: FindProfessionalsOptions = {}
 ): Promise<{ items: ProfessionalDocument[]; total: number }> {
-  const { statuses, page = 1, limit = PROFESSIONAL_PAGE_SIZE, sort = QUEUE_SORT } = options;
+  const { statuses, q, page = 1, limit = PROFESSIONAL_PAGE_SIZE, sort = QUEUE_SORT } = options;
 
   const filter: Filter<ProfessionalDocument> = {};
   if (statuses?.length) filter.status = { $in: statuses };
+
+  const term = q?.trim();
+  if (term) {
+    const escaped = escapeRegex(term);
+    filter.$or = [
+      { licenseNumber: { $regex: escaped, $options: 'i' } },
+      { clinicName: { $regex: escaped, $options: 'i' } },
+    ];
+  }
 
   const [items, total] = await Promise.all([
     professionalsCollection()

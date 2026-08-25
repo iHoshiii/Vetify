@@ -11,6 +11,8 @@ import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
 
+export { escapeRegex } from './text-search';
+
 export {
   ACTIVITY_EVENTS_COLLECTION,
   ACTIVITY_EVENT_INDEXES,
@@ -109,10 +111,15 @@ export {
   isDuplicateLicense,
   professionalAttrsSchema,
   professionalsCollection,
+  toAdminProfessional,
+  toAdminProfessionalPage,
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
   updateProfessional,
+  type AdminApplicant,
+  type AdminProfessional,
+  type AdminProfessionalPage,
   type FindProfessionalsOptions,
   type FindVerifiedOptions,
   type OwnProfessional,
