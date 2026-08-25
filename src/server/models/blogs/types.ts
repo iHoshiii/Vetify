@@ -82,3 +82,40 @@ export type BlogPage = {
   total: number;
   pages: number;
 };
+
+/** The author as the dashboard needs them: enough to recognise an account and
+ * enough to write to it. Assembled by the route, so this file stays clear of the
+ * user model. */
+export type AdminBlogAuthor = {
+  id: string;
+  email: string;
+  name: string | null;
+};
+
+/**
+ * One post as the dashboard sees it: the reader's summary, the moderation trail,
+ * and who wrote it.
+ *
+ * The trail is included here and nowhere public. A takedown decision is made from
+ * exactly this — the status, the previous reason, and the account behind the post.
+ * `author` is null when the account has since been deleted, which is a real state
+ * and not an error: the post outlives the account.
+ */
+export type AdminBlogSummary = BlogSummary & {
+  author: AdminBlogAuthor | null;
+  removedBy: string | null;
+  removedReason: string | null;
+  removedAt: string | null;
+};
+
+/** The same, with the body, for the review screen. Nobody can judge a post they
+ * cannot read. */
+export type AdminBlogDetail = AdminBlogSummary & { body: string };
+
+export type AdminBlogPage = {
+  items: AdminBlogSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};

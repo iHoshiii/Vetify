@@ -109,3 +109,20 @@ export async function updateUser(id: string | ObjectId, patch: UserPatch): Promi
 export function countActiveAdmins(): Promise<number> {
   return usersCollection().countDocuments({ role: 'admin', status: 'active' });
 }
+
+/**
+ * The accounts behind a page of rows, in one query.
+ *
+ * Every admin list shows who something belongs to — the author of a post, the
+ * applicant behind an application — and doing that with a lookup per row is the
+ * classic N+1. One `$in` on the `_id` index answers a whole page instead. Ids that
+ * match nothing are simply absent from the result: an account can be gone while
+ * the post it wrote is still there.
+ */
+export function findUsersByIds(ids: Array<string | ObjectId>): Promise<User[]> {
+  if (ids.length === 0) return Promise.resolve([]);
+
+  return usersCollection()
+    .find<User>({ _id: { $in: ids.map(toObjectId) } }, { projection: WITHOUT_PASSWORD })
+    .toArray();
+}

@@ -3,6 +3,7 @@ export {
   findUserByEmail,
   findUserById,
   findUserByProviderId,
+  findUsersByIds,
   findUserWithPasswordByEmail,
   insertUser,
   updateUser,

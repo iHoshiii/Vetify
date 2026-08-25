@@ -16,11 +16,22 @@ export { blogAttrsSchema, type BlogAttrs } from './schema';
 
 export { SLUG_FALLBACK, SLUG_MAX_LENGTH, slugify } from './slug';
 
-export { toBlogPage, toBlogSummary, toPublicBlog } from './transform';
+export {
+  toAdminBlogDetail,
+  toAdminBlogPage,
+  toAdminBlogSummary,
+  toBlogPage,
+  toBlogSummary,
+  toPublicBlog,
+} from './transform';
 
 export {
   BLOG_PUBLIC_STATUSES,
   BLOG_STATUSES,
+  type AdminBlogAuthor,
+  type AdminBlogDetail,
+  type AdminBlogPage,
+  type AdminBlogSummary,
   type BlogDocument,
   type BlogPage,
   type BlogStatus,
