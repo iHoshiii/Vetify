@@ -40,10 +40,16 @@ export {
   AUDIT_LOG_INDEXES,
   AUDIT_TARGET_TYPES,
   auditLogsCollection,
+  findAuditEntries,
   recordAudit,
+  toAuditEntry,
+  toAuditPage,
   type AuditAction,
+  type AuditEntry,
   type AuditLogDocument,
+  type AuditPage,
   type AuditTargetType,
+  type FindAuditOptions,
   type RecordAuditInput,
 } from './audit-log';
 

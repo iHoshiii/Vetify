@@ -42,6 +42,34 @@ export type AuditLogDocument = {
 };
 
 /**
+ * One entry as the audit screen reads it.
+ *
+ * Nothing is joined to produce this: the actor's email and the target's
+ * identifying detail were copied into the row when it was written, precisely so
+ * an entry about a deleted account still says whose account it was.
+ */
+export type AuditEntry = {
+  id: string;
+  actor: string | null;
+  actorEmail: string | null;
+  action: AuditAction;
+  targetType: AuditTargetType;
+  targetId: string;
+  reason: string | null;
+  metadata: Record<string, unknown>;
+  ip: string | null;
+  createdAt: string;
+};
+
+export type AuditPage = {
+  items: AuditEntry[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
+
+/**
  * No TTL here, unlike the activity events. Accountability records are the one
  * thing that must outlive a retention window: the value of "who removed this
  * account" is highest long after everyone has forgotten.

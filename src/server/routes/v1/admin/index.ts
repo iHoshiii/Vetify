@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { optionalAuth } from '../../../middleware/optionalAuth';
 import { requireAdmin } from '../../../middleware/requireAuth';
 import { adminLimiter } from '../../../middleware/security';
+import auditRoute from './audit.route';
 import blogsRoute from './blogs.route';
 import professionalsRoute from './professionals.route';
 import usersRoute from './users.route';
@@ -24,6 +25,7 @@ const router = Router();
  */
 router.use(adminLimiter, optionalAuth, requireAdmin);
 
+router.use('/audit', auditRoute);
 router.use('/blogs', blogsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/users', usersRoute);
