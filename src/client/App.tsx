@@ -17,6 +17,7 @@ import MapPage from '@/pages/map/map-page';
 import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
+import ProfessionalApplyPage from '@/pages/professionals/apply-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -66,6 +67,14 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
+        <Route
+          path="professionals/apply"
+          element={
+            <RequireAuth>
+              <ProfessionalApplyPage />
+            </RequireAuth>
+          }
+        />
         <Route path="services" element={<ServicesPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />
