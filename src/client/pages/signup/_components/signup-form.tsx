@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Button from '@/components/ui/Button';
@@ -7,8 +7,8 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { signupWithEmail } from '@/lib/auth';
 import { signupSchema } from '@shared/schemas';
 
-import PasswordStrengthMeter, { evaluatePasswordStrength } from './password-strength';
-import type { SignupFormErrors } from '@/types/signup';
+import PasswordStrengthMeter, { NO_PASSWORD, evaluatePasswordStrength } from './password-strength';
+import type { PasswordStrength, SignupFormErrors } from '@/types/signup';
 
 export default function SignupForm() {
   const [name, setName] = useState('');
@@ -19,6 +19,7 @@ export default function SignupForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState<SignupFormErrors>({});
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>(NO_PASSWORD);
   const navigate = useNavigate();
   const { setSession } = useAuth();
 
@@ -57,10 +58,25 @@ export default function SignupForm() {
     }
   };
 
-  const passwordStrength = useMemo(
-    () => evaluatePasswordStrength(password, email, name),
-    [password, email, name]
-  );
+  /**
+   * The reading, recomputed as they type.
+   *
+   * An effect rather than a memo because zxcvbn arrives over the network the first
+   * time it is needed. `stale` drops a result that came back after the next
+   * keystroke had already asked for another one — without it, a slow first load
+   * could paint a verdict about a password that has since changed.
+   */
+  useEffect(() => {
+    let stale = false;
+
+    void evaluatePasswordStrength(password, email, name).then((next) => {
+      if (!stale) setPasswordStrength(next);
+    });
+
+    return () => {
+      stale = true;
+    };
+  }, [password, email, name]);
 
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-4 animate-slideUp delay-200">
