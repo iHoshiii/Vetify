@@ -37,26 +37,30 @@ import TermsPage from '@/pages/terms/terms-page';
 export default function App() {
   return (
     <Routes>
+      {/* The only nested branch in the table, and the only one outside the public
+          shell. The console keeps its own sidebar across every section, and the
+          gate wraps the layout so a child route cannot be reached without passing
+          it. Sitting outside RootLayout is what keeps the marketing header and
+          the floating settings tray off an administrative page — AdminLayout
+          brings the chrome a console actually needs instead. */}
+      <Route
+        path="admin"
+        element={
+          <RequireRole roles={['admin']}>
+            <AdminLayout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="professionals" element={<AdminProfessionalsPage />} />
+        <Route path="users" element={<AdminUsersPage />} />
+        <Route path="blogs" element={<AdminBlogsPage />} />
+        <Route path="audit" element={<AdminAuditPage />} />
+      </Route>
+
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
-        {/* The only nested branch in the table: the console keeps its own sidebar
-            across every section, and the gate wraps the layout so a child route
-            cannot be reached without passing it. */}
-        <Route
-          path="admin"
-          element={
-            <RequireRole roles={['admin']}>
-              <AdminLayout />
-            </RequireRole>
-          }
-        >
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="professionals" element={<AdminProfessionalsPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="blogs" element={<AdminBlogsPage />} />
-          <Route path="audit" element={<AdminAuditPage />} />
-        </Route>
         <Route path="anatomy" element={<AnatomyPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />

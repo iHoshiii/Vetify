@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { refreshSession } from '@/lib/auth';
+import { landingFor, refreshSession } from '@/lib/auth';
 
 /**
  * Landing spot for the OAuth callback. The server has already set the refresh
@@ -23,7 +23,7 @@ export default function AuthCallbackPage() {
     refreshSession()
       .then((session) => {
         setSession(session);
-        navigate('/', { replace: true });
+        navigate(landingFor(session.user), { replace: true });
       })
       .catch(() => {
         setFailed(true);
