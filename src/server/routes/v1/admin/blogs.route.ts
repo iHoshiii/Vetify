@@ -30,13 +30,19 @@ import { adminOf, ipOf } from './shared';
 const router = Router();
 
 /**
- * Last touched first, which is not the feed's order.
+ * Worst verdict first, then last touched.
  *
  * The feed sorts by `publishedAt`, and the rows a moderator came here for — the
  * drafts, the takedowns — do not have one. `updatedAt` is the only field every
- * status shares, and it puts the post somebody just acted on at the top.
+ * status shares, so it is the tie-break, and it puts the post somebody just acted
+ * on at the top of everything that is not waiting on them.
+ *
+ * The severity in front of it is what makes this a queue rather than a list. A
+ * descending sort puts missing values last, so a post the screen flagged floats
+ * above the ones it passed and the ones it never saw, without a computed field or
+ * a second request to find them.
  */
-const MODERATION_SORT: Sort = { updatedAt: -1 };
+const MODERATION_SORT: Sort = { 'moderation.severity': -1, updatedAt: -1 };
 
 /**
  * The authors of these posts, by id.
@@ -166,5 +172,18 @@ router.patch('/:id/remove', validate(blogRemoveSchema), decision('removed'));
  * draft if it had not, so restoring a taken-down draft does not publish it.
  */
 router.patch('/:id/restore', validate(blogHideSchema), decision('restored'));
+
+/**
+ * PATCH /api/v1/admin/blogs/:id/approve
+ *
+ * Clears a hold the automatic screen put on, which publishes the post: being
+ * flagged is what stopped it, and stopping it was the only thing the screen did.
+ * A reason is optional — overruling a filter is not a decision anyone has to
+ * defend, and the verdict it overruled is already on the record beside it.
+ *
+ * Refused with a 409 on anything not flagged, so this cannot become a way to
+ * publish a draft that its author has not finished.
+ */
+router.patch('/:id/approve', validate(blogHideSchema), decision('approved'));
 
 export default router;

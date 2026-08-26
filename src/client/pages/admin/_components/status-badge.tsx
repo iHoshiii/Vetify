@@ -16,6 +16,7 @@ const TONE: Record<string, string> = {
   verified: 'bg-emerald-100 text-emerald-900',
   // Waiting on somebody.
   pending: 'bg-amber-100 text-amber-900',
+  flagged: 'bg-amber-100 text-amber-900',
   draft: 'bg-slate-100 text-slate-700',
   // Acted on, reversibly.
   hidden: 'bg-orange-100 text-orange-900',

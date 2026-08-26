@@ -36,7 +36,7 @@ export function useAdminBlog(id: string | undefined) {
 }
 
 /**
- * Hide, take down, or restore.
+ * Approve, hide, take down, or restore.
  *
  * The public feed is invalidated too, not just the admin list: a post that was
  * taken down has to leave /blogs, and the visitor cache does not know that
@@ -49,7 +49,7 @@ export function useModerateBlog() {
   return useMutation<
     BlogDecisionResult,
     Error,
-    { id: string; decision: 'hide' | 'remove' | 'restore'; reason?: string }
+    { id: string; decision: 'approve' | 'hide' | 'remove' | 'restore'; reason?: string }
   >({
     mutationFn: moderateBlog,
     onSuccess: (result) => {

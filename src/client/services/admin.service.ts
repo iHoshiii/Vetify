@@ -6,6 +6,8 @@ import type {
   BlogStatus,
   BreakdownDimension,
   MetricSeries,
+  ModerationCategory,
+  ModerationOutcome,
   ProfessionalStatus,
   UserRole,
   UserStatus,
@@ -148,6 +150,25 @@ export function updateUserStatus(input: {
 export type AdminBlogAuthor = { id: string; email: string; name: string | null };
 
 /**
+ * What the automatic screen made of a post, and whether a human has answered it.
+ *
+ * `severity` is what orders the queue, so the server sorts on it and this is only
+ * for showing the number. `reviewedAt` is null until somebody has decided either
+ * way — approving and taking down both count as deciding.
+ */
+export type AdminBlogModeration = {
+  outcome: ModerationOutcome;
+  categories: ModerationCategory[];
+  severity: number;
+  terms: string[];
+  notes: string | null;
+  model: string | null;
+  checkedAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+};
+
+/**
  * A post with its moderation trail and the account behind it.
  *
  * `author` is null when that account is gone — a real state rather than an error,
@@ -158,6 +179,8 @@ export type AdminBlogSummary = BlogSummary & {
   removedBy: string | null;
   removedReason: string | null;
   removedAt: string | null;
+  /** Null on a post the screen never saw, which is not the same as a clean pass. */
+  moderation: AdminBlogModeration | null;
 };
 
 /** The same with the body: nobody can judge a post they cannot read. */
@@ -188,16 +211,16 @@ export function getAdminBlog(id: string, signal?: AbortSignal): Promise<AdminBlo
 }
 
 /**
- * Hide, take down, or put back.
+ * Approve, hide, take down, or put back.
  *
- * One function for the three because they are one decision with three verdicts,
- * and the server treats them the same way — same audit entry, same guards. The
- * reason is optional in the type and required by the server for a takedown, which
- * is where that rule belongs: it is the string somebody will be asked to defend.
+ * One function for the four because they are one decision with four verdicts, and
+ * the server treats them the same way — same audit entry, same guards. The reason
+ * is optional in the type and required by the server for a takedown, which is
+ * where that rule belongs: it is the string somebody will be asked to defend.
  */
 export function moderateBlog(input: {
   id: string;
-  decision: 'hide' | 'remove' | 'restore';
+  decision: 'approve' | 'hide' | 'remove' | 'restore';
   reason?: string;
 }): Promise<BlogDecisionResult> {
   return apiFetch(`/admin/blogs/${encodeURIComponent(input.id)}/${input.decision}`, {
@@ -318,6 +341,8 @@ export type MetricsOverview = {
     pendingApplications: number;
     blogs: number;
     publishedBlogs: number;
+    /** Held by the screen, waiting on a human. The one blog figure that is a queue. */
+    flaggedBlogs: number;
     moderatedBlogs: number;
   };
   trend: Record<MetricSeries, MetricTrend>;

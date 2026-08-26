@@ -52,6 +52,8 @@ export type MetricsOverview = {
     pendingApplications: number;
     blogs: number;
     publishedBlogs: number;
+    /** Held by the screen, waiting on a human. The one blog figure that is a queue. */
+    flaggedBlogs: number;
     moderatedBlogs: number;
   };
   trend: Record<MetricSeries, MetricTrend>;
@@ -254,6 +256,9 @@ export async function metricsOverview(days: number, now = new Date()): Promise<M
         pendingApplications: applications.pending ?? 0,
         blogs: sum(blogs),
         publishedBlogs: blogs.published ?? 0,
+        flaggedBlogs: blogs.flagged ?? 0,
+        // Hidden and removed only: a flagged post is held rather than moderated,
+        // since nobody has decided anything about it yet.
         moderatedBlogs: (blogs.hidden ?? 0) + (blogs.removed ?? 0),
       },
       trend,

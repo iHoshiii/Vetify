@@ -114,6 +114,7 @@ export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
  * 'blog.removed', and neither would appear under the other's filter.
  */
 export const AUDIT_ACTIONS = [
+  'blog.approved',
   'blog.hidden',
   'blog.removed',
   'blog.restored',

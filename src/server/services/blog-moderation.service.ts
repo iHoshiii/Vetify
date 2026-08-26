@@ -16,13 +16,16 @@ import { AppError } from '../utils/AppError';
  * What a moderator can do to a post.
  *
  * 'hidden' is a reversible "not right now". 'removed' is a takedown that keeps the
- * row so the reason and the reviewer survive. 'restored' undoes either. Nothing
- * here deletes anything — a false positive has to be recoverable, and an
- * accountable takedown needs something left to point at.
+ * row so the reason and the reviewer survive. 'restored' undoes either.
+ * 'approved' clears a hold the automatic screen put on, which is the one decision
+ * that only makes sense from one starting status. Nothing here deletes anything -
+ * a false positive has to be recoverable, and an accountable takedown needs
+ * something left to point at.
  */
-export type BlogModerationDecision = 'hidden' | 'removed' | 'restored';
+export type BlogModerationDecision = 'approved' | 'hidden' | 'removed' | 'restored';
 
 const AUDIT_ACTION: Record<BlogModerationDecision, AuditAction> = {
+  approved: 'blog.approved',
   hidden: 'blog.hidden',
   removed: 'blog.removed',
   restored: 'blog.restored',
@@ -57,7 +60,11 @@ function restoredStatus(blog: BlogDocument): BlogStatus {
 }
 
 function nextStatus(decision: BlogModerationDecision, blog: BlogDocument): BlogStatus {
-  return decision === 'restored' ? restoredStatus(blog) : decision;
+  if (decision === 'restored') return restoredStatus(blog);
+  // A post only reaches 'flagged' by being screened on its way to the feed, so
+  // clearing the hold means finishing the journey it was already on.
+  if (decision === 'approved') return 'published';
+  return decision;
 }
 
 /**
@@ -89,6 +96,13 @@ export async function moderateBlog(input: ModerateBlogInput): Promise<ModerateBl
     throw AppError.conflict('That post is not under moderation', 'not-under-moderation');
   }
 
+  // Approving is specifically the answer to a hold, not a way to publish anything
+  // an admin happens to be looking at. A draft is published through the author's
+  // own route; a takedown is undone with a restore.
+  if (decision === 'approved' && current.status !== 'flagged') {
+    throw AppError.conflict('That post is not waiting on a review', 'not-flagged');
+  }
+
   const statusFrom = current.status;
   const statusTo = nextStatus(decision, current);
 
@@ -111,6 +125,21 @@ export async function moderateBlog(input: ModerateBlogInput): Promise<ModerateBl
     patch.removedBy = null;
     patch.removedReason = null;
     patch.removedAt = null;
+  }
+
+  /**
+   * Any of these decisions is the human answer the verdict was waiting for, so all
+   * of them stamp the review — a post taken down by an admin has been reviewed just
+   * as surely as one they cleared. The verdict itself is left exactly as it was
+   * found: it records what the screen saw, and rewriting it would lose the reason
+   * this post ever reached a queue.
+   */
+  if (current.moderation && !current.moderation.reviewedBy) {
+    patch.moderation = {
+      ...current.moderation,
+      reviewedBy: moderator._id,
+      reviewedAt: new Date(),
+    };
   }
 
   const blog = await updateBlog(current._id, patch);

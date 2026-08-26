@@ -10,6 +10,7 @@ import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar
 
 /** Past tense, because that is what an audit entry is: something already done. */
 const ACTION_LABEL: Record<AuditAction, string> = {
+  'blog.approved': 'Cleared a held post',
   'blog.hidden': 'Hid a post',
   'blog.removed': 'Took a post down',
   'blog.restored': 'Restored a post',
