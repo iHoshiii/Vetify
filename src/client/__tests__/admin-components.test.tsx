@@ -7,6 +7,7 @@ import { BreakdownChart } from '../pages/admin/_components/breakdown-chart';
 import { ConfirmDialog } from '../pages/admin/_components/confirm-dialog';
 import { DataTable, type Column } from '../pages/admin/_components/data-table';
 import { MetricChart } from '../pages/admin/_components/metric-chart';
+import { ModerationNote } from '../pages/admin/_components/moderation-note';
 import { StatCard } from '../pages/admin/_components/stat-card';
 
 /**
@@ -271,5 +272,71 @@ describe('ConfirmDialog', () => {
     render(dialog({ open: false }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('ModerationNote', () => {
+  const verdict = {
+    outcome: 'flagged' as const,
+    categories: ['slur' as const],
+    severity: 0.92,
+    terms: ['a blocked term'],
+    notes: 'Matched a blocked term.',
+    model: null,
+    checkedAt: '2026-08-26T09:00:00.000Z',
+    reviewedBy: null,
+    reviewedAt: null,
+  };
+
+  it('renders nothing for a post that was never screened', () => {
+    const { container } = render(<ModerationNote moderation={null} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders nothing for a post the screen passed', () => {
+    const { container } = render(
+      <ModerationNote moderation={{ ...verdict, outcome: 'clean', categories: [], terms: [] }} />
+    );
+
+    // A clean verdict is not news on a row. Only the ones asking for something are.
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('names the category, the confidence and the term that matched', () => {
+    render(<ModerationNote moderation={verdict} />);
+
+    expect(screen.getByText('Flagged')).toBeInTheDocument();
+    expect(screen.getByText('slur')).toBeInTheDocument();
+    expect(screen.getByText('92%')).toBeInTheDocument();
+    // The word itself, because that is what a false positive is judged from.
+    expect(screen.getByText('a blocked term')).toBeInTheDocument();
+  });
+
+  it('says a post could not be checked rather than dressing it as a violation', () => {
+    render(
+      <ModerationNote
+        moderation={{
+          ...verdict,
+          outcome: 'unavailable',
+          categories: [],
+          severity: 0,
+          terms: [],
+          notes: 'The automatic check could not be completed.',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Not screened')).toBeInTheDocument();
+    // No percentage: there is no confidence in a check that did not happen.
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('drops the request for attention once somebody has decided', () => {
+    render(<ModerationNote moderation={{ ...verdict, reviewedAt: '2026-08-26T10:00:00.000Z' }} />);
+
+    // Still on the row — it is why the post was ever in the queue — but no longer
+    // asking for anything.
+    expect(screen.getByText(/reviewed/)).toBeInTheDocument();
   });
 });

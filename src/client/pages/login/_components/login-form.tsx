@@ -3,7 +3,7 @@ import Input from '@/components/ui/Input';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { loginSchema } from '@shared/schemas';
 import type { LoginFormErrors } from '@/types/login';
-import { loginWithEmail } from '@/lib/auth';
+import { landingFor, loginWithEmail } from '@/lib/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
@@ -43,8 +43,9 @@ export default function LoginForm() {
       // Push the session into the provider rather than relying on the write to
       // localStorage: the navbar renders off context, and nothing re-reads
       // storage on its own.
-      setSession(await loginWithEmail(parsed.data.email, parsed.data.password));
-      navigate(from ?? '/', { replace: true });
+      const session = await loginWithEmail(parsed.data.email, parsed.data.password);
+      setSession(session);
+      navigate(landingFor(session.user, from), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {

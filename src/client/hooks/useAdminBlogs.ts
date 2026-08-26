@@ -2,11 +2,13 @@ import {
   getAdminBlog,
   listAdminBlogs,
   moderateBlog,
+  purgeBlog,
   type AdminBlogDetail,
   type AdminBlogListParams,
   type AdminBlogSummary,
   type AdminPage,
   type BlogDecisionResult,
+  type PurgeBlogResult,
 } from '@/services/admin.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -36,7 +38,7 @@ export function useAdminBlog(id: string | undefined) {
 }
 
 /**
- * Hide, take down, or restore.
+ * Approve, hide, take down, or restore.
  *
  * The public feed is invalidated too, not just the admin list: a post that was
  * taken down has to leave /blogs, and the visitor cache does not know that
@@ -49,11 +51,32 @@ export function useModerateBlog() {
   return useMutation<
     BlogDecisionResult,
     Error,
-    { id: string; decision: 'hide' | 'remove' | 'restore'; reason?: string }
+    { id: string; decision: 'approve' | 'hide' | 'remove' | 'restore'; reason?: string }
   >({
     mutationFn: moderateBlog,
     onSuccess: (result) => {
       queryClient.setQueryData(adminKeys.blog(result.blog.id), result.blog);
+      invalidateAdmin(queryClient, adminKeys.blogs());
+      void queryClient.invalidateQueries({ queryKey: blogKeys.all });
+    },
+  });
+}
+
+/**
+ * Deletes a post for good.
+ *
+ * The row is dropped from the cache rather than invalidated: there is nothing left
+ * to refetch, and leaving the key to be re-requested would spend a round trip
+ * learning that. The public feed is invalidated all the same — a post that had been
+ * taken down was already absent from it, but the count behind the pager was not.
+ */
+export function usePurgeBlog() {
+  const queryClient = useQueryClient();
+
+  return useMutation<PurgeBlogResult, Error, { id: string; reason: string }>({
+    mutationFn: purgeBlog,
+    onSuccess: (result) => {
+      queryClient.removeQueries({ queryKey: adminKeys.blog(result.id) });
       invalidateAdmin(queryClient, adminKeys.blogs());
       void queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },

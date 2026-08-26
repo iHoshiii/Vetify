@@ -1,3 +1,4 @@
+import { useMetricsBreakdown, useMetricsTimeseries } from '@/hooks/useAdminMetrics';
 import { pick, useAdminListParams } from '@/hooks/useAdminListParams';
 import { useAdminProfessionals, useReviewProfessional } from '@/hooks/useAdminProfessionals';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -6,11 +7,14 @@ import { PROFESSIONAL_STATUSES } from '@shared/schemas';
 import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 
-import { ConfirmDialog, type ReasonMode } from './_components/confirm-dialog';
-import { DataTable, type Column } from './_components/data-table';
-import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar';
-import { RoleBadge } from './_components/role-badge';
-import { StatusBadge } from './_components/status-badge';
+import { BreakdownChart } from '../_components/breakdown-chart';
+import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
+import { DataTable, type Column } from '../_components/data-table';
+import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
+import { MetricChart } from '../_components/metric-chart';
+import { RoleBadge } from '../_components/role-badge';
+import { StatCard, StatCardSkeleton } from '../_components/stat-card';
+import { StatusBadge } from '../_components/status-badge';
 
 type Decision = 'verify' | 'reject' | 'suspend';
 
@@ -18,6 +22,9 @@ type Pending = { application: AdminProfessional; decision: Decision };
 
 const ACTION =
   'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
+
+/** The window the applications line covers, matching the accounts tabs. */
+const WINDOW_DAYS = 30;
 
 /**
  * Turning somebody down, or pulling a live listing, is the record they will ask
@@ -128,7 +135,7 @@ function Submission({ application }: { application: AdminProfessional }) {
  * role. The reply carries both, and the line under the table says what moved, so
  * "verified" never appears next to an account still reading 'user'.
  */
-export default function AdminProfessionalsPage() {
+export default function ApplicationsTab() {
   useDocumentTitle('Admin applications', 'Verify or turn down professional applications.');
 
   const { page, get, set } = useAdminListParams();
@@ -142,6 +149,13 @@ export default function AdminProfessionalsPage() {
 
   const list = useAdminProfessionals(params);
   const review = useReviewProfessional();
+
+  const statuses = useMetricsBreakdown('professionalStatus');
+  const filed = useMetricsTimeseries('applications', WINDOW_DAYS);
+
+  function counted(status: string): number {
+    return statuses.data?.slices.find((slice) => slice.label === status)?.count ?? 0;
+  }
 
   function open(next: Pending): void {
     review.reset();
@@ -214,12 +228,41 @@ export default function AdminProfessionalsPage() {
   ];
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-black tracking-tight">Applications</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Open the submission and check the licence against the issuing authority before verifying.
-        </p>
+    <div className="space-y-6">
+      <p className="text-sm text-slate-600">
+        Open the submission and check the licence against the issuing authority before verifying.
+      </p>
+
+      <dl
+        className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${
+          statuses.isFetching ? 'opacity-60' : ''
+        }`}
+      >
+        {statuses.isPending || !statuses.data
+          ? PROFESSIONAL_STATUSES.map((status) => <StatCardSkeleton key={status} />)
+          : PROFESSIONAL_STATUSES.map((status) => (
+              <StatCard key={status} label={status} value={counted(status)} />
+            ))}
+      </dl>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BreakdownChart
+          label="Applications by status"
+          variant="bar"
+          slices={statuses.data?.slices ?? []}
+          total={statuses.data?.total ?? 0}
+          isPending={statuses.isPending}
+          error={statuses.isError ? messageOf(statuses.error) : null}
+          onRetry={() => void statuses.refetch()}
+        />
+        <MetricChart
+          label={`Applications filed, last ${WINDOW_DAYS} days`}
+          points={filed.data?.points ?? []}
+          isPending={filed.isPending}
+          isFetching={filed.isFetching}
+          error={filed.isError ? messageOf(filed.error) : null}
+          onRetry={() => void filed.refetch()}
+        />
       </div>
 
       <ListToolbar>

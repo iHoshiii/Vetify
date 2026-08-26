@@ -6,7 +6,7 @@ import {
   type MetricsOverview,
   type MetricsTimeseries,
 } from '@/services/admin.service';
-import type { BreakdownDimension, MetricSeries } from '@shared/schemas';
+import type { BreakdownDimension, MetricSeries, UserRole } from '@shared/schemas';
 import { useQuery } from '@tanstack/react-query';
 
 import { METRICS_STALE_TIME, adminKeys, retryUnlessRefused } from './admin-keys';
@@ -38,11 +38,17 @@ export function useMetricsTimeseries(metric: MetricSeries, days?: number) {
   });
 }
 
-/** One breakdown chart. No window: this is the shape of what exists. */
-export function useMetricsBreakdown(dimension: BreakdownDimension) {
+/**
+ * One breakdown chart. No window: this is the shape of what exists.
+ *
+ * `role` narrows the account dimensions to a single role, which is what the user
+ * management tabs need — a status split of every account is a different number
+ * from a status split of the role in the table underneath it.
+ */
+export function useMetricsBreakdown(dimension: BreakdownDimension, role?: UserRole) {
   return useQuery<MetricsBreakdown>({
-    queryKey: adminKeys.breakdown(dimension),
-    queryFn: ({ signal }) => getMetricsBreakdown(dimension, signal),
+    queryKey: adminKeys.breakdown(dimension, role),
+    queryFn: ({ signal }) => getMetricsBreakdown(dimension, role, signal),
     staleTime: METRICS_STALE_TIME,
     retry: retryUnlessRefused,
   });

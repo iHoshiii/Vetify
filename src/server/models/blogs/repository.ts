@@ -60,6 +60,9 @@ export async function insertBlog(attrs: BlogAttrs): Promise<BlogDocument> {
       removedBy: null,
       removedReason: null,
       removedAt: null,
+      // Null unless the caller screened it. A draft is never screened, so a draft
+      // is not an unchecked post so much as a post there was nothing to check.
+      moderation: parsed.moderation ?? null,
       // A post created straight into 'published' is live now; a draft has no
       // publication date until somebody publishes it.
       publishedAt: parsed.status === 'published' ? now : null,
@@ -166,6 +169,7 @@ export type BlogPatch = Partial<
     | 'removedBy'
     | 'removedReason'
     | 'removedAt'
+    | 'moderation'
   >
 >;
 
@@ -196,6 +200,20 @@ export async function updateBlog(
     { $set: set },
     { returnDocument: 'after' }
   );
+}
+
+/**
+ * Removes a post for good, and says whether there was one to remove.
+ *
+ * The only deleteOne in this file, and the only caller is the purge — which
+ * refuses to run on anything that has not already been taken down and reviewed.
+ * Everything else about moderation is a status change, precisely so a false
+ * positive stays recoverable; this is the end of the line somebody has to walk to
+ * on purpose.
+ */
+export async function deleteBlog(id: string | ObjectId): Promise<boolean> {
+  const result = await blogsCollection().deleteOne({ _id: toObjectId(id) });
+  return result.deletedCount === 1;
 }
 
 /**
