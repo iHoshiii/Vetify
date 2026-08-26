@@ -35,10 +35,13 @@ const envSchema = z.object({
 
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
 
-  // The model that screens a post before it can go live. Separate from the chat
-  // model and deliberately a cheap fast one: it runs on the publish path, it
-  // answers a fixed JSON schema, and it is asked to classify rather than to write.
-  GEMINI_MODERATION_MODEL: z.string().min(1).default('gemini-2.5-flash'),
+  // The model that screens a post before it can go live. Its own setting rather
+  // than the chat model's, because the two are chosen for different reasons: this
+  // one runs on the publish path, answers a fixed JSON schema, and classifies
+  // rather than writes. The default matches what chat asks for all the same — this
+  // is the judgement that decides whether readers see a post, so it should not be
+  // made by an older model than the one answering questions about cat food.
+  GEMINI_MODERATION_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   JWT_SECRET_ACCESS: z.string().min(32, 'JWT_SECRET must be set and at least 32 characters'),
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
