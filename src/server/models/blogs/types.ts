@@ -1,4 +1,9 @@
-import { BLOG_STATUSES, type BlogStatus } from '@shared/schemas';
+import {
+  BLOG_STATUSES,
+  type BlogStatus,
+  type ModerationCategory,
+  type ModerationOutcome,
+} from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
 /**
@@ -15,6 +20,35 @@ export type { BlogStatus };
 
 /** The statuses a reader may see. Every public read filters on exactly this. */
 export const BLOG_PUBLIC_STATUSES: BlogStatus[] = ['published'];
+
+/**
+ * The automatic screen's verdict on a post, as the document holds it.
+ *
+ * Written whenever a post is about to become publicly readable, and left alone
+ * afterwards: it is a record of what the check saw at that moment, not a live
+ * opinion. `reviewedBy` and `reviewedAt` stay null until a human either clears the
+ * post or upholds the hold, which is what makes "screened but nobody has looked"
+ * distinguishable from "screened and decided".
+ *
+ * Null on a post that has never been screened — every draft, and every post that
+ * predates the screen. Unscreened is deliberately not flagged: those posts were
+ * published under the rules that existed then, and a backfill that swept them all
+ * into the queue would bury the posts that actually need a decision.
+ */
+export type BlogModeration = {
+  outcome: ModerationOutcome;
+  categories: ModerationCategory[];
+  /** 0 to 1, worst category wins. This is what orders the review queue. */
+  severity: number;
+  /** The literal terms a wordlist matched, so a reviewer sees the trigger. */
+  terms: string[];
+  notes: string | null;
+  /** Which model answered, or null when the verdict came from the wordlist alone. */
+  model: string | null;
+  checkedAt: Date;
+  reviewedBy: ObjectId | null;
+  reviewedAt: Date | null;
+};
 
 // blog document/info stored in the database
 export type BlogDocument = {
@@ -36,6 +70,8 @@ export type BlogDocument = {
   removedBy: ObjectId | null;
   removedReason: string | null;
   removedAt: Date | null;
+  /** The automatic screen's verdict, or null on a post it never looked at. */
+  moderation: BlogModeration | null;
   /**
    * When it first went live, not when it last changed. Fixing a typo on a
    * published post should not push it back to the top of the feed.
@@ -101,11 +137,28 @@ export type AdminBlogAuthor = {
  * `author` is null when the account has since been deleted, which is a real state
  * and not an error: the post outlives the account.
  */
+/** The verdict as the dashboard reads it: dates and ids as strings, like every
+ * other shape a route answers with. */
+export type AdminBlogModeration = Omit<
+  BlogModeration,
+  'checkedAt' | 'reviewedBy' | 'reviewedAt'
+> & {
+  checkedAt: string;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+};
+
 export type AdminBlogSummary = BlogSummary & {
   author: AdminBlogAuthor | null;
   removedBy: string | null;
   removedReason: string | null;
   removedAt: string | null;
+  /**
+   * Why this row is in the queue, and how badly. Included here and nowhere public:
+   * telling an author which term tripped the filter is a lesson in getting the
+   * next one through.
+   */
+  moderation: AdminBlogModeration | null;
 };
 
 /** The same, with the body, for the review screen. Nobody can judge a post they

@@ -21,6 +21,11 @@ export const BLOG_INDEXES: IndexDescription[] = [
   // what is live: a draft and a takedown both have to appear in it, and neither
   // has a publishedAt to order by.
   { key: { updatedAt: -1 } },
+  // The review queue's order: worst verdict first, then last touched. A
+  // descending sort puts missing values last, so this one index is the whole
+  // priority rule — screened-and-flagged floats, clean and never-screened sink,
+  // and no computed field is needed to say so.
+  { key: { 'moderation.severity': -1, updatedAt: -1 } },
   // Admin search. Only one text index is allowed per collection, so all three
   // searchable fields share it; the weights decide which match ranks higher.
   {

@@ -114,7 +114,9 @@ export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
  * 'blog.removed', and neither would appear under the other's filter.
  */
 export const AUDIT_ACTIONS = [
+  'blog.approved',
   'blog.hidden',
+  'blog.purged',
   'blog.removed',
   'blog.restored',
   'professional.rejected',
@@ -124,6 +126,36 @@ export const AUDIT_ACTIONS = [
   'user.status.changed',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+/**
+ * What an automatic screening verdict can be about.
+ *
+ * Shared for the same reason the audit actions are: the queue renders these
+ * strings as chips, so the list the server may write and the list the dashboard
+ * can label have to be one list. Named for what a reviewer would say out loud
+ * rather than for any provider's taxonomy.
+ */
+export const MODERATION_CATEGORIES = [
+  'nudity',
+  'sexual',
+  'slur',
+  'hate',
+  'harassment',
+  'violence',
+  'self-harm',
+  'illegal',
+] as const;
+export type ModerationCategory = (typeof MODERATION_CATEGORIES)[number];
+
+/**
+ * Where a screened post ended up.
+ *
+ * 'unavailable' is not a pass: the check could not be completed — an unreachable
+ * model, a cover image that would not load — and the post is held on that basis,
+ * because the alternative is publishing the one post nobody managed to look at.
+ */
+export const MODERATION_OUTCOMES = ['clean', 'flagged', 'unavailable'] as const;
+export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
 
 export const AUDIT_TARGET_TYPES = ['blog', 'professional', 'user'] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
@@ -145,8 +177,13 @@ export type BlogAuthorStatus = (typeof BLOG_AUTHOR_STATUSES)[number];
  * The full list is derived from the author's rather than written out again, which
  * is what makes the note above ("a deliberate subset") true by construction: a
  * status added here cannot go missing from one of the two lists.
+ *
+ * 'flagged' is where the automatic screen puts a post it will not let through:
+ * held out of the feed, waiting on a human. Distinct from 'hidden', which is an
+ * admin's own reversible "not right now" — the difference is who decided, and only
+ * one of them has a verdict attached explaining why.
  */
-export const BLOG_MODERATION_STATUSES = ['hidden', 'removed'] as const;
+export const BLOG_MODERATION_STATUSES = ['flagged', 'hidden', 'removed'] as const;
 export const BLOG_STATUSES = [...BLOG_AUTHOR_STATUSES, ...BLOG_MODERATION_STATUSES] as const;
 export type BlogStatus = (typeof BLOG_STATUSES)[number];
 
@@ -412,6 +449,15 @@ export const adminBlogListQuerySchema = z.object({
 export const blogHideSchema = z.object({ reason: moderationNote });
 export const blogRemoveSchema = z.object({ reason: moderationReason });
 
+/**
+ * The permanent one.
+ *
+ * Identical in shape to a takedown's and deliberately its own name: this is the
+ * request that leaves nothing to restore, and a route mounting the wrong schema
+ * should read as wrong rather than as a synonym.
+ */
+export const blogPurgeSchema = z.object({ reason: moderationReason });
+
 /** Sort orders the user list offers. Email is there for the support case: someone
  * writes in, and you are looking for one address rather than browsing. */
 export const ADMIN_USER_SORTS = ['newest', 'oldest', 'email'] as const;
@@ -484,6 +530,20 @@ export const BREAKDOWN_DIMENSIONS = [
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];
 
 /**
+ * The three breakdowns counted from accounts, and so the only three a `role`
+ * filter says anything about: there is no role on a post or an application.
+ *
+ * `satisfies` rather than a bare literal, so this cannot drift into naming a
+ * dimension the list above does not have.
+ */
+export const USER_BREAKDOWN_DIMENSIONS = [
+  'provider',
+  'role',
+  'userStatus',
+] as const satisfies readonly BreakdownDimension[];
+export type UserBreakdownDimension = (typeof USER_BREAKDOWN_DIMENSIONS)[number];
+
+/**
  * How far back a chart may look. Bounded by how long raw events are kept: asking
  * for a year would draw a line that is honest for 90 days and flat zero before
  * it, which reads as "nothing happened" rather than "nothing is recorded".
@@ -503,9 +563,25 @@ export const metricsTimeseriesQuerySchema = z.object({
   days: daysField,
 });
 
-export const metricsBreakdownQuerySchema = z.object({
-  dimension: z.enum(BREAKDOWN_DIMENSIONS),
-});
+/**
+ * One breakdown chart, optionally narrowed to a single role.
+ *
+ * The role is what lets the user-management tabs say "suspended users" instead
+ * of "suspended accounts" — the unfiltered count is every account, which is a
+ * different question and the wrong one to print beside a list of one role. Sent
+ * with a dimension it cannot narrow it is refused rather than ignored: quietly
+ * dropping a filter answers a question nobody asked.
+ */
+export const metricsBreakdownQuerySchema = z
+  .object({
+    dimension: z.enum(BREAKDOWN_DIMENSIONS),
+    role: z.enum(USER_ROLES).optional(),
+  })
+  .refine(
+    (query) =>
+      !query.role || (USER_BREAKDOWN_DIMENSIONS as readonly string[]).includes(query.dimension),
+    { path: ['role'], message: 'A role only narrows the account breakdowns' }
+  );
 
 /** Post-parse admin queries: page, limit and days coerced from strings and
  * defaulted, so a handler reads numbers and never re-parses a param. */

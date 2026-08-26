@@ -10,7 +10,9 @@ import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar
 
 /** Past tense, because that is what an audit entry is: something already done. */
 const ACTION_LABEL: Record<AuditAction, string> = {
+  'blog.approved': 'Cleared a held post',
   'blog.hidden': 'Hid a post',
+  'blog.purged': 'Deleted a post for good',
   'blog.removed': 'Took a post down',
   'blog.restored': 'Restored a post',
   'professional.verified': 'Verified an application',
@@ -22,6 +24,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
 
 /** Rose for the ones that took something away. */
 const ACTION_TONE: Partial<Record<AuditAction, string>> = {
+  'blog.purged': 'text-rose-700',
   'blog.removed': 'text-rose-700',
   'blog.hidden': 'text-orange-700',
   'professional.rejected': 'text-rose-700',

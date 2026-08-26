@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
 import { RequireRole } from '@/components/providers/RequireRole';
@@ -8,8 +8,9 @@ import AdminLayout from '@/pages/admin/admin-layout';
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
-import AdminProfessionalsPage from '@/pages/admin/professionals-page';
-import AdminUsersPage from '@/pages/admin/users-page';
+import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
+import AdminApplicationsTab from '@/pages/admin/users/applications-tab';
+import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
 import BlogDetailPage from '@/pages/blogs/blog-detail-page';
@@ -37,26 +38,40 @@ import TermsPage from '@/pages/terms/terms-page';
 export default function App() {
   return (
     <Routes>
+      {/* The only nested branch in the table, and the only one outside the public
+          shell. The console keeps its own sidebar across every section, and the
+          gate wraps the layout so a child route cannot be reached without passing
+          it. Sitting outside RootLayout is what keeps the marketing header and
+          the floating settings tray off an administrative page — AdminLayout
+          brings the chrome a console actually needs instead. */}
+      <Route
+        path="admin"
+        element={
+          <RequireRole roles={['admin']}>
+            <AdminLayout />
+          </RequireRole>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        {/* Accounts, the professionals among them and the queue that grants the
+            role are one section with three tabs: the queue decides a role, the
+            role decides a listing, and the account underneath is what gets
+            suspended when any of it goes wrong. */}
+        <Route path="users" element={<AdminUsersLayout />}>
+          <Route index element={<AdminAccountsTab />} />
+          <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="applications" element={<AdminApplicationsTab />} />
+        </Route>
+        {/* Where the queue used to live. Kept as a redirect because it is a path
+            people have bookmarked and linked from the overview. */}
+        <Route path="professionals" element={<Navigate to="/admin/users/applications" replace />} />
+        <Route path="blogs" element={<AdminBlogsPage />} />
+        <Route path="audit" element={<AdminAuditPage />} />
+      </Route>
+
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
-        {/* The only nested branch in the table: the console keeps its own sidebar
-            across every section, and the gate wraps the layout so a child route
-            cannot be reached without passing it. */}
-        <Route
-          path="admin"
-          element={
-            <RequireRole roles={['admin']}>
-              <AdminLayout />
-            </RequireRole>
-          }
-        >
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="professionals" element={<AdminProfessionalsPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="blogs" element={<AdminBlogsPage />} />
-          <Route path="audit" element={<AdminAuditPage />} />
-        </Route>
         <Route path="anatomy" element={<AnatomyPage />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />

@@ -1,6 +1,11 @@
 import { apiFetch } from '@/services/api';
 
-import { writeAuthState, type AuthProviderName, type AuthSession } from './auth-storage';
+import {
+  writeAuthState,
+  type AuthProviderName,
+  type AuthSession,
+  type AuthUser,
+} from './auth-storage';
 
 // Storage lives in ./auth-storage so services/api can read the token without a
 // cycle. Re-exported here because everything already imports from '@/lib/auth'.
@@ -61,4 +66,20 @@ export async function logoutFromServer() {
   } finally {
     writeAuthState(null);
   }
+}
+
+/**
+ * Where a fresh session lands.
+ *
+ * `from` wins whenever a gate turned somebody away from a page they asked for.
+ * Failing that, an admin goes to the console and everybody else to the site: the
+ * console is its own shell now, and dropping an admin on the marketing homepage
+ * leaves them one more click from the only surface they signed in for.
+ *
+ * Not a permission. `RequireRole` and the server's re-read of the stored role
+ * decide what an admin may actually do; this only decides where they arrive.
+ */
+export function landingFor(user: AuthUser, from?: string | null): string {
+  if (from) return from;
+  return user.role === 'admin' ? '/admin' : '/';
 }

@@ -1,9 +1,11 @@
 import type {
   AdminBlogAuthor,
+  AdminBlogModeration,
   AdminBlogDetail,
   AdminBlogPage,
   AdminBlogSummary,
   BlogDocument,
+  BlogModeration,
   BlogPage,
   BlogSummary,
   PublicBlog,
@@ -71,6 +73,19 @@ export function toBlogPage(input: {
  * hands them over. That keeps the transform synchronous and keeps the public feed's
  * read — which needs none of this — unchanged.
  */
+/** The verdict with its dates as strings. Null stays null: a post nobody screened
+ * has no verdict, which is not the same as a clean one. */
+function toAdminBlogModeration(moderation: BlogModeration | null): AdminBlogModeration | null {
+  if (!moderation) return null;
+
+  return {
+    ...moderation,
+    checkedAt: moderation.checkedAt.toISOString(),
+    reviewedBy: moderation.reviewedBy?.toString() ?? null,
+    reviewedAt: moderation.reviewedAt?.toISOString() ?? null,
+  };
+}
+
 export function toAdminBlogSummary(
   blog: BlogDocument,
   author: AdminBlogAuthor | null
@@ -81,6 +96,7 @@ export function toAdminBlogSummary(
     removedBy: blog.removedBy?.toString() ?? null,
     removedReason: blog.removedReason ?? null,
     removedAt: blog.removedAt?.toISOString() ?? null,
+    moderation: toAdminBlogModeration(blog.moderation ?? null),
   };
 }
 
