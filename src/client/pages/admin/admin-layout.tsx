@@ -1,7 +1,5 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import LogoutModal from '@/components/settings/LogoutModal';
-import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 
 /**
@@ -26,7 +24,15 @@ const LINK =
 const ACTIVE = 'bg-teal-900 text-white hover:bg-teal-900 hover:text-white';
 const IDLE = 'text-slate-600';
 
-const BAR_LINK = 'text-sm font-bold text-slate-600 transition-colors hover:text-teal-900';
+/**
+ * The way out, drawn as a control rather than as a word.
+ *
+ * It was plain text next to a sign-out that has since gone, and a lone unstyled
+ * link in an otherwise empty bar reads as a caption. An outline is what says it
+ * can be clicked.
+ */
+const BAR_LINK =
+  'inline-flex h-9 items-center justify-center rounded-xl border border-teal-900/20 bg-white px-4 text-sm font-bold text-teal-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-700 hover:shadow-md';
 
 /**
  * Chrome for every admin page: the top bar, the section list, and where the page
@@ -34,9 +40,10 @@ const BAR_LINK = 'text-sm font-bold text-slate-600 transition-colors hover:text-
  *
  * This route sits outside `RootLayout` on purpose, so none of the public shell —
  * the marketing header, "Book Appointment", the floating settings tray — renders
- * over a console. What replaces it is the bar below: the mark, the way back out
- * to the site, and a sign-out, which are the only three things an admin needs
- * from a chrome that is not itself administrative.
+ * over a console. What replaces it is the bar below: the mark and the way back out
+ * to the site. Signing out is not in it — leaving is one click, and the tray on
+ * the site is where every other account ends a session, so a second copy of that
+ * control here would be a second thing to keep in step.
  *
  * Full width, and no page title above the sections. A console is a workspace: the
  * tables in it have five columns and a pager, and a reading measure with a banner
@@ -49,8 +56,6 @@ const BAR_LINK = 'text-sm font-bold text-slate-600 transition-colors hover:text-
  * check on every endpoint the pages inside call.
  */
 export default function AdminLayout() {
-  const [signingOut, setSigningOut] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#f6fbfb] text-slate-950">
       <ScrollToTop />
@@ -64,14 +69,9 @@ export default function AdminLayout() {
             Admin
           </span>
 
-          <div className="ml-auto flex items-center gap-4">
-            <Link to="/" className={BAR_LINK}>
-              View site
-            </Link>
-            <button type="button" onClick={() => setSigningOut(true)} className={BAR_LINK}>
-              Sign out
-            </button>
-          </div>
+          <Link to="/" className={`ml-auto ${BAR_LINK}`}>
+            View site
+          </Link>
         </div>
       </div>
 
@@ -97,10 +97,6 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
-
-      {/* The same modal the public tray uses, so signing out of the console goes
-          through one implementation of it and not a second copy. */}
-      <LogoutModal isOpen={signingOut} onClose={() => setSigningOut(false)} />
     </div>
   );
 }
