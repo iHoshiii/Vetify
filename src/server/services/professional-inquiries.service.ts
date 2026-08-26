@@ -15,7 +15,7 @@ import {
   type User,
 } from '../models';
 import { AppError } from '../utils/AppError';
-import { MailError, sendMail, type MailMessage } from './mail.service';
+import { deliverMail, type MailDelivery } from './mail.service';
 import { applyLink, declineEmail, inviteEmail } from './professional-mail';
 
 /** How long an emailed link stays usable. */
@@ -36,27 +36,6 @@ function mintInvite(): { token: string; tokenHash: string; expiresAt: Date } {
     tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + INVITE_TTL_MS),
   };
-}
-
-export type MailDelivery = { delivered: boolean; deliveryError: string | null };
-
-/**
- * Sends, and reports rather than throws when the provider will not take it.
- *
- * By the time this runs the decision is already recorded, and unwinding a verdict
- * because a mail server was down would be the wrong repair: the invitation is
- * real, the link is in the response, and an admin can pass it on by hand. The
- * caller surfaces `delivered` so nobody is left believing an email went out.
- */
-async function deliver(message: MailMessage): Promise<MailDelivery> {
-  try {
-    await sendMail(message);
-    return { delivered: true, deliveryError: null };
-  } catch (err) {
-    if (!(err instanceof MailError)) throw err;
-    console.warn(`[mail] ${message.to} did not receive "${message.subject}": ${err.message}`);
-    return { delivered: false, deliveryError: err.message };
-  }
 }
 
 /** Nobody reviews their own paperwork, here as in the application queue. */
@@ -135,7 +114,7 @@ export async function inviteInquiry(
 
   if (!inquiry) return null;
 
-  const delivery = await deliver(
+  const delivery = await deliverMail(
     inviteEmail({
       to: inquiry.email,
       name: inquiry.name,
@@ -216,7 +195,7 @@ export async function declineInquiry(
 
   // The hash is left in place rather than nulled, so a forwarded link can be told
   // apart from a made-up one and answered with "this was withdrawn".
-  const delivery = await deliver(declineEmail({ to: inquiry.email, name: inquiry.name }));
+  const delivery = await deliverMail(declineEmail({ to: inquiry.email, name: inquiry.name }));
 
   await recordAudit({
     action: 'professional.inquiry.declined',

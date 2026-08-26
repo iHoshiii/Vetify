@@ -119,3 +119,28 @@ export async function sendMail(message: MailMessage): Promise<void> {
   // Tests read recentMail() instead; printing every message would bury the run.
   if (!isTest) logMessage(message);
 }
+
+export type MailDelivery = { delivered: boolean; deliveryError: string | null };
+
+/**
+ * Sends, and reports rather than throws when the provider will not take it.
+ *
+ * For callers that have already written the thing the email is about. Unwinding a
+ * recorded decision because a mail server was down would be the wrong repair — the
+ * invitation is real either way — so the failure comes back as a flag the caller
+ * can pass to whoever is watching, instead of an exception that would have to
+ * pretend the decision never happened.
+ *
+ * Anything that is not a {@link MailError} still throws: a bug in a template is
+ * not a delivery problem and should not be reported as one.
+ */
+export async function deliverMail(message: MailMessage): Promise<MailDelivery> {
+  try {
+    await sendMail(message);
+    return { delivered: true, deliveryError: null };
+  } catch (err) {
+    if (!(err instanceof MailError)) throw err;
+    console.warn(`[mail] ${message.to} did not receive "${message.subject}": ${err.message}`);
+    return { delivered: false, deliveryError: err.message };
+  }
+}
