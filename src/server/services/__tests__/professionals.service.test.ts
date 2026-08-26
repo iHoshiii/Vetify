@@ -35,11 +35,21 @@ async function application(user: User, overrides: Partial<ProfessionalAttrs> = {
   seq += 1;
   return await insertProfessional({
     user: user._id,
+    fullName: `Marites Reyes ${seq}`,
     licenseNumber: `VET-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     clinicName: 'Bayside Animal Clinic',
-    clinicAddress: '12 Mabini Street, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
     bio: 'Small animal practice, fifteen years of it.',
     yearsExperience: 15,
     backgroundCheckConsent: true,

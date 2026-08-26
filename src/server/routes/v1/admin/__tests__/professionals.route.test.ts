@@ -46,12 +46,23 @@ async function filed(user: ObjectId, overrides: Partial<ProfessionalAttrs> = {})
   seq += 1;
   return await insertProfessional({
     user,
+    fullName: `Seed Vet ${seq}`,
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
-    clinicAddress: '9 Rizal Avenue, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '9 Rizal Avenue',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
+    businessPhone: '+63 32 555 0202',
     bio: 'A practice long enough established to have a listing worth reading.',
     yearsExperience: 8,
     backgroundCheckConsent: true,
