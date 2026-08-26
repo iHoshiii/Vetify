@@ -69,36 +69,31 @@ describe('navbar auth reactivity', () => {
     expect(screen.getAllByText('Find Vets').length).toBeGreaterThan(0);
   });
 
-  it('offers no way into the console to an ordinary account', () => {
-    renderHeader();
+  it('keeps the console out of the header, even for an admin', () => {
+    const { container } = renderHeader('admin');
     fireEvent.click(screen.getByText('trigger login'));
 
-    expect(screen.queryByLabelText('Open the admin console')).toBeNull();
-  });
-
-  it('gives an admin their avatar, which is the link to the console', () => {
-    renderHeader('admin');
-    fireEvent.click(screen.getByText('trigger login'));
-
-    const avatar = screen.getByLabelText('Open the admin console');
-
-    expect(avatar).toHaveAttribute('href', '/admin');
-    // The initial is decorative — the label above is what a screen reader gets —
-    // but it is what a sighted admin recognises the circle by.
-    expect(avatar).toHaveTextContent('A');
+    // The entry lives in the settings tray now. Neither the desktop actions nor
+    // the mobile menu carries a second one.
+    expect(screen.queryByText(/admin console/i)).toBeNull();
+    expect(container.querySelector('a[href="/admin"]')).toBeNull();
   });
 });
 
+function renderTray(role: UserRole = 'user') {
+  return render(
+    <MemoryRouter>
+      <AuthProvider>
+        <FloatingSettings />
+        <LoginTrigger role={role} />
+      </AuthProvider>
+    </MemoryRouter>
+  );
+}
+
 describe('floating settings auth reactivity', () => {
   it('stays hidden while anonymous and appears once a session arrives', () => {
-    render(
-      <MemoryRouter>
-        <AuthProvider>
-          <FloatingSettings />
-          <LoginTrigger />
-        </AuthProvider>
-      </MemoryRouter>
-    );
+    renderTray();
 
     expect(screen.queryByLabelText('Settings')).toBeNull();
 
@@ -106,5 +101,30 @@ describe('floating settings auth reactivity', () => {
 
     expect(screen.getByLabelText('Settings')).toBeDefined();
     expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
+  });
+
+  it('offers an admin the console, immediately above the way out', () => {
+    renderTray('admin');
+    fireEvent.click(screen.getByText('trigger login'));
+    fireEvent.click(screen.getByLabelText('Settings'));
+
+    const link = screen.getByRole('link', { name: 'Admin console' });
+    const logout = screen.getByText('Log Out');
+
+    expect(link).toHaveAttribute('href', '/admin');
+    // Order matters and was asked for: the two session actions sit together, with
+    // the destructive one last.
+    expect(link.compareDocumentPosition(logout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('offers it to nobody else', () => {
+    renderTray();
+    fireEvent.click(screen.getByText('trigger login'));
+    fireEvent.click(screen.getByLabelText('Settings'));
+
+    // Hiding a link, not a permission: /admin is gated by RequireRole and every
+    // endpoint behind it re-reads the stored role.
+    expect(screen.queryByText('Admin console')).toBeNull();
+    expect(screen.getByText('Log Out')).toBeInTheDocument();
   });
 });

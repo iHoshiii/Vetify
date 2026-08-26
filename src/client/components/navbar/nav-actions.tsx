@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom';
 
-import { AdminAvatar } from './admin-avatar';
-
 interface NavActionsProps {
   isAuthenticated: boolean;
   showAuthActions: boolean;
@@ -24,9 +22,6 @@ export function NavActions({ isAuthenticated, showAuthActions }: NavActionsProps
       >
         Book Appointment
       </Link>
-      {/* Last, past the call to action: it is who you are rather than something to
-          do, and it renders only for an admin. */}
-      <AdminAvatar />
       {showAuthActions && (
         <>
           <div className="h-5 w-px bg-slate-200" />
