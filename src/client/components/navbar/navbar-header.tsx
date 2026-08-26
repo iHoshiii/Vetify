@@ -10,7 +10,7 @@ export default function SiteHeader() {
   // Read from the provider, not localStorage. The header outlives every
   // client-side navigation, so a snapshot taken on mount would keep showing
   // "Log in" until a full page reload replaced the component.
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -21,9 +21,6 @@ export default function SiteHeader() {
   }, []);
 
   const showAuthActions = !isAuthenticated;
-  // Hides a link, nothing more: /admin is gated by RequireRole and every endpoint
-  // behind it re-reads the stored role, so a forged flag here buys 403s.
-  const isAdmin = user?.role === 'admin';
 
   return (
     <header
@@ -36,18 +33,15 @@ export default function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         <NavBrand />
         <NavLinks isAuthenticated={isAuthenticated} />
-        <NavActions
-          isAuthenticated={isAuthenticated}
-          showAuthActions={showAuthActions}
-          isAdmin={isAdmin}
-        />
+        {/* No entry to the console here, on either breakpoint. It lives in the
+            settings tray now, beside the account it belongs to. */}
+        <NavActions isAuthenticated={isAuthenticated} showAuthActions={showAuthActions} />
         <Hamburger isOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       </div>
       <MobileMenu
         isOpen={menuOpen}
         isAuthenticated={isAuthenticated}
         showAuthActions={showAuthActions}
-        isAdmin={isAdmin}
         onClose={() => setMenuOpen(false)}
       />
     </header>

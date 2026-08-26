@@ -1,4 +1,9 @@
-import { METRIC_SERIES, type BreakdownDimension, type MetricSeries } from '@shared/schemas';
+import {
+  METRIC_SERIES,
+  type BreakdownDimension,
+  type MetricSeries,
+  type UserRole,
+} from '@shared/schemas';
 
 import {
   countActiveAdmins,
@@ -47,6 +52,8 @@ export type MetricsOverview = {
     pendingApplications: number;
     blogs: number;
     publishedBlogs: number;
+    /** Held by the screen, waiting on a human. The one blog figure that is a queue. */
+    flaggedBlogs: number;
     moderatedBlogs: number;
   };
   trend: Record<MetricSeries, MetricTrend>;
@@ -63,6 +70,8 @@ export type MetricsTimeseries = {
 
 export type MetricsBreakdown = {
   dimension: BreakdownDimension;
+  /** The role it was narrowed to, echoed back, or null for every account. */
+  role: UserRole | null;
   total: number;
   slices: { label: string; count: number }[];
 };
@@ -82,13 +91,22 @@ const SERIES_ACTIVITY: Record<Exclude<MetricSeries, 'blogs'>, ActivityType> = {
   applications: 'professional.applied',
 };
 
-/** What each breakdown slices, all of them a single grouped count. */
-const BREAKDOWN_READS: Record<BreakdownDimension, () => Promise<Record<string, number>>> = {
-  provider: () => countUsersBy('provider'),
-  role: () => countUsersBy('role'),
-  userStatus: () => countUsersBy('status'),
-  blogStatus: countBlogsByStatus,
-  professionalStatus: countProfessionalsByStatus,
+/**
+ * What each breakdown slices, all of them a single grouped count.
+ *
+ * The three read from accounts take the role narrowing; the two that do not are
+ * written as thunks that visibly drop it, rather than passed by reference and
+ * silently handed an argument they have no field for.
+ */
+const BREAKDOWN_READS: Record<
+  BreakdownDimension,
+  (role?: UserRole) => Promise<Record<string, number>>
+> = {
+  provider: (role) => countUsersBy('provider', { role }),
+  role: (role) => countUsersBy('role', { role }),
+  userStatus: (role) => countUsersBy('status', { role }),
+  blogStatus: () => countBlogsByStatus(),
+  professionalStatus: () => countProfessionalsByStatus(),
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -238,6 +256,9 @@ export async function metricsOverview(days: number, now = new Date()): Promise<M
         pendingApplications: applications.pending ?? 0,
         blogs: sum(blogs),
         publishedBlogs: blogs.published ?? 0,
+        flaggedBlogs: blogs.flagged ?? 0,
+        // Hidden and removed only: a flagged post is held rather than moderated,
+        // since nobody has decided anything about it yet.
         moderatedBlogs: (blogs.hidden ?? 0) + (blogs.removed ?? 0),
       },
       trend,
@@ -277,9 +298,12 @@ export async function metricsTimeseries(
  * point — and a status nobody is in is genuinely absent rather than a zero slice,
  * since a donut segment of zero is just a legend entry pretending to be data.
  */
-export async function metricsBreakdown(dimension: BreakdownDimension): Promise<MetricsBreakdown> {
-  return cached(`breakdown:${dimension}`, async () => {
-    const counts = await BREAKDOWN_READS[dimension]();
+export async function metricsBreakdown(
+  dimension: BreakdownDimension,
+  role?: UserRole
+): Promise<MetricsBreakdown> {
+  return cached(`breakdown:${dimension}:${role ?? 'any'}`, async () => {
+    const counts = await BREAKDOWN_READS[dimension](role);
 
     const slices = Object.entries(counts)
       .map(([label, count]) => ({ label, count }))
@@ -287,6 +311,6 @@ export async function metricsBreakdown(dimension: BreakdownDimension): Promise<M
         (first, second) => second.count - first.count || first.label.localeCompare(second.label)
       );
 
-    return { dimension, total: sum(counts), slices };
+    return { dimension, role: role ?? null, total: sum(counts), slices };
   });
 }

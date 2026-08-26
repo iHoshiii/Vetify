@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../app';
-import { insertBlog, updateBlog, type BlogAttrs } from '../../../models/blogs';
+import { blogsCollection, insertBlog, updateBlog, type BlogAttrs } from '../../../models/blogs';
 import { insertUser, type UserRole } from '../../../models/users';
 import { signAccessToken } from '../../../services/auth.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
@@ -160,6 +160,71 @@ describe('POST /api/v1/blogs', () => {
     expect(res.status).toBe(400);
     expect(res.body.issues.body).toBeTruthy();
   });
+
+  it('publishes clean writing, and records that it was looked at', async () => {
+    const pro = await account('professional');
+
+    const res = await post(pro.token, { ...DRAFT, status: 'published' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('published');
+
+    // The verdict is kept on the post but is not part of what a reader receives.
+    expect(res.body.moderation).toBeUndefined();
+    const stored = await blogsCollection().findOne({ _id: new ObjectId(res.body.id as string) });
+    expect(stored?.moderation?.outcome).toBe('clean');
+  });
+
+  it('holds a post the screen will not pass, rather than refusing it', async () => {
+    const pro = await account('professional');
+
+    const res = await post(pro.token, {
+      ...DRAFT,
+      body: `${DRAFT.body} Some faggot left their dog in the car again.`,
+      status: 'published',
+    });
+
+    // 201, because the writing was accepted. It is simply not live: the author
+    // keeps their draft and a human decides whether readers see it.
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('flagged');
+    expect(res.body.publishedAt).toBeNull();
+
+    const stored = await blogsCollection().findOne({ _id: new ObjectId(res.body.id as string) });
+    expect(stored?.moderation).toMatchObject({ outcome: 'flagged', reviewedBy: null });
+    expect(stored?.moderation?.terms).toContain('faggot');
+    expect(stored?.moderation?.severity).toBeGreaterThan(0.9);
+  });
+
+  it('keeps a flagged post out of the public feed', async () => {
+    const pro = await account('professional');
+    await post(pro.token, {
+      ...DRAFT,
+      body: `${DRAFT.body} Buy xanax here with no prescription.`,
+      status: 'published',
+    });
+
+    const feed = await request(app).get('/api/v1/blogs');
+
+    expect(feed.body.items).toHaveLength(0);
+  });
+
+  it('does not screen a draft', async () => {
+    const pro = await account('professional');
+
+    const res = await post(pro.token, {
+      ...DRAFT,
+      body: `${DRAFT.body} Some faggot left their dog in the car again.`,
+    });
+
+    // Nobody can read a draft, so there is nothing to protect a reader from and no
+    // model call to spend on writing that is not finished.
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe('draft');
+
+    const stored = await blogsCollection().findOne({ _id: new ObjectId(res.body.id as string) });
+    expect(stored?.moderation).toBeNull();
+  });
 });
 
 describe('PATCH /api/v1/blogs/:id', () => {
@@ -209,6 +274,36 @@ describe('PATCH /api/v1/blogs/:id', () => {
 
     // Otherwise a takedown lasts exactly as long as it takes the author to press
     // publish again.
+    expect(res.status).toBe(403);
+    expect(res.body.reason).toBe('under-moderation');
+  });
+
+  it('pulls a live post whose edit brings sensitive writing with it', async () => {
+    const pro = await account('professional');
+    const live = await seed({ author: pro.user._id, status: 'published' });
+
+    const res = await patch(live._id.toString(), pro.token, {
+      body: `${DRAFT.body} Some faggot left their dog in the car again.`,
+    });
+
+    // Editing a published post is the other way sensitive writing reaches the
+    // feed, so a patch is screened on the result and not on whether the status
+    // moved. The post leaves the feed the moment it stops passing.
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('flagged');
+
+    const feed = await request(app).get('/api/v1/blogs');
+    expect(feed.body.items).toHaveLength(0);
+  });
+
+  it('refuses the author of a post the screen is holding', async () => {
+    const pro = await account('professional');
+    const blog = await seed({ author: pro.user._id, status: 'flagged' });
+
+    const res = await patch(blog._id.toString(), pro.token, { status: 'published' });
+
+    // Otherwise the hold is a filter to iterate against until something slips
+    // past it, which is worse than no filter at all.
     expect(res.status).toBe(403);
     expect(res.body.reason).toBe('under-moderation');
   });

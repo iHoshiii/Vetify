@@ -13,6 +13,15 @@ import {
   listProfessionals,
 } from '../services/professionals.service';
 
+/**
+ * These fill the form with userEvent, which types every character of a licence
+ * number, an address and a bio one keystroke at a time. That lands around four
+ * seconds on its own and crosses the five-second default once the rest of the
+ * suite is competing for the same cores — a timeout that says nothing about the
+ * form. Raised here rather than globally, because this file is the outlier.
+ */
+vi.setConfig({ testTimeout: 20_000 });
+
 vi.mock('../services/professionals.service', () => ({
   applyAsProfessional: vi.fn(),
   getOwnApplication: vi.fn(),

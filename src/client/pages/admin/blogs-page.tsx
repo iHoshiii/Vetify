@@ -1,5 +1,6 @@
 import { pick, useAdminListParams } from '@/hooks/useAdminListParams';
-import { useAdminBlogs, useModerateBlog } from '@/hooks/useAdminBlogs';
+import { useAdminBlogs, useModerateBlog, usePurgeBlog } from '@/hooks/useAdminBlogs';
+import { useMetricsOverview } from '@/hooks/useAdminMetrics';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminBlogSummary } from '@/services/admin.service';
 import { BLOG_STATUSES } from '@shared/schemas';
@@ -8,11 +9,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ConfirmDialog, type ReasonMode } from './_components/confirm-dialog';
+import { ModerationNote } from './_components/moderation-note';
 import { DataTable, type Column } from './_components/data-table';
 import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar';
 import { StatusBadge } from './_components/status-badge';
 
-type Decision = 'hide' | 'remove' | 'restore';
+type Decision = 'approve' | 'hide' | 'remove' | 'restore' | 'delete';
 
 type Pending = { post: AdminBlogSummary; decision: Decision };
 
@@ -25,6 +27,12 @@ const ACTION =
  * type 'checking'. A takedown is the record somebody will be asked to defend.
  */
 const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: string }> = {
+  approve: {
+    verb: 'Approve',
+    reason: 'optional',
+    blurb:
+      'Overrules the automatic screen and publishes the post. The verdict stays on the record beside your decision.',
+  },
   hide: {
     verb: 'Hide',
     reason: 'optional',
@@ -42,14 +50,25 @@ const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: stri
     blurb:
       'Puts it back where it was: published if it had ever been live, a draft if it never was.',
   },
+  delete: {
+    verb: 'Delete permanently',
+    reason: 'required',
+    blurb:
+      'Erases the post. This one cannot be undone — only the audit entry survives it, with your reason on it.',
+  },
 };
 
 /** Which verdicts make sense from where the post already is. */
 const OPEN_TO: Record<string, Decision[]> = {
   draft: ['hide', 'remove'],
   published: ['hide', 'remove'],
+  // A held post is already out of the feed, so hiding it would change nothing.
+  // The only two answers to a hold are "publish it after all" and "no".
+  flagged: ['approve', 'remove'],
   hidden: ['restore', 'remove'],
-  removed: ['restore'],
+  // Deleting is only offered from here, which is the whole two-step: a takedown
+  // first, reversible and with a reason on it, and only then the permanent one.
+  removed: ['restore', 'delete'],
 };
 
 function written(date: string): string {
@@ -82,18 +101,37 @@ export default function AdminBlogsPage() {
 
   const list = useAdminBlogs(params);
   const moderate = useModerateBlog();
+  const purge = usePurgeBlog();
+
+  // Whichever of the two the open dialog is driving, so its pending and error
+  // states come from the mutation that is actually running.
+  const active = pending?.decision === 'delete' ? purge : moderate;
+
+  const overview = useMetricsOverview();
+  const held = overview.data?.totals.flaggedBlogs ?? 0;
+  const filtered = get('status') === 'flagged';
 
   function open(next: Pending): void {
     moderate.reset();
+    purge.reset();
     setPending(next);
   }
 
   function confirm(reason: string | null): void {
     if (!pending) return;
 
+    const done = { onSuccess: () => setPending(null) };
+
+    // The server requires a reason for a deletion too, so this is only ever null
+    // when the dialog would not have enabled its button.
+    if (pending.decision === 'delete') {
+      purge.mutate({ id: pending.post.id, reason: reason ?? '' }, done);
+      return;
+    }
+
     moderate.mutate(
       { id: pending.post.id, decision: pending.decision, ...(reason ? { reason } : {}) },
-      { onSuccess: () => setPending(null) }
+      done
     );
   }
 
@@ -117,6 +155,7 @@ export default function AdminBlogsPage() {
           {row.removedReason && (
             <p className="mt-1 text-xs font-semibold text-rose-700">{row.removedReason}</p>
           )}
+          <ModerationNote moderation={row.moderation} />
           {row.tags.length > 0 && (
             <p className="mt-1 flex flex-wrap gap-1.5">
               {row.tags.map((tag) => (
@@ -161,7 +200,9 @@ export default function AdminBlogsPage() {
               key={decision}
               type="button"
               onClick={() => open({ post: row, decision })}
-              className={`${ACTION} ${decision === 'remove' ? 'text-rose-700' : ''}`}
+              className={`${ACTION} ${
+                decision === 'remove' || decision === 'delete' ? 'text-rose-700' : ''
+              }`}
             >
               {DECISION[decision].verb}
             </button>
@@ -176,9 +217,28 @@ export default function AdminBlogsPage() {
       <div>
         <h2 className="text-lg font-black tracking-tight">Posts</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Drafts and taken-down posts are here too. Nothing on this page deletes anything.
+          Held, drafted and taken-down posts are all here. The list is ordered worst verdict first,
+          so anything waiting on you is at the top.
         </p>
       </div>
+
+      {/* The only thing on this page with somebody waiting on it, so it says how
+          many and filters straight to them rather than being a number to read.
+          Hidden once the filter is on: it would then be describing the list. */}
+      {held > 0 && !filtered && (
+        <section className="rounded-lg border border-amber-300/60 bg-amber-50 p-4">
+          <h3 className="text-sm font-black tracking-tight text-amber-900">
+            {held} post{held === 1 ? '' : 's'} held for review
+          </h3>
+          <button
+            type="button"
+            onClick={() => set({ status: 'flagged' })}
+            className="mt-1 text-sm font-bold text-amber-900 underline hover:no-underline"
+          >
+            Show only those
+          </button>
+        </section>
+      )}
 
       <ListToolbar>
         <SearchBox
@@ -230,9 +290,9 @@ export default function AdminBlogsPage() {
           }
           confirmLabel={DECISION[pending.decision].verb}
           reason={DECISION[pending.decision].reason}
-          destructive={pending.decision === 'remove'}
-          isPending={moderate.isPending}
-          error={moderate.isError ? messageOf(moderate.error) : null}
+          destructive={pending.decision === 'remove' || pending.decision === 'delete'}
+          isPending={active.isPending}
+          error={active.isError ? messageOf(active.error) : null}
           onCancel={() => setPending(null)}
           onConfirm={confirm}
         />
@@ -242,6 +302,12 @@ export default function AdminBlogsPage() {
         <p role="status" className="text-sm font-semibold text-slate-600">
           &ldquo;{moderate.data.blog.title}&rdquo; went from {moderate.data.statusFrom} to{' '}
           {moderate.data.statusTo}.
+        </p>
+      )}
+
+      {purge.isSuccess && (
+        <p role="status" className="text-sm font-semibold text-slate-600">
+          &ldquo;{purge.data.title}&rdquo; was deleted. The audit entry is all that is left of it.
         </p>
       )}
     </div>

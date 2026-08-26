@@ -5,7 +5,7 @@ import type {
   AdminUserListParams,
   AuditListParams,
 } from '@/services/admin.service';
-import type { BreakdownDimension, MetricSeries } from '@shared/schemas';
+import type { BreakdownDimension, MetricSeries, UserRole } from '@shared/schemas';
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
@@ -40,8 +40,8 @@ export const adminKeys = {
   overview: (days: number | undefined) => [...adminKeys.metrics(), 'overview', days] as const,
   timeseries: (metric: MetricSeries, days: number | undefined) =>
     [...adminKeys.metrics(), 'timeseries', metric, days] as const,
-  breakdown: (dimension: BreakdownDimension) =>
-    [...adminKeys.metrics(), 'breakdown', dimension] as const,
+  breakdown: (dimension: BreakdownDimension, role?: UserRole) =>
+    [...adminKeys.metrics(), 'breakdown', dimension, role ?? 'any'] as const,
 };
 
 /**

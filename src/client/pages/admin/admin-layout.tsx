@@ -1,16 +1,19 @@
-import { useAuth } from '@/components/providers/AuthProvider';
-import { NavLink, Outlet } from 'react-router-dom';
+import ScrollToTop from '@/components/ScrollToTop';
+import { NavBrand } from '@/components/navbar/nav-brand';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 
 /**
  * The sections, in the order somebody works them.
  *
- * Overview first because that is the landing, then the queue that has people
- * waiting on it, then the two lists, then the log that records what was done to
- * them. `end` on the overview so it is not left highlighted on every child path.
+ * Overview first because that is the landing, then the people, then their
+ * writing, then the log that records what was done to either. `end` on the
+ * overview so it is not left highlighted on every child path.
+ *
+ * Accounts, professionals and the application queue are one entry, not three:
+ * they are three views of the same decision, and they have their own tabs inside.
  */
 const SECTIONS = [
   { to: '/admin', label: 'Overview', end: true },
-  { to: '/admin/professionals', label: 'Applications' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/blogs', label: 'Posts' },
   { to: '/admin/audit', label: 'Audit log' },
@@ -22,7 +25,30 @@ const ACTIVE = 'bg-teal-900 text-white hover:bg-teal-900 hover:text-white';
 const IDLE = 'text-slate-600';
 
 /**
- * Chrome for every admin page: the section list and where the page goes.
+ * The way out, drawn as a control rather than as a word.
+ *
+ * It was plain text next to a sign-out that has since gone, and a lone unstyled
+ * link in an otherwise empty bar reads as a caption. An outline is what says it
+ * can be clicked.
+ */
+const BAR_LINK =
+  'inline-flex h-9 items-center justify-center rounded-xl border border-teal-900/20 bg-white px-4 text-sm font-bold text-teal-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-700 hover:shadow-md';
+
+/**
+ * Chrome for every admin page: the top bar, the section list, and where the page
+ * goes.
+ *
+ * This route sits outside `RootLayout` on purpose, so none of the public shell —
+ * the marketing header, "Book Appointment", the floating settings tray — renders
+ * over a console. What replaces it is the bar below: the mark and the way back out
+ * to the site. Signing out is not in it — leaving is one click, and the tray on
+ * the site is where every other account ends a session, so a second copy of that
+ * control here would be a second thing to keep in step.
+ *
+ * Full width, and no page title above the sections. A console is a workspace: the
+ * tables in it have five columns and a pager, and a reading measure with a banner
+ * over it spends the two things those actually want. Which page you are on is
+ * already said by the highlighted section beside it and by the tab title.
  *
  * A sidebar on desktop, the same list scrolled horizontally on a phone — one set
  * of links either way, so there is no second copy to keep in step. Nothing here
@@ -30,45 +56,47 @@ const IDLE = 'text-slate-600';
  * check on every endpoint the pages inside call.
  */
 export default function AdminLayout() {
-  const { user } = useAuth();
-
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-10 text-slate-950 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <header>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">Admin</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Platform console</h1>
-          {user && (
-            <p className="mt-2 text-sm text-slate-600">
-              Signed in as <strong className="font-bold text-teal-900">{user.email}</strong>. Every
-              decision here is recorded against this account.
-            </p>
-          )}
-        </header>
+    <div className="min-h-screen bg-[#f6fbfb] text-slate-950">
+      <ScrollToTop />
 
-        <div className="mt-8 gap-8 lg:flex">
-          <nav aria-label="Admin sections" className="lg:w-52 lg:shrink-0">
-            {/* Scrolls sideways under lg, stacks above it. */}
-            <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
-              {SECTIONS.map((section) => (
-                <li key={section.to} className="shrink-0 lg:shrink">
-                  <NavLink
-                    to={section.to}
-                    end={'end' in section ? section.end : false}
-                    className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
-                  >
-                    {section.label}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
+      <div className="border-b border-teal-900/10 bg-white">
+        <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+          {/* To the console, not to the marketing site: leaving is the explicit
+              link beside it rather than the thing you hit by aiming for home. */}
+          <NavBrand to="/admin" />
+          <span className="rounded-md bg-teal-900 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-white">
+            Admin
+          </span>
 
-          <div className="mt-6 min-w-0 flex-1 lg:mt-0">
-            <Outlet />
-          </div>
+          <Link to="/" className={`ml-auto ${BAR_LINK}`}>
+            View site
+          </Link>
         </div>
       </div>
-    </main>
+
+      <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8">
+        <nav aria-label="Admin sections" className="lg:w-48 lg:shrink-0">
+          {/* Scrolls sideways under lg, stacks above it. */}
+          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
+            {SECTIONS.map((section) => (
+              <li key={section.to} className="shrink-0 lg:shrink">
+                <NavLink
+                  to={section.to}
+                  end={'end' in section ? section.end : false}
+                  className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
+                >
+                  {section.label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="mt-6 min-w-0 flex-1 lg:mt-0">
+          <Outlet />
+        </div>
+      </main>
+    </div>
   );
 }

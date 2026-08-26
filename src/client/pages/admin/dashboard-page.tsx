@@ -56,6 +56,42 @@ function messageOf(error: unknown): string {
 }
 
 /**
+ * A queue with something sitting in it.
+ *
+ * The only actionable thing on an otherwise read-only page, so it says how many
+ * and links into the list rather than leaving a number to be interpreted. Absent
+ * at zero, because an empty queue is not news.
+ */
+function Waiting({
+  count,
+  noun,
+  tail,
+  to,
+}: {
+  count: number;
+  noun: string;
+  tail: string;
+  to: string;
+}) {
+  if (count === 0) return null;
+
+  return (
+    <section className="rounded-lg border border-amber-300/60 bg-amber-50 p-5">
+      <h2 className="text-sm font-black tracking-tight text-amber-900">
+        {count} {noun}
+        {count === 1 ? '' : 's'} {tail}
+      </h2>
+      <Link
+        to={to}
+        className="mt-2 inline-block text-sm font-bold text-amber-900 underline hover:no-underline"
+      >
+        Open the queue
+      </Link>
+    </section>
+  );
+}
+
+/**
  * The landing: what the platform is, and what it has been doing lately.
  *
  * The window control drives the totals and the line together, so the trend on a
@@ -81,6 +117,7 @@ export default function AdminDashboardPage() {
   const totals = overview.data?.totals;
   const trend = overview.data?.trend;
   const pending = totals?.pendingApplications ?? 0;
+  const held = totals?.flaggedBlogs ?? 0;
 
   return (
     <div className="space-y-8">
@@ -139,7 +176,7 @@ export default function AdminDashboardPage() {
                   label="Posts"
                   value={totals.blogs}
                   trend={trend.blogs}
-                  hint={`${totals.publishedBlogs} live, ${totals.moderatedBlogs} moderated`}
+                  hint={`${totals.publishedBlogs} live, ${totals.flaggedBlogs} held, ${totals.moderatedBlogs} moderated`}
                 />
               </>
             )}
@@ -147,21 +184,15 @@ export default function AdminDashboardPage() {
         )}
       </section>
 
-      {/* The one thing on this page somebody acts on, so it says how many and
-          links straight into the queue rather than being a number to interpret. */}
-      {pending > 0 && (
-        <section className="rounded-lg border border-amber-300/60 bg-amber-50 p-5">
-          <h2 className="text-sm font-black tracking-tight text-amber-900">
-            {pending} application{pending === 1 ? '' : 's'} waiting on a decision
-          </h2>
-          <Link
-            to="/admin/professionals"
-            className="mt-2 inline-block text-sm font-bold text-amber-900 underline hover:no-underline"
-          >
-            Open the queue
-          </Link>
-        </section>
-      )}
+      <Waiting
+        count={pending}
+        noun="application"
+        tail="waiting on a decision"
+        to="/admin/users/applications"
+      />
+      {/* Posts the screen would not pass. Linked with the filter already applied,
+          because the queue is a view of the post list rather than a page. */}
+      <Waiting count={held} noun="post" tail="held for review" to="/admin/blogs?status=flagged" />
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useState, useRef, useEffect } from 'react';
-import { Settings, LogOut } from 'lucide-react';
+import { Settings, LogOut, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import AccountSection from './settings/sections/AccountSection';
 import PreferencesSection from './settings/sections/PreferencesSection';
 import NotificationsSection from './settings/sections/NotificationsSection';
@@ -77,6 +78,21 @@ export default function FloatingSettings() {
           </div>
 
           <div className="mt-2 border-t border-slate-100 px-2 pt-2 pb-1">
+            {/* Above Log Out, in the same group: both are things you do to the
+                session rather than settings you change, and this is the tray that
+                already knows which account is signed in. A link and nothing more —
+                /admin is gated by RequireRole and every endpoint behind it re-reads
+                the stored role, so forging the flag in devtools buys 403s. */}
+            {user.role === 'admin' && (
+              <Link
+                to="/admin"
+                onClick={() => setIsOpen(false)}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-50"
+              >
+                <ShieldCheck size={16} />
+                Admin console
+              </Link>
+            )}
             <button
               onClick={() => setShowLogoutModal(true)}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"

@@ -21,8 +21,10 @@ import {
   toBlogPage,
   toPublicBlog,
   updateBlog,
+  type BlogStatus,
   type User,
 } from '../../models';
+import { isFlagged, screenPost, toBlogModeration } from '../../services/moderation';
 import { AppError } from '../../utils/AppError';
 import { created, fail, failReason, ok } from '../../utils/response';
 
@@ -31,6 +33,15 @@ const router = Router();
 /** Who may write a post. Verification is what earns the professional role, so
  * the gate is the role rather than a second check here. */
 const AUTHOR_ROLES = ['professional', 'admin'] as const;
+
+/**
+ * The statuses an author may not edit out of.
+ *
+ * All three are decisions about the post that were not the author's to make: two
+ * an admin took, one the screen took. Listed once so a fourth cannot be added to
+ * the vocabulary and quietly stay editable.
+ */
+const MODERATED_STATUSES: BlogStatus[] = ['flagged', 'hidden', 'removed'];
 
 /**
  * The caller as `requireRole` just read them from the database.
@@ -86,6 +97,15 @@ router.get('/:slug', async (req, res) => {
  * The author is taken from the verified token, never from the payload — the
  * schema drops an `author` field, so posting under somebody else's name is not
  * something a caller can express.
+ *
+ * A post asking to go live is screened first, and one the screen will not pass is
+ * written as 'flagged' rather than refused: the writing is kept, it simply waits
+ * on a human instead of reaching the feed. The author is told by the status in the
+ * reply and no more than that — which term tripped the filter is a lesson in
+ * getting the next post through, so the verdict stays on the admin side.
+ *
+ * Drafts are not screened. Nobody can read a draft, and screening one would spend
+ * a model call on writing that is not finished.
  */
 router.post(
   '/',
@@ -96,7 +116,15 @@ router.post(
     const actor = actorOf(req);
     const input = req.body as BlogCreate;
 
-    const blog = await insertBlog({ ...input, author: actor._id });
+    const verdict = input.status === 'published' ? await screenPost(input) : null;
+    const held = verdict !== null && isFlagged(verdict);
+
+    const blog = await insertBlog({
+      ...input,
+      author: actor._id,
+      status: held ? 'flagged' : input.status,
+      moderation: verdict ? toBlogModeration(verdict) : null,
+    });
 
     created(res, toPublicBlog(blog));
   }
@@ -129,8 +157,9 @@ router.patch(
     }
 
     // An author cannot edit their way out of a moderation decision. Without this,
-    // "hidden" is a state the author simply publishes back out of.
-    if (!isAdmin && (blog.status === 'hidden' || blog.status === 'removed')) {
+    // "hidden" is a state the author simply publishes back out of, and 'flagged'
+    // is a filter to iterate against until something slips past it.
+    if (!isAdmin && MODERATED_STATUSES.includes(blog.status)) {
       return failReason(
         res,
         403,
@@ -139,7 +168,34 @@ router.patch(
       );
     }
 
-    const updated = await updateBlog(blog._id, patch);
+    /**
+     * Screened whenever the result would be publicly readable, which is not the
+     * same as "whenever the status changes": editing a live post is the other way
+     * sensitive writing reaches the feed, and a patch that only touches the body
+     * of a published post changes exactly what a reader sees.
+     *
+     * The merged content is screened rather than the patch, because a body is only
+     * sensitive in the company of the title it arrives with.
+     */
+    const resulting = patch.status ?? blog.status;
+    const verdict =
+      resulting === 'published'
+        ? await screenPost({
+            title: patch.title ?? blog.title,
+            excerpt: patch.excerpt ?? blog.excerpt,
+            body: patch.body ?? blog.body,
+            tags: patch.tags ?? blog.tags,
+            coverUrl: patch.coverUrl ?? blog.coverUrl,
+          })
+        : null;
+
+    const held = verdict !== null && isFlagged(verdict);
+
+    const updated = await updateBlog(blog._id, {
+      ...patch,
+      ...(held ? { status: 'flagged' as const } : {}),
+      ...(verdict ? { moderation: toBlogModeration(verdict) } : {}),
+    });
     if (!updated) return fail(res, 404, 'Post not found');
 
     ok(res, toPublicBlog(updated));
