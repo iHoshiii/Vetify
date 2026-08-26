@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
             {pending} application{pending === 1 ? '' : 's'} waiting on a decision
           </h2>
           <Link
-            to="/admin/professionals"
+            to="/admin/users/applications"
             className="mt-2 inline-block text-sm font-bold text-amber-900 underline hover:no-underline"
           >
             Open the queue

@@ -203,10 +203,15 @@ export async function findUsersPaginated(
  * on anything the dashboard was not built to draw.
  */
 export async function countUsersBy(
-  field: 'role' | 'status' | 'provider'
+  field: 'role' | 'status' | 'provider',
+  where: { role?: UserRole } = {}
 ): Promise<Record<string, number>> {
   const rows = await usersCollection()
     .aggregate<{ _id: string | null; count: number }>([
+      // Narrowing to one role is what turns "accounts by status" into "users by
+      // status", which is the count that belongs beside a list of one role. The
+      // { role: 1 } index serves the match.
+      ...(where.role ? [{ $match: { role: where.role } }] : []),
       { $group: { _id: `$${field}`, count: { $sum: 1 } } },
     ])
     .toArray();

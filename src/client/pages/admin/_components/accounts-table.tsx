@@ -1,7 +1,6 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useAdminListParams, pick } from '@/hooks/useAdminListParams';
 import { useAdminUsers, useUpdateUserRole, useUpdateUserStatus } from '@/hooks/useAdminUsers';
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminUser } from '@/services/admin.service';
 import {
   ADMIN_USER_SORTS,
@@ -14,11 +13,11 @@ import {
 import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 
-import { ConfirmDialog, type ReasonMode } from './_components/confirm-dialog';
-import { DataTable, type Column } from './_components/data-table';
-import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar';
-import { RoleBadge } from './_components/role-badge';
-import { StatusBadge } from './_components/status-badge';
+import { ConfirmDialog, type ReasonMode } from './confirm-dialog';
+import { DataTable, type Column } from './data-table';
+import { FilterSelect, ListToolbar, SearchBox } from './list-toolbar';
+import { RoleBadge } from './role-badge';
+import { StatusBadge } from './status-badge';
 
 /**
  * A decision waiting on a confirmation.
@@ -60,6 +59,19 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong.';
 }
 
+type AccountsTableProps = {
+  /**
+   * Which role to list, resolved by the tab above — either the role that tab
+   * fixes, or whatever its Role filter is set to. Undefined lists every role.
+   */
+  role: UserRole | undefined;
+  /**
+   * Whether to offer the Role filter. A tab that fixes a role hides it: a control
+   * able to contradict the tab it sits under is not a filter.
+   */
+  roleFilter: boolean;
+};
+
 /**
  * Accounts: who they are, what they may do, and whether they may sign in.
  *
@@ -68,10 +80,12 @@ function messageOf(error: unknown): string {
  * page. The dialog also happens to be where a 409 from the server belongs — the
  * guards that refuse self-demotion and the last admin answer there, in front of
  * the person who tried it, with their typed reason still in the box.
+ *
+ * Shared by both account tabs rather than copied into each. The guards, the dialog
+ * copy and the "and four sessions were signed out" line are precisely the parts
+ * that must not come to differ between two lists of accounts.
  */
-export default function AdminUsersPage() {
-  useDocumentTitle('Admin users', 'Accounts, roles and access.');
-
+export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
   const { user: me } = useAuth();
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -79,7 +93,7 @@ export default function AdminUsersPage() {
   const params = {
     page,
     q: get('q'),
-    role: pick(get('role'), USER_ROLES),
+    role,
     status: pick(get('status'), USER_STATUSES),
     provider: pick(get('provider'), AUTH_PROVIDERS),
     sort: pick(get('sort'), ADMIN_USER_SORTS),
@@ -174,16 +188,16 @@ export default function AdminUsersPage() {
 
         return (
           <div className="flex flex-wrap justify-end gap-1.5">
-            {USER_ROLES.filter((role) => role !== row.role).map((role) => (
+            {USER_ROLES.filter((option) => option !== row.role).map((option) => (
               <button
-                key={role}
+                key={option}
                 type="button"
                 disabled={isSelf}
                 title={isSelf ? 'You cannot change your own role.' : undefined}
-                onClick={() => open({ kind: 'role', user: row, role })}
+                onClick={() => open({ kind: 'role', user: row, role: option })}
                 className={ACTION}
               >
-                Make {role}
+                Make {option}
               </button>
             ))}
 
@@ -207,13 +221,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-black tracking-tight">Accounts</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Suspending or banning signs the account out everywhere. Nothing here deletes anybody.
-        </p>
-      </div>
-
       <ListToolbar>
         <SearchBox
           label="Search accounts"
@@ -221,12 +228,14 @@ export default function AdminUsersPage() {
           placeholder="Name or email"
           onSearch={(q) => set({ q })}
         />
-        <FilterSelect
-          label="Role"
-          value={get('role')}
-          options={USER_ROLES}
-          onChange={(role) => set({ role })}
-        />
+        {roleFilter && (
+          <FilterSelect
+            label="Role"
+            value={get('role')}
+            options={USER_ROLES}
+            onChange={(next) => set({ role: next })}
+          />
+        )}
         <FilterSelect
           label="Status"
           value={get('status')}

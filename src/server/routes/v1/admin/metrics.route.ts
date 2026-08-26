@@ -56,16 +56,20 @@ router.get('/timeseries', validateQuery(metricsTimeseriesQuerySchema), async (re
 });
 
 /**
- * GET /api/v1/admin/metrics/breakdown?dimension=
+ * GET /api/v1/admin/metrics/breakdown?dimension=&role=
  *
  * How the accounts, posts or applications divide by one field, largest slice
  * first. No window: this is the shape of what exists, which is the question a
  * donut answers.
+ *
+ * `role` narrows the three account breakdowns to one role, so a tab showing only
+ * users can print a status split of users rather than of every account. The
+ * schema refuses it on the other two dimensions instead of ignoring it.
  */
 router.get('/breakdown', validateQuery(metricsBreakdownQuerySchema), async (req, res) => {
   const query = req.validatedQuery as MetricsBreakdownQuery;
 
-  ok(res, await metricsBreakdown(query.dimension));
+  ok(res, await metricsBreakdown(query.dimension, query.role));
 });
 
 export default router;

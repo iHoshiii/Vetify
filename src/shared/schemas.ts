@@ -484,6 +484,20 @@ export const BREAKDOWN_DIMENSIONS = [
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];
 
 /**
+ * The three breakdowns counted from accounts, and so the only three a `role`
+ * filter says anything about: there is no role on a post or an application.
+ *
+ * `satisfies` rather than a bare literal, so this cannot drift into naming a
+ * dimension the list above does not have.
+ */
+export const USER_BREAKDOWN_DIMENSIONS = [
+  'provider',
+  'role',
+  'userStatus',
+] as const satisfies readonly BreakdownDimension[];
+export type UserBreakdownDimension = (typeof USER_BREAKDOWN_DIMENSIONS)[number];
+
+/**
  * How far back a chart may look. Bounded by how long raw events are kept: asking
  * for a year would draw a line that is honest for 90 days and flat zero before
  * it, which reads as "nothing happened" rather than "nothing is recorded".
@@ -503,9 +517,25 @@ export const metricsTimeseriesQuerySchema = z.object({
   days: daysField,
 });
 
-export const metricsBreakdownQuerySchema = z.object({
-  dimension: z.enum(BREAKDOWN_DIMENSIONS),
-});
+/**
+ * One breakdown chart, optionally narrowed to a single role.
+ *
+ * The role is what lets the user-management tabs say "suspended users" instead
+ * of "suspended accounts" — the unfiltered count is every account, which is a
+ * different question and the wrong one to print beside a list of one role. Sent
+ * with a dimension it cannot narrow it is refused rather than ignored: quietly
+ * dropping a filter answers a question nobody asked.
+ */
+export const metricsBreakdownQuerySchema = z
+  .object({
+    dimension: z.enum(BREAKDOWN_DIMENSIONS),
+    role: z.enum(USER_ROLES).optional(),
+  })
+  .refine(
+    (query) =>
+      !query.role || (USER_BREAKDOWN_DIMENSIONS as readonly string[]).includes(query.dimension),
+    { path: ['role'], message: 'A role only narrows the account breakdowns' }
+  );
 
 /** Post-parse admin queries: page, limit and days coerced from strings and
  * defaulted, so a handler reads numbers and never re-parses a param. */

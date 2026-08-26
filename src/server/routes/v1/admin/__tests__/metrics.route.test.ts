@@ -333,6 +333,9 @@ describe('GET /api/v1/admin/metrics/breakdown', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(4);
+    // Null rather than absent: the answer says which role it was narrowed to, and
+    // "none" is one of the things it can say.
+    expect(res.body.role).toBeNull();
     expect(res.body.slices).toEqual([
       { label: 'user', count: 2 },
       // A tie falls back to the label, so the order is stable between reloads
@@ -394,6 +397,40 @@ describe('GET /api/v1/admin/metrics/breakdown', () => {
       .get('/api/v1/admin/metrics/breakdown')
       .set('Authorization', `Bearer ${token}`);
 
+    expect(res.status).toBe(400);
+  });
+
+  it('narrows an account breakdown to one role', async () => {
+    const { token } = await account('admin');
+    await account('user', 'suspended');
+    await account('user');
+    await account('professional', 'suspended');
+
+    const res = await request(app)
+      .get('/api/v1/admin/metrics/breakdown?dimension=userStatus&role=user')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.role).toBe('user');
+    // The suspended professional and the admin doing the asking are both out of
+    // it, which is the point: this is the count that belongs above a list of
+    // users, and the unnarrowed one would have said three suspended accounts.
+    expect(res.body.total).toBe(2);
+    expect(res.body.slices).toEqual([
+      { label: 'active', count: 1 },
+      { label: 'suspended', count: 1 },
+    ]);
+  });
+
+  it('refuses a role on a dimension it cannot narrow', async () => {
+    const { token } = await account('admin');
+
+    const res = await request(app)
+      .get('/api/v1/admin/metrics/breakdown?dimension=blogStatus&role=user')
+      .set('Authorization', `Bearer ${token}`);
+
+    // Refused rather than ignored: a filter silently dropped answers a question
+    // nobody asked, and a post has no role to be narrowed by.
     expect(res.status).toBe(400);
   });
 });

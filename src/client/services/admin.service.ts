@@ -336,6 +336,8 @@ export type MetricsTimeseries = {
 
 export type MetricsBreakdown = {
   dimension: BreakdownDimension;
+  /** The role it was narrowed to, echoed back, or null for every account. */
+  role: UserRole | null;
   total: number;
   /** Largest first, ties broken by label so the chart does not reshuffle. */
   slices: { label: string; count: number }[];
@@ -352,9 +354,16 @@ export function getMetricsTimeseries(
   return apiFetch(`/admin/metrics/timeseries${queryOf({ ...params })}`, { signal });
 }
 
+/**
+ * One breakdown, optionally narrowed to a role.
+ *
+ * The server refuses a role on the post and application dimensions rather than
+ * dropping it, so passing one there is a 400 and not a chart of the wrong thing.
+ */
 export function getMetricsBreakdown(
   dimension: BreakdownDimension,
+  role?: UserRole,
   signal?: AbortSignal
 ): Promise<MetricsBreakdown> {
-  return apiFetch(`/admin/metrics/breakdown${queryOf({ dimension })}`, { signal });
+  return apiFetch(`/admin/metrics/breakdown${queryOf({ dimension, role })}`, { signal });
 }
