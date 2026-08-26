@@ -34,6 +34,11 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
 
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
+
+  // The model that screens a post before it can go live. Separate from the chat
+  // model and deliberately a cheap fast one: it runs on the publish path, it
+  // answers a fixed JSON schema, and it is asked to classify rather than to write.
+  GEMINI_MODERATION_MODEL: z.string().min(1).default('gemini-2.5-flash'),
   JWT_SECRET_ACCESS: z.string().min(32, 'JWT_SECRET must be set and at least 32 characters'),
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),

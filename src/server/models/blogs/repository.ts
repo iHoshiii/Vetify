@@ -60,6 +60,9 @@ export async function insertBlog(attrs: BlogAttrs): Promise<BlogDocument> {
       removedBy: null,
       removedReason: null,
       removedAt: null,
+      // Null unless the caller screened it. A draft is never screened, so a draft
+      // is not an unchecked post so much as a post there was nothing to check.
+      moderation: parsed.moderation ?? null,
       // A post created straight into 'published' is live now; a draft has no
       // publication date until somebody publishes it.
       publishedAt: parsed.status === 'published' ? now : null,
@@ -166,6 +169,7 @@ export type BlogPatch = Partial<
     | 'removedBy'
     | 'removedReason'
     | 'removedAt'
+    | 'moderation'
   >
 >;
 

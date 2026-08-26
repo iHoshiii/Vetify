@@ -125,6 +125,36 @@ export const AUDIT_ACTIONS = [
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
+/**
+ * What an automatic screening verdict can be about.
+ *
+ * Shared for the same reason the audit actions are: the queue renders these
+ * strings as chips, so the list the server may write and the list the dashboard
+ * can label have to be one list. Named for what a reviewer would say out loud
+ * rather than for any provider's taxonomy.
+ */
+export const MODERATION_CATEGORIES = [
+  'nudity',
+  'sexual',
+  'slur',
+  'hate',
+  'harassment',
+  'violence',
+  'self-harm',
+  'illegal',
+] as const;
+export type ModerationCategory = (typeof MODERATION_CATEGORIES)[number];
+
+/**
+ * Where a screened post ended up.
+ *
+ * 'unavailable' is not a pass: the check could not be completed — an unreachable
+ * model, a cover image that would not load — and the post is held on that basis,
+ * because the alternative is publishing the one post nobody managed to look at.
+ */
+export const MODERATION_OUTCOMES = ['clean', 'flagged', 'unavailable'] as const;
+export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
+
 export const AUDIT_TARGET_TYPES = ['blog', 'professional', 'user'] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 
@@ -145,8 +175,13 @@ export type BlogAuthorStatus = (typeof BLOG_AUTHOR_STATUSES)[number];
  * The full list is derived from the author's rather than written out again, which
  * is what makes the note above ("a deliberate subset") true by construction: a
  * status added here cannot go missing from one of the two lists.
+ *
+ * 'flagged' is where the automatic screen puts a post it will not let through:
+ * held out of the feed, waiting on a human. Distinct from 'hidden', which is an
+ * admin's own reversible "not right now" — the difference is who decided, and only
+ * one of them has a verdict attached explaining why.
  */
-export const BLOG_MODERATION_STATUSES = ['hidden', 'removed'] as const;
+export const BLOG_MODERATION_STATUSES = ['flagged', 'hidden', 'removed'] as const;
 export const BLOG_STATUSES = [...BLOG_AUTHOR_STATUSES, ...BLOG_MODERATION_STATUSES] as const;
 export type BlogStatus = (typeof BLOG_STATUSES)[number];
 
