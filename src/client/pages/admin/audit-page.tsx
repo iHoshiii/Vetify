@@ -15,6 +15,9 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'blog.purged': 'Deleted a post for good',
   'blog.removed': 'Took a post down',
   'blog.restored': 'Restored a post',
+  'professional.inquiry.declined': 'Declined an enquiry',
+  'professional.interview': 'Booked an interview',
+  'professional.invited': 'Sent an application link',
   'professional.verified': 'Verified an application',
   'professional.rejected': 'Rejected an application',
   'professional.suspended': 'Suspended a listing',
@@ -27,6 +30,7 @@ const ACTION_TONE: Partial<Record<AuditAction, string>> = {
   'blog.purged': 'text-rose-700',
   'blog.removed': 'text-rose-700',
   'blog.hidden': 'text-orange-700',
+  'professional.inquiry.declined': 'text-rose-700',
   'professional.rejected': 'text-rose-700',
   'professional.suspended': 'text-rose-700',
 };
