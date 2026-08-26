@@ -1,23 +1,15 @@
 import { Link } from 'react-router-dom';
 
+import { AdminAvatar } from './admin-avatar';
+
 interface NavActionsProps {
   isAuthenticated: boolean;
   showAuthActions: boolean;
-  /** Whether to offer the console. Not a permission - see navbar-header. */
-  isAdmin: boolean;
 }
 
-export function NavActions({ isAuthenticated, showAuthActions, isAdmin }: NavActionsProps) {
+export function NavActions({ isAuthenticated, showAuthActions }: NavActionsProps) {
   return (
     <div className="hidden items-center gap-3 md:flex">
-      {isAdmin && (
-        <Link
-          to="/admin"
-          className="inline-flex h-9 items-center justify-center rounded-xl border border-teal-700 bg-teal-900 px-4 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-        >
-          Admin
-        </Link>
-      )}
       {isAuthenticated && (
         <Link
           to="/map"
@@ -32,6 +24,9 @@ export function NavActions({ isAuthenticated, showAuthActions, isAdmin }: NavAct
       >
         Book Appointment
       </Link>
+      {/* Last, past the call to action: it is who you are rather than something to
+          do, and it renders only for an admin. */}
+      <AdminAvatar />
       {showAuthActions && (
         <>
           <div className="h-5 w-px bg-slate-200" />

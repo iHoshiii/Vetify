@@ -36,11 +36,10 @@ export default function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         <NavBrand />
         <NavLinks isAuthenticated={isAuthenticated} />
-        <NavActions
-          isAuthenticated={isAuthenticated}
-          showAuthActions={showAuthActions}
-          isAdmin={isAdmin}
-        />
+        {/* The desktop entry to the console is the avatar inside NavActions, which
+            reads the role itself. isAdmin below is the mobile menu's, where a
+            circle in a column of text links would not read as anything. */}
+        <NavActions isAuthenticated={isAuthenticated} showAuthActions={showAuthActions} />
         <Hamburger isOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       </div>
       <MobileMenu
