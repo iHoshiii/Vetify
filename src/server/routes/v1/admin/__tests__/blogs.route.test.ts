@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../../app';
 import { auditLogsCollection } from '../../../../models/audit-log';
-import { insertBlog, updateBlog, type BlogStatus } from '../../../../models/blogs';
+import { blogsCollection, insertBlog, updateBlog, type BlogStatus } from '../../../../models/blogs';
 import { insertUser, type UserRole } from '../../../../models/users';
 import { signAccessToken } from '../../../../services/auth.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../../test-utils/db';
@@ -474,5 +474,86 @@ describe('the review queue order', () => {
       mild._id.toString(),
       untouched._id.toString(),
     ]);
+  });
+});
+
+describe('DELETE /api/v1/admin/blogs/:id', () => {
+  const purge = (id: string, token: string, body: Record<string, unknown> = { reason: REASON }) =>
+    request(app)
+      .delete(`/api/v1/admin/blogs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+
+  it('refuses a post that has not been taken down first', async () => {
+    const { user, token } = await account('admin');
+    const blog = await post(user._id);
+
+    const res = await purge(blog._id.toString(), token);
+
+    // The reversible step comes first, so a mistake stays recoverable until
+    // somebody deliberately comes back to finish it.
+    expect(res.status).toBe(409);
+    expect(res.body.reason).toBe('not-removed');
+    expect(await blogsCollection().countDocuments()).toBe(1);
+  });
+
+  it('refuses a held post as well, however bad the verdict', async () => {
+    const { user, token } = await account('admin');
+    const blog = await flagged(user._id, 0.99);
+
+    const res = await purge(blog._id.toString(), token);
+
+    expect(res.status).toBe(409);
+    expect(await blogsCollection().countDocuments()).toBe(1);
+  });
+
+  it('refuses a deletion with no reason', async () => {
+    const { user, token } = await account('admin');
+    const blog = await post(user._id);
+    await updateBlog(blog._id, { status: 'removed' });
+
+    const res = await purge(blog._id.toString(), token, {});
+
+    expect(res.status).toBe(400);
+    expect(await blogsCollection().countDocuments()).toBe(1);
+  });
+
+  it('deletes a taken-down post and leaves the audit trail behind it', async () => {
+    const { user, token } = await account('admin');
+    const blog = await post(user._id);
+
+    await request(app)
+      .patch(`/api/v1/admin/blogs/${blog._id.toString()}/remove`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ reason: REASON });
+
+    const res = await purge(blog._id.toString(), token, {
+      reason: 'The author asked for it to be erased.',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: blog._id.toString(), slug: blog.slug });
+    expect(await blogsCollection().countDocuments()).toBe(0);
+
+    // The takedown and the deletion both survive the post they were about, which
+    // is the point of keeping the record somewhere other than on the row.
+    const entries = await auditLogsCollection()
+      .find({ targetId: blog._id })
+      .sort({ createdAt: 1 })
+      .toArray();
+
+    expect(entries.map((entry) => entry.action)).toEqual(['blog.removed', 'blog.purged']);
+    expect(entries[1]?.metadata).toMatchObject({ slug: blog.slug, title: blog.title });
+  });
+
+  it('404s once the post is gone', async () => {
+    const { user, token } = await account('admin');
+    const blog = await post(user._id);
+    await updateBlog(blog._id, { status: 'removed' });
+
+    await purge(blog._id.toString(), token);
+    const again = await purge(blog._id.toString(), token);
+
+    expect(again.status).toBe(404);
   });
 });

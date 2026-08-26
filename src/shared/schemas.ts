@@ -116,6 +116,7 @@ export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 export const AUDIT_ACTIONS = [
   'blog.approved',
   'blog.hidden',
+  'blog.purged',
   'blog.removed',
   'blog.restored',
   'professional.rejected',
@@ -447,6 +448,15 @@ export const adminBlogListQuerySchema = z.object({
  * reason is required — that string is the whole defence of the decision. */
 export const blogHideSchema = z.object({ reason: moderationNote });
 export const blogRemoveSchema = z.object({ reason: moderationReason });
+
+/**
+ * The permanent one.
+ *
+ * Identical in shape to a takedown's and deliberately its own name: this is the
+ * request that leaves nothing to restore, and a route mounting the wrong schema
+ * should read as wrong rather than as a synonym.
+ */
+export const blogPurgeSchema = z.object({ reason: moderationReason });
 
 /** Sort orders the user list offers. Email is there for the support case: someone
  * writes in, and you are looking for one address rather than browsing. */

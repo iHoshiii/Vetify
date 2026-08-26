@@ -1,6 +1,7 @@
 import type { ObjectId } from 'mongodb';
 
 import {
+  deleteBlog,
   findBlogById,
   recordAudit,
   updateBlog,
@@ -165,4 +166,84 @@ export async function moderateBlog(input: ModerateBlogInput): Promise<ModerateBl
   });
 
   return { blog, statusFrom, statusTo };
+}
+
+/** What a purge answers with: enough to name the post that is no longer there. */
+export type PurgeBlogResult = {
+  id: string;
+  title: string;
+  slug: string;
+  authorId: string;
+};
+
+export type PurgeBlogInput = {
+  id: string | ObjectId;
+  moderator: User;
+  reason?: string | null;
+  ip?: string | null;
+};
+
+/**
+ * Deletes a post for good, and only one that has already been taken down.
+ *
+ * The second half of a two-step, and the step order is the whole safety argument:
+ * a takedown is reversible and leaves the reason and the reviewer on the row, so by
+ * the time anything reaches here a human has already looked at it once and written
+ * down why. A false positive — from the screen or from an admin — is recoverable
+ * for exactly as long as somebody has not deliberately come back to finish it.
+ *
+ * The audit entry is written before the delete, not after. If the write fails the
+ * post is still here and still visible in the console, which is a discrepancy
+ * somebody can see and retry; the other order risks a post disappearing with no
+ * record of who did it, and an unaccountable delete is the failure this log exists
+ * to prevent. The entry carries the slug, title and author for the same reason:
+ * it has to explain itself with nothing left to join to.
+ */
+export async function purgeBlog(input: PurgeBlogInput): Promise<PurgeBlogResult | null> {
+  const { id, moderator, reason = null, ip = null } = input;
+
+  const current = await findBlogById(id);
+  if (!current) return null;
+
+  if (!reason?.trim()) {
+    throw AppError.badRequest('A reason is required to delete a post', 'reason-required');
+  }
+
+  // Taken down first, always. Deleting straight from published would skip the
+  // reversible state that makes a mistake survivable.
+  if (current.status !== 'removed') {
+    throw AppError.conflict(
+      'Take the post down before deleting it, so a mistake stays recoverable',
+      'not-removed'
+    );
+  }
+
+  const record: PurgeBlogResult = {
+    id: current._id.toString(),
+    title: current.title,
+    slug: current.slug,
+    authorId: current.author.toString(),
+  };
+
+  await recordAudit({
+    action: 'blog.purged',
+    targetType: 'blog',
+    targetId: current._id,
+    actor: moderator._id,
+    actorEmail: moderator.email,
+    reason,
+    metadata: {
+      slug: record.slug,
+      title: record.title,
+      authorId: record.authorId,
+      removedReason: current.removedReason,
+      statusFrom: current.status,
+    },
+    ip,
+  });
+
+  const deleted = await deleteBlog(current._id);
+  if (!deleted) return null;
+
+  return record;
 }

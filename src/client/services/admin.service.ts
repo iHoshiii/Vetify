@@ -229,6 +229,23 @@ export function moderateBlog(input: {
   });
 }
 
+/** Enough to name the post that is no longer there. */
+export type PurgeBlogResult = { id: string; title: string; slug: string; authorId: string };
+
+/**
+ * Deletes a post for good.
+ *
+ * Separate from moderateBlog because it is not one of the verdicts: it destroys the
+ * row rather than moving its status, and the server refuses it on anything that has
+ * not already been taken down. The reason is required by both.
+ */
+export function purgeBlog(input: { id: string; reason: string }): Promise<PurgeBlogResult> {
+  return apiFetch(`/admin/blogs/${encodeURIComponent(input.id)}`, {
+    method: 'DELETE',
+    body: { reason: input.reason },
+  });
+}
+
 /* -------------------------------------------------------------------------- *
  * Applications
  * -------------------------------------------------------------------------- */

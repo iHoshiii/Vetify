@@ -1,6 +1,7 @@
 import {
   adminBlogListQuerySchema,
   blogHideSchema,
+  blogPurgeSchema,
   blogRemoveSchema,
   type AdminBlogListQuery,
   type BlogHideInput,
@@ -22,6 +23,7 @@ import {
 } from '../../../models';
 import {
   moderateBlog,
+  purgeBlog,
   type BlogModerationDecision,
 } from '../../../services/blog-moderation.service';
 import { fail, ok } from '../../../utils/response';
@@ -185,5 +187,32 @@ router.patch('/:id/restore', validate(blogHideSchema), decision('restored'));
  * publish a draft that its author has not finished.
  */
 router.patch('/:id/approve', validate(blogHideSchema), decision('approved'));
+
+/**
+ * DELETE /api/v1/admin/blogs/:id
+ *
+ * The end of the two-step, and the only thing in this API that destroys a post.
+ * Refused with a 409 on anything not already taken down: the reversible state
+ * comes first, so a mistake — the screen's or an admin's — stays recoverable until
+ * somebody deliberately comes back to finish it. The reason is mandatory, and the
+ * audit entry outlives the document it describes.
+ */
+router.delete('/:id', validate(blogPurgeSchema), async (req, res) => {
+  const admin = adminOf(req);
+  const body = req.body as BlogRemoveInput;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, 'Post not found');
+
+  const purged = await purgeBlog({
+    id: req.params.id,
+    moderator: admin,
+    reason: body.reason,
+    ip: ipOf(req),
+  });
+
+  if (!purged) return fail(res, 404, 'Post not found');
+
+  ok(res, purged);
+});
 
 export default router;

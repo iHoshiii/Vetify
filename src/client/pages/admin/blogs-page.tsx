@@ -1,5 +1,5 @@
 import { pick, useAdminListParams } from '@/hooks/useAdminListParams';
-import { useAdminBlogs, useModerateBlog } from '@/hooks/useAdminBlogs';
+import { useAdminBlogs, useModerateBlog, usePurgeBlog } from '@/hooks/useAdminBlogs';
 import { useMetricsOverview } from '@/hooks/useAdminMetrics';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminBlogSummary } from '@/services/admin.service';
@@ -14,7 +14,7 @@ import { DataTable, type Column } from './_components/data-table';
 import { FilterSelect, ListToolbar, SearchBox } from './_components/list-toolbar';
 import { StatusBadge } from './_components/status-badge';
 
-type Decision = 'approve' | 'hide' | 'remove' | 'restore';
+type Decision = 'approve' | 'hide' | 'remove' | 'restore' | 'delete';
 
 type Pending = { post: AdminBlogSummary; decision: Decision };
 
@@ -50,6 +50,12 @@ const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: stri
     blurb:
       'Puts it back where it was: published if it had ever been live, a draft if it never was.',
   },
+  delete: {
+    verb: 'Delete permanently',
+    reason: 'required',
+    blurb:
+      'Erases the post. This one cannot be undone — only the audit entry survives it, with your reason on it.',
+  },
 };
 
 /** Which verdicts make sense from where the post already is. */
@@ -60,7 +66,9 @@ const OPEN_TO: Record<string, Decision[]> = {
   // The only two answers to a hold are "publish it after all" and "no".
   flagged: ['approve', 'remove'],
   hidden: ['restore', 'remove'],
-  removed: ['restore'],
+  // Deleting is only offered from here, which is the whole two-step: a takedown
+  // first, reversible and with a reason on it, and only then the permanent one.
+  removed: ['restore', 'delete'],
 };
 
 function written(date: string): string {
@@ -93,6 +101,11 @@ export default function AdminBlogsPage() {
 
   const list = useAdminBlogs(params);
   const moderate = useModerateBlog();
+  const purge = usePurgeBlog();
+
+  // Whichever of the two the open dialog is driving, so its pending and error
+  // states come from the mutation that is actually running.
+  const active = pending?.decision === 'delete' ? purge : moderate;
 
   const overview = useMetricsOverview();
   const held = overview.data?.totals.flaggedBlogs ?? 0;
@@ -100,15 +113,25 @@ export default function AdminBlogsPage() {
 
   function open(next: Pending): void {
     moderate.reset();
+    purge.reset();
     setPending(next);
   }
 
   function confirm(reason: string | null): void {
     if (!pending) return;
 
+    const done = { onSuccess: () => setPending(null) };
+
+    // The server requires a reason for a deletion too, so this is only ever null
+    // when the dialog would not have enabled its button.
+    if (pending.decision === 'delete') {
+      purge.mutate({ id: pending.post.id, reason: reason ?? '' }, done);
+      return;
+    }
+
     moderate.mutate(
       { id: pending.post.id, decision: pending.decision, ...(reason ? { reason } : {}) },
-      { onSuccess: () => setPending(null) }
+      done
     );
   }
 
@@ -177,7 +200,9 @@ export default function AdminBlogsPage() {
               key={decision}
               type="button"
               onClick={() => open({ post: row, decision })}
-              className={`${ACTION} ${decision === 'remove' ? 'text-rose-700' : ''}`}
+              className={`${ACTION} ${
+                decision === 'remove' || decision === 'delete' ? 'text-rose-700' : ''
+              }`}
             >
               {DECISION[decision].verb}
             </button>
@@ -265,9 +290,9 @@ export default function AdminBlogsPage() {
           }
           confirmLabel={DECISION[pending.decision].verb}
           reason={DECISION[pending.decision].reason}
-          destructive={pending.decision === 'remove'}
-          isPending={moderate.isPending}
-          error={moderate.isError ? messageOf(moderate.error) : null}
+          destructive={pending.decision === 'remove' || pending.decision === 'delete'}
+          isPending={active.isPending}
+          error={active.isError ? messageOf(active.error) : null}
           onCancel={() => setPending(null)}
           onConfirm={confirm}
         />
@@ -277,6 +302,12 @@ export default function AdminBlogsPage() {
         <p role="status" className="text-sm font-semibold text-slate-600">
           &ldquo;{moderate.data.blog.title}&rdquo; went from {moderate.data.statusFrom} to{' '}
           {moderate.data.statusTo}.
+        </p>
+      )}
+
+      {purge.isSuccess && (
+        <p role="status" className="text-sm font-semibold text-slate-600">
+          &ldquo;{purge.data.title}&rdquo; was deleted. The audit entry is all that is left of it.
         </p>
       )}
     </div>

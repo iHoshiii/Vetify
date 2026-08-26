@@ -68,6 +68,7 @@ export {
   countBlogsByStatus,
   countBlogsBetween,
   countBlogsPerDay,
+  deleteBlog,
   findBlogById,
   findBlogBySlug,
   findBlogs,
