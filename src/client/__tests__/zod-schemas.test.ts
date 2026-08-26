@@ -12,6 +12,7 @@ import {
   PROFESSIONAL_PAGE_SIZE_MAX,
 } from '@shared/limits';
 import {
+  BLOG_AUTHOR_STATUSES,
   BLOG_STATUSES,
   adminAuditListQuerySchema,
   adminBlogListQuerySchema,
@@ -237,7 +238,13 @@ describe('professional schemas', () => {
 describe('admin moderation contract', () => {
   it('derives the full blog status list from the author subset', () => {
     // The point of deriving it: neither list can quietly lose a status.
-    expect(BLOG_STATUSES).toEqual(['draft', 'published', 'hidden', 'removed']);
+    expect(BLOG_STATUSES).toEqual(['draft', 'published', 'flagged', 'hidden', 'removed']);
+  });
+
+  it('keeps the holding status out of an author’s reach', () => {
+    // An author who could write 'flagged' could also write their way out of it.
+    expect(BLOG_AUTHOR_STATUSES).toEqual(['draft', 'published']);
+    expect(blogUpdateSchema.safeParse({ status: 'flagged' }).success).toBe(false);
   });
 
   it('treats an empty note as no note, but a short one as a mistake', () => {
