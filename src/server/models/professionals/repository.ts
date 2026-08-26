@@ -309,6 +309,19 @@ export async function updateProfessional(
 }
 
 /**
+ * Removes an application.
+ *
+ * The compensating half of filing one. An application whose photographs failed to
+ * write is not an application a reviewer can act on, and leaving it behind would
+ * hold both of the applicant's unique slots — one application per account, one
+ * licence per authority — against a write that never finished.
+ */
+export async function deleteProfessional(id: string | ObjectId): Promise<boolean> {
+  const result = await professionalsCollection().deleteOne({ _id: toObjectId(id) });
+  return result.deletedCount === 1;
+}
+
+/**
  * How many applications sit in each status. Feeds the admin breakdown chart and
  * the "N waiting" badge on the queue; the status index keeps it cheap enough to
  * run per request.

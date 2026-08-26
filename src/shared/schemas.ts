@@ -739,7 +739,13 @@ export const professionalInquirySchema = z.object({
  */
 export const professionalInviteSchema = z.object({ note: moderationNote });
 
-/** A reviewer turning an enquiry away. The reason is what the applicant is told. */
+/**
+ * A reviewer turning an enquiry away.
+ *
+ * The reason is for the queue and the audit log, not for the applicant: it is
+ * written to colleagues, and the email says only that the enquiry was not taken
+ * further.
+ */
 export const professionalDeclineSchema = z.object({ reason: moderationReason });
 
 /**

@@ -170,6 +170,7 @@ export {
   PROFESSIONAL_PUBLIC_STATUSES,
   PROFESSIONAL_STATUSES,
   countProfessionalsByStatus,
+  deleteProfessional,
   findProfessionalById,
   findProfessionalByUser,
   findProfessionals,

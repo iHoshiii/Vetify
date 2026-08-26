@@ -2,6 +2,7 @@ export { PROFESSIONAL_INDEXES, PROFESSIONALS_COLLECTION } from './constants';
 
 export {
   countProfessionalsByStatus,
+  deleteProfessional,
   findProfessionalById,
   findProfessionalByUser,
   findProfessionals,
