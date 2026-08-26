@@ -67,14 +67,38 @@ describe('consumeAnonQuery', () => {
     for (let i = 0; i < FREE_ANON_QUERIES; i++) await consumeAnonQuery('visitor-i');
     expect((await consumeAnonQuery('visitor-i')).allowed).toBe(false);
 
-    // Stand in for Mongo's TTL sweep, which deletes the record on expiry. The
-    // reset is that deletion — there is no counter to zero.
+    // Stand in for Mongo's TTL sweep, which deletes the record on expiry. One of
+    // the two ways the allowance comes back; the other is below.
     await anonUsagesCollection().deleteOne({ anonId: 'visitor-i' });
 
     const afterReset = await consumeAnonQuery('visitor-i');
     expect(afterReset.allowed).toBe(true);
     expect(afterReset.used).toBe(1);
     expect(afterReset.remaining).toBe(FREE_ANON_QUERIES - 1);
+  });
+
+  it('resets a record whose window closed before the sweep reached it', async () => {
+    for (let i = 0; i < FREE_ANON_QUERIES; i++) await consumeAnonQuery('visitor-j');
+    expect((await consumeAnonQuery('visitor-j')).allowed).toBe(false);
+
+    // The state the reset used to miss. The TTL monitor runs about once a minute
+    // and only on the primary, so an expired record is routinely still sitting
+    // here — and the count used to keep climbing against it, which is what made
+    // the limit look permanent.
+    await anonUsagesCollection().updateOne(
+      { anonId: 'visitor-j' },
+      { $set: { expiresAt: new Date(Date.now() - 1000) } }
+    );
+
+    const afterLapse = await consumeAnonQuery('visitor-j');
+    expect(afterLapse.allowed).toBe(true);
+    expect(afterLapse.used).toBe(1);
+    expect(afterLapse.remaining).toBe(FREE_ANON_QUERIES - 1);
+
+    const doc = (await anonUsagesCollection().findOne({ anonId: 'visitor-j' }))!;
+    expect(doc.chatCount).toBe(1);
+    // A new window, not the old one carried forward.
+    expect(doc.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('survives concurrent requests without handing out extra questions', async () => {
@@ -93,5 +117,17 @@ describe('consumeAnonQuery', () => {
     expect(await peekAnonUsage('visitor-g')).toBe(2);
     expect(await peekAnonUsage('visitor-g')).toBe(2);
     expect(await peekAnonUsage('nobody')).toBe(0);
+  });
+
+  it('peek reports nothing for a window that has closed', async () => {
+    await consumeAnonQuery('visitor-k');
+    await anonUsagesCollection().updateOne(
+      { anonId: 'visitor-k' },
+      { $set: { expiresAt: new Date(Date.now() - 1000) } }
+    );
+
+    // The count has already been forgiven, so quoting it would show a limit the
+    // next question would not hit.
+    expect(await peekAnonUsage('visitor-k')).toBe(0);
   });
 });

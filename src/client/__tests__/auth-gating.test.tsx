@@ -59,7 +59,7 @@ function renderGated(path: string) {
 }
 
 describe('RequireAuth', () => {
-  it.each(['/book-appointment', '/map', '/planner'])(
+  it.each(['/book-appointment', '/map', '/planner', '/anatomy'])(
     'sends an anonymous visitor from %s to the login page',
     (path) => {
       renderGated(path);

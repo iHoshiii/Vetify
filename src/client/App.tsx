@@ -72,7 +72,16 @@ export default function App() {
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
-        <Route path="anatomy" element={<AnatomyPage />} />
+        {/* Gated like the other tools it sits beside in the nav. It was the one
+            entry in the Tools menu an anonymous visitor could open. */}
+        <Route
+          path="anatomy"
+          element={
+            <RequireAuth>
+              <AnatomyPage />
+            </RequireAuth>
+          }
+        />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="blogs" element={<BlogsPage />} />
         <Route path="blogs/:slug" element={<BlogDetailPage />} />
