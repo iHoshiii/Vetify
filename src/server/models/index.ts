@@ -6,6 +6,10 @@ import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import {
+  PROFESSIONAL_CAPTURES_COLLECTION,
+  PROFESSIONAL_CAPTURE_INDEXES,
+} from './professional-captures';
+import {
   PROFESSIONAL_INQUIRIES_COLLECTION,
   PROFESSIONAL_INQUIRY_INDEXES,
 } from './professional-inquiries';
@@ -114,6 +118,22 @@ export {
   type PetDocument,
   type PublicPet,
 } from './pets';
+
+export {
+  PROFESSIONAL_CAPTURES_COLLECTION,
+  PROFESSIONAL_CAPTURE_INDEXES,
+  PROFESSIONAL_PHOTO_KINDS,
+  deleteProfessionalCaptures,
+  findCaptureIds,
+  findCaptureIdsForApplications,
+  findProfessionalCapture,
+  insertProfessionalCaptures,
+  professionalCapturesCollection,
+  type CaptureInput,
+  type ProfessionalCaptureDocument,
+  type ProfessionalCaptureIds,
+  type ProfessionalPhotoKind,
+} from './professional-captures';
 
 export {
   PROFESSIONAL_INQUIRIES_COLLECTION,
@@ -242,6 +262,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
+  { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different
