@@ -27,4 +27,4 @@ export {
   type ProfessionalInquiryStatus,
 } from './types';
 
-export { isInviteLive } from './utils';
+export { inviteRefusal, isInviteLive } from './utils';

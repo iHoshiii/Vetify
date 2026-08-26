@@ -670,6 +670,20 @@ export const PROFESSIONAL_INQUIRY_STATUSES = [
 export type ProfessionalInquiryStatus = (typeof PROFESSIONAL_INQUIRY_STATUSES)[number];
 
 /**
+ * Why an emailed link will not open the application form.
+ *
+ * Four answers rather than one 404, because they need four different sentences on
+ * the page: 'not-found' is a mistyped or invented link, 'withdrawn' is an enquiry
+ * declined after the invitation went out, 'used' is a link whose application was
+ * already filed, and 'expired' is one that simply sat too long. Only the last is
+ * worth asking for a resend over, and the page can only say so if it knows which
+ * happened. Shared because the server sends one of these as the refusal `reason`
+ * and the client renders the matching copy.
+ */
+export const PROFESSIONAL_INVITE_REFUSALS = ['not-found', 'withdrawn', 'used', 'expired'] as const;
+export type ProfessionalInviteRefusal = (typeof PROFESSIONAL_INVITE_REFUSALS)[number];
+
+/**
  * The public first form.
  *
  * The name and email are the applicant's own claim at this point — nothing has

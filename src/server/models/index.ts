@@ -145,6 +145,7 @@ export {
   findProfessionalInquiryById,
   findProfessionalInquiryByToken,
   insertProfessionalInquiry,
+  inviteRefusal,
   isDuplicateInquiry,
   isInviteLive,
   professionalInquiriesCollection,
