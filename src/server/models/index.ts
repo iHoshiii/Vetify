@@ -5,6 +5,14 @@ import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
+import {
+  PROFESSIONAL_CAPTURES_COLLECTION,
+  PROFESSIONAL_CAPTURE_INDEXES,
+} from './professional-captures';
+import {
+  PROFESSIONAL_INQUIRIES_COLLECTION,
+  PROFESSIONAL_INQUIRY_INDEXES,
+} from './professional-inquiries';
 import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
@@ -112,11 +120,57 @@ export {
 } from './pets';
 
 export {
+  PROFESSIONAL_CAPTURES_COLLECTION,
+  PROFESSIONAL_CAPTURE_INDEXES,
+  PROFESSIONAL_PHOTO_KINDS,
+  deleteProfessionalCaptures,
+  findCaptureIds,
+  findCaptureIdsForApplications,
+  findProfessionalCapture,
+  insertProfessionalCaptures,
+  professionalCapturesCollection,
+  type CaptureInput,
+  type ProfessionalCaptureDocument,
+  type ProfessionalCaptureIds,
+  type ProfessionalPhotoKind,
+} from './professional-captures';
+
+export {
+  PROFESSIONAL_INQUIRIES_COLLECTION,
+  PROFESSIONAL_INQUIRY_INDEXES,
+  PROFESSIONAL_INQUIRY_OPEN_STATUSES,
+  PROFESSIONAL_INQUIRY_STATUSES,
+  countInquiriesByStatus,
+  findProfessionalInquiries,
+  findProfessionalInquiryById,
+  findProfessionalInquiryByToken,
+  insertProfessionalInquiry,
+  inviteRefusal,
+  isDuplicateInquiry,
+  isInviteLive,
+  professionalInquiriesCollection,
+  professionalInquiryAttrsSchema,
+  toAdminInquiry,
+  toAdminInquiryPage,
+  toInviteSummary,
+  updateProfessionalInquiry,
+  type AdminInquiry,
+  type AdminInquiryPage,
+  type FindInquiriesOptions,
+  type InviteSummary,
+  type ProfessionalInquiryAttrs,
+  type ProfessionalInquiryDocument,
+  type ProfessionalInquiryPatch,
+  type ProfessionalInquiryStatus,
+} from './professional-inquiries';
+
+export {
   PROFESSIONALS_COLLECTION,
   PROFESSIONAL_INDEXES,
   PROFESSIONAL_PUBLIC_STATUSES,
   PROFESSIONAL_STATUSES,
   countProfessionalsByStatus,
+  deleteProfessional,
   findProfessionalById,
   findProfessionalByUser,
   findProfessionals,
@@ -138,8 +192,12 @@ export {
   type FindProfessionalsOptions,
   type FindVerifiedOptions,
   type OwnProfessional,
+  type ProfessionalAddress,
+  type ProfessionalAddressView,
   type ProfessionalAttrs,
+  type ProfessionalAttrsAddress,
   type ProfessionalDocument,
+  type ProfessionalLocationFix,
   type ProfessionalPage,
   type ProfessionalPatch,
   type ProfessionalStatus,
@@ -209,6 +267,8 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
+  { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
+  { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different

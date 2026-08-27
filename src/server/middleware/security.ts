@@ -1,4 +1,4 @@
-import { ANON_CHAT_PER_IP_PER_HOUR } from '@shared/limits';
+import { ANON_CHAT_PER_IP_PER_HOUR, PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR } from '@shared/limits';
 import cors from 'cors';
 import type { Express } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -84,4 +84,28 @@ export const anonChatLimiter = rateLimit({
   // Signed-in callers are counted by chatLimiter alone; this layer is only for
   // traffic we cannot attribute to an account.
   skip: (req) => isTest || Boolean(req.auth),
+});
+
+/**
+ * Cap on unauthenticated professional enquiries.
+ *
+ * The only write on the whole API that needs no account, so it is the only one
+ * where a single machine can fill a reviewer's queue. Per hour rather than per
+ * minute because the honest pattern is one enquiry ever and a retry or two after a
+ * typo, and an hour-long window catches a script that a sixty-second one would
+ * merely pace.
+ *
+ * The `openEmail` index already limits one address to one open enquiry; this
+ * limits one network to a handful of addresses.
+ */
+export const inquiryLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: 'Too many enquiries from this network. Please try again later.',
+    reason: 'inquiry-ip-limit',
+  },
+  skip: () => isTest,
 });

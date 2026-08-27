@@ -10,6 +10,7 @@ import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
 import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
 import AdminApplicationsTab from '@/pages/admin/users/applications-tab';
+import AdminEnquiriesTab from '@/pages/admin/users/enquiries-tab';
 import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
@@ -26,6 +27,7 @@ import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
 import ProfessionalApplyPage from '@/pages/professionals/apply-page';
+import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -60,6 +62,7 @@ export default function App() {
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="enquiries" element={<AdminEnquiriesTab />} />
           <Route path="applications" element={<AdminApplicationsTab />} />
         </Route>
         {/* Where the queue used to live. Kept as a redirect because it is a path
@@ -115,14 +118,15 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
-        <Route
-          path="professionals/apply"
-          element={
-            <RequireAuth>
-              <ProfessionalApplyPage />
-            </RequireAuth>
-          }
-        />
+        {/* Stage one needs no account: anybody may write in about being listed. */}
+        <Route path="professionals/apply" element={<ProfessionalApplyPage />} />
+        {/*
+         * Stage two. Public for the same reason the API's invite read is: the page
+         * has to be able to name the address the link was sent to before it knows
+         * who is looking, and the token in the path survives the trip through the
+         * login page.
+         */}
+        <Route path="professionals/apply/:token" element={<ProfessionalInvitePage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />

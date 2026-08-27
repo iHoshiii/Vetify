@@ -2,6 +2,7 @@ export { PROFESSIONAL_INDEXES, PROFESSIONALS_COLLECTION } from './constants';
 
 export {
   countProfessionalsByStatus,
+  deleteProfessional,
   findProfessionalById,
   findProfessionalByUser,
   findProfessionals,
@@ -16,7 +17,11 @@ export {
   type ProfessionalPatch,
 } from './repository';
 
-export { professionalAttrsSchema, type ProfessionalAttrs } from './schema';
+export {
+  professionalAttrsSchema,
+  type ProfessionalAttrs,
+  type ProfessionalAttrsAddress,
+} from './schema';
 
 export {
   toAdminProfessional,
@@ -33,7 +38,10 @@ export {
   type AdminProfessional,
   type AdminProfessionalPage,
   type OwnProfessional,
+  type ProfessionalAddress,
+  type ProfessionalAddressView,
   type ProfessionalDocument,
+  type ProfessionalLocationFix,
   type ProfessionalPage,
   type ProfessionalStatus,
   type ProfessionalWithAccount,

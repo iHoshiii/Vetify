@@ -1,6 +1,10 @@
 import { useMetricsBreakdown, useMetricsTimeseries } from '@/hooks/useAdminMetrics';
 import { pick, useAdminListParams } from '@/hooks/useAdminListParams';
-import { useAdminProfessionals, useReviewProfessional } from '@/hooks/useAdminProfessionals';
+import {
+  useAdminProfessionals,
+  useReviewProfessional,
+  useScheduleInterview,
+} from '@/hooks/useAdminProfessionals';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminProfessional } from '@/services/admin.service';
 import { PROFESSIONAL_STATUSES } from '@shared/schemas';
@@ -10,6 +14,7 @@ import { useState } from 'react';
 import { BreakdownChart } from '../_components/breakdown-chart';
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
+import { InterviewDialog } from '../_components/interview-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
 import { MetricChart } from '../_components/metric-chart';
 import { RoleBadge } from '../_components/role-badge';
@@ -52,10 +57,20 @@ const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: stri
 /** Which verdicts make sense from where the application already is. */
 const OPEN_TO: Record<string, Decision[]> = {
   pending: ['verify', 'reject'],
+  interview: ['verify', 'reject'],
   verified: ['suspend'],
   rejected: ['verify'],
   suspended: ['verify'],
 };
+
+/**
+ * Where an interview can be booked from.
+ *
+ * Not a verdict, so it sits beside the three rather than among them. 'rejected' is
+ * in the list because an appeal that gets a hearing is exactly this move, and
+ * 'interview' is because a booking that has to move is a rebooking.
+ */
+const INTERVIEWABLE = ['pending', 'interview', 'rejected'];
 
 function submitted(date: string): string {
   return format(parseISO(date), 'd MMM yyyy');
@@ -140,6 +155,7 @@ export default function ApplicationsTab() {
 
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
+  const [booking, setBooking] = useState<AdminProfessional | null>(null);
 
   const params = {
     page,
@@ -149,6 +165,7 @@ export default function ApplicationsTab() {
 
   const list = useAdminProfessionals(params);
   const review = useReviewProfessional();
+  const interview = useScheduleInterview();
 
   const statuses = useMetricsBreakdown('professionalStatus');
   const filed = useMetricsTimeseries('applications', WINDOW_DAYS);
@@ -159,7 +176,27 @@ export default function ApplicationsTab() {
 
   function open(next: Pending): void {
     review.reset();
+    interview.reset();
     setPending(next);
+  }
+
+  function openBooking(application: AdminProfessional): void {
+    review.reset();
+    interview.reset();
+    setBooking(application);
+  }
+
+  function book(input: { interviewAt: string; note: string | null }): void {
+    if (!booking) return;
+
+    interview.mutate(
+      {
+        id: booking.id,
+        interviewAt: input.interviewAt,
+        ...(input.note ? { note: input.note } : {}),
+      },
+      { onSuccess: () => setBooking(null) }
+    );
   }
 
   function confirm(reason: string | null): void {
@@ -195,7 +232,19 @@ export default function ApplicationsTab() {
         </div>
       ),
     },
-    { header: 'Application', cell: (row) => <StatusBadge status={row.status} /> },
+    {
+      header: 'Application',
+      cell: (row) => (
+        <div>
+          <StatusBadge status={row.status} />
+          {row.interviewAt && (
+            <p className="mt-1 text-xs font-semibold text-blue-800">
+              {format(parseISO(row.interviewAt), 'd MMM yyyy, HH:mm')}
+            </p>
+          )}
+        </div>
+      ),
+    },
     {
       header: 'Account',
       secondary: true,
@@ -212,6 +261,12 @@ export default function ApplicationsTab() {
       align: 'right',
       cell: (row) => (
         <div className="flex flex-wrap justify-end gap-1.5">
+          {INTERVIEWABLE.includes(row.status) && (
+            <button type="button" onClick={() => openBooking(row)} className={ACTION}>
+              {/* A booking that already exists is being moved, not made. */}
+              {row.interviewAt ? 'Rebook' : 'Interview'}
+            </button>
+          )}
           {(OPEN_TO[row.status] ?? []).map((decision) => (
             <button
               key={decision}
@@ -315,6 +370,26 @@ export default function ApplicationsTab() {
           onCancel={() => setPending(null)}
           onConfirm={confirm}
         />
+      )}
+
+      {booking && (
+        <InterviewDialog
+          open
+          applicant={booking.applicant?.email ?? booking.fullName}
+          isPending={interview.isPending}
+          error={interview.isError ? messageOf(interview.error) : null}
+          onCancel={() => setBooking(null)}
+          onConfirm={book}
+        />
+      )}
+
+      {interview.isSuccess && (
+        <p role="status" className="text-sm font-semibold text-slate-600">
+          Interview booked
+          {interview.data.delivered
+            ? ' and the applicant has been told when.'
+            : `, but the email did not go out: ${interview.data.deliveryError}`}
+        </p>
       )}
 
       {review.isSuccess && (

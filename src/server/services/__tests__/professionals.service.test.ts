@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   auditLogsCollection,
@@ -13,11 +13,13 @@ import {
   type UserRole,
 } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { reviewProfessional } from '../professionals.service';
+import { clearRecentMail, recentMail } from '../mail.service';
+import { reviewProfessional, scheduleInterview } from '../professionals.service';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
 afterAll(stopTestDb);
+beforeEach(clearRecentMail);
 
 let seq = 0;
 
@@ -35,11 +37,21 @@ async function application(user: User, overrides: Partial<ProfessionalAttrs> = {
   seq += 1;
   return await insertProfessional({
     user: user._id,
+    fullName: `Marites Reyes ${seq}`,
     licenseNumber: `VET-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     clinicName: 'Bayside Animal Clinic',
-    clinicAddress: '12 Mabini Street, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
     bio: 'Small animal practice, fifteen years of it.',
     yearsExperience: 15,
     backgroundCheckConsent: true,
@@ -182,6 +194,102 @@ describe('reviewProfessional', () => {
     expect(
       await reviewProfessional({ id: new ObjectId(), decision: 'verified', reviewer: admin })
     ).toBeNull();
+    expect(await auditLogsCollection().countDocuments()).toBe(0);
+  });
+});
+
+describe('scheduleInterview', () => {
+  /** A fortnight out, so the future check has room whatever the clock says. */
+  const SOON = () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  it('books the conversation and tells the applicant when', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const filed = await application(applicant);
+    const at = SOON();
+
+    const result = await scheduleInterview({
+      id: filed._id,
+      reviewer: admin,
+      at,
+      note: 'Video call, twenty minutes.',
+    });
+
+    expect(result?.application.status).toBe('interview');
+    expect(result?.application.interviewAt?.toISOString()).toBe(at.toISOString());
+    expect(result?.application.interviewNote).toBe('Video call, twenty minutes.');
+    expect(result?.delivered).toBe(true);
+
+    expect(recentMail().at(-1)?.to).toBe(applicant.email);
+    // Greeted by the name on the licence, not the one on the account.
+    expect(recentMail().at(-1)?.text).toContain(`Hi ${filed.fullName.split(' ')[0]},`);
+    expect(recentMail().at(-1)?.text).toContain('Video call, twenty minutes.');
+  });
+
+  it('leaves the review trail empty, because nothing has been decided', async () => {
+    const admin = await account('admin');
+    const filed = await application(await account());
+
+    const result = await scheduleInterview({ id: filed._id, reviewer: admin, at: SOON() });
+
+    expect(result?.application.reviewedAt).toBeNull();
+    expect(result?.application.reviewedBy).toBeNull();
+
+    const entry = await auditLogsCollection().findOne({ action: 'professional.interview' });
+    expect(entry?.actorEmail).toBe(admin.email);
+    expect(entry?.metadata).toMatchObject({ statusFrom: 'pending', delivered: true });
+  });
+
+  it('hears an appeal: re-opens a rejection and drops the reason with it', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const filed = await application(applicant);
+    await reviewProfessional({
+      id: filed._id,
+      decision: 'rejected',
+      reviewer: admin,
+      reason: 'Credential scan was illegible.',
+    });
+
+    const result = await scheduleInterview({ id: filed._id, reviewer: admin, at: SOON() });
+
+    expect(result?.application.status).toBe('interview');
+    expect(result?.application.rejectionReason).toBeNull();
+  });
+
+  it('will not book one for a time that has already passed', async () => {
+    const admin = await account('admin');
+    const filed = await application(await account());
+
+    await expect(
+      scheduleInterview({ id: filed._id, reviewer: admin, at: new Date(Date.now() - 60_000) })
+    ).rejects.toThrow(/in the future/);
+  });
+
+  it('will not interview an application that is already verified', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const filed = await application(applicant);
+    await reviewProfessional({ id: filed._id, decision: 'verified', reviewer: admin });
+
+    await expect(scheduleInterview({ id: filed._id, reviewer: admin, at: SOON() })).rejects.toThrow(
+      /cannot be interviewed/
+    );
+  });
+
+  it('will not let a reviewer book a chat with themselves', async () => {
+    const admin = await account('admin');
+    const filed = await application(admin);
+
+    await expect(scheduleInterview({ id: filed._id, reviewer: admin, at: SOON() })).rejects.toThrow(
+      /your own application/
+    );
+  });
+
+  it('answers null for an application that does not exist', async () => {
+    const admin = await account('admin');
+
+    expect(await scheduleInterview({ id: new ObjectId(), reviewer: admin, at: SOON() })).toBeNull();
     expect(await auditLogsCollection().countDocuments()).toBe(0);
   });
 });

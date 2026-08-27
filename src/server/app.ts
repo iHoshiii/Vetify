@@ -1,3 +1,4 @@
+import { PROFESSIONAL_APPLICATION_BODY_LIMIT } from '@shared/limits';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 
@@ -16,6 +17,15 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   applySecurity(app);
+
+  // The application carries three JPEGs as base64, so it gets a wider parser than
+  // the rest of the API. Mounted first on purpose: body-parser skips a request
+  // whose body it finds already read, so whichever json() runs first is the one
+  // that sets the ceiling, and the 1mb line below only ever sees everything else.
+  app.use(
+    '/api/v1/professionals/invites',
+    express.json({ limit: PROFESSIONAL_APPLICATION_BODY_LIMIT })
+  );
 
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
