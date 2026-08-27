@@ -10,6 +10,7 @@ import {
   METRIC_WINDOW_DAYS,
   MODERATION_REASON_MAX,
   MODERATION_REASON_MIN,
+  PROFESSIONAL_AVAILABILITY_STATUSES,
   PROFESSIONAL_BIO_MAX,
   PROFESSIONAL_BIO_MIN,
   PROFESSIONAL_CAPTURE_MAX_AGE_MINUTES,
@@ -17,7 +18,9 @@ import {
   PROFESSIONAL_LOCATION_MAX_ACCURACY_M,
   PROFESSIONAL_MAX_ADDRESSES,
   PROFESSIONAL_MAX_CREDENTIALS,
+  PROFESSIONAL_MAX_RATE_CAP,
   PROFESSIONAL_MAX_SPECIALTIES,
+  PROFESSIONAL_MIN_RATE,
   PROFESSIONAL_MOTIVATION_MAX,
   PROFESSIONAL_MOTIVATION_MIN,
   PROFESSIONAL_PAGE_SIZE,
@@ -632,6 +635,70 @@ export const professionalListQuerySchema = z.object({
     .default(PROFESSIONAL_PAGE_SIZE),
   specialty: z.string().trim().toLowerCase().min(1).optional(),
 });
+
+export const workHistoryItemSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().trim().min(2, 'Job title must be at least 2 characters').max(100),
+  workplace: z.string().trim().min(2, 'Workplace/Clinic must be at least 2 characters').max(140),
+  startYear: z.coerce
+    .number()
+    .int()
+    .min(1950, 'Invalid year')
+    .max(new Date().getFullYear() + 1),
+  endYear: z.coerce
+    .number()
+    .int()
+    .min(1950, 'Invalid year')
+    .max(new Date().getFullYear() + 1)
+    .nullish(),
+  isCurrent: z.boolean().default(false),
+  description: z.string().trim().max(1000).optional(),
+});
+export type WorkHistoryItem = z.output<typeof workHistoryItemSchema>;
+
+export const weeklyScheduleItemSchema = z.object({
+  day: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
+  enabled: z.boolean().default(true),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm format')
+    .default('09:00'),
+  endTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm format')
+    .default('17:00'),
+});
+export type WeeklyScheduleItem = z.output<typeof weeklyScheduleItemSchema>;
+
+/**
+ * The settings a verified professional may change about themselves.
+ *
+ * Every field is optional and absent means "leave it alone", so the tray can send
+ * one row's worth of changes instead of resending the whole profile to move a
+ * single value. `yearsExperience` is deliberately absent: it was declared on the
+ * application and checked against the licence, so changing it is an admin's job.
+ */
+export const professionalProfileUpdateSchema = z.object({
+  availabilityStatus: z.enum(PROFESSIONAL_AVAILABILITY_STATUSES).optional(),
+  weeklySchedule: z.array(weeklyScheduleItemSchema).optional(),
+  hourlyRate: z.coerce
+    .number()
+    .min(PROFESSIONAL_MIN_RATE, `Minimum rate is $${PROFESSIONAL_MIN_RATE}`)
+    .max(PROFESSIONAL_MAX_RATE_CAP, `Maximum rate allowed is $${PROFESSIONAL_MAX_RATE_CAP}`)
+    .optional(),
+  avatarUrl: z
+    .string()
+    .trim()
+    .url('Profile picture must be a valid URL')
+    .or(z.literal(''))
+    .nullish()
+    .transform((val) => (val === '' ? null : val)),
+  workHistory: z.array(workHistoryItemSchema).optional(),
+  bookingNotificationMinutes: z.union([z.literal(15), z.literal(30), z.literal(60)]).optional(),
+});
+
+export type ProfessionalProfileUpdateInput = z.input<typeof professionalProfileUpdateSchema>;
+export type ProfessionalProfileUpdate = z.output<typeof professionalProfileUpdateSchema>;
 
 /** Pre-parse: what the form holds, before trimming and normalising. */
 export type ProfessionalApplyInput = z.input<typeof professionalApplySchema>;
