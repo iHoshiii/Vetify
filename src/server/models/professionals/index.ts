@@ -12,9 +12,11 @@ export {
   isDuplicateLicense,
   professionalsCollection,
   updateProfessional,
+  updateProfessionalProfile,
   type FindProfessionalsOptions,
   type FindVerifiedOptions,
   type ProfessionalPatch,
+  type ProfessionalProfilePatch,
 } from './repository';
 
 export {

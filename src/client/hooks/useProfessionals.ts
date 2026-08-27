@@ -7,12 +7,17 @@ import {
   getOwnApplication,
   listProfessionals,
   sendProfessionalInquiry,
+  updateOwnProfessionalProfile,
   type InviteSummary,
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
 } from '@/services/professionals.service';
-import type { ProfessionalApplyInput, ProfessionalInquiryInput } from '@shared/schemas';
+import type {
+  ProfessionalApplyInput,
+  ProfessionalInquiryInput,
+  ProfessionalProfileUpdateInput,
+} from '@shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -74,6 +79,25 @@ export function useOwnApplication() {
     enabled: isAuthenticated,
     staleTime: STALE_TIME,
     retry: retryUnlessMissing,
+  });
+}
+
+/**
+ * Writes one row of the settings tray.
+ *
+ * The response is the whole listing, so it is written straight into the cache
+ * rather than refetched. The public directory is invalidated with it: rate,
+ * availability and hours are all things it prints.
+ */
+export function useUpdateProfessionalProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation<OwnProfessional, Error, ProfessionalProfileUpdateInput>({
+    mutationFn: updateOwnProfessionalProfile,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(professionalKeys.mine(), updated);
+      queryClient.invalidateQueries({ queryKey: professionalKeys.lists() });
+    },
   });
 }
 

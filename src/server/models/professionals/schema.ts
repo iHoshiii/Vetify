@@ -54,6 +54,34 @@ export const professionalAttrsSchema = z.object({
   businessPhone: z.string().trim().min(1).nullish(),
   bio: z.string().trim().min(1, 'Bio is required'),
   yearsExperience: z.number().int().min(0).default(0),
+  hourlyRate: z.number().min(0).default(50),
+  availabilityStatus: z.enum(['available', 'unavailable', 'busy']).default('available'),
+  weeklySchedule: z
+    .array(
+      z.object({
+        day: z.enum(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
+        enabled: z.boolean().default(true),
+        startTime: z.string().default('09:00'),
+        endTime: z.string().default('17:00'),
+      })
+    )
+    .default([]),
+  avatarUrl: z.string().trim().nullish(),
+  workHistory: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        title: z.string(),
+        workplace: z.string(),
+        startYear: z.number(),
+        endYear: z.number().nullish(),
+        isCurrent: z.boolean().default(false),
+        description: z.string().optional(),
+      })
+    )
+    .default([]),
+  bookingNotificationMinutes: z.union([z.literal(15), z.literal(30), z.literal(60)]).default(30),
+  flaggedForRateReview: z.boolean().default(false),
   status: z.enum(PROFESSIONAL_STATUSES).default('pending'),
   /**
    * Whether consent was given. Stored as the date it was given; the flag is what

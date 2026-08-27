@@ -1,7 +1,6 @@
 import ContactForm from './_components/contact-form';
 import ContactHero from './_components/contact-hero';
 import ContactInfo from './_components/contact-info';
-import SocialLinks from './_components/social-links';
 
 export default function ContactPage() {
   return (
@@ -14,8 +13,6 @@ export default function ContactPage() {
           <ContactForm />
         </div>
       </section>
-
-      <SocialLinks />
     </main>
   );
 }

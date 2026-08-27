@@ -1,7 +1,13 @@
+import type {
+  ProfessionalAvailabilityStatus,
+  ProfessionalBookingNotificationTime,
+} from '@shared/limits';
 import {
   PROFESSIONAL_STATUSES,
   type ProfessionalAddressKind,
   type ProfessionalStatus,
+  type WeeklyScheduleItem,
+  type WorkHistoryItem,
 } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 
@@ -87,6 +93,13 @@ export type ProfessionalDocument = {
   businessPhone: string | null;
   bio: string;
   yearsExperience: number;
+  hourlyRate?: number;
+  availabilityStatus?: ProfessionalAvailabilityStatus;
+  weeklySchedule?: WeeklyScheduleItem[];
+  avatarUrl?: string | null;
+  workHistory?: WorkHistoryItem[];
+  bookingNotificationMinutes?: ProfessionalBookingNotificationTime;
+  flaggedForRateReview?: boolean;
   status: ProfessionalStatus;
   /**
    * When the applicant consented to a background check, rather than whether.
@@ -159,6 +172,13 @@ export type OwnProfessional = {
   businessPhone: string | null;
   bio: string;
   yearsExperience: number;
+  hourlyRate: number;
+  availabilityStatus: ProfessionalAvailabilityStatus;
+  weeklySchedule: WeeklyScheduleItem[];
+  avatarUrl: string | null;
+  workHistory: WorkHistoryItem[];
+  bookingNotificationMinutes: ProfessionalBookingNotificationTime;
+  flaggedForRateReview: boolean;
   status: ProfessionalStatus;
   /** Ids for the three photographs, to be streamed one at a time. */
   captures: ProfessionalCaptureIds;
@@ -190,6 +210,10 @@ export type PublicProfessional = {
   specialties: string[];
   bio: string;
   yearsExperience: number;
+  hourlyRate: number;
+  availabilityStatus: ProfessionalAvailabilityStatus;
+  weeklySchedule: WeeklyScheduleItem[];
+  workHistory: WorkHistoryItem[];
   /** When the licence was verified. Every entry in the directory has one. */
   verifiedAt: string | null;
 };

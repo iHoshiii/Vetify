@@ -26,6 +26,11 @@ export default defineWorkspace([
     test: {
       name: 'server',
       environment: 'node',
+      // A developer's .env decides how this machine mails; the suite must not
+      // follow it. Under MAIL_TRANSPORT=http every test that invites somebody
+      // either posts to a real provider or fails on a key it never needed.
+      // process.loadEnvFile() leaves an already-set variable alone, so this wins.
+      env: { MAIL_TRANSPORT: 'log' },
       globals: true,
       include: ['src/server/**/*.{test,spec}.ts'],
       // Spinning up mongodb-memory-server downloads a binary on first run.

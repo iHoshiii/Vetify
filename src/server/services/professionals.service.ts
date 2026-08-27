@@ -10,6 +10,7 @@ import {
   type ProfessionalDocument,
   type ProfessionalStatus,
   type User,
+  type UserPatch,
   type UserRole,
 } from '../models';
 import { AppError } from '../utils/AppError';
@@ -105,8 +106,21 @@ export async function reviewProfessional(
 
   if (!application) return null;
 
-  if (applicant && roleTo !== roleFrom) {
-    await updateUser(applicant._id, { role: roleTo });
+  // The account carries the name on the licence from here on.
+  //
+  // A listing beside a verified badge has to be the person the register was
+  // checked against, and the directory prints the account name as its fallback.
+  // Copying it across on approval is what stops the two drifting apart, and it is
+  // why the account name is fixed for a professional: changing it would rename a
+  // verified vet.
+  const accountPatch: UserPatch = {};
+  if (roleTo !== roleFrom) accountPatch.role = roleTo;
+  if (decision === 'verified' && applicant?.name !== application.fullName) {
+    accountPatch.name = application.fullName;
+  }
+
+  if (applicant && Object.keys(accountPatch).length > 0) {
+    await updateUser(applicant._id, accountPatch);
   }
 
   await recordAudit({
