@@ -90,7 +90,21 @@ const envSchema = z.object({
   MAIL_API_KEY: z.string().min(1).optional(),
 });
 
-const parsed = envSchema.safeParse(process.env);
+/**
+ * A var left blank counts as unset.
+ *
+ * `KEY=` is what a copied sample looks like before anybody fills it in, and it is
+ * what an unset var looks like in most deployment consoles. Zod reads '' as a
+ * value that is present and then refuses it, which turns an unconfigured optional
+ * secret into a boot failure — the whole server down over a credential nothing had
+ * asked for yet. Dropping the empty ones lets every default and every .optional()
+ * below mean what it says.
+ */
+const provided = Object.fromEntries(
+  Object.entries(process.env).filter(([, value]) => value !== undefined && value.trim() !== '')
+);
+
+const parsed = envSchema.safeParse(provided);
 
 if (!parsed.success) {
   const details = Object.entries(parsed.error.flatten().fieldErrors)
