@@ -9,6 +9,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminProfessional } from '@/services/admin.service';
 import { PROFESSIONAL_STATUSES } from '@shared/schemas';
 import { format, parseISO } from 'date-fns';
+import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 import { BreakdownChart } from '../_components/breakdown-chart';
@@ -103,10 +104,23 @@ function Submission({ application }: { application: AdminProfessional }) {
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Experience</dt>
-          <dd>
-            {application.yearsExperience} year{application.yearsExperience === 1 ? '' : 's'}{' '}
-            &middot; {application.specialties.join(', ')}
+          <dt className="font-bold uppercase tracking-wider text-slate-500">
+            Experience &amp; rate
+          </dt>
+          <dd className="space-y-1">
+            <div>
+              {application.yearsExperience} year{application.yearsExperience === 1 ? '' : 's'}{' '}
+              &middot; ${application.hourlyRate}/hr &middot; {application.specialties.join(', ')}
+            </div>
+            {/* Set above what the experience on the licence earns. Not a block on
+                anything — the listing is live either way — just the one number on
+                this card a reviewer might want to ask about. */}
+            {application.flaggedForRateReview && (
+              <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
+                <AlertTriangle className="h-3 w-3" />
+                Above the rate their {application.yearsExperience} yrs allows
+              </span>
+            )}
           </dd>
         </div>
         <div>
