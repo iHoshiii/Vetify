@@ -87,10 +87,10 @@ export const anonChatLimiter = rateLimit({
 });
 
 /**
- * Cap on unauthenticated professional enquiries.
+ * Cap on professional enquiries, by network.
  *
- * The only write on the whole API that needs no account, so it is the only one
- * where a single machine can fill a reviewer's queue. Per hour rather than per
+ * An account is needed to write in, but an account is free, so this is still the
+ * one write where a single machine can fill a reviewer's queue. Per hour rather
  * minute because the honest pattern is one enquiry ever and a retry or two after a
  * typo, and an hour-long window catches a script that a sixty-second one would
  * merely pace.

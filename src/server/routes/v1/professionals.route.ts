@@ -137,9 +137,16 @@ router.get('/me', optionalAuth, signedIn, async (req, res) => {
 /**
  * POST /api/v1/professionals/inquiries
  *
- * Stage one, and the only write on the API that needs no account: the short form
- * anyone can send. A reviewer reads it and either emails an application link or
- * turns it down.
+ * Stage one: the short form that opens a review. A reviewer reads it and either
+ * emails an application link or turns it down.
+ *
+ * An account is required, even though nothing here is checked against it. Stage
+ * two matches the invited address against whoever opens the link, so an enquiry
+ * from nobody in particular could only ever earn a link its sender cannot use.
+ *
+ * The guards sit ahead of the limiter so a stranger cannot spend the hourly
+ * allowance of the accounts sharing its address. `generalLimiter` on /api is what
+ * holds the refusals themselves.
  *
  * "One open enquiry per address" is left to the partial unique index rather than a
  * read-then-write, which two simultaneous submissions would walk straight through.
@@ -147,28 +154,35 @@ router.get('/me', optionalAuth, signedIn, async (req, res) => {
  * later is allowed — this only stops the same person filling the queue while their
  * first enquiry is still waiting.
  */
-router.post('/inquiries', inquiryLimiter, validate(professionalInquirySchema), async (req, res) => {
-  const input = req.body as ProfessionalInquiry;
+router.post(
+  '/inquiries',
+  optionalAuth,
+  signedIn,
+  inquiryLimiter,
+  validate(professionalInquirySchema),
+  async (req, res) => {
+    const input = req.body as ProfessionalInquiry;
 
-  try {
-    await insertProfessionalInquiry(input);
-  } catch (err) {
-    if (isDuplicateInquiry(err)) {
-      return failReason(
-        res,
-        409,
-        'We already have an enquiry from that address. Watch your inbox — we will be in touch.',
-        'inquiry-open'
-      );
+    try {
+      await insertProfessionalInquiry(input);
+    } catch (err) {
+      if (isDuplicateInquiry(err)) {
+        return failReason(
+          res,
+          409,
+          'We already have an enquiry from that address. Watch your inbox — we will be in touch.',
+          'inquiry-open'
+        );
+      }
+      throw err;
     }
-    throw err;
-  }
 
-  // Nothing of the row goes back. The caller has no account and no way to be
-  // authorised for a second look, so an id here would only be a handle to a queue
-  // row handed to an unauthenticated stranger.
-  created(res, { received: true });
-});
+    // Nothing of the row goes back. No endpoint reads an enquiry but the
+    // reviewer's, and the row is not tied to the account that sent it, so an id
+    // here would be a handle to something its holder can never open.
+    created(res, { received: true });
+  }
+);
 
 /**
  * GET /api/v1/professionals/invites/:token
