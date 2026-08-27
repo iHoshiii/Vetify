@@ -9,7 +9,7 @@ export const eligibility: EligibilityItem[] = [
   {
     icon: '📋',
     title: 'Proof of Credentials',
-    body: 'Applicants are required to submit a copy of their license, diploma, and any relevant specialist certifications for verification.',
+    body: 'The application asks for a photograph of your PRC licence, front and back, taken at the time you fill it in — along with a photograph of you. Diplomas and specialist certificates are welcome but optional.',
   },
   {
     icon: '🏥',
