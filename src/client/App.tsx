@@ -118,8 +118,19 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
-        {/* Stage one needs no account: anybody may write in about being listed. */}
-        <Route path="professionals/apply" element={<ProfessionalApplyPage />} />
+        {/*
+         * Stage one, behind an account. Stage two matches the invited address
+         * against whoever opens the link, so an enquiry from nobody in particular
+         * could only ever earn a link its sender cannot use.
+         */}
+        <Route
+          path="professionals/apply"
+          element={
+            <RequireAuth>
+              <ProfessionalApplyPage />
+            </RequireAuth>
+          }
+        />
         {/*
          * Stage two. Public for the same reason the API's invite read is: the page
          * has to be able to name the address the link was sent to before it knows

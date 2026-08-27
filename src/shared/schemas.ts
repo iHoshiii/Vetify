@@ -173,8 +173,8 @@ export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
  *
  * 'professional-inquiry' is the enquiry a reviewer invites or turns away, and is
  * its own target rather than folded into 'professional': at that point there is
- * no application and often no account, so an audit row pointing at a
- * professional id would be pointing at nothing.
+ * no application yet, so an audit row pointing at a professional id would be
+ * pointing at nothing.
  */
 export const AUDIT_TARGET_TYPES = ['blog', 'professional', 'professional-inquiry', 'user'] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];

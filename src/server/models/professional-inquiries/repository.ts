@@ -97,8 +97,8 @@ export type FindInquiriesOptions = {
   /**
    * Matches the name, the email or the licence number.
    *
-   * Wider than the application queue's search, and deliberately: at this stage
-   * there is no account to look the person up in, so these three strings are
+   * Wider than the application queue's search, and deliberately: the enquiry is
+   * not tied to the account that sent it, so at this stage these three strings are
    * everything a reviewer has to go on.
    */
   q?: string;

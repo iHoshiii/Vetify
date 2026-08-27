@@ -7,6 +7,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EnquiriesTab from '../pages/admin/users/enquiries-tab';
 import type { AdminInquiry } from '../services/admin.service';
 
+/**
+ * The decline dialog is filled with userEvent, which types a whole sentence of
+ * reason one keystroke at a time and re-renders the table for each one. On its own
+ * the file finishes in under two seconds; with the rest of the suite competing for
+ * the same cores it crosses the five-second default, and the timeout says nothing
+ * about the dialog. Raised here rather than globally, as in professionals-apply.
+ */
+vi.setConfig({ testTimeout: 20_000 });
+
 const invite = {
   mutate: vi.fn(),
   reset: vi.fn(),

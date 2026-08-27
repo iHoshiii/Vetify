@@ -188,6 +188,14 @@ async function listed(overrides: Partial<ProfessionalAttrs> = {}) {
   });
 }
 
+/** The short first form, posted the way a signed-in visitor's page sends it. */
+function enquire(auth: string, body: Record<string, unknown>) {
+  return request(app)
+    .post('/api/v1/professionals/inquiries')
+    .set('Authorization', `Bearer ${auth}`)
+    .send(body);
+}
+
 /** The application form, posted through an invitation the way the page does it. */
 function apply(token: string, auth: string, body: Record<string, unknown>) {
   return request(app)
@@ -241,14 +249,26 @@ describe('GET /api/v1/professionals', () => {
 });
 
 describe('POST /api/v1/professionals/inquiries', () => {
-  it('takes an enquiry from a stranger and hands back nothing to hold', async () => {
-    const res = await request(app)
-      .post('/api/v1/professionals/inquiries')
-      .send(inquiryForm({ email: 'Marites@Example.COM ', licenseNumber: ' vet 9000-ph ' }));
+  it('refuses an enquiry from nobody in particular', async () => {
+    const res = await request(app).post('/api/v1/professionals/inquiries').send(inquiryForm());
+
+    expect(res.status).toBe(401);
+    expect(res.body.reason).toBe('unauthenticated');
+    // And leaves nothing on the queue for a reviewer to read.
+    expect(await professionalInquiriesCollection().countDocuments({})).toBe(0);
+  });
+
+  it('takes an enquiry and hands back nothing to hold', async () => {
+    const sender = await account();
+
+    const res = await enquire(
+      sender.token,
+      inquiryForm({ email: 'Marites@Example.COM ', licenseNumber: ' vet 9000-ph ' })
+    );
 
     expect(res.status).toBe(201);
-    // No id: the caller has no account, so there is nothing they could later be
-    // authorised to read.
+    // No id: the row is not tied to the account that sent it, and no endpoint but
+    // the reviewer's reads one, so there is nothing the sender could open.
     expect(res.body).toEqual({ received: true });
 
     const stored = await professionalInquiriesCollection().findOne({
@@ -265,23 +285,24 @@ describe('POST /api/v1/professionals/inquiries', () => {
   });
 
   it('holds one address to one open enquiry', async () => {
+    const sender = await account();
     const first = inquiryForm();
-    await request(app).post('/api/v1/professionals/inquiries').send(first);
+    await enquire(sender.token, first);
 
-    const res = await request(app)
-      .post('/api/v1/professionals/inquiries')
-      .send(
-        inquiryForm({
-          email: first.email,
-          motivation: 'Writing in a second time, in case the first one went astray somewhere.',
-        })
-      );
+    const res = await enquire(
+      sender.token,
+      inquiryForm({
+        email: first.email,
+        motivation: 'Writing in a second time, in case the first one went astray somewhere.',
+      })
+    );
 
     expect(res.status).toBe(409);
     expect(res.body.reason).toBe('inquiry-open');
   });
 
   it('lets a declined applicant write in again', async () => {
+    const sender = await account();
     const declined = await enquiry();
     await updateProfessionalInquiry(declined._id, {
       status: 'declined',
@@ -289,9 +310,7 @@ describe('POST /api/v1/professionals/inquiries', () => {
       declineReason: 'The licence could not be found on the board register.',
     });
 
-    const res = await request(app)
-      .post('/api/v1/professionals/inquiries')
-      .send(inquiryForm({ email: declined.email }));
+    const res = await enquire(sender.token, inquiryForm({ email: declined.email }));
 
     expect(res.status).toBe(201);
     expect(await professionalInquiriesCollection().countDocuments({ email: declined.email })).toBe(
@@ -300,9 +319,9 @@ describe('POST /api/v1/professionals/inquiries', () => {
   });
 
   it('refuses an enquiry with nothing in the one box a reviewer reads', async () => {
-    const res = await request(app)
-      .post('/api/v1/professionals/inquiries')
-      .send(inquiryForm({ motivation: 'i want in' }));
+    const sender = await account();
+
+    const res = await enquire(sender.token, inquiryForm({ motivation: 'i want in' }));
 
     expect(res.status).toBe(400);
     expect(res.body.issues.motivation).toBeTruthy();

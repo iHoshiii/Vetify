@@ -8,10 +8,12 @@ import InquiryForm from './_components/inquiry-form';
 /**
  * Stage one, and whatever came of it.
  *
- * Three screens in one, chosen by what the caller already has: an application on
- * file gets the status view, and everybody else gets the short enquiry form —
- * including visitors with no account at all, because nothing about writing in
- * requires one. The long form is not here; it lives behind the emailed link.
+ * Two screens in one, chosen by what the caller already has: an application on
+ * file gets the status view, and everybody else gets the short enquiry form. The
+ * long form is not here; it lives behind the emailed link.
+ *
+ * RequireAuth stands in front of the route, so there is a session by the time any
+ * of this renders.
  */
 export default function ProfessionalApplyPage() {
   useDocumentTitle(
@@ -19,8 +21,8 @@ export default function ProfessionalApplyPage() {
     'Write in about being listed as a verified veterinary professional on Vetify.'
   );
 
-  // Disabled without a session, so an anonymous visitor falls through to the form
-  // rather than waiting on a request that is never sent.
+  // Disabled without a session of its own accord, which is what keeps a render
+  // that somehow arrives anonymously from asking for an application nobody has.
   const query = useOwnApplication();
   const application = query.data;
 

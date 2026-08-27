@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/providers/AuthProvider';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useSendInquiry } from '@/hooks/useProfessionals';
@@ -28,16 +29,22 @@ function firstErrors(issues: Record<string, string[] | undefined>): Errors {
 }
 
 /**
- * Stage one: the short form anybody can send.
+ * Stage one: the short form that opens a review.
  *
- * Nothing here is checked against anything — the name and the email are the
+ * Nothing here is checked against anything — the name and the licence are the
  * sender's own claim, and the whole point of the screen is to be cheap to fill in
  * and cheap to refuse. What it collects is what a reviewer needs to decide whether
  * to send the real application: who you are, what licence you hold, where you
  * practise, and why you want in.
+ *
+ * The address arrives prefilled from the session, because the emailed link only
+ * opens for the account that owns it. Still editable, in case the invitation should
+ * go somewhere else — at the price of having to sign in as that address to use it.
  */
 export default function InquiryForm() {
-  const [values, setValues] = useState(EMPTY);
+  const { user } = useAuth();
+
+  const [values, setValues] = useState(() => ({ ...EMPTY, email: user?.email ?? '' }));
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState('');
 
@@ -200,7 +207,7 @@ export default function InquiryForm() {
       <p className="text-xs leading-5 text-slate-500">
         This is not the application. If a reviewer takes it further you will get a link by email to
         the full form, which asks for photographs taken at the time and a live location for your
-        address.
+        address. That link only opens for the account signed in with the address above.
       </p>
     </form>
   );
