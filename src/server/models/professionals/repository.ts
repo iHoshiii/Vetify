@@ -309,6 +309,50 @@ export async function updateProfessional(
 }
 
 /**
+ * The subset of an application a verified professional may move themselves.
+ *
+ * `yearsExperience` is not in it, and neither is anything else off the submitted
+ * form: those were checked against a licence register, so they change through a
+ * reviewer. `flaggedForRateReview` is in it because the rate check derives it —
+ * it is written beside the rate, never sent by the caller.
+ */
+export type ProfessionalProfilePatch = Partial<
+  Pick<
+    ProfessionalDocument,
+    | 'availabilityStatus'
+    | 'weeklySchedule'
+    | 'hourlyRate'
+    | 'avatarUrl'
+    | 'workHistory'
+    | 'bookingNotificationMinutes'
+    | 'flaggedForRateReview'
+  >
+>;
+
+/**
+ * Writes the settings above onto a listing.
+ *
+ * An empty patch reads instead of writing: the routes send only the fields a
+ * request actually carried, and a caller that sent nothing editable should get
+ * the current listing back rather than a bumped `updatedAt`.
+ */
+export async function updateProfessionalProfile(
+  id: string | ObjectId,
+  patch: ProfessionalProfilePatch
+): Promise<ProfessionalDocument | null> {
+  const _id = toObjectId(id);
+  if (Object.keys(patch).length === 0) return await findProfessionalById(_id);
+
+  const set: Partial<ProfessionalDocument> = { ...patch, updatedAt: new Date() };
+
+  return await professionalsCollection().findOneAndUpdate(
+    { _id },
+    { $set: set },
+    { returnDocument: 'after' }
+  );
+}
+
+/**
  * Removes an application.
  *
  * The compensating half of filing one. An application whose photographs failed to
