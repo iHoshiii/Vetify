@@ -211,7 +211,7 @@ export default function ApplicationStatus({ application }: { application: OwnPro
           </Link>
         ) : (
           <Link
-            to="/contact"
+            to="/professionals/apply"
             className="inline-flex h-11 items-center rounded-xl border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-900 hover:border-slate-900/30"
           >
             Get in touch
