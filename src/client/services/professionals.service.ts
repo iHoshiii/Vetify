@@ -1,10 +1,17 @@
-import type { ProfessionalPhotoKind } from '@shared/limits';
+import type {
+  ProfessionalAvailabilityStatus,
+  ProfessionalBookingNotificationTime,
+  ProfessionalPhotoKind,
+} from '@shared/limits';
 import type {
   ProfessionalAddressKind,
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalInviteRefusal,
+  ProfessionalProfileUpdateInput,
   ProfessionalStatus,
+  WeeklyScheduleItem,
+  WorkHistoryItem,
 } from '@shared/schemas';
 
 import { apiFetch, apiFetchBlob } from './api';
@@ -23,6 +30,10 @@ export type PublicProfessional = {
   specialties: string[];
   bio: string;
   yearsExperience: number;
+  hourlyRate: number;
+  availabilityStatus: ProfessionalAvailabilityStatus;
+  weeklySchedule: WeeklyScheduleItem[];
+  workHistory: WorkHistoryItem[];
   verifiedAt: string | null;
 };
 
@@ -45,11 +56,13 @@ export type ProfessionalAddressView = {
 export type ProfessionalCaptureIds = Partial<Record<ProfessionalPhotoKind, string>>;
 
 /**
- * The caller's own application: what they submitted, plus where it stands.
+ * The caller's own application: what they submitted, where it stands, and the
+ * settings they may set on top of it once it is verified.
  *
- * There is no counterpart that writes any of it. The submission is frozen once it
- * is filed, which is why the dashboard renders it read-only and points at support
- * rather than offering a form.
+ * The submitted half is frozen when it is filed — the console renders it
+ * read-only and points at support rather than offering a form. The settings half
+ * (rate, availability, hours, portrait, practice history, reminder lead time) is
+ * what `updateOwnProfessionalProfile` writes.
  */
 export type OwnProfessional = {
   id: string;
@@ -65,6 +78,13 @@ export type OwnProfessional = {
   businessPhone: string | null;
   bio: string;
   yearsExperience: number;
+  hourlyRate: number;
+  availabilityStatus: ProfessionalAvailabilityStatus;
+  weeklySchedule: WeeklyScheduleItem[];
+  avatarUrl: string | null;
+  workHistory: WorkHistoryItem[];
+  bookingNotificationMinutes: ProfessionalBookingNotificationTime;
+  flaggedForRateReview: boolean;
   status: ProfessionalStatus;
   captures: ProfessionalCaptureIds;
   interviewAt: string | null;
@@ -129,6 +149,21 @@ export async function listProfessionals(
  */
 export async function getOwnApplication(signal?: AbortSignal): Promise<OwnProfessional> {
   return apiFetch<OwnProfessional>('/professionals/me', { signal });
+}
+
+/**
+ * PATCH /api/v1/professionals/me/profile — one row's worth of settings.
+ *
+ * Send only what changed; the endpoint merges. Returns the whole listing back so
+ * the caller does not have to guess what the server made of it.
+ */
+export async function updateOwnProfessionalProfile(
+  input: ProfessionalProfileUpdateInput
+): Promise<OwnProfessional> {
+  return apiFetch<OwnProfessional>('/professionals/me/profile', {
+    method: 'PATCH',
+    body: input,
+  });
 }
 
 /**
