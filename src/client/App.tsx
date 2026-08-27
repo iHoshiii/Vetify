@@ -10,6 +10,7 @@ import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
 import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
 import AdminApplicationsTab from '@/pages/admin/users/applications-tab';
+import AdminEnquiriesTab from '@/pages/admin/users/enquiries-tab';
 import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="enquiries" element={<AdminEnquiriesTab />} />
           <Route path="applications" element={<AdminApplicationsTab />} />
         </Route>
         {/* Where the queue used to live. Kept as a redirect because it is a path
