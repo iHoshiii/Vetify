@@ -23,7 +23,7 @@ export default function HeroSection() {
           schedule, on your terms.
         </p>
         <Link
-          to="/contact"
+          to="/professionals/apply"
           className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-teal-600 px-8 text-sm font-bold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:-translate-y-0.5"
         >
           Apply to join

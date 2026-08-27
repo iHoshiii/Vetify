@@ -26,20 +26,9 @@ export default function ContactInfo() {
             Are you a licensed veterinarian looking to join the platform? Tell us about yourself and
             our team will take it from there.
           </p>
-          <Link to="/professionals/apply" className={LINK}>
+          <Link to="/professionals" className={LINK}>
             Request Application
           </Link>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-bold text-slate-900">Media & Press</h3>
-          <p className="mt-2 text-slate-600 leading-relaxed">
-            For press inquiries, brand assets, or media interview requests, please reach out to our
-            communications team.
-          </p>
-          <a href="mailto:support.vetify@gmail.com" className={LINK}>
-            support.vetify@gmail.com
-          </a>
         </div>
       </div>
     </div>
