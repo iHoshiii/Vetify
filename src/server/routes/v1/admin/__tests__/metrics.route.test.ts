@@ -108,12 +108,22 @@ async function application(status: 'pending' | 'verified' | 'rejected' = 'pendin
 
   return await insertProfessional({
     user: user._id,
+    fullName: `Seed Vet ${seq}`,
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
-    clinicAddress: '9 Rizal Avenue, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '9 Rizal Avenue',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
     bio: 'A practice long enough established to have a listing worth reading.',
     yearsExperience: 8,
     backgroundCheckConsent: true,

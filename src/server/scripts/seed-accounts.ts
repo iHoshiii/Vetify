@@ -56,12 +56,39 @@ const ACCOUNTS: AccountSpec[] = [
  * row of "test test test" tells you nothing about whether the screen reads well.
  */
 const APPLICATION: Omit<ProfessionalAttrs, 'user'> = {
+  fullName: 'Pia Isabel Prado',
   licenseNumber: 'PRC-SEED-0001',
   licenseAuthority: 'Professional Regulation Commission',
   credentialUrls: ['https://example.com/seed-licence.pdf'],
   specialties: ['Small animal medicine', 'Dermatology'],
   clinicName: 'Seed Street Veterinary Clinic',
-  clinicAddress: '12 Seed Street, Quezon City, Metro Manila',
+  businessPhone: '+63 2 8555 0101',
+  addresses: [
+    {
+      kind: 'clinic',
+      line1: '12 Seed Street',
+      city: 'Quezon City',
+      province: 'Metro Manila',
+      postalCode: '1100',
+      fix: null,
+    },
+    {
+      // A home address carries a device fix, which is what makes it precise
+      // enough to be worth holding. Seeded with a real one so the admin screen
+      // has a pin to draw.
+      kind: 'home',
+      line1: '9 Kalachuchi Street',
+      city: 'Marikina',
+      province: 'Metro Manila',
+      postalCode: '1800',
+      fix: {
+        latitude: 14.6507,
+        longitude: 121.1029,
+        accuracyMeters: 14,
+        capturedAt: '2026-08-20T02:15:00.000Z',
+      },
+    },
+  ],
   bio: 'Small animal vet seeded for local development. Eight years in general practice, mostly dogs and cats, with a soft spot for skin cases nobody else wants.',
   yearsExperience: 8,
   status: 'pending',

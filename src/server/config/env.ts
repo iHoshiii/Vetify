@@ -70,9 +70,41 @@ const envSchema = z.object({
 
   TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
   TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
+
+  // ---- Transactional mail ----
+  // `log` writes the message to the server log instead of sending it, which is
+  // what local development wants: the invite link is right there in the terminal
+  // and no real address receives anything. `http` posts to a provider speaking
+  // Resend's JSON shape. Nothing else is wired, on purpose — a second transport
+  // is a second thing to get wrong on the one path that carries invite links.
+  MAIL_TRANSPORT: z.enum(['log', 'http']).default('log'),
+
+  // The From header. Providers refuse anything on a domain they have not
+  // verified, so this default is only good for `log`.
+  MAIL_FROM: z.string().min(1).default('Vetify <no-reply@vetify.local>'),
+
+  // Endpoint and key for the `http` transport. Optional in the same spirit as
+  // the OAuth credentials: a missing key is reported when a message is actually
+  // sent, so a developer who never mails anything is not stopped at boot.
+  MAIL_API_URL: z.string().url().default('https://api.resend.com/emails'),
+  MAIL_API_KEY: z.string().min(1).optional(),
 });
 
-const parsed = envSchema.safeParse(process.env);
+/**
+ * A var left blank counts as unset.
+ *
+ * `KEY=` is what a copied sample looks like before anybody fills it in, and it is
+ * what an unset var looks like in most deployment consoles. Zod reads '' as a
+ * value that is present and then refuses it, which turns an unconfigured optional
+ * secret into a boot failure — the whole server down over a credential nothing had
+ * asked for yet. Dropping the empty ones lets every default and every .optional()
+ * below mean what it says.
+ */
+const provided = Object.fromEntries(
+  Object.entries(process.env).filter(([, value]) => value !== undefined && value.trim() !== '')
+);
+
+const parsed = envSchema.safeParse(provided);
 
 if (!parsed.success) {
   const details = Object.entries(parsed.error.flatten().fieldErrors)

@@ -1,8 +1,10 @@
 import {
   adminProfessionalListQuerySchema,
+  professionalInterviewSchema,
   professionalRejectSchema,
   professionalVerifySchema,
   type AdminProfessionalListQuery,
+  type ProfessionalInterview,
   type ProfessionalReject,
   type ProfessionalVerify,
 } from '@shared/schemas';
@@ -10,6 +12,8 @@ import { Router, type RequestHandler } from 'express';
 
 import { validate, validateQuery } from '../../../middleware/validate';
 import {
+  findCaptureIds,
+  findCaptureIdsForApplications,
   findProfessionalById,
   findProfessionals,
   findUsersByIds,
@@ -21,6 +25,7 @@ import {
 } from '../../../models';
 import {
   reviewProfessional,
+  scheduleInterview,
   type ProfessionalDecision,
 } from '../../../services/professionals.service';
 import { fail, ok } from '../../../utils/response';
@@ -77,11 +82,23 @@ router.get('/', validateQuery(adminProfessionalListQuerySchema), async (req, res
     limit: query.limit,
   });
 
-  const applicants = await applicantsOf(items);
+  // Two `$in` reads for the page rather than two per row: the accounts behind the
+  // applications, and the ids of the photographs each one carries.
+  const [applicants, captures] = await Promise.all([
+    applicantsOf(items),
+    findCaptureIdsForApplications(items.map((application) => application._id)),
+  ]);
 
   ok(
     res,
-    toAdminProfessionalPage({ items, applicants, total, page: query.page, limit: query.limit })
+    toAdminProfessionalPage({
+      items,
+      applicants,
+      captures,
+      total,
+      page: query.page,
+      limit: query.limit,
+    })
   );
 });
 
@@ -98,10 +115,36 @@ router.get('/:id', async (req, res) => {
   const application = await findProfessionalById(req.params.id);
   if (!application) return fail(res, 404, 'Application not found');
 
-  const applicants = await applicantsOf([application]);
+  const [applicants, captures] = await Promise.all([
+    applicantsOf([application]),
+    findCaptureIds(application._id),
+  ]);
 
-  ok(res, toAdminProfessional(application, applicants.get(application.user.toString()) ?? null));
+  ok(
+    res,
+    toAdminProfessional(application, applicants.get(application.user.toString()) ?? null, captures)
+  );
 });
+
+/**
+ * One application on its way back out after a reviewer moved it.
+ *
+ * The captures come along for the same reason the applicant does: the screen
+ * replaces the row it has with this one, and a response that left them out would
+ * blank the photographs the reviewer is looking at.
+ */
+async function reviewed(application: ProfessionalDocument) {
+  const [applicants, captures] = await Promise.all([
+    applicantsOf([application]),
+    findCaptureIds(application._id),
+  ]);
+
+  return toAdminProfessional(
+    application,
+    applicants.get(application.user.toString()) ?? null,
+    captures
+  );
+}
 
 /**
  * The three verdicts differ only in their word and in whether the reason is
@@ -131,13 +174,8 @@ function decision(kind: ProfessionalDecision): RequestHandler {
       return;
     }
 
-    const applicants = await applicantsOf([result.application]);
-
     ok(res, {
-      application: toAdminProfessional(
-        result.application,
-        applicants.get(result.application.user.toString()) ?? null
-      ),
+      application: await reviewed(result.application),
       roleFrom: result.roleFrom,
       roleTo: result.roleTo,
     });
@@ -170,5 +208,42 @@ router.patch('/:id/reject', validate(professionalRejectSchema), decision('reject
  * when it was checked and something has since come up.
  */
 router.patch('/:id/suspend', validate(professionalRejectSchema), decision('suspended'));
+
+/**
+ * PATCH /api/v1/admin/professionals/:id/interview
+ *
+ * Books the conversation the applicant is waiting on and emails them the time.
+ * Not a verdict and not recorded as one — `reviewedBy` and `reviewedAt` are the
+ * trail behind a decision, and an application still being talked about has not
+ * been decided.
+ *
+ * Bookable from 'rejected' too: an appeal that gets a hearing is exactly this
+ * move, and taking it clears the refusal reason, which no longer describes where
+ * the application stands.
+ */
+router.patch('/:id/interview', validate(professionalInterviewSchema), async (req, res) => {
+  const admin = adminOf(req);
+  const body = req.body as ProfessionalInterview;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, 'Application not found');
+
+  const result = await scheduleInterview({
+    id: req.params.id,
+    reviewer: admin,
+    at: new Date(body.interviewAt),
+    note: body.note ?? null,
+    ip: ipOf(req),
+  });
+
+  if (!result) return fail(res, 404, 'Application not found');
+
+  ok(res, {
+    application: await reviewed(result.application),
+    // The booking stands whether or not the message went out, so the screen is
+    // told which happened and can offer to say it another way.
+    delivered: result.delivered,
+    deliveryError: result.deliveryError,
+  });
+});
 
 export default router;

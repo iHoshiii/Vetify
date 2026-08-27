@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { BreakdownChart } from '../pages/admin/_components/breakdown-chart';
 import { ConfirmDialog } from '../pages/admin/_components/confirm-dialog';
 import { DataTable, type Column } from '../pages/admin/_components/data-table';
+import { InterviewDialog } from '../pages/admin/_components/interview-dialog';
 import { MetricChart } from '../pages/admin/_components/metric-chart';
 import { ModerationNote } from '../pages/admin/_components/moderation-note';
 import { StatCard } from '../pages/admin/_components/stat-card';
@@ -338,5 +339,66 @@ describe('ModerationNote', () => {
     // Still on the row — it is why the post was ever in the queue — but no longer
     // asking for anything.
     expect(screen.getByText(/reviewed/)).toBeInTheDocument();
+  });
+});
+
+describe('InterviewDialog', () => {
+  const AT = () => {
+    const when = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}T14:30`;
+  };
+
+  function setup() {
+    const onConfirm = vi.fn();
+    render(
+      <InterviewDialog
+        open
+        applicant="marites@clinic.ph"
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+      />
+    );
+    return onConfirm;
+  }
+
+  it('holds the button until there is a time to book', async () => {
+    const user = userEvent.setup();
+    const onConfirm = setup();
+
+    const book = screen.getByRole('button', { name: 'Book it' });
+    expect(book).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/Date and time/), AT());
+    expect(book).toBeEnabled();
+
+    await user.click(book);
+    // Sent as an instant, not as the local string the input holds.
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm.mock.calls[0][0].interviewAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(onConfirm.mock.calls[0][0].note).toBeNull();
+  });
+
+  it('refuses a time that has already gone', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Date and time/), '2020-01-01T09:00');
+
+    expect(await screen.findByText('That time has already passed.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Book it' })).toBeDisabled();
+  });
+
+  it('holds the button on a note too short to be worth sending', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(screen.getByLabelText(/Date and time/), AT());
+    await user.type(screen.getByLabelText(/Note/), 'call');
+
+    expect(screen.getByRole('button', { name: 'Book it' })).toBeDisabled();
+    expect(
+      screen.getByText(new RegExp(`At least ${MODERATION_REASON_MIN} characters`))
+    ).toBeInTheDocument();
   });
 });

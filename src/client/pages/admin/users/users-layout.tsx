@@ -2,16 +2,18 @@ import { useMetricsOverview } from '@/hooks/useAdminMetrics';
 import { NavLink, Outlet } from 'react-router-dom';
 
 /**
- * The three views of the same people.
+ * The four views of the same people.
  *
  * Accounts first because it is every account and the landing, then the role with a
- * directory listing attached, then the queue that has applicants waiting on a
- * decision. Routes rather than local state, so a tab is a link somebody can send
- * and each one keeps its own filters in the address bar.
+ * directory listing attached, then the two queues in the order somebody actually
+ * moves through them: an enquiry becomes an invitation becomes the application on
+ * the tab after it. Routes rather than local state, so a tab is a link somebody can
+ * send and each one keeps its own filters in the address bar.
  */
 const TABS = [
   { to: '/admin/users', label: 'Accounts', end: true },
   { to: '/admin/users/professionals', label: 'Professionals', end: false },
+  { to: '/admin/users/enquiries', label: 'Enquiries', end: false },
   { to: '/admin/users/applications', label: 'Applications', end: false },
 ] as const;
 
@@ -37,7 +39,7 @@ export default function AdminUsersLayout() {
       <div>
         <h2 className="text-lg font-black tracking-tight">User management</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Roles and access for every account, and the applications that grant them.
+          Roles and access for every account, and the two queues that grant them.
         </p>
       </div>
 

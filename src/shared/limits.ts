@@ -66,6 +66,114 @@ export const PROFESSIONAL_MAX_CREDENTIALS = 5;
 export const PROFESSIONAL_BIO_MIN = 80;
 export const PROFESSIONAL_BIO_MAX = 1200;
 
+/* -------------------------------------------------------------------------- *
+ * Professional application, the two-stage version
+ *
+ * Joining is an enquiry first and an application second: a short public form a
+ * reviewer reads, and — only if they invite the applicant — a longer one behind an
+ * emailed link. The numbers both halves have to agree on live here.
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Bounds on "why do you want to join our team?" on the first form.
+ *
+ * A minimum because this is the whole basis for the invite decision, and a
+ * two-word answer gives a reviewer nothing to decide on. Shared so the form can
+ * count down to the same number the server refuses below.
+ */
+export const PROFESSIONAL_MOTIVATION_MIN = 40;
+export const PROFESSIONAL_MOTIVATION_MAX = 800;
+
+/** Where the applicant is now, and where they practise. Short, single-line. */
+export const PROFESSIONAL_LOCATION_MAX = 160;
+
+/**
+ * How long an emailed application link stays usable.
+ *
+ * Long enough to survive a holiday, short enough that a forwarded or leaked link
+ * is not a permanent way into somebody else's application.
+ */
+export const PROFESSIONAL_INVITE_DAYS = 14;
+
+/**
+ * Enquiries per IP per hour on the public first form.
+ *
+ * The one endpoint on this flow that anybody can reach, so it is also the one
+ * that can fill a reviewer's queue with noise. Low, because a person filing a
+ * second enquiry within the hour is either a typo correction or a script.
+ */
+export const PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR = 5;
+
+/* ---- The photographs ---- */
+
+/**
+ * The three pictures one application carries: the applicant's face, and both
+ * sides of the PRC identification card.
+ *
+ * All three are taken through the camera rather than chosen from disk. That is a
+ * product rule the browser enforces — there is no file input on the form — and the
+ * server can only corroborate it, which is what the freshness window below is
+ * for.
+ */
+export const PROFESSIONAL_PHOTO_KINDS = ['portrait', 'licenseFront', 'licenseBack'] as const;
+export type ProfessionalPhotoKind = (typeof PROFESSIONAL_PHOTO_KINDS)[number];
+
+/** The only format a capture is accepted in, so nothing has to sniff bytes. */
+export const PROFESSIONAL_PHOTO_MIME = 'image/jpeg';
+
+/**
+ * Longest edge a capture is scaled to before it is encoded, and the ceiling on
+ * what the encoding may weigh.
+ *
+ * 1600px is enough to read a licence number off an ID card, and 1.5 MB is more
+ * than a JPEG of that size needs — the limit is a backstop against a caller who
+ * skips the client-side encoder, not a quality target.
+ */
+export const PROFESSIONAL_PHOTO_MAX_EDGE = 1600;
+export const PROFESSIONAL_PHOTO_MAX_BYTES = 1_500_000;
+
+/**
+ * Body ceiling for the one route that carries the captures.
+ *
+ * Three photographs at the limit above, base64-encoded, plus the rest of the
+ * form. Deliberately its own number rather than the app-wide 1 MB: raising that
+ * globally would widen every other endpoint for the sake of this one.
+ */
+export const PROFESSIONAL_APPLICATION_BODY_LIMIT = '8mb';
+
+/**
+ * How stale a capture may be by the time the application arrives.
+ *
+ * The one part of "take a photo, do not upload one" a server can actually check:
+ * a picture from the camera was taken minutes ago, and a file that has been
+ * sitting on a disk since last year cannot claim a timestamp inside this window
+ * without the caller lying about it on purpose. Generous, because filling the
+ * rest of the form takes a while and nobody should have to re-shoot three
+ * pictures for being slow.
+ */
+export const PROFESSIONAL_CAPTURE_MAX_AGE_MINUTES = 120;
+
+/* ---- The addresses ---- */
+
+/**
+ * Addresses one application may carry: a home, a clinic, or both — and at least
+ * one of them, because an unlocatable vet is not verifiable.
+ */
+export const PROFESSIONAL_MAX_ADDRESSES = 2;
+
+/**
+ * How loose a home-address fix may be and still count as one.
+ *
+ * The home address is taken from the device rather than typed, so it arrives with
+ * the browser's own accuracy estimate attached. Above this the reading is a
+ * neighbourhood rather than a house, and the form asks again instead of storing a
+ * coordinate that looks precise and is not.
+ */
+export const PROFESSIONAL_LOCATION_MAX_ACCURACY_M = 100;
+
+/** How long the form waits for a fix before telling the applicant it failed. */
+export const PROFESSIONAL_LOCATION_TIMEOUT_MS = 20_000;
+
 /**
  * Rows per page on the admin lists, and the ceiling a caller may ask for.
  *

@@ -44,11 +44,22 @@ function attrs(
   seq += 1;
   return {
     user: user instanceof ObjectId ? user : user._id,
+    fullName: `Vet ${seq} Reyes`,
     licenseNumber: `VET-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     clinicName: 'Bayside Animal Clinic',
-    clinicAddress: '12 Mabini Street, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
+    businessPhone: '+63 32 555 0101',
     bio: 'Small animal practice, fifteen years of it, mostly cats who disagree.',
     yearsExperience: 15,
     backgroundCheckConsent: true,
@@ -123,6 +134,43 @@ describe('insertProfessional', () => {
     expect(other.licenseNumber).toBe('VET 1234');
     expect(await professionalsCollection().countDocuments()).toBe(2);
   });
+
+  it('publishes a clinic address in full, derived rather than supplied', async () => {
+    const application = await insertProfessional(attrs(await account()));
+
+    // A clinic is a business address - it is already on a sign outside.
+    expect(application.clinicAddress).toBe('12 Mabini Street, Cebu City, Cebu');
+  });
+
+  it('publishes a home-only applicant as a city, never a doorstep', async () => {
+    const application = await insertProfessional(
+      attrs(await account(), {
+        clinicName: null,
+        addresses: [
+          {
+            kind: 'home',
+            line1: '44 Acacia Lane',
+            city: 'Mandaue',
+            province: 'Cebu',
+            fix: {
+              latitude: 10.3237,
+              longitude: 123.9223,
+              accuracyMeters: 12,
+              capturedAt: '2026-08-27T01:00:00.000Z',
+            },
+          },
+        ],
+      })
+    );
+
+    expect(application.clinicAddress).toBe('Mandaue, Cebu');
+    // The street is still on file: a reviewer needs it, and it is the published
+    // line that stops at the city.
+    expect(application.addresses[0].line1).toBe('44 Acacia Lane');
+    expect(application.addresses[0].postalCode).toBeNull();
+    // Stored as a date, not the string it arrived as.
+    expect(application.addresses[0].fix?.capturedAt).toBeInstanceOf(Date);
+  });
 });
 
 describe('the review queue', () => {
@@ -152,6 +200,20 @@ describe('the review queue', () => {
     const page = await findProfessionals({ page: 2, limit: 2 });
     expect(page.items).toHaveLength(2);
     expect(page.total).toBe(5);
+  });
+
+  it('searches the licence number and the name on it', async () => {
+    await insertProfessional(
+      attrs(await account(), { fullName: 'Marites Reyes', licenseNumber: 'VET-9001' })
+    );
+    await insertProfessional(attrs(await account(), { fullName: 'Ben Cruz' }));
+
+    // The name a reviewer has in front of them is the one on the licence, so the
+    // queue search reaches it without joining the accounts first.
+    expect((await findProfessionals({ q: 'reyes' })).total).toBe(1);
+    expect((await findProfessionals({ q: 'VET-9001' })).total).toBe(1);
+    expect((await findProfessionals({ q: 'Bayside' })).total).toBe(2);
+    expect((await findProfessionals({ q: 'nobody at all' })).total).toBe(0);
   });
 });
 
@@ -245,6 +307,23 @@ describe('updateProfessional', () => {
     expect(updated?.reviewedBy).toEqual(reviewer);
   });
 
+  it('leaves the review date alone when an interview is booked', async () => {
+    const application = await insertProfessional(attrs(await account()));
+    const when = new Date('2026-09-01T09:00:00.000Z');
+
+    const updated = await updateProfessional(application._id, {
+      status: 'interview',
+      interviewAt: when,
+      interviewNote: 'Video call. Bring the original licence.',
+    });
+
+    expect(updated?.status).toBe('interview');
+    expect(updated?.interviewAt).toEqual(when);
+    // Booking a conversation is not a verdict. A date here would sort an applicant
+    // still waiting to be interviewed in among the vets already verified.
+    expect(updated?.reviewedAt).toBeNull();
+  });
+
   it('keeps a review date the caller pinned', async () => {
     const application = await insertProfessional(attrs(await account()));
     const when = new Date('2026-01-01T00:00:00.000Z');
@@ -298,6 +377,7 @@ describe('public shapes', () => {
   it('keeps the verification material out of a directory entry', async () => {
     const { owner } = await verified('2026-08-01T00:00:00.000Z', {
       specialties: ['surgery'],
+      fullName: 'Marites Reyes DVM',
     });
     const [joined] = (await findVerifiedProfessionals()).items;
 
@@ -305,14 +385,20 @@ describe('public shapes', () => {
 
     expect(entry).toMatchObject({
       userId: owner._id.toString(),
-      name: owner.name,
+      // The name on the licence, not the account's: a badge that says a register
+      // was checked should not sit beside a name settings can rewrite.
+      name: 'Marites Reyes DVM',
       clinicName: 'Bayside Animal Clinic',
+      clinicAddress: '12 Mabini Street, Cebu City, Cebu',
       specialties: ['surgery'],
       verifiedAt: '2026-08-01T00:00:00.000Z',
     });
+    expect(entry.name).not.toBe(owner.name);
     // What a reviewer checks is not what a pet owner browses.
     expect(entry).not.toHaveProperty('licenseNumber');
     expect(entry).not.toHaveProperty('credentialUrls');
+    expect(entry).not.toHaveProperty('addresses');
+    expect(entry).not.toHaveProperty('captures');
     expect(entry).not.toHaveProperty('reviewedBy');
     expect(entry).not.toHaveProperty('rejectionReason');
   });
@@ -326,14 +412,30 @@ describe('public shapes', () => {
       rejectionReason: 'Credential link is a dead page.',
     });
 
-    const own = toOwnProfessional(rejected!);
+    const own = toOwnProfessional(rejected!, { portrait: 'aaaaaaaaaaaaaaaaaaaaaaaa' });
 
     expect(own).toMatchObject({
+      fullName: application.fullName,
       licenseNumber: 'VET 77',
       credentialUrls: ['https://example.com/licence.pdf'],
+      businessPhone: '+63 32 555 0101',
       status: 'rejected',
       rejectionReason: 'Credential link is a dead page.',
+      // Ids to fetch one at a time, not three JPEGs inline in a dashboard read.
+      captures: { portrait: 'aaaaaaaaaaaaaaaaaaaaaaaa' },
     });
+    // In full, unlike the directory entry: this is the applicant's own copy of
+    // what they filed.
+    expect(own.addresses).toEqual([
+      {
+        kind: 'clinic',
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ]);
     expect(own.reviewedAt).toMatch(/^\d{4}-/);
     expect(own).not.toHaveProperty('reviewedBy');
     expect(own).not.toHaveProperty('backgroundCheckConsentAt');

@@ -17,6 +17,7 @@ const GATED_PAGES: Record<string, string> = {
   '/book-appointment': 'book an appointment',
   '/map': 'find nearby vets',
   '/planner': 'use the meal planner',
+  '/professionals/apply': 'apply to join as a professional',
 };
 
 export default function LoginPage() {

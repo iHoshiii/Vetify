@@ -1,9 +1,10 @@
 import { ObjectId } from 'mongodb';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../../app';
 import { auditLogsCollection } from '../../../../models/audit-log';
+import { insertProfessionalCaptures } from '../../../../models/professional-captures';
 import {
   insertProfessional,
   updateProfessional,
@@ -12,6 +13,7 @@ import {
 } from '../../../../models/professionals';
 import { findUserById, insertUser, type UserRole } from '../../../../models/users';
 import { signAccessToken } from '../../../../services/auth.service';
+import { clearRecentMail, recentMail } from '../../../../services/mail.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../../test-utils/db';
 
 const app = createApp();
@@ -19,6 +21,7 @@ const app = createApp();
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
 afterAll(stopTestDb);
+beforeEach(clearRecentMail);
 
 let seq = 0;
 
@@ -46,12 +49,23 @@ async function filed(user: ObjectId, overrides: Partial<ProfessionalAttrs> = {})
   seq += 1;
   return await insertProfessional({
     user,
+    fullName: `Seed Vet ${seq}`,
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
     specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
-    clinicAddress: '9 Rizal Avenue, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic',
+        line1: '9 Rizal Avenue',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
+    ],
+    businessPhone: '+63 32 555 0202',
     bio: 'A practice long enough established to have a listing worth reading.',
     yearsExperience: 8,
     backgroundCheckConsent: true,
@@ -74,6 +88,20 @@ async function verified(overrides: Partial<ProfessionalAttrs> = {}) {
 }
 
 const REASON = 'The licence number does not match the register for that authority.';
+
+/** The three photographs an application carries, written the way the route does. */
+async function photographs(application: ObjectId, user: ObjectId) {
+  return await insertProfessionalCaptures({
+    application,
+    user,
+    captures: (['portrait', 'licenseFront', 'licenseBack'] as const).map((kind) => ({
+      kind,
+      data: 'Zm9yLXRlc3RzLW9uZS1qcGVnLXBsZWFzZQ==',
+      mimeType: 'image/jpeg',
+      capturedAt: new Date(),
+    })),
+  });
+}
 
 function auditRows() {
   return auditLogsCollection().find({}).sort({ createdAt: 1 }).toArray();
@@ -412,6 +440,132 @@ describe('PATCH /api/v1/admin/professionals/:id/suspend', () => {
       .patch('/api/v1/admin/professionals/not-an-id/suspend')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ reason: REASON });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('the photographs behind a licence check', () => {
+  it('gives the queue an id per capture rather than the bytes', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const application = await filed(applicant.user._id);
+    await photographs(application._id, applicant.user._id);
+
+    const res = await request(app)
+      .get('/api/v1/admin/professionals')
+      .set('Authorization', `Bearer ${admin.token}`);
+
+    expect(res.status).toBe(200);
+    expect(Object.keys(res.body.items[0].captures).sort()).toEqual([
+      'licenseBack',
+      'licenseFront',
+      'portrait',
+    ]);
+    // Ids, not images: a page of the queue has no business carrying megabytes.
+    expect(JSON.stringify(res.body)).not.toContain('Zm9yLXRlc3Rz');
+  });
+
+  it('keeps them on the row a verdict hands back', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const application = await filed(applicant.user._id);
+    const written = await photographs(application._id, applicant.user._id);
+
+    const res = await request(app)
+      .patch(`/api/v1/admin/professionals/${application._id.toString()}/verify`)
+      .set('Authorization', `Bearer ${admin.token}`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    // The screen replaces the row it has with this one, so dropping them here
+    // would blank the photographs the reviewer was just looking at.
+    expect(res.body.application.captures.portrait).toBe(
+      written.find((capture) => capture.kind === 'portrait')?._id.toString()
+    );
+  });
+});
+
+describe('PATCH /api/v1/admin/professionals/:id/interview', () => {
+  const AT = () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  function book(id: string, token: string, body: Record<string, unknown>) {
+    return request(app)
+      .patch(`/api/v1/admin/professionals/${id}/interview`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(body);
+  }
+
+  it('books the time, emails it, and records no verdict', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const application = await filed(applicant.user._id);
+    const at = AT();
+
+    const res = await book(application._id.toString(), admin.token, {
+      interviewAt: at,
+      note: 'Bring the original licence card.',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ delivered: true, deliveryError: null });
+    expect(res.body.application).toMatchObject({
+      status: 'interview',
+      interviewAt: at,
+      interviewNote: 'Bring the original licence card.',
+      // An application still being talked about has not been decided.
+      reviewedBy: null,
+      reviewedAt: null,
+    });
+
+    const mail = recentMail().at(-1);
+    expect(mail?.to).toBe(applicant.user.email);
+    expect(mail?.subject).toContain('interview');
+    // Who booked it belongs in the audit trail, not in the verdict fields.
+    const rows = await auditRows();
+    expect(rows.map((row) => row.action)).toEqual(['professional.interview']);
+    expect(rows[0].actor?.toString()).toBe(admin.user._id.toString());
+  });
+
+  it('hears an appeal from a rejected applicant and clears the refusal', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const application = await filed(applicant.user._id);
+    await updateProfessional(application._id, { status: 'rejected', rejectionReason: REASON });
+
+    const res = await book(application._id.toString(), admin.token, { interviewAt: AT() });
+
+    expect(res.status).toBe(200);
+    expect(res.body.application).toMatchObject({ status: 'interview', rejectionReason: null });
+  });
+
+  it('refuses a time that has already been and gone', async () => {
+    const admin = await account('admin');
+    const applicant = await account();
+    const application = await filed(applicant.user._id);
+
+    const res = await book(application._id.toString(), admin.token, {
+      interviewAt: new Date(Date.now() - 60_000).toISOString(),
+    });
+
+    expect(res.status).toBe(400);
+    expect(recentMail()).toHaveLength(0);
+  });
+
+  it('refuses to interview an application that is already verified', async () => {
+    const admin = await account('admin');
+    const { application } = await verified();
+
+    const res = await book(application._id.toString(), admin.token, { interviewAt: AT() });
+
+    expect(res.status).toBe(409);
+    expect(await auditRows()).toHaveLength(0);
+  });
+
+  it('answers 404 for a malformed id', async () => {
+    const admin = await account('admin');
+
+    const res = await book('not-an-id', admin.token, { interviewAt: AT() });
 
     expect(res.status).toBe(404);
   });

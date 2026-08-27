@@ -6,8 +6,17 @@ import { toObjectId } from '../object-id';
 import { escapeRegex } from '../text-search';
 import { USERS_COLLECTION } from '../users/types';
 import { PROFESSIONALS_COLLECTION } from './constants';
-import { professionalAttrsSchema, type ProfessionalAttrs } from './schema';
-import type { ProfessionalDocument, ProfessionalStatus, ProfessionalWithAccount } from './types';
+import {
+  professionalAttrsSchema,
+  type ProfessionalAttrs,
+  type ProfessionalAttrsAddress,
+} from './schema';
+import type {
+  ProfessionalAddress,
+  ProfessionalDocument,
+  ProfessionalStatus,
+  ProfessionalWithAccount,
+} from './types';
 
 /** The review queue: applications in the order they arrived, newest first. */
 const QUEUE_SORT: Sort = { createdAt: -1 };
@@ -38,28 +47,76 @@ export function isDuplicateLicense(err: unknown): boolean {
 }
 
 /**
+ * The one address line the directory publishes.
+ *
+ * A clinic is published in full - it is a business address, already on a sign
+ * outside. An applicant with only a home address is published as their city and
+ * province, because "verified vet, works from home" should not mean "here is
+ * their doorstep". Derived rather than typed for exactly that reason: if the
+ * caller supplied this string, a house number could reach a public listing by
+ * being sent in the wrong field.
+ */
+function publishableAddress(addresses: ProfessionalAddress[]): string {
+  const clinic = addresses.find((address) => address.kind === 'clinic');
+  if (clinic) return [clinic.line1, clinic.city, clinic.province].filter(Boolean).join(', ');
+
+  const home = addresses.find((address) => address.kind === 'home');
+  return home ? [home.city, home.province].filter(Boolean).join(', ') : '';
+}
+
+/** An address as the document holds it: dates parsed, absent fields explicit. */
+function toStoredAddress(address: ProfessionalAttrsAddress): ProfessionalAddress {
+  return {
+    kind: address.kind,
+    line1: address.line1,
+    city: address.city,
+    province: address.province,
+    postalCode: address.postalCode ?? null,
+    fix: address.fix
+      ? {
+          latitude: address.fix.latitude,
+          longitude: address.fix.longitude,
+          accuracyMeters: address.fix.accuracyMeters,
+          capturedAt: new Date(address.fix.capturedAt),
+        }
+      : null,
+  };
+}
+
+/**
  * Files an application, letting the unique indexes decide the conflicts.
  *
  * Checking first and inserting second would still race two submits from the same
  * account, and the index is the only thing that cannot.
+ *
+ * The photographs are not written here. They go into their own collection, keyed
+ * to the id this returns, which is why the row goes in first: a duplicate licence
+ * is caught by this insert, and finding that out before megabytes of JPEG are
+ * written is cheaper than the other order.
  */
 export async function insertProfessional(attrs: ProfessionalAttrs): Promise<ProfessionalDocument> {
   const parsed = professionalAttrsSchema.parse(attrs);
   const now = new Date();
+  const addresses = parsed.addresses.map(toStoredAddress);
 
   const doc: ProfessionalDocument = {
     _id: new ObjectId(),
     user: toObjectId(parsed.user),
+    fullName: parsed.fullName,
     licenseNumber: parsed.licenseNumber,
     licenseAuthority: parsed.licenseAuthority,
     credentialUrls: parsed.credentialUrls ?? [],
     specialties: parsed.specialties ?? [],
-    clinicName: parsed.clinicName,
-    clinicAddress: parsed.clinicAddress,
+    clinicName: parsed.clinicName ?? null,
+    clinicAddress: publishableAddress(addresses),
+    addresses,
+    businessPhone: parsed.businessPhone ?? null,
     bio: parsed.bio,
     yearsExperience: parsed.yearsExperience,
     status: parsed.status,
     backgroundCheckConsentAt: parsed.backgroundCheckConsent ? now : null,
+    interviewAt: null,
+    interviewNote: null,
     reviewedBy: null,
     reviewedAt: null,
     rejectionReason: null,
@@ -88,12 +145,12 @@ export type FindProfessionalsOptions = {
   /** Restricts the read to these statuses. Omitting it means every status. */
   statuses?: ProfessionalStatus[];
   /**
-   * Matches a licence number or a clinic name.
+   * Matches a licence number, the name on the licence, or a clinic name.
    *
-   * Not the applicant's name or email: those live on the user document, and
-   * searching them from here would mean joining before filtering. A reviewer
-   * looking for a person has the account list for that; from this screen they are
-   * looking up a licence.
+   * The name is the one the application carries rather than the account's: it was
+   * checked against a register, and it is the one a reviewer has in front of them
+   * on paper. Email is still not searchable from here - that lives on the user
+   * document, and reaching it would mean joining before filtering.
    */
   q?: string;
   page?: number;
@@ -119,6 +176,7 @@ export async function findProfessionals(
     const escaped = escapeRegex(term);
     filter.$or = [
       { licenseNumber: { $regex: escaped, $options: 'i' } },
+      { fullName: { $regex: escaped, $options: 'i' } },
       { clinicName: { $regex: escaped, $options: 'i' } },
     ];
   }
@@ -199,34 +257,37 @@ export async function findVerifiedProfessionals(
 }
 
 /**
+ * The verdicts that actually decide something.
+ *
+ * 'interview' is not among them: booking a conversation is not a decision, and
+ * stamping `reviewedAt` for it would put an application the directory sorts by
+ * verification date in among the ones already verified.
+ */
+const DECIDED_STATUSES: ProfessionalStatus[] = ['verified', 'rejected', 'suspended'];
+
+/**
  * The fields an application can be moved to after it exists.
  *
- * The licence pair is not among them. A different licence is a different claim to
- * verify, so it goes through a new application rather than an edit that leaves an
- * existing 'verified' stamp attached to a number nobody checked.
+ * The licence pair is not among them, and neither is anything the applicant
+ * photographed or typed. A different licence is a different claim to verify, so it
+ * goes through a new application rather than an edit that leaves an existing
+ * 'verified' stamp attached to a number nobody checked - and the same argument
+ * covers the name and the addresses, which were checked against a register and a
+ * device.
  */
 export type ProfessionalPatch = Partial<
   Pick<
     ProfessionalDocument,
-    | 'credentialUrls'
-    | 'specialties'
-    | 'clinicName'
-    | 'clinicAddress'
-    | 'bio'
-    | 'yearsExperience'
-    | 'status'
-    | 'reviewedBy'
-    | 'reviewedAt'
-    | 'rejectionReason'
+    'status' | 'interviewAt' | 'interviewNote' | 'reviewedBy' | 'reviewedAt' | 'rejectionReason'
   >
 >;
 
 /**
  * Applies a patch and returns the application as it now stands.
  *
- * A status that leaves 'pending' without a review date gets one, because the
- * directory sorts on it: an entry with a null `reviewedAt` would sort as though
- * it had never been reviewed at all.
+ * A status that reaches a verdict without a review date gets one, because the
+ * directory sorts on it: an entry with a null `reviewedAt` would sort as though it
+ * had never been reviewed at all.
  */
 export async function updateProfessional(
   id: string | ObjectId,
@@ -236,7 +297,7 @@ export async function updateProfessional(
   if (Object.keys(patch).length === 0) return await findProfessionalById(_id);
 
   const set: Partial<ProfessionalDocument> = { ...patch, updatedAt: new Date() };
-  if (patch.status && patch.status !== 'pending' && patch.reviewedAt === undefined) {
+  if (patch.status && DECIDED_STATUSES.includes(patch.status) && patch.reviewedAt === undefined) {
     set.reviewedAt = new Date();
   }
 
@@ -245,6 +306,19 @@ export async function updateProfessional(
     { $set: set },
     { returnDocument: 'after' }
   );
+}
+
+/**
+ * Removes an application.
+ *
+ * The compensating half of filing one. An application whose photographs failed to
+ * write is not an application a reviewer can act on, and leaving it behind would
+ * hold both of the applicant's unique slots — one application per account, one
+ * licence per authority — against a write that never finished.
+ */
+export async function deleteProfessional(id: string | ObjectId): Promise<boolean> {
+  const result = await professionalsCollection().deleteOne({ _id: toObjectId(id) });
+  return result.deletedCount === 1;
 }
 
 /**

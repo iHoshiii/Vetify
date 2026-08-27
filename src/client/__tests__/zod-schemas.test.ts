@@ -143,12 +143,30 @@ describe('blog schemas', () => {
   });
 });
 describe('professional schemas', () => {
+  /** A capture the freshness rule accepts, which means one taken just now. */
+  const photo = () => ({
+    data: 'Zm9yLXRlc3RzLW9uZS1qcGVnLXBsZWFzZQ==',
+    mimeType: 'image/jpeg' as const,
+    capturedAt: new Date().toISOString(),
+  });
+
   const valid = {
+    fullName: 'Marites Reyes',
     licenseNumber: '  vet  1234-ph ',
     licenseAuthority: '  Professional   Regulation Commission ',
     credentialUrls: ['https://example.com/licence.pdf'],
     clinicName: 'Bayside Animal Clinic',
-    clinicAddress: '12 Mabini Street, Cebu City',
+    addresses: [
+      {
+        kind: 'clinic' as const,
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+      },
+    ],
+    portrait: photo(),
+    licenseFront: photo(),
+    licenseBack: photo(),
     bio: 'x'.repeat(80),
     yearsExperience: 7,
     backgroundCheckConsent: true,
@@ -178,10 +196,75 @@ describe('professional schemas', () => {
     ).toBe(false);
   });
 
-  it('insists on a credential a reviewer can open', () => {
-    expect(professionalApplySchema.safeParse({ ...valid, credentialUrls: [] }).success).toBe(false);
+  it('takes the licence from the photographs rather than from a link', () => {
+    // No longer required: the card is photographed front and back during the
+    // application, which is a stronger claim than a link the applicant hosts and
+    // can swap out afterwards.
+    expect(professionalApplySchema.safeParse({ ...valid, credentialUrls: [] }).success).toBe(true);
+    // Still has to be a URL when one is given.
     expect(
       professionalApplySchema.safeParse({ ...valid, credentialUrls: ['licence.pdf'] }).success
+    ).toBe(false);
+  });
+
+  it('wants a home address located and lets a clinic go without', () => {
+    const home = { ...valid.addresses[0], kind: 'home' as const };
+
+    // A house on an unnamed road cannot be found any other way, so the fix is what
+    // makes the address usable.
+    expect(professionalApplySchema.safeParse({ ...valid, addresses: [home] }).success).toBe(false);
+    expect(
+      professionalApplySchema.safeParse({
+        ...valid,
+        addresses: [
+          {
+            ...home,
+            fix: {
+              latitude: 10.3157,
+              longitude: 123.8854,
+              accuracyMeters: 12,
+              capturedAt: new Date().toISOString(),
+            },
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
+  it('refuses two addresses of a kind, and refuses none at all', () => {
+    expect(professionalApplySchema.safeParse({ ...valid, addresses: [] }).success).toBe(false);
+    expect(
+      professionalApplySchema.safeParse({
+        ...valid,
+        addresses: [valid.addresses[0], { ...valid.addresses[0], line1: '9 Rizal Avenue' }],
+      }).success
+    ).toBe(false);
+  });
+
+  it('names the clinic when the application carries a clinic address', () => {
+    const { clinicName: _dropped, ...withoutName } = valid;
+
+    // A vet working out of their house has no clinic to name; one giving a clinic
+    // address does.
+    expect(professionalApplySchema.safeParse(withoutName).success).toBe(false);
+  });
+
+  it('refuses a capture sent as a data URL, and one taken too long ago', () => {
+    expect(
+      professionalApplySchema.safeParse({
+        ...valid,
+        portrait: { ...photo(), data: 'data:image/jpeg;base64,Zm9v' },
+      }).success
+    ).toBe(false);
+
+    expect(
+      professionalApplySchema.safeParse({
+        ...valid,
+        licenseBack: {
+          ...photo(),
+          capturedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        },
+      }).success
     ).toBe(false);
   });
 

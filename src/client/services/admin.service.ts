@@ -8,6 +8,7 @@ import type {
   MetricSeries,
   ModerationCategory,
   ModerationOutcome,
+  ProfessionalInquiryStatus,
   ProfessionalStatus,
   UserRole,
   UserStatus,
@@ -296,6 +297,111 @@ export function reviewProfessional(input: {
   reason?: string;
 }): Promise<ProfessionalDecisionResult> {
   return apiFetch(`/admin/professionals/${encodeURIComponent(input.id)}/${input.decision}`, {
+    method: 'PATCH',
+    body: { reason: input.reason },
+  });
+}
+
+/**
+ * Books the conversation an applicant is waiting on.
+ *
+ * Not one of the three verdicts, and not shaped like one: no role moves, so the
+ * result carries the delivery outcome instead. The booking stands whether or not
+ * the email went out, and the screen is told which so it can offer to say it
+ * another way.
+ */
+export function scheduleInterview(input: {
+  id: string;
+  interviewAt: string;
+  note?: string;
+}): Promise<{ application: AdminProfessional } & MailOutcome> {
+  return apiFetch(`/admin/professionals/${encodeURIComponent(input.id)}/interview`, {
+    method: 'PATCH',
+    body: { interviewAt: input.interviewAt, note: input.note },
+  });
+}
+
+/* -------------------------------------------------------------------------- *
+ * Enquiries, which come before applications
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Whether the message that went with a decision actually left.
+ *
+ * Reported rather than thrown, because the decision is already recorded by the
+ * time the mailer is asked: a provider that is down does not unwind an invitation,
+ * it just means somebody has to pass the link on by hand.
+ */
+export type MailOutcome = { delivered: boolean; deliveryError: string | null };
+
+/** An enquiry as a reviewer sees it: what was said, and what was done about it. */
+export type AdminInquiry = {
+  id: string;
+  name: string;
+  email: string;
+  licenseNumber: string;
+  currentLocation: string;
+  clinicLocation: string | null;
+  motivation: string;
+  phone: string | null;
+  yearsExperience: number | null;
+  status: ProfessionalInquiryStatus;
+  inviteNote: string | null;
+  invitedAt: string | null;
+  inviteExpiresAt: string | null;
+  /** Whether the emailed link would still work if somebody clicked it now. */
+  inviteLive: boolean;
+  inviteCount: number;
+  declineReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  completedAt: string | null;
+  applicationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminInquiryListParams = Paged & { status?: ProfessionalInquiryStatus; q?: string };
+
+export function listAdminInquiries(
+  params: AdminInquiryListParams = {},
+  signal?: AbortSignal
+): Promise<AdminPage<AdminInquiry>> {
+  return apiFetch(`/admin/inquiries${queryOf({ ...params })}`, { signal });
+}
+
+export function getAdminInquiry(id: string, signal?: AbortSignal): Promise<AdminInquiry> {
+  return apiFetch(`/admin/inquiries/${encodeURIComponent(id)}`, { signal });
+}
+
+/**
+ * Invite an enquiry through to the real application.
+ *
+ * The raw link comes back because this response is the only place besides the
+ * inbox that it exists — it is stored as a hash and cannot be read again. Calling
+ * this twice resends: a new link, the old one dead.
+ */
+export function inviteInquiry(input: {
+  id: string;
+  note?: string;
+}): Promise<{ inquiry: AdminInquiry; link: string } & MailOutcome> {
+  return apiFetch(`/admin/inquiries/${encodeURIComponent(input.id)}/invite`, {
+    method: 'PATCH',
+    body: { note: input.note },
+  });
+}
+
+/**
+ * Turn an enquiry away, with a reason.
+ *
+ * The reason is for the queue and the audit log; the applicant's email says only
+ * that the enquiry was not taken further.
+ */
+export function declineInquiry(input: {
+  id: string;
+  reason: string;
+}): Promise<{ inquiry: AdminInquiry } & MailOutcome> {
+  return apiFetch(`/admin/inquiries/${encodeURIComponent(input.id)}/decline`, {
     method: 'PATCH',
     body: { reason: input.reason },
   });

@@ -3,14 +3,26 @@ import { useOwnApplication } from '@/hooks/useProfessionals';
 import { Link } from 'react-router-dom';
 
 import ApplicationStatus from './_components/application-status';
-import ApplyForm from './_components/apply-form';
+import InquiryForm from './_components/inquiry-form';
 
+/**
+ * Stage one, and whatever came of it.
+ *
+ * Two screens in one, chosen by what the caller already has: an application on
+ * file gets the status view, and everybody else gets the short enquiry form. The
+ * long form is not here; it lives behind the emailed link.
+ *
+ * RequireAuth stands in front of the route, so there is a session by the time any
+ * of this renders.
+ */
 export default function ProfessionalApplyPage() {
   useDocumentTitle(
     'Apply to join',
-    'Apply to be listed as a verified veterinary professional on Vetify.'
+    'Write in about being listed as a verified veterinary professional on Vetify.'
   );
 
+  // Disabled without a session of its own accord, which is what keeps a render
+  // that somehow arrives anonymously from asking for an application nobody has.
   const query = useOwnApplication();
   const application = query.data;
 
@@ -30,10 +42,10 @@ export default function ProfessionalApplyPage() {
         <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
           {application
             ? 'Where your application stands, and what you told us.'
-            : 'Tell us about your license and your practice. A reviewer checks it against the issuing authority before you appear in the directory.'}
+            : 'Start with a few lines about yourself and the licence you hold. A reviewer reads every enquiry, and the ones that go through get an emailed link to the full application.'}
         </p>
 
-        {query.isPending ? (
+        {query.isLoading ? (
           // Shaped like the form so the page does not jump when the answer lands.
           <div aria-hidden="true" className="mt-10 animate-pulse space-y-4">
             <div className="h-10 rounded-lg bg-slate-200" />
@@ -58,7 +70,7 @@ export default function ProfessionalApplyPage() {
         ) : application ? (
           <ApplicationStatus application={application} />
         ) : (
-          <ApplyForm />
+          <InquiryForm />
         )}
       </section>
     </main>

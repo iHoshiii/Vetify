@@ -1,15 +1,20 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ApiError } from '@/services/api';
 import {
-  applyAsProfessional,
+  applyThroughInvite,
+  fetchCapture,
+  getInvite,
   getOwnApplication,
   listProfessionals,
+  sendProfessionalInquiry,
+  type InviteSummary,
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
 } from '@/services/professionals.service';
-import type { ProfessionalApplyInput } from '@shared/schemas';
+import type { ProfessionalApplyInput, ProfessionalInquiryInput } from '@shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 
 /**
  * Cache keys for everything application-shaped, same factory shape as the blog
@@ -21,6 +26,8 @@ export const professionalKeys = {
   lists: () => [...professionalKeys.all, 'list'] as const,
   list: (params: ProfessionalListParams) => [...professionalKeys.lists(), params] as const,
   mine: () => [...professionalKeys.all, 'mine'] as const,
+  invite: (token: string) => [...professionalKeys.all, 'invite', token] as const,
+  capture: (id: string) => [...professionalKeys.all, 'capture', id] as const,
 };
 
 /** A directory changes only when an admin reviews something. */
@@ -71,21 +78,85 @@ export function useOwnApplication() {
 }
 
 /**
- * Files an application.
+ * Sends the short public form.
+ *
+ * Nothing to cache: the answer is an acknowledgement, and what happens next
+ * arrives by email rather than on screen.
+ */
+export function useSendInquiry() {
+  return useMutation<{ received: true }, Error, ProfessionalInquiryInput>({
+    mutationFn: sendProfessionalInquiry,
+  });
+}
+
+/**
+ * The invitation behind an emailed link.
+ *
+ * Never retried on a refusal, and the refusals are the point: a dead link is an
+ * answer with four possible reasons, and the page renders the one it is given
+ * rather than "something went wrong".
+ */
+export function useInvite(token: string | undefined) {
+  return useQuery<InviteSummary>({
+    queryKey: professionalKeys.invite(token ?? ''),
+    queryFn: ({ signal }) => getInvite(token as string, signal),
+    enabled: Boolean(token),
+    // The link is fixed for its lifetime; nothing about it changes while the form
+    // is being filled in.
+    staleTime: Infinity,
+    retry: retryUnlessMissing,
+  });
+}
+
+/**
+ * Files the application behind an invitation.
  *
  * The reply is the created application, so it is written straight into the cache
- * the form reads — the status screen renders from it without a second round trip.
+ * the dashboard reads — the status screen renders from it without a second round
+ * trip. The invitation is dropped from the cache in the same breath, since it has
+ * just been spent.
  */
-export function useApplyAsProfessional() {
+export function useApplyThroughInvite(token: string) {
   const queryClient = useQueryClient();
 
   return useMutation<OwnProfessional, Error, ProfessionalApplyInput>({
-    mutationFn: applyAsProfessional,
+    mutationFn: (application) => applyThroughInvite({ token, application }),
     onSuccess: (application) => {
       queryClient.setQueryData(professionalKeys.mine(), application);
-      // A new application is pending, so no directory page changes yet — but the
-      // list is invalidated anyway for the day this becomes an admin-side create.
-      void queryClient.invalidateQueries({ queryKey: professionalKeys.lists() });
+      queryClient.removeQueries({ queryKey: professionalKeys.invite(token) });
     },
   });
+}
+
+/**
+ * One photograph, as something an `<img>` can point at.
+ *
+ * The bytes come through the API layer because the route is behind the bearer
+ * token, and the object URL is revoked when the picture leaves the screen —
+ * otherwise every render of a queue page would leak a blob for the life of the
+ * document.
+ */
+export function useCapture(id: string | undefined) {
+  const query = useQuery<Blob>({
+    queryKey: professionalKeys.capture(id ?? ''),
+    queryFn: ({ signal }) => fetchCapture(id as string, signal),
+    enabled: Boolean(id),
+    staleTime: Infinity,
+    retry: retryUnlessMissing,
+  });
+
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query.data) {
+      setUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(query.data);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [query.data]);
+
+  return { url, isPending: query.isPending, isError: query.isError };
 }
