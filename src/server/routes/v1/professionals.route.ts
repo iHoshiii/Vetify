@@ -1,11 +1,14 @@
+import { calculateMaxRecommendedRate } from '@shared/limits';
 import {
   professionalApplySchema,
   professionalInquirySchema,
   professionalListQuerySchema,
+  professionalProfileUpdateSchema,
   type ProfessionalApply,
   type ProfessionalInquiry,
   type ProfessionalInviteRefusal,
   type ProfessionalListQuery,
+  type ProfessionalProfileUpdate,
 } from '@shared/schemas';
 import { Router, type Request, type Response } from 'express';
 
@@ -31,8 +34,10 @@ import {
   toInviteSummary,
   toOwnProfessional,
   toProfessionalPage,
+  updateProfessionalProfile,
   USER_ROLES,
   type ProfessionalCaptureIds,
+  type ProfessionalProfilePatch,
   type User,
 } from '../../models';
 import { completeInquiry, readInvite } from '../../services/professional-inquiries.service';
@@ -133,6 +138,68 @@ router.get('/me', optionalAuth, signedIn, async (req, res) => {
   const captures = await findCaptureIds(application._id);
   ok(res, toOwnProfessional(application, captures));
 });
+
+/**
+ * PATCH /api/v1/professionals/me/profile
+ *
+ * The handful of settings a practising vet changes between appointments:
+ * availability, weekly hours, consultation rate, reminder lead time.
+ *
+ * Only for a verified licence — an application still under review has nothing to
+ * publish, so there is nothing here to set. Anything the applicant declared on the
+ * form (their name, licence, clinic, years of experience) is absent from the schema
+ * by construction: it was checked against a register, so it changes through an
+ * admin or not at all.
+ *
+ * A partial merge, not a replace. Only the keys the caller actually sent are
+ * written, so moving one value cannot quietly reset the rest.
+ */
+router.patch(
+  '/me/profile',
+  optionalAuth,
+  signedIn,
+  validate(professionalProfileUpdateSchema),
+  async (req, res) => {
+    const actor = actorOf(req);
+    const body = req.body as ProfessionalProfileUpdate;
+
+    const application = await findProfessionalByUser(actor._id);
+    if (!application) return failReason(res, 404, 'You have not applied yet.', 'no-application');
+
+    if (application.status !== 'verified') {
+      return failReason(
+        res,
+        403,
+        'Your licence is still under review, so there is nothing to publish yet.',
+        'not-verified'
+      );
+    }
+
+    const patch: ProfessionalProfilePatch = {};
+    if (body.availabilityStatus !== undefined) patch.availabilityStatus = body.availabilityStatus;
+    if (body.weeklySchedule !== undefined) patch.weeklySchedule = body.weeklySchedule;
+    if (body.avatarUrl !== undefined) patch.avatarUrl = body.avatarUrl;
+    if (body.workHistory !== undefined) patch.workHistory = body.workHistory;
+    if (body.bookingNotificationMinutes !== undefined) {
+      patch.bookingNotificationMinutes = body.bookingNotificationMinutes;
+    }
+
+    // Experience comes from the filed application rather than the request, so the
+    // ceiling is the one their licence earned. Over it is allowed but recorded:
+    // the flag is what puts the listing in front of a reviewer.
+    if (body.hourlyRate !== undefined) {
+      patch.hourlyRate = body.hourlyRate;
+      patch.flaggedForRateReview =
+        body.hourlyRate > calculateMaxRecommendedRate(application.yearsExperience);
+    }
+
+    const updated = await updateProfessionalProfile(application._id, patch);
+    if (!updated) return fail(res, 500, 'Failed to update professional profile');
+
+    const captures = await findCaptureIds(updated._id);
+    ok(res, toOwnProfessional(updated, captures));
+  }
+);
 
 /**
  * POST /api/v1/professionals/inquiries

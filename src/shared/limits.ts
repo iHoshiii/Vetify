@@ -67,6 +67,42 @@ export const PROFESSIONAL_BIO_MIN = 80;
 export const PROFESSIONAL_BIO_MAX = 1200;
 
 /* -------------------------------------------------------------------------- *
+ * What a verified professional sets about themselves
+ *
+ * Three settings a listing carries once the licence is checked: whether they are
+ * taking work, when they are open, and how long before a consultation they want
+ * telling. The rate sits with them because what it may be is decided by the
+ * experience on that same licence.
+ * -------------------------------------------------------------------------- */
+
+export const PROFESSIONAL_AVAILABILITY_STATUSES = ['available', 'unavailable', 'busy'] as const;
+export type ProfessionalAvailabilityStatus = (typeof PROFESSIONAL_AVAILABILITY_STATUSES)[number];
+
+export const PROFESSIONAL_BOOKING_NOTIFICATION_TIMES = [15, 30, 60] as const;
+export type ProfessionalBookingNotificationTime =
+  (typeof PROFESSIONAL_BOOKING_NOTIFICATION_TIMES)[number];
+
+export const PROFESSIONAL_MIN_RATE = 20;
+export const PROFESSIONAL_BASE_RECOMMENDED_RATE = 50;
+export const PROFESSIONAL_RATE_PER_YEAR = 25;
+export const PROFESSIONAL_MAX_RATE_CAP = 1000;
+
+/**
+ * What the experience on the licence earns per hour: a floor of 50, and 25 a year
+ * on top of it.
+ *
+ * A recommendation, not a limit — the cap above is the limit. Charging over this
+ * is allowed and flags the listing for a reviewer, because a rate well past what
+ * the record supports is the kind of thing worth a person looking at. Years are
+ * clamped so a typo in a filed application cannot produce a ceiling in the
+ * thousands.
+ */
+export function calculateMaxRecommendedRate(yearsExperience: number): number {
+  const safeYears = Math.max(0, Math.min(yearsExperience, 60));
+  return PROFESSIONAL_BASE_RECOMMENDED_RATE + safeYears * PROFESSIONAL_RATE_PER_YEAR;
+}
+
+/* -------------------------------------------------------------------------- *
  * Professional application, the two-stage version
  *
  * Joining is an enquiry first and an application second: a short public form a
