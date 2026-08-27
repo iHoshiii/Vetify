@@ -2,9 +2,11 @@ import {
   getAdminProfessional,
   listAdminProfessionals,
   reviewProfessional,
+  scheduleInterview,
   type AdminPage,
   type AdminProfessional,
   type AdminProfessionalListParams,
+  type MailOutcome,
   type ProfessionalDecisionResult,
 } from '@/services/admin.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -56,6 +58,28 @@ export function useReviewProfessional() {
       invalidateAdmin(queryClient, adminKeys.professionals());
       void queryClient.invalidateQueries({ queryKey: adminKeys.users() });
       void queryClient.invalidateQueries({ queryKey: professionalKeys.all });
+    },
+  });
+}
+
+/**
+ * Books the interview and tells the applicant when it is.
+ *
+ * Narrower than a verdict, and invalidated as such: no role moves and the
+ * directory does not change, so the queue and the trail are all this touches.
+ */
+export function useScheduleInterview() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { application: AdminProfessional } & MailOutcome,
+    Error,
+    { id: string; interviewAt: string; note?: string }
+  >({
+    mutationFn: scheduleInterview,
+    onSuccess: (result) => {
+      queryClient.setQueryData(adminKeys.professional(result.application.id), result.application);
+      invalidateAdmin(queryClient, adminKeys.professionals());
     },
   });
 }

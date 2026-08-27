@@ -26,6 +26,7 @@ import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
 import ProfessionalApplyPage from '@/pages/professionals/apply-page';
+import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -115,14 +116,15 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
-        <Route
-          path="professionals/apply"
-          element={
-            <RequireAuth>
-              <ProfessionalApplyPage />
-            </RequireAuth>
-          }
-        />
+        {/* Stage one needs no account: anybody may write in about being listed. */}
+        <Route path="professionals/apply" element={<ProfessionalApplyPage />} />
+        {/*
+         * Stage two. Public for the same reason the API's invite read is: the page
+         * has to be able to name the address the link was sent to before it knows
+         * who is looking, and the token in the path survives the trip through the
+         * login page.
+         */}
+        <Route path="professionals/apply/:token" element={<ProfessionalInvitePage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />
