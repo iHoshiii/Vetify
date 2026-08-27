@@ -27,7 +27,12 @@ import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
 import ProfessionalApplyPage from '@/pages/professionals/apply-page';
+import ProfessionalAppointmentsPage from '@/pages/professionals/appointments-page';
+import ProfessionalConversationsPage from '@/pages/professionals/conversations-page';
+import ProfessionalHistoryPage from '@/pages/professionals/history-page';
 import ProfessionalInvitePage from '@/pages/professionals/invite-page';
+import ProfessionalLayout from '@/pages/professionals/professional-layout';
+import ProfessionalProfilePage from '@/pages/professionals/profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -142,6 +147,19 @@ export default function App() {
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="*" element={<NotFoundPage />} />
+      </Route>
+      <Route
+        path="professionals/dashboard"
+        element={
+          <RequireAuth>
+            <ProfessionalLayout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<ProfessionalAppointmentsPage />} />
+        <Route path="conversations" element={<ProfessionalConversationsPage />} />
+        <Route path="history" element={<ProfessionalHistoryPage />} />
+        <Route path="profile" element={<ProfessionalProfilePage />} />
       </Route>
     </Routes>
   );
