@@ -155,8 +155,8 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
  * The queue that comes before the queue.
  *
  * Every application on the next tab started here, as a few lines from somebody
- * with no account. Defaults to pending, like the server does, because that is the
- * only status anybody is waiting on.
+ * with an account and nothing else. Defaults to pending, like the server does,
+ * because that is the only status anybody is waiting on.
  *
  * The link an invitation mints is shown once, in the line under the table. It is
  * stored as a hash and cannot be read again, so if the email bounced this is the

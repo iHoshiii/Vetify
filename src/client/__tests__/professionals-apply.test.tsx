@@ -28,7 +28,10 @@ vi.mock('../services/professionals.service', () => ({
   fetchCapture: vi.fn(),
 }));
 
-const auth = { isAuthenticated: true };
+const auth: { isAuthenticated: boolean; user: { email: string } | null } = {
+  isAuthenticated: true,
+  user: null,
+};
 
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => auth,
@@ -96,6 +99,7 @@ async function fillEnquiry(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   auth.isAuthenticated = true;
+  auth.user = null;
   vi.mocked(getOwnApplication).mockReset();
   vi.mocked(sendProfessionalInquiry).mockReset();
   vi.mocked(listProfessionals).mockReset();
@@ -115,15 +119,25 @@ describe('the apply page', () => {
     expect(screen.queryByText('Photographs, taken now')).not.toBeInTheDocument();
   });
 
-  it('shows the same form to a visitor with no account, without asking the server', () => {
+  it('never asks for an application without a session to ask with', () => {
+    // RequireAuth keeps this page from rendering anonymously in the first place;
+    // the hook's own guard is what makes it harmless if it ever does.
     auth.isAuthenticated = false;
 
     renderPage();
 
-    expect(screen.getByLabelText('Your name')).toBeInTheDocument();
-    // Nothing to ask: an enquiry needs no account, so there is no application to
-    // look up and the page must not sit on a skeleton waiting for one.
     expect(getOwnApplication).not.toHaveBeenCalled();
+  });
+
+  it('starts the enquiry with the address the invitation would go to', async () => {
+    auth.user = { email: 'marites@clinic.ph' };
+    vi.mocked(getOwnApplication).mockRejectedValue(
+      new ApiError(404, 'You have not applied yet.', 'no-application')
+    );
+
+    renderPage();
+
+    expect(await screen.findByLabelText('Email address')).toHaveValue('marites@clinic.ph');
   });
 
   it('shows where an application stands instead of a form', async () => {

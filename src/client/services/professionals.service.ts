@@ -132,9 +132,9 @@ export async function getOwnApplication(signal?: AbortSignal): Promise<OwnProfes
 }
 
 /**
- * POST /api/v1/professionals/inquiries — stage one, the short public form.
+ * POST /api/v1/professionals/inquiries — stage one, the short form.
  *
- * Needs no account, and answers with nothing but an acknowledgement: what happens
+ * Needs a session, and answers with nothing but an acknowledgement: what happens
  * next is an email, not a screen.
  */
 export async function sendProfessionalInquiry(
