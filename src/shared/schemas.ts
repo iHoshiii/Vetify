@@ -130,6 +130,7 @@ export const AUDIT_ACTIONS = [
   'blog.purged',
   'blog.removed',
   'blog.restored',
+  'professional.inquiry.auto-declined',
   'professional.inquiry.declined',
   'professional.interview',
   'professional.invited',
@@ -993,6 +994,7 @@ export const BREAKDOWN_DIMENSIONS = [
   'role',
   'userStatus',
   'blogStatus',
+  'inquiryStatus',
   'professionalStatus',
 ] as const;
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];

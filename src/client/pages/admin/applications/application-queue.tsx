@@ -1,4 +1,3 @@
-import { useMetricsBreakdown, useMetricsTimeseries } from '@/hooks/useAdminMetrics';
 import { pick, useAdminListParams } from '@/hooks/useAdminListParams';
 import {
   useAdminProfessionals,
@@ -7,19 +6,16 @@ import {
 } from '@/hooks/useAdminProfessionals';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminProfessional } from '@/services/admin.service';
-import { PROFESSIONAL_STATUSES } from '@shared/schemas';
+import type { ProfessionalStatus } from '@shared/schemas';
 import { format, parseISO } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-import { BreakdownChart } from '../_components/breakdown-chart';
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
 import { InterviewDialog } from '../_components/interview-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
-import { MetricChart } from '../_components/metric-chart';
 import { RoleBadge } from '../_components/role-badge';
-import { StatCard, StatCardSkeleton } from '../_components/stat-card';
 import { StatusBadge } from '../_components/status-badge';
 
 type Decision = 'verify' | 'reject' | 'suspend';
@@ -29,9 +25,6 @@ type Pending = { application: AdminProfessional; decision: Decision };
 const ACTION =
   'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
 
-/** The window the applications line covers, matching the accounts tabs. */
-const WINDOW_DAYS = 30;
-
 /**
  * Turning somebody down, or pulling a live listing, is the record they will ask
  * about later. Approving is not, so it does not demand a paragraph.
@@ -40,18 +33,20 @@ const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: stri
   verify: {
     verb: 'Verify',
     reason: 'optional',
-    blurb: 'Publishes them to the directory and makes their account a professional.',
+    blurb:
+      'Publishes them to the directory, makes their account a professional, and emails them to say so.',
   },
   reject: {
     verb: 'Reject',
     reason: 'required',
     blurb:
-      'Turns the application down and returns the account to a normal user. They can see the reason.',
+      'Turns the application down and returns the account to a normal user. Your reason is emailed to them and shown on their own page.',
   },
   suspend: {
     verb: 'Suspend',
     reason: 'required',
-    blurb: 'Pulls the listing from the directory and returns the account to a normal user.',
+    blurb:
+      'Pulls the listing from the directory and returns the account to a normal user. No email goes out; a suspension is yours to explain.',
   },
 };
 
@@ -72,6 +67,55 @@ const OPEN_TO: Record<string, Decision[]> = {
  * 'interview' is because a booking that has to move is a rebooking.
  */
 const INTERVIEWABLE = ['pending', 'interview', 'rejected'];
+
+export type Phase = 'verification' | 'approved';
+
+/**
+ * What each phase of the queue is looking at.
+ *
+ * One component parameterised rather than two that would drift apart. A phase
+ * decides only where the queue starts and how far its filter reaches — which actions
+ * a row offers still comes from `OPEN_TO` and `INTERVIEWABLE` above, keyed on the
+ * status the row is actually in, so the two screens cannot disagree about what may be
+ * done to a verified application.
+ *
+ * 'rejected' sits under Verification rather than Approved: a refusal is something a
+ * reviewer goes back to, and an appeal is re-opened from the screen that made it.
+ */
+const PHASE: Record<
+  Phase,
+  {
+    title: string;
+    description: string;
+    /** Where the queue opens, and how far the filter reaches. */
+    status: ProfessionalStatus;
+    statuses: ProfessionalStatus[];
+    blurb: string;
+    caption: string;
+    empty: string;
+  }
+> = {
+  verification: {
+    title: 'Verification',
+    description: 'Verify or turn down professional applications.',
+    status: 'pending',
+    statuses: ['pending', 'interview', 'rejected'],
+    blurb:
+      'Open the submission and check the licence against the issuing authority before verifying. Both verdicts email the applicant — a rejection carries the reason you give.',
+    caption: 'Applications waiting on verification',
+    empty: 'Nothing waiting on a decision.',
+  },
+  approved: {
+    title: 'Approved',
+    description: 'The vets in the directory, and the ones pulled out of it.',
+    status: 'verified',
+    statuses: ['verified', 'suspended'],
+    blurb:
+      'Everyone the directory shows. Suspending is the reversible half of a rejection, for a licence that was good when it was checked and something has since come up.',
+    caption: 'Verified professionals',
+    empty: 'Nobody is listed yet.',
+  },
+};
 
 function submitted(date: string): string {
   return format(parseISO(date), 'd MMM yyyy');
@@ -154,18 +198,21 @@ function Submission({ application }: { application: AdminProfessional }) {
 }
 
 /**
- * The verification queue.
+ * One phase of the application pipeline, drawn as a queue.
  *
- * Defaults to pending, because that is the only status anybody is waiting on — the
- * server defaults the same way, and the filter here is what lets a reviewer go
- * looking at the ones already decided.
+ * Opens on the status the phase is about — for Verification the only one anybody is
+ * waiting on, for Approved the directory as it stands. The filter reaches the rest of
+ * that phase and no further; the figures describing the pipeline as a whole belong to
+ * the section above, where both phases can see them.
  *
  * A verdict moves two things at once: the application's status and the applicant's
  * role. The reply carries both, and the line under the table says what moved, so
  * "verified" never appears next to an account still reading 'user'.
  */
-export default function ApplicationsTab() {
-  useDocumentTitle('Admin applications', 'Verify or turn down professional applications.');
+export default function ApplicationQueue({ phase }: { phase: Phase }) {
+  const view = PHASE[phase];
+
+  useDocumentTitle(`Admin ${view.title.toLowerCase()}`, view.description);
 
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -174,19 +221,14 @@ export default function ApplicationsTab() {
   const params = {
     page,
     q: get('q'),
-    status: pick(get('status'), PROFESSIONAL_STATUSES),
+    // Falls back to the phase rather than to the server default. Approved has to open
+    // on 'verified'; letting the server choose would open it on the pending queue.
+    status: pick(get('status'), view.statuses) ?? view.status,
   };
 
   const list = useAdminProfessionals(params);
   const review = useReviewProfessional();
   const interview = useScheduleInterview();
-
-  const statuses = useMetricsBreakdown('professionalStatus');
-  const filed = useMetricsTimeseries('applications', WINDOW_DAYS);
-
-  function counted(status: string): number {
-    return statuses.data?.slices.find((slice) => slice.label === status)?.count ?? 0;
-  }
 
   function open(next: Pending): void {
     review.reset();
@@ -298,41 +340,7 @@ export default function ApplicationsTab() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
-        Open the submission and check the licence against the issuing authority before verifying.
-      </p>
-
-      <dl
-        className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${
-          statuses.isFetching ? 'opacity-60' : ''
-        }`}
-      >
-        {statuses.isPending || !statuses.data
-          ? PROFESSIONAL_STATUSES.map((status) => <StatCardSkeleton key={status} />)
-          : PROFESSIONAL_STATUSES.map((status) => (
-              <StatCard key={status} label={status} value={counted(status)} />
-            ))}
-      </dl>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <BreakdownChart
-          label="Applications by status"
-          variant="bar"
-          slices={statuses.data?.slices ?? []}
-          total={statuses.data?.total ?? 0}
-          isPending={statuses.isPending}
-          error={statuses.isError ? messageOf(statuses.error) : null}
-          onRetry={() => void statuses.refetch()}
-        />
-        <MetricChart
-          label={`Applications filed, last ${WINDOW_DAYS} days`}
-          points={filed.data?.points ?? []}
-          isPending={filed.isPending}
-          isFetching={filed.isFetching}
-          error={filed.isError ? messageOf(filed.error) : null}
-          onRetry={() => void filed.refetch()}
-        />
-      </div>
+      <p className="text-sm text-slate-600">{view.blurb}</p>
 
       <ListToolbar>
         <SearchBox
@@ -341,17 +349,19 @@ export default function ApplicationsTab() {
           placeholder="Clinic, licence or name"
           onSearch={(q) => set({ q })}
         />
+        {/* No "any status": the phase is the scope here, and an "any" that reached
+            across both phases would make the two tabs the same screen twice. */}
         <FilterSelect
           label="Status"
-          value={get('status') ?? 'pending'}
-          options={PROFESSIONAL_STATUSES}
+          value={get('status') ?? view.status}
+          options={view.statuses}
           onChange={(status) => set({ status })}
-          allLabel="Any status"
+          allLabel={null}
         />
       </ListToolbar>
 
       <DataTable<AdminProfessional>
-        caption="Professional applications"
+        caption={view.caption}
         columns={columns}
         rows={list.data?.items ?? []}
         rowKey={(row) => row.id}
@@ -364,7 +374,7 @@ export default function ApplicationsTab() {
         isFetching={list.isFetching}
         error={list.isError ? messageOf(list.error) : null}
         onRetry={() => void list.refetch()}
-        empty="Nothing waiting on a decision."
+        empty={view.empty}
       />
 
       {pending && (
@@ -412,7 +422,13 @@ export default function ApplicationsTab() {
           {review.data.roleFrom === review.data.roleTo
             ? ' and the account role is unchanged'
             : `, and the account went from ${review.data.roleFrom} to ${review.data.roleTo}`}
-          .
+          .{' '}
+          {/* Silent for a suspension, which owes the vet nothing: reporting that no
+              email was sent about one nobody tried to send is noise. */}
+          {review.data.mail &&
+            (review.data.mail.delivered
+              ? 'The applicant has been told.'
+              : `The applicant was not told: ${review.data.mail.deliveryError}`)}
         </p>
       )}
     </div>

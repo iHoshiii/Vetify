@@ -25,7 +25,6 @@ import {
   findVerifiedProfessionals,
   insertProfessional,
   insertProfessionalCaptures,
-  insertProfessionalInquiry,
   isDuplicateApplication,
   isDuplicateInquiry,
   isDuplicateLicense,
@@ -40,7 +39,11 @@ import {
   type ProfessionalProfilePatch,
   type User,
 } from '../../models';
-import { completeInquiry, readInvite } from '../../services/professional-inquiries.service';
+import {
+  completeInquiry,
+  readInvite,
+  submitInquiry,
+} from '../../services/professional-inquiries.service';
 import { AppError } from '../../utils/AppError';
 import { created, fail, failReason, ok } from '../../utils/response';
 
@@ -205,7 +208,13 @@ router.patch(
  * POST /api/v1/professionals/inquiries
  *
  * Stage one: the short form that opens a review. A reviewer reads it and either
- * emails an application link or turns it down.
+ * emails an application link or turns it down — unless the automatic screen has
+ * already turned it down, which it does for an enquiry that gives no licence number
+ * or says in as many words that its writer is not a registered vet.
+ *
+ * Either way the answer is `201 { received: true }`. A refusal that named the rule it
+ * fired would tell a spammer which field to change, and the applicant is told by
+ * email, exactly as a decline by hand tells them.
  *
  * An account is required, even though nothing here is checked against it. Stage
  * two matches the invited address against whoever opens the link, so an enquiry
@@ -231,7 +240,10 @@ router.post(
     const input = req.body as ProfessionalInquiry;
 
     try {
-      await insertProfessionalInquiry(input);
+      // Screened on the way in, and an enquiry the screen refuses is stored as a
+      // declined row rather than bounced: see `submitInquiry` for why the answer
+      // below is the same either way.
+      await submitInquiry({ attrs: input, ip: req.ip ?? null });
     } catch (err) {
       if (isDuplicateInquiry(err)) {
         return failReason(

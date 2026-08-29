@@ -15,6 +15,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'blog.purged': 'Deleted a post for good',
   'blog.removed': 'Took a post down',
   'blog.restored': 'Restored a post',
+  'professional.inquiry.auto-declined': 'Declined an enquiry automatically',
   'professional.inquiry.declined': 'Declined an enquiry',
   'professional.interview': 'Booked an interview',
   'professional.invited': 'Sent an application link',
@@ -30,6 +31,7 @@ const ACTION_TONE: Partial<Record<AuditAction, string>> = {
   'blog.purged': 'text-rose-700',
   'blog.removed': 'text-rose-700',
   'blog.hidden': 'text-orange-700',
+  'professional.inquiry.auto-declined': 'text-rose-700',
   'professional.inquiry.declined': 'text-rose-700',
   'professional.rejected': 'text-rose-700',
   'professional.suspended': 'text-rose-700',
@@ -95,8 +97,9 @@ export default function AdminAuditPage() {
       header: 'Who',
       cell: (row) => (
         <div className="min-w-0">
-          {/* Null when the system did it to itself — the seed script granting the
-              first admin, before there was an admin to attribute it to. */}
+          {/* Null when nothing decided it. Mostly the enquiry screen turning somebody
+              away; also the seed script granting the first admin, before there was an
+              admin to attribute it to. Filter the action column to see just one. */}
           <p className="truncate text-xs font-bold text-slate-950">{row.actorEmail ?? 'System'}</p>
           {row.ip && <p className="truncate text-[11px] text-slate-500">{row.ip}</p>}
         </div>

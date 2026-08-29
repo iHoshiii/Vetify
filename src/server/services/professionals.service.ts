@@ -15,7 +15,7 @@ import {
 } from '../models';
 import { AppError } from '../utils/AppError';
 import { deliverMail, type MailDelivery } from './mail.service';
-import { interviewEmail } from './professional-mail';
+import { interviewEmail, rejectedEmail, verifiedEmail } from './professional-mail';
 
 /** The three verdicts a reviewer can reach. 'pending' is not one of them: an
  * application does not go back to being unread. */
@@ -40,6 +40,14 @@ export type ReviewProfessionalResult = {
   application: ProfessionalDocument;
   roleFrom: UserRole;
   roleTo: UserRole;
+  /**
+   * How the applicant was told, or null when nothing was owed them.
+   *
+   * Null and `{ delivered: false }` are different answers, and the screen says
+   * different things about them: the first is a suspension, which sends no email
+   * at all, and the second is an approval whose email did not go out.
+   */
+  mail: MailDelivery | null;
 };
 
 /**
@@ -54,6 +62,52 @@ export type ReviewProfessionalResult = {
 function roleAfter(decision: ProfessionalDecision, current: UserRole): UserRole {
   if (decision === 'verified') return current === 'user' ? 'professional' : current;
   return current === 'professional' ? 'user' : current;
+}
+
+/**
+ * Tells the applicant what was decided, when the decision is one they are owed a
+ * word about.
+ *
+ * Null for a suspension: that is an internal lever pulled on a listing rather than
+ * a verdict on an application, and there is nothing in it the vet could act on.
+ *
+ * A missing account is reported rather than thrown, the way the interview booking
+ * reports it — the verdict is real either way, and an application with no account
+ * behind it is a data problem rather than a reason to refuse the reviewer.
+ */
+async function tellApplicant(
+  decision: ProfessionalDecision,
+  applicant: User | null,
+  /**
+   * The name on the licence, preferred over the account name for the greeting: it
+   * is the one the reviewer has been reading, and the account name is editable
+   * from settings. Neither being usable leaves the greeting to fall back to
+   * "Hi there".
+   */
+  licenceName: string,
+  reason: string | null
+): Promise<MailDelivery | null> {
+  if (decision === 'suspended') return null;
+
+  if (!applicant) {
+    return { delivered: false, deliveryError: 'The applicant no longer has an account' };
+  }
+
+  const to = applicant.email;
+  const name = licenceName || applicant.name || '';
+
+  // The reason is guaranteed for a rejection by the guard in `reviewProfessional`.
+  // Narrowed on here rather than asserted, so this reads honestly on its own and a
+  // rejection that somehow arrived without one sends nothing at all rather than an
+  // email quoting a blank finding under a label that promises one.
+  const message =
+    decision === 'verified'
+      ? verifiedEmail({ to, name })
+      : reason
+      ? rejectedEmail({ to, name, reason })
+      : null;
+
+  return message ? await deliverMail(message) : null;
 }
 
 /**
@@ -80,7 +134,12 @@ export async function reviewProfessional(
   // A refusal is only fair if it says why, and a suspension has to stay
   // explainable months later. The route validates this too; it is repeated here
   // because the guard has to hold for every caller, not just the HTTP one.
-  if (decision !== 'verified' && !reason?.trim()) {
+  //
+  // Trimmed once into a local rather than at each use: the same string is stored on
+  // the application, copied into the audit entry and quoted back to the applicant,
+  // and three separate trims are three chances for those three to disagree.
+  const stated = reason?.trim() || null;
+  if (decision !== 'verified' && !stated) {
     throw AppError.badRequest('A reason is required to reject or suspend an application');
   }
 
@@ -101,7 +160,7 @@ export async function reviewProfessional(
     reviewedAt: new Date(),
     // A verification clears an earlier refusal: the reason no longer describes
     // where the application stands.
-    rejectionReason: decision === 'verified' ? null : reason,
+    rejectionReason: decision === 'verified' ? null : stated,
   });
 
   if (!application) return null;
@@ -123,13 +182,15 @@ export async function reviewProfessional(
     await updateUser(applicant._id, accountPatch);
   }
 
+  const mail = await tellApplicant(decision, applicant, application.fullName, stated);
+
   await recordAudit({
     action: AUDIT_ACTION[decision],
     targetType: 'professional',
     targetId: application._id,
     actor: reviewer._id,
     actorEmail: reviewer.email,
-    reason,
+    reason: stated,
     // Enough for the audit screen to explain the row on its own, without a join
     // to an account that may since have been renamed or deleted.
     metadata: {
@@ -139,11 +200,14 @@ export async function reviewProfessional(
       licenseAuthority: current.licenseAuthority,
       roleFrom,
       roleTo,
+      // Null when nothing was owed — a suspension. Told apart in the log from an
+      // approval whose email failed, which is the whole reason it is not a boolean.
+      delivered: mail?.delivered ?? null,
     },
     ip,
   });
 
-  return { application, roleFrom, roleTo };
+  return { application, roleFrom, roleTo, mail };
 }
 
 export type ScheduleInterviewInput = {

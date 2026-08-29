@@ -1,20 +1,19 @@
-import { useMetricsOverview } from '@/hooks/useAdminMetrics';
 import { NavLink, Outlet } from 'react-router-dom';
 
 /**
- * The four views of the same people.
+ * The two views of the same people.
  *
  * Accounts first because it is every account and the landing, then the role with a
- * directory listing attached, then the two queues in the order somebody actually
- * moves through them: an enquiry becomes an invitation becomes the application on
- * the tab after it. Routes rather than local state, so a tab is a link somebody can
- * send and each one keeps its own filters in the address bar.
+ * directory listing attached. Routes rather than local state, so a tab is a link
+ * somebody can send and each one keeps its own filters in the address bar.
+ *
+ * The queues that grant that role used to be two more tabs here. They are their own
+ * section now: an enquiry becoming an application becoming a listing is a journey
+ * with an outcome, not another way of looking at an account.
  */
 const TABS = [
   { to: '/admin/users', label: 'Accounts', end: true },
   { to: '/admin/users/professionals', label: 'Professionals', end: false },
-  { to: '/admin/users/enquiries', label: 'Enquiries', end: false },
-  { to: '/admin/users/applications', label: 'Applications', end: false },
 ] as const;
 
 const TAB = 'rounded-md px-3 py-1.5 text-sm font-bold transition-colors';
@@ -22,24 +21,20 @@ const TAB_ON = 'bg-teal-900 text-white';
 const TAB_OFF = 'text-slate-600 hover:bg-teal-900/5 hover:text-teal-900';
 
 /**
- * User management: the accounts, the professionals among them, and the
- * applications waiting on a verdict.
+ * User management: every account, and the professionals among them.
  *
- * One section rather than three, because they are one job — the queue decides a
- * role, the role decides a directory listing, and the account underneath is what
- * gets suspended when any of it goes wrong. Splitting them across the sidebar made
- * an admin navigate between the three halves of a single decision.
+ * One section rather than two in the sidebar, because the second is a narrowing of the
+ * first — a directory listing hangs off a role, and the account underneath is what
+ * gets suspended when something goes wrong with either. What grants that role in the
+ * first place is next door, under Applications.
  */
 export default function AdminUsersLayout() {
-  const overview = useMetricsOverview();
-  const pending = overview.data?.totals.pendingApplications ?? 0;
-
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-black tracking-tight">User management</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Roles and access for every account, and the two queues that grant them.
+          Roles and access for every account, and the professionals among them.
         </p>
       </div>
 
@@ -53,14 +48,6 @@ export default function AdminUsersLayout() {
                 className={({ isActive }) => `${TAB} ${isActive ? TAB_ON : TAB_OFF}`}
               >
                 {tab.label}
-                {/* The count is on the tab because it is the only one of the three
-                    with anybody waiting on it. Absent rather than zero: "0" is a
-                    badge asking for attention it does not need. */}
-                {tab.label === 'Applications' && pending > 0 && (
-                  <span className="ml-1.5 rounded-full bg-amber-200 px-1.5 py-0.5 text-[11px] font-black text-amber-900">
-                    {pending}
-                  </span>
-                )}
               </NavLink>
             </li>
           ))}
