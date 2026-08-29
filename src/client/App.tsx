@@ -34,6 +34,7 @@ import ProfessionalHistoryPage from '@/pages/professionals/history-page';
 import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalLayout from '@/pages/professionals/professional-layout';
 import ProfessionalProfilePage from '@/pages/professionals/profile-page';
+import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
 import SignupPage from '@/pages/signup/signup-page';
@@ -140,6 +141,10 @@ export default function App() {
         />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
+        {/* One vet, publicly readable: somebody should be able to read who they might
+            book before making an account. Ranked below the literal paths below it by
+            the router's own specificity rules, so /professionals/apply still wins. */}
+        <Route path="professionals/:id" element={<ProfessionalPublicProfilePage />} />
         {/*
          * Stage one, behind an account. Stage two matches the invited address
          * against whoever opens the link, so an enquiry from nobody in particular
