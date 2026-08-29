@@ -5,15 +5,18 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
 /**
  * The sections, in the order somebody works them.
  *
- * Overview first because that is the landing, then the people, then their
- * writing, then the log that records what was done to either. `end` on the
- * overview so it is not left highlighted on every child path.
+ * Overview first because that is the landing, then the applications waiting on
+ * somebody, then the accounts they turn into, then the writing on them, then the log
+ * of what was done to any of it. `end` on the overview so it is not left highlighted
+ * on every child path.
  *
- * Accounts, professionals and the application queue are one entry, not three:
- * they are three views of the same decision, and they have their own tabs inside.
+ * Applications is one entry with three phases inside it, and Users is one with two
+ * views of the same people. Both are worked through rather than picked between,
+ * which is why the sidebar lists five things and not eight.
  */
 const SECTIONS = [
   { to: '/admin', label: 'Overview', end: true },
+  { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/blogs', label: 'Posts' },
   { to: '/admin/audit', label: 'Audit log' },

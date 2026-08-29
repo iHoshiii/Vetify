@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import EnquiriesTab from '../pages/admin/users/enquiries-tab';
+import RequestTab from '../pages/admin/applications/request-tab';
 import type { AdminInquiry } from '../services/admin.service';
 
 /**
@@ -79,7 +79,7 @@ function renderTab() {
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <EnquiriesTab />
+        <RequestTab />
       </MemoryRouter>
     </QueryClientProvider>
   );
@@ -219,7 +219,12 @@ describe('the enquiries tab', () => {
   it('offers nothing to decide on an enquiry that is already settled', () => {
     list.data = page([
       inquiry({ status: 'completed', completedAt: '2026-08-26T00:00:00.000Z' }),
-      inquiry({ id: 'i2', status: 'declined', declineReason: 'Not on the register.' }),
+      inquiry({
+        id: 'i2',
+        status: 'declined',
+        declineReason: 'Not on the register.',
+        reviewedBy: 'admin-1',
+      }),
     ]);
 
     renderTab();
@@ -230,5 +235,24 @@ describe('the enquiries tab', () => {
     expect(within(table).getByText('Declined')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Invite' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+  });
+
+  it('tells an automatic refusal from a decision somebody made', () => {
+    list.data = page([
+      inquiry({
+        status: 'declined',
+        declineReason: 'Automatic: no licence number was given',
+        // What the screen leaves behind: a decline with nobody against it.
+        reviewedBy: null,
+      }),
+    ]);
+
+    renderTab();
+
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('Declined automatically')).toBeInTheDocument();
+    // The rule stays readable, because it is the first thing a reviewer checking up on
+    // the screen wants to see.
+    expect(within(table).getByText(/no licence number was given/)).toBeInTheDocument();
   });
 });

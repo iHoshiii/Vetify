@@ -271,6 +271,13 @@ export type ProfessionalDecisionResult = {
   application: AdminProfessional;
   roleFrom: UserRole;
   roleTo: UserRole;
+  /**
+   * Whether the applicant was written to, or null when the verdict owed them
+   * nothing — which is a suspension, an internal lever on a listing rather than a
+   * word to the vet. Not folded into a boolean: "no email was owed" and "the email
+   * did not go out" are different things to put on the screen.
+   */
+  mail: MailOutcome | null;
 };
 
 export function listAdminProfessionals(

@@ -9,6 +9,11 @@ const CONTROL =
  * The empty string is that option, and the hook that owns the URL drops it — so
  * clearing a filter removes the param rather than sending `?status=`, which the
  * server's enum would have to refuse.
+ *
+ * `allLabel: null` drops the option entirely, for a filter whose surrounding screen
+ * is already the scope — the application phases, where an "everything" reaching past
+ * the phase would turn two tabs into one screen shown twice. The value is then always
+ * a real option, so the caller supplies the default rather than the empty string.
  */
 export function FilterSelect({
   label,
@@ -21,7 +26,7 @@ export function FilterSelect({
   value: string | undefined;
   options: readonly string[];
   onChange: (value: string | undefined) => void;
-  allLabel?: string;
+  allLabel?: string | null;
 }) {
   const id = useId();
 
@@ -36,7 +41,7 @@ export function FilterSelect({
         onChange={(event) => onChange(event.target.value || undefined)}
         className={CONTROL}
       >
-        <option value="">{allLabel}</option>
+        {allLabel !== null && <option value="">{allLabel}</option>}
         {options.map((option) => (
           <option key={option} value={option}>
             {option.charAt(0).toUpperCase() + option.slice(1)}
