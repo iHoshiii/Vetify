@@ -8,15 +8,18 @@ import {
   findProfessionalInquiryById,
   findProfessionalInquiryByToken,
   hashToken,
+  insertProfessionalInquiry,
   inviteRefusal,
   recordAudit,
   updateProfessionalInquiry,
+  type ProfessionalInquiryAttrs,
   type ProfessionalInquiryDocument,
   type User,
 } from '../models';
 import { AppError } from '../utils/AppError';
 import { deliverMail, type MailDelivery } from './mail.service';
 import { applyLink, declineEmail, inviteEmail } from './professional-mail';
+import { screenInquiry, type InquiryRefusal } from './professional-screen';
 
 /** How long an emailed link stays usable. */
 export const INVITE_TTL_MS = PROFESSIONAL_INVITE_DAYS * 24 * 60 * 60 * 1000;
@@ -43,6 +46,96 @@ function refuseSelfReview(inquiry: ProfessionalInquiryDocument, reviewer: User):
   if (inquiry.email === reviewer.email.trim().toLowerCase()) {
     throw AppError.forbidden('You cannot review your own enquiry');
   }
+}
+
+export type SubmitInquiryResult = {
+  inquiry: ProfessionalInquiryDocument;
+  /**
+   * The rule that turned it away on the spot, or null when it went to the queue for
+   * a person to read. Null is the common answer: the screen is narrow on purpose.
+   */
+  refusal: InquiryRefusal | null;
+  /** How the automatic decline reached them. Null when nothing was declined. */
+  mail: MailDelivery | null;
+};
+
+/**
+ * Takes one enquiry off the public form: stores it, screens it, and closes it again
+ * if the screen refuses.
+ *
+ * A service rather than four calls in the route handler, for the reason
+ * {@link declineInquiry} is one: an enquiry closed without its audit entry is what
+ * the audit log exists to prevent, and a status moved without the email is somebody
+ * left waiting on an answer that already exists.
+ *
+ * A refusal is recorded as a declined row rather than thrown back at the form, and
+ * that is the part worth being deliberate about. Three things follow from it: an
+ * admin can see what the screen has been doing and catch a bad rule; the applicant
+ * gets the same email a decline by hand would send, rather than a validation
+ * error naming the rule they tripped; and the route can answer the same
+ * `{ received: true }` either way, so the screen never becomes an oracle telling a
+ * spammer which field to change.
+ *
+ * Screened after the insert, not before it. That way the unique index gets first
+ * say — somebody whose enquiry is still open is told so, rather than quietly
+ * auto-declined — and the rules read the normalised licence the row actually holds.
+ *
+ * Duplicate-address errors from that index are left to propagate: the route turns
+ * them into the 409 that says a first enquiry is still waiting.
+ */
+export async function submitInquiry(input: {
+  attrs: ProfessionalInquiryAttrs;
+  ip?: string | null;
+}): Promise<SubmitInquiryResult> {
+  const { attrs, ip = null } = input;
+
+  const stored = await insertProfessionalInquiry(attrs);
+  const refusal = screenInquiry(stored);
+
+  if (!refusal) return { inquiry: stored, refusal: null, mail: null };
+
+  const inquiry = await updateProfessionalInquiry(stored._id, {
+    status: 'declined',
+    // Freed at once, which is what makes an automatic refusal safe to get wrong:
+    // whoever was refused can write in again immediately, and the email below is the
+    // one that already tells them so.
+    openEmail: null,
+    declineReason: `Automatic: ${refusal.detail}`,
+    // Left null on purpose. Every human decline stamps a reviewer, so the absence of
+    // one is what tells the two apart on the queue and in the log — no second field
+    // to keep in step, the same trick `openEmail` itself plays one line up.
+    reviewedBy: null,
+    reviewedAt: new Date(),
+  });
+
+  if (!inquiry) return { inquiry: stored, refusal, mail: null };
+
+  // The generic decline, not the rule. The applicant is told the enquiry went no
+  // further, exactly as a decline by hand tells them; which rule fired is a note
+  // to colleagues and stays on the row.
+  const mail = await deliverMail(declineEmail({ to: inquiry.email, name: inquiry.name }));
+
+  await recordAudit({
+    action: 'professional.inquiry.auto-declined',
+    targetType: 'professional-inquiry',
+    targetId: inquiry._id,
+    // No actor, because nobody decided this. The field is nullable for exactly this
+    // case, and its own note in the audit document says so.
+    actor: null,
+    actorEmail: null,
+    reason: inquiry.declineReason,
+    metadata: {
+      email: inquiry.email,
+      licenseNumber: inquiry.licenseNumber,
+      // Which of the two rules fired, so a run of refusals can be traced to the rule
+      // behind them rather than read one reason string at a time.
+      rule: refusal.rule,
+      delivered: mail.delivered,
+    },
+    ip,
+  });
+
+  return { inquiry, refusal, mail };
 }
 
 export type InviteInquiryInput = {

@@ -1,31 +1,35 @@
 import { calculateMaxRecommendedRate } from '@shared/limits';
 import {
+  appointmentSlotsQuerySchema,
   professionalApplySchema,
   professionalInquirySchema,
   professionalListQuerySchema,
   professionalProfileUpdateSchema,
+  type AppointmentSlotsQuery,
   type ProfessionalApply,
   type ProfessionalInquiry,
   type ProfessionalInviteRefusal,
   type ProfessionalListQuery,
   type ProfessionalProfileUpdate,
 } from '@shared/schemas';
+import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
 import { Router, type Request, type Response } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
-import { requireRole } from '../../middleware/requireAuth';
 import { inquiryLimiter } from '../../middleware/security';
 import { validate, validateQuery } from '../../middleware/validate';
 import {
   deleteProfessional,
   deleteProfessionalCaptures,
   findCaptureIds,
+  findProfessionalById,
   findProfessionalByUser,
   findProfessionalCapture,
   findVerifiedProfessionals,
+  findHeldSlots,
+  findUserById,
   insertProfessional,
   insertProfessionalCaptures,
-  insertProfessionalInquiry,
   isDuplicateApplication,
   isDuplicateInquiry,
   isDuplicateLicense,
@@ -34,34 +38,21 @@ import {
   toInviteSummary,
   toOwnProfessional,
   toProfessionalPage,
+  toPublicProfessional,
   updateProfessionalProfile,
-  USER_ROLES,
   type ProfessionalCaptureIds,
   type ProfessionalProfilePatch,
-  type User,
 } from '../../models';
-import { completeInquiry, readInvite } from '../../services/professional-inquiries.service';
-import { AppError } from '../../utils/AppError';
+import {
+  completeInquiry,
+  readInvite,
+  submitInquiry,
+} from '../../services/professional-inquiries.service';
 import { created, fail, failReason, ok } from '../../utils/response';
+import { slotRangeBounds, slotsForRange } from '../../services/appointment-slots';
+import { actorOf, signedIn } from './caller';
 
 const router = Router();
-
-/**
- * Any signed-in account, which is what "requireAuth" means here.
- *
- * Going through `requireRole` rather than `requireAuth` buys the two things this
- * surface needs anyway: the caller is re-read from the database, so a banned
- * account cannot file an application on a token minted before the ban, and the
- * handler gets the stored user instead of a second lookup of its own.
- */
-const signedIn = requireRole(...USER_ROLES);
-
-/** The caller as the gate above just read them. */
-function actorOf(req: Request): User {
-  const user = req.currentUser;
-  if (!user) throw AppError.unauthorized('You need to be signed in to do that.');
-  return user;
-}
 
 const INVITE_TOKEN = /^[0-9a-f]{64}$/i;
 
@@ -111,6 +102,10 @@ router.get('/', validateQuery(professionalListQuerySchema), async (req, res) => 
 
   const { items, total } = await findVerifiedProfessionals({
     specialty: query.specialty,
+    q: query.q,
+    minExperience: query.minExperience,
+    maxRate: query.maxRate,
+    available: query.available,
     page: query.page,
     limit: query.limit,
   });
@@ -205,7 +200,13 @@ router.patch(
  * POST /api/v1/professionals/inquiries
  *
  * Stage one: the short form that opens a review. A reviewer reads it and either
- * emails an application link or turns it down.
+ * emails an application link or turns it down — unless the automatic screen has
+ * already turned it down, which it does for an enquiry that gives no licence number
+ * or says in as many words that its writer is not a registered vet.
+ *
+ * Either way the answer is `201 { received: true }`. A refusal that named the rule it
+ * fired would tell a spammer which field to change, and the applicant is told by
+ * email, exactly as a decline by hand tells them.
  *
  * An account is required, even though nothing here is checked against it. Stage
  * two matches the invited address against whoever opens the link, so an enquiry
@@ -231,7 +232,10 @@ router.post(
     const input = req.body as ProfessionalInquiry;
 
     try {
-      await insertProfessionalInquiry(input);
+      // Screened on the way in, and an enquiry the screen refuses is stored as a
+      // declined row rather than bounced: see `submitInquiry` for why the answer
+      // below is the same either way.
+      await submitInquiry({ attrs: input, ip: req.ip ?? null });
     } catch (err) {
       if (isDuplicateInquiry(err)) {
         return failReason(
@@ -419,5 +423,101 @@ router.get('/captures/:id', optionalAuth, signedIn, async (req, res) => {
 
   res.end(Buffer.from(capture.bytes.buffer));
 });
+
+/** Said the same way by both reads below. */
+const NOT_LISTED = 'That professional is not in the directory';
+
+/**
+ * A verified listing joined to its account, or null.
+ *
+ * The list read does this in one aggregation for a page; this is the same two rules
+ * applied to a single row — verified, and the account behind it still active. A
+ * suspended vet is out of the directory, and one route answering differently from the
+ * other is how a delisted profile stays reachable by its old link.
+ */
+async function listedProfessional(id: string) {
+  const application = await findProfessionalById(id);
+  if (!application || application.status !== 'verified') return null;
+
+  const account = await findUserById(application.user);
+  if (!account || (account.status ?? 'active') !== 'active') return null;
+
+  return {
+    ...application,
+    account: {
+      _id: account._id,
+      name: account.name ?? null,
+      avatarUrl: account.avatarUrl ?? null,
+      status: account.status ?? ('active' as const),
+    },
+  };
+}
+
+/**
+ * GET /api/v1/professionals/:id
+ *
+ * One directory entry, which is where a booking starts. Public like the list it comes
+ * out of — this is exactly one row of that list, and gating it would mean a pet owner
+ * has to sign in before they can read who they might book.
+ *
+ * A listing that is pending, rejected or suspended answers 404 rather than 403.
+ * Somebody with a guessed id has no business learning which of those it is.
+ */
+router.get('/:id', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, NOT_LISTED);
+
+  const listing = await listedProfessional(req.params.id);
+  if (!listing) return fail(res, 404, NOT_LISTED);
+
+  ok(res, toPublicProfessional(listing));
+});
+
+/**
+ * GET /api/v1/professionals/:id/slots?from=&to=
+ *
+ * The bookable grid, generated from the vet's weekly schedule with the slots already
+ * held marked as taken.
+ *
+ * Behind a sign-in, unlike the listing itself: when somebody is booked is a fact about
+ * their week rather than part of their advertisement, and an account is needed to book
+ * anyway. The held rows are read from the same partial index that enforces the rule, so
+ * the grid a client draws cannot disagree with the guard that refuses a booking.
+ *
+ * `minutes` comes back with the days so the client labels every button from the same
+ * number the grid was cut with, rather than from a copy of the constant of its own.
+ */
+router.get(
+  '/:id/slots',
+  optionalAuth,
+  signedIn,
+  validateQuery(appointmentSlotsQuerySchema),
+  async (req, res) => {
+    if (!isValidObjectId(req.params.id)) return fail(res, 404, NOT_LISTED);
+
+    const listing = await listedProfessional(req.params.id);
+    if (!listing) return fail(res, 404, NOT_LISTED);
+
+    const query = req.validatedQuery as AppointmentSlotsQuery;
+    const to = query.to ?? query.from;
+    const bounds = slotRangeBounds(query.from, to);
+
+    const held = await findHeldSlots({
+      professional: listing._id,
+      from: bounds.from,
+      to: bounds.to,
+    });
+
+    ok(res, {
+      minutes: APPOINTMENT_SLOT_MINUTES,
+      days: slotsForRange({
+        schedule: listing.weeklySchedule ?? [],
+        from: query.from,
+        to,
+        minutes: APPOINTMENT_SLOT_MINUTES,
+        held,
+      }),
+    });
+  }
+);
 
 export default router;

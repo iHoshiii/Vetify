@@ -26,6 +26,12 @@ export type PublicProfessional = {
   avatarUrl: string | null;
   clinicName: string | null;
   clinicAddress: string;
+  /**
+   * Where they work, home addresses included, so a search can match a street that a
+   * clinic name would miss. Without the device fix each one was verified with, which
+   * is a reviewer's material rather than part of a profile.
+   */
+  addresses: PublicAddress[];
   businessPhone: string | null;
   specialties: string[];
   bio: string;
@@ -51,6 +57,9 @@ export type ProfessionalAddressView = {
     capturedAt: string;
   } | null;
 };
+
+/** The same address as the directory publishes it: everything but the device fix. */
+export type PublicAddress = Omit<ProfessionalAddressView, 'fix'>;
 
 /** The ids of the three photographs, to be fetched one at a time. */
 export type ProfessionalCaptureIds = Partial<Record<ProfessionalPhotoKind, string>>;
@@ -125,6 +134,12 @@ export type ProfessionalListParams = {
   page?: number;
   limit?: number;
   specialty?: string;
+  /** Name, clinic, or anywhere in either address. */
+  q?: string;
+  minExperience?: number;
+  maxRate?: number;
+  /** Only the vets currently taking work. */
+  available?: boolean;
 };
 
 /** GET /api/v1/professionals — one page of the verified directory. */
@@ -136,9 +151,61 @@ export async function listProfessionals(
   if (params.page && params.page > 1) search.set('page', String(params.page));
   if (params.limit) search.set('limit', String(params.limit));
   if (params.specialty) search.set('specialty', params.specialty);
+  if (params.q) search.set('q', params.q);
+  // Sent as strings the schema coerces back. `available` is spelled out rather than
+  // dropped when false, because 'false' is a real answer the server can read.
+  if (params.minExperience) search.set('minExperience', String(params.minExperience));
+  if (params.maxRate) search.set('maxRate', String(params.maxRate));
+  if (params.available !== undefined) search.set('available', String(params.available));
 
   const query = search.toString();
   return apiFetch<ProfessionalPage>(`/professionals${query ? `?${query}` : ''}`, { signal });
+}
+
+/** One bookable start, and whether somebody already holds it. */
+export type Slot = { at: string; taken: boolean };
+
+/** One Manila calendar day of the grid. An empty day is a day the vet does not work. */
+export type DaySlots = { date: string; slots: Slot[] };
+
+/**
+ * The grid for a range of days.
+ *
+ * `minutes` comes back with it so a button is labelled from the number the grid was
+ * actually cut with, rather than from a copy of the constant on this side.
+ */
+export type SlotGrid = { minutes: number; days: DaySlots[] };
+
+/**
+ * GET /api/v1/professionals/:id — one directory entry.
+ *
+ * Public, like the list it comes out of. A listing that is not verified, or whose
+ * account has been suspended, answers 404 rather than 403.
+ */
+export async function getProfessional(id: string, signal?: AbortSignal) {
+  return await apiFetch<PublicProfessional>(`/professionals/${encodeURIComponent(id)}`, {
+    signal,
+  });
+}
+
+/**
+ * GET /api/v1/professionals/:id/slots — the bookable grid.
+ *
+ * Behind a sign-in, unlike the listing: when a vet is booked is a fact about their
+ * week rather than part of their advertisement. `to` defaults to `from` server-side,
+ * so asking for one day means sending one date.
+ */
+export async function getProfessionalSlots(
+  input: { id: string; from: string; to?: string },
+  signal?: AbortSignal
+) {
+  const search = new URLSearchParams({ from: input.from });
+  if (input.to) search.set('to', input.to);
+
+  return await apiFetch<SlotGrid>(
+    `/professionals/${encodeURIComponent(input.id)}/slots?${search.toString()}`,
+    { signal }
+  );
 }
 
 /**

@@ -253,3 +253,63 @@ export const METRIC_WINDOW_DAYS = 30;
  */
 export const MODERATION_REASON_MIN = 10;
 export const MODERATION_REASON_MAX = 500;
+
+/* -------------------------------------------------------------------------- *
+ * Appointments
+ *
+ * A booking is a slot on a grid rather than a time somebody types, so the length
+ * of a slot has to be one shared number: the server generates the grid from it
+ * and the client labels every button with it. Two copies would be two answers to
+ * what 09:30 means.
+ * -------------------------------------------------------------------------- */
+
+/**
+ * How long one bookable slot is.
+ *
+ * A constant rather than a per-vet setting. Every professional already chooses the
+ * window they work in; how finely that window is cut is a decision about the
+ * product, and making it configurable would mean a grid whose shape can change
+ * under a client that has already drawn it.
+ */
+export const APPOINTMENT_SLOT_MINUTES = 30;
+
+/**
+ * How far ahead the grid may be asked for.
+ *
+ * Bounded because the answer is generated a day at a time: an unbounded range is a
+ * request that walks a year of schedules to fill a page nobody scrolls.
+ */
+export const APPOINTMENT_HORIZON_DAYS = 60;
+
+/**
+ * The offset every slot is built at.
+ *
+ * A professional's weekly schedule is `HH:mm` with no zone attached, and the whole
+ * audience is in one country — so "09:00" means nine in Manila, and this is what
+ * turns it into an instant. A fixed number rather than a timezone library because
+ * the Philippines has never observed daylight saving; the day Vetify opens in a
+ * second country, this is the line that has to become a real lookup.
+ */
+export const MANILA_UTC_OFFSET_HOURS = 8;
+
+/**
+ * How much of a reason for the visit counts as one.
+ *
+ * Same floor as a moderation reason and for the same kind of purpose: a vet
+ * deciding whether to take a booking cannot act on "sick", and the difference
+ * between a sentence and a keypress is what this number is.
+ */
+export const APPOINTMENT_REASON_MIN = 10;
+export const APPOINTMENT_REASON_MAX = 600;
+
+/**
+ * How many bookings one network may request in an hour.
+ *
+ * Lower than it looks like it should be, because a request is not free to the vet:
+ * it holds a slot the moment it lands. Somebody booking for three pets in one
+ * sitting still fits.
+ */
+export const APPOINTMENT_REQUESTS_PER_IP_PER_HOUR = 8;
+
+export const APPOINTMENT_PAGE_SIZE = 20;
+export const APPOINTMENT_PAGE_SIZE_MAX = 50;

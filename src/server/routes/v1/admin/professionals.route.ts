@@ -178,6 +178,11 @@ function decision(kind: ProfessionalDecision): RequestHandler {
       application: await reviewed(result.application),
       roleFrom: result.roleFrom,
       roleTo: result.roleTo,
+      // Whether the applicant was told, or null when the verdict owed them nothing.
+      // Reported rather than swallowed for the same reason the invite reports it: the
+      // decision stands either way, and a reviewer who knows the email bounced can
+      // say it another way.
+      mail: result.mail,
     });
   };
 }
@@ -185,18 +190,21 @@ function decision(kind: ProfessionalDecision): RequestHandler {
 /**
  * PATCH /api/v1/admin/professionals/:id/verify
  *
- * Approves the licence and, if the applicant is still a plain user, promotes
- * them. The response carries the role before and after, so the screen can say
- * what actually changed rather than assuming a promotion happened.
+ * Approves the licence, tells the applicant by email, and — if they are still a
+ * plain user — promotes them. The response carries the role before and after, so the
+ * screen can say what actually changed rather than assuming a promotion happened.
  */
 router.patch('/:id/verify', validate(professionalVerifySchema), decision('verified'));
 
 /**
  * PATCH /api/v1/admin/professionals/:id/reject
  *
- * Turns the application down, with a reason the applicant is shown. Not a delete:
- * the row stays, so a rejection can be reconsidered and the licence number stays
- * claimed against a second attempt.
+ * Turns the application down, with a reason the applicant is shown — emailed to them
+ * as well as put on their own page. That is the one place the two stages differ: a
+ * declined enquiry is told only that it went no further.
+ *
+ * Not a delete. The row stays, so a rejection can be reconsidered and the licence
+ * number stays claimed against a second attempt.
  */
 router.patch('/:id/reject', validate(professionalRejectSchema), decision('rejected'));
 

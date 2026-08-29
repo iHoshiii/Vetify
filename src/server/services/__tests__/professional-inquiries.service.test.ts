@@ -18,6 +18,7 @@ import {
   declineInquiry,
   inviteInquiry,
   readInvite,
+  submitInquiry,
 } from '../professional-inquiries.service';
 
 beforeAll(startTestDb, 120_000);
@@ -54,6 +55,101 @@ async function enquiry(overrides: Partial<ProfessionalInquiryAttrs> = {}) {
 function lastMail() {
   return recentMail().at(-1);
 }
+
+/**
+ * What the public form sends, with a licence number and a motivation that both clear
+ * the automatic screen. The `enquiry` helper above deliberately does not: it inserts
+ * straight into the collection, which is what the invite and decline tests want.
+ */
+function submission(overrides: Partial<ProfessionalInquiryAttrs> = {}): ProfessionalInquiryAttrs {
+  seq += 1;
+  return {
+    name: 'Marites Reyes',
+    email: `applicant${seq}@example.com`,
+    licenseNumber: 'PRC 1893472',
+    currentLocation: 'Cebu City, Cebu',
+    motivation: 'Fifteen years of small animal practice and nowhere to write it down.',
+    ...overrides,
+  };
+}
+
+describe('submitInquiry', () => {
+  it('puts an ordinary enquiry on the queue and writes to nobody', async () => {
+    const result = await submitInquiry({ attrs: submission() });
+
+    expect(result.refusal).toBeNull();
+    expect(result.inquiry.status).toBe('pending');
+    expect(result.mail).toBeNull();
+    // Nothing is sent on the way in. The next thing this applicant hears is a
+    // reviewer's invitation or decline.
+    expect(recentMail()).toHaveLength(0);
+  });
+
+  it('declines an enquiry that gives no licence number', async () => {
+    const result = await submitInquiry({ attrs: submission({ licenseNumber: 'none' }) });
+
+    expect(result.refusal?.rule).toBe('no-licence');
+    expect(result.inquiry).toMatchObject({
+      status: 'declined',
+      // Nulled at once, which is what makes an automatic refusal survivable: the
+      // person refused can write in again immediately.
+      openEmail: null,
+      // No reviewer stamped. The absence is what tells this from a human decision,
+      // with no second field to keep in step.
+      reviewedBy: null,
+    });
+    expect(result.inquiry.declineReason).toContain('Automatic:');
+  });
+
+  it('declines somebody whose own words say they are not a vet', async () => {
+    const result = await submitInquiry({
+      attrs: submission({
+        motivation: 'I am a veterinary student and want the exposure before I sit the exam.',
+      }),
+    });
+
+    expect(result.refusal?.rule).toBe('not-licensed');
+    expect(result.inquiry.status).toBe('declined');
+  });
+
+  it('sends the same decline a reviewer would, naming no rule', async () => {
+    const attrs = submission({ licenseNumber: 'n/a' });
+    const result = await submitInquiry({ attrs });
+
+    expect(result.mail?.delivered).toBe(true);
+    expect(lastMail()?.to).toBe(attrs.email);
+    expect(lastMail()?.text).toContain('not taking it further');
+    // Which rule fired is a note to colleagues and stays on the row. An email that
+    // named it would tell a spammer which field to change.
+    expect(lastMail()?.text).not.toContain('licence number');
+    expect(lastMail()?.text).not.toContain('Automatic');
+  });
+
+  it('audits it with no actor, because nobody decided it', async () => {
+    const result = await submitInquiry({ attrs: submission({ licenseNumber: 'pending' }) });
+
+    const entry = await auditLogsCollection().findOne({
+      action: 'professional.inquiry.auto-declined',
+    });
+
+    expect(entry).toMatchObject({ actor: null, actorEmail: null });
+    expect(entry?.targetId.equals(result.inquiry._id)).toBe(true);
+    // The rule, so a run of refusals can be traced to the rule behind them rather
+    // than read one reason string at a time.
+    expect(entry?.metadata).toMatchObject({ rule: 'no-licence', delivered: true });
+  });
+
+  it('lets the same address write in again straight afterwards', async () => {
+    const first = await submitInquiry({ attrs: submission({ licenseNumber: 'none' }) });
+
+    const second = await submitInquiry({
+      attrs: submission({ email: first.inquiry.email }),
+    });
+
+    expect(second.refusal).toBeNull();
+    expect(second.inquiry.status).toBe('pending');
+  });
+});
 
 describe('inviteInquiry', () => {
   it('mints a link, keeps only its hash, and emails it', async () => {

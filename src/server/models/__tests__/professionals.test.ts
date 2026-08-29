@@ -397,10 +397,31 @@ describe('public shapes', () => {
     // What a reviewer checks is not what a pet owner browses.
     expect(entry).not.toHaveProperty('licenseNumber');
     expect(entry).not.toHaveProperty('credentialUrls');
-    expect(entry).not.toHaveProperty('addresses');
     expect(entry).not.toHaveProperty('captures');
     expect(entry).not.toHaveProperty('reviewedBy');
     expect(entry).not.toHaveProperty('rejectionReason');
+  });
+
+  it('publishes the addresses, but not the readings they were verified with', async () => {
+    await verified('2026-08-01T00:00:00.000Z');
+    const [joined] = (await findVerifiedProfessionals()).items;
+
+    const entry = toPublicProfessional(joined);
+
+    // Published so that somebody searching by where they live can find a vet who
+    // works from home and has no clinic to match instead.
+    expect(entry.addresses).toEqual([
+      {
+        kind: 'clinic',
+        line1: '12 Mabini Street',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+      },
+    ]);
+    // The device fix stays behind. It says where a phone was on the day somebody
+    // applied, to within metres, and nothing in it helps anybody find a door.
+    expect(entry.addresses[0]).not.toHaveProperty('fix');
   });
 
   it('shows an applicant their own submission and the reason, but not the reviewer', async () => {

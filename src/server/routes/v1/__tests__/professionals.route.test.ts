@@ -17,7 +17,9 @@ import {
 import {
   insertProfessional,
   updateProfessional,
+  updateProfessionalProfile,
   type ProfessionalAttrs,
+  type ProfessionalProfilePatch,
 } from '../../../models/professionals';
 import { insertUser, type UserRole, type UserStatus } from '../../../models/users';
 import { signAccessToken } from '../../../services/auth.service';
@@ -81,7 +83,10 @@ function inquiryForm(overrides: Record<string, unknown> = {}) {
   return {
     name: `Marites Reyes ${seq}`,
     email: `enquirer${seq}@example.com`,
-    licenseNumber: `vet-${seq}`,
+    // Six digits, because the automatic screen refuses a licence number with fewer
+    // than four: an enquiry built on `vet-1` is declined the moment it arrives, and
+    // the tests below that need an open one would silently stop testing anything.
+    licenseNumber: `vet ${900000 + seq}-ph`,
     currentLocation: 'Cebu City, Cebu',
     clinicLocation: 'Mandaue, Cebu',
     motivation: 'Fifteen years of small animal practice and nowhere to write any of it down.',
@@ -177,9 +182,21 @@ async function seed(user: ObjectId, overrides: Partial<ProfessionalAttrs> = {}) 
 }
 
 /** A verified vet in the directory, owned by a real active account. */
-async function listed(overrides: Partial<ProfessionalAttrs> = {}) {
+async function listed(
+  overrides: Partial<ProfessionalAttrs> = {},
+  /**
+   * The settings a vet chooses after verification. Separate because
+   * `insertProfessional` deliberately writes none of them: they are not part of a
+   * filed application, and the filters below are the first thing that reads them.
+   */
+  settings: ProfessionalProfilePatch = {}
+) {
   const { user } = await account('professional');
   const application = await seed(user._id, overrides);
+
+  if (Object.keys(settings).length > 0) {
+    await updateProfessionalProfile(application._id, settings);
+  }
 
   return await updateProfessional(application._id, {
     status: 'verified',
@@ -245,6 +262,133 @@ describe('GET /api/v1/professionals', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.issues.limit).toBeTruthy();
+  });
+
+  it('searches the name on the licence', async () => {
+    await listed({ fullName: 'Marites Reyes', clinicName: 'One clinic' });
+    await listed({ fullName: 'Danilo Cruz', clinicName: 'Another clinic' });
+
+    const res = await request(app).get('/api/v1/professionals?q=marites');
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].clinicName).toBe('One clinic');
+  });
+
+  it('searches a home street, for a vet with no clinic to search instead', async () => {
+    await listed({
+      clinicName: null,
+      addresses: [
+        {
+          kind: 'home',
+          line1: '44 Sikatuna Street',
+          city: 'Dumaguete',
+          province: 'Negros Oriental',
+          postalCode: '6200',
+          fix: {
+            latitude: 9.3,
+            longitude: 123.3,
+            accuracyMeters: 12,
+            capturedAt: new Date().toISOString(),
+          },
+        },
+      ],
+    });
+    await listed({ clinicName: 'Somewhere else entirely' });
+
+    const res = await request(app).get('/api/v1/professionals?q=sikatuna');
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].addresses[0].line1).toBe('44 Sikatuna Street');
+    // The address is published; the device reading it was verified with is not. That
+    // says where a phone was on the day somebody applied, to within twelve metres.
+    expect(res.body.items[0].addresses[0].fix).toBeUndefined();
+  });
+
+  it('filters by what somebody can afford', async () => {
+    await listed({ clinicName: 'Affordable' }, { hourlyRate: 40 });
+    await listed({ clinicName: 'Dear' }, { hourlyRate: 400 });
+
+    const res = await request(app).get('/api/v1/professionals?maxRate=100');
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].clinicName).toBe('Affordable');
+  });
+
+  it('filters by years on the licence', async () => {
+    await listed({ clinicName: 'Long established', yearsExperience: 20 });
+    await listed({ clinicName: 'Newly qualified', yearsExperience: 2 });
+
+    const res = await request(app).get('/api/v1/professionals?minExperience=10');
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].clinicName).toBe('Long established');
+  });
+
+  it('shows only the vets taking bookings when asked', async () => {
+    await listed({ clinicName: 'Open' }, { availabilityStatus: 'available' });
+    await listed({ clinicName: 'Booked solid' }, { availabilityStatus: 'busy' });
+    // No setting at all, which predates the field and counts as available.
+    await listed({ clinicName: 'Never said' });
+
+    const res = await request(app).get('/api/v1/professionals?available=true');
+
+    expect(res.body.items.map((item: { clinicName: string }) => item.clinicName).sort()).toEqual([
+      'Never said',
+      'Open',
+    ]);
+  });
+
+  it('does the opposite of nothing when told available=false', async () => {
+    await listed({ clinicName: 'Booked solid' }, { availabilityStatus: 'busy' });
+
+    // The trap `z.coerce.boolean()` walks into: every non-empty string is truthy, so
+    // it would read 'false' as true and filter the row out.
+    const res = await request(app).get('/api/v1/professionals?available=false');
+
+    expect(res.body.items).toHaveLength(1);
+  });
+});
+
+describe('GET /api/v1/professionals/:id', () => {
+  it('answers one listing, addresses included', async () => {
+    const application = await listed({ clinicName: 'The one being read' });
+
+    const res = await request(app).get(`/api/v1/professionals/${application!._id.toString()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ clinicName: 'The one being read' });
+    expect(res.body.addresses).toHaveLength(1);
+    // Same rule as the list it comes out of: a profile is a place to choose a vet.
+    expect(res.body.licenseNumber).toBeUndefined();
+  });
+
+  it('answers 404 for an application that is not verified', async () => {
+    const pending = await account();
+    const application = await seed(pending.user._id);
+
+    // Not 403. Somebody with a guessed id has no business learning that an
+    // unverified application is behind it.
+    const res = await request(app).get(`/api/v1/professionals/${application._id.toString()}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('answers 404 once the account behind a listing is suspended', async () => {
+    const { user } = await account('professional', 'suspended');
+    const application = await seed(user._id);
+    await updateProfessional(application._id, { status: 'verified', reviewedAt: new Date() });
+
+    // The list drops these with a $match after its join; one row has to apply the
+    // same rule, or a delisted profile stays reachable by its old link.
+    const res = await request(app).get(`/api/v1/professionals/${application._id.toString()}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('answers a malformed id without asking the database', async () => {
+    const res = await request(app).get('/api/v1/professionals/not-an-id');
+
+    expect(res.status).toBe(404);
   });
 });
 
@@ -316,6 +460,56 @@ describe('POST /api/v1/professionals/inquiries', () => {
     expect(await professionalInquiriesCollection().countDocuments({ email: declined.email })).toBe(
       2
     );
+  });
+
+  it('turns away an enquiry with no licence number, and gives nothing away doing it', async () => {
+    const sender = await account();
+
+    const res = await enquire(sender.token, inquiryForm({ licenseNumber: 'none' }));
+
+    // The same answer a good enquiry gets. One that named the rule it tripped would
+    // tell whoever is probing which field to change next.
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ received: true });
+
+    const stored = await professionalInquiriesCollection().findOne({ licenseNumber: 'NONE' });
+    expect(stored).toMatchObject({
+      status: 'declined',
+      // No reviewer stamped, which is what tells an automatic decline from a human
+      // one on the queue and in the audit log.
+      reviewedBy: null,
+      openEmail: null,
+    });
+    expect(stored?.declineReason).toContain('Automatic:');
+  });
+
+  it('turns away somebody whose own words say they are not a vet', async () => {
+    const sender = await account();
+    const form = inquiryForm({
+      motivation: 'I am a veterinary student and would like the exposure before I take the exam.',
+    });
+
+    const res = await enquire(sender.token, form);
+
+    expect(res.status).toBe(201);
+    expect(await professionalInquiriesCollection().findOne({ email: form.email })).toMatchObject({
+      status: 'declined',
+      reviewedBy: null,
+    });
+  });
+
+  it('frees the address on its way out, so a wrong rule can be written past', async () => {
+    const sender = await account();
+    const first = inquiryForm({ licenseNumber: 'n/a' });
+    await enquire(sender.token, first);
+
+    // Not the 409 an open enquiry would earn: the automatic decline nulled
+    // `openEmail` on its way out, which is what makes a bad rule survivable for the
+    // person it was applied to.
+    const res = await enquire(sender.token, inquiryForm({ email: first.email }));
+
+    expect(res.status).toBe(201);
+    expect(await professionalInquiriesCollection().countDocuments({ email: first.email })).toBe(2);
   });
 
   it('refuses an enquiry with nothing in the one box a reviewer reads', async () => {

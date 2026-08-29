@@ -274,6 +274,9 @@ describe('PATCH /api/v1/admin/professionals/:id/verify', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ roleFrom: 'user', roleTo: 'professional' });
     expect(res.body.application).toMatchObject({ status: 'verified', rejectionReason: null });
+    // The applicant was told, and the screen is told that they were: an approval that
+    // silently failed to send is a vet waiting on an email that never comes.
+    expect(res.body.mail).toMatchObject({ delivered: true });
     expect(res.body.application.reviewedAt).toBeTruthy();
     // The role is read back from the database rather than from the response:
     // a verified application whose applicant still cannot post is the bug.
@@ -411,6 +414,9 @@ describe('PATCH /api/v1/admin/professionals/:id/suspend', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.application).toMatchObject({ status: 'suspended', rejectionReason: REASON });
+    // Null, not a failed send: a suspension writes to nobody, and the screen has to be
+    // able to tell that from an email that did not go out.
+    expect(res.body.mail).toBeNull();
     expect(await findUserById(user._id).then((u) => u?.role)).toBe('user');
 
     const after = await request(app).get('/api/v1/professionals');
