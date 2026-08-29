@@ -81,7 +81,10 @@ function inquiryForm(overrides: Record<string, unknown> = {}) {
   return {
     name: `Marites Reyes ${seq}`,
     email: `enquirer${seq}@example.com`,
-    licenseNumber: `vet-${seq}`,
+    // Six digits, because the automatic screen refuses a licence number with fewer
+    // than four: an enquiry built on `vet-1` is declined the moment it arrives, and
+    // the tests below that need an open one would silently stop testing anything.
+    licenseNumber: `vet ${900000 + seq}-ph`,
     currentLocation: 'Cebu City, Cebu',
     clinicLocation: 'Mandaue, Cebu',
     motivation: 'Fifteen years of small animal practice and nowhere to write any of it down.',
@@ -316,6 +319,56 @@ describe('POST /api/v1/professionals/inquiries', () => {
     expect(await professionalInquiriesCollection().countDocuments({ email: declined.email })).toBe(
       2
     );
+  });
+
+  it('turns away an enquiry with no licence number, and gives nothing away doing it', async () => {
+    const sender = await account();
+
+    const res = await enquire(sender.token, inquiryForm({ licenseNumber: 'none' }));
+
+    // The same answer a good enquiry gets. One that named the rule it tripped would
+    // tell whoever is probing which field to change next.
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ received: true });
+
+    const stored = await professionalInquiriesCollection().findOne({ licenseNumber: 'NONE' });
+    expect(stored).toMatchObject({
+      status: 'declined',
+      // No reviewer stamped, which is what tells an automatic decline from a human
+      // one on the queue and in the audit log.
+      reviewedBy: null,
+      openEmail: null,
+    });
+    expect(stored?.declineReason).toContain('Automatic:');
+  });
+
+  it('turns away somebody whose own words say they are not a vet', async () => {
+    const sender = await account();
+    const form = inquiryForm({
+      motivation: 'I am a veterinary student and would like the exposure before I take the exam.',
+    });
+
+    const res = await enquire(sender.token, form);
+
+    expect(res.status).toBe(201);
+    expect(await professionalInquiriesCollection().findOne({ email: form.email })).toMatchObject({
+      status: 'declined',
+      reviewedBy: null,
+    });
+  });
+
+  it('frees the address on its way out, so a wrong rule can be written past', async () => {
+    const sender = await account();
+    const first = inquiryForm({ licenseNumber: 'n/a' });
+    await enquire(sender.token, first);
+
+    // Not the 409 an open enquiry would earn: the automatic decline nulled
+    // `openEmail` on its way out, which is what makes a bad rule survivable for the
+    // person it was applied to.
+    const res = await enquire(sender.token, inquiryForm({ email: first.email }));
+
+    expect(res.status).toBe(201);
+    expect(await professionalInquiriesCollection().countDocuments({ email: first.email })).toBe(2);
   });
 
   it('refuses an enquiry with nothing in the one box a reviewer reads', async () => {

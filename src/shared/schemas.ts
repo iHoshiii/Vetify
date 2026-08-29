@@ -130,6 +130,7 @@ export const AUDIT_ACTIONS = [
   'blog.purged',
   'blog.removed',
   'blog.restored',
+  'professional.inquiry.auto-declined',
   'professional.inquiry.declined',
   'professional.interview',
   'professional.invited',
