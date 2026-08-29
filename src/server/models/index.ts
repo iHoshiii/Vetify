@@ -1,5 +1,6 @@
 import type { Db, Document, IndexDescription } from 'mongodb';
 import { getDb } from '../config/db';
+import { APPOINTMENTS_COLLECTION, APPOINTMENT_INDEXES } from './appointments';
 import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-event';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
@@ -22,6 +23,35 @@ export { isValidObjectId, toObjectId } from './object-id';
 export { dailyCountStages, type DailyCount } from './daily-count';
 
 export { escapeRegex } from './text-search';
+
+export {
+  appointmentAttrsSchema,
+  appointmentsCollection,
+  APPOINTMENT_INDEXES,
+  APPOINTMENT_LIVE_STATUSES,
+  APPOINTMENT_STATUSES,
+  APPOINTMENTS_COLLECTION,
+  countAppointmentsByStatus,
+  findAppointmentById,
+  findAppointments,
+  findHeldSlots,
+  holdsSlotFor,
+  insertAppointment,
+  isDuplicateSlot,
+  otherPartyId,
+  toAppointmentPage,
+  toAppointmentView,
+  updateAppointment,
+  type AppointmentAttrs,
+  type AppointmentDocument,
+  type AppointmentKind,
+  type AppointmentPage,
+  type AppointmentParty,
+  type AppointmentPatch,
+  type AppointmentStatus,
+  type AppointmentView,
+  type FindAppointmentsOptions,
+} from './appointments';
 
 export {
   ACTIVITY_EVENTS_COLLECTION,
@@ -262,6 +292,7 @@ export {
 // list of collections and their corresponding indexes to be created in the database
 const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
+  { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
   { collection: PETS_COLLECTION, indexes: PET_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
