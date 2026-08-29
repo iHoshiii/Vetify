@@ -9,6 +9,7 @@ import type {
   ProfessionalDocument,
   ProfessionalPage,
   ProfessionalWithAccount,
+  PublicAddress,
   PublicProfessional,
 } from './types';
 
@@ -97,19 +98,40 @@ export function toOwnProfessional(
 }
 
 /**
+ * The published half of one address.
+ *
+ * Every field listed rather than spread from the reviewer view minus a key. This is
+ * a privacy boundary, and a spread publishes whatever somebody adds to that view
+ * next year without anybody deciding to.
+ */
+function toPublicAddress(address: ProfessionalAddress): PublicAddress {
+  return {
+    kind: address.kind,
+    line1: address.line1,
+    city: address.city,
+    province: address.province,
+    postalCode: address.postalCode ?? null,
+  };
+}
+
+/**
  * A directory entry.
  *
- * The licence number, the photographs and the addresses in full are absent by
- * construction rather than by remembering to delete them: they are what a reviewer
- * checks, not what a pet owner browses. Returning the raw document is how that
- * leaks, so no route does.
+ * The licence number and the photographs are absent by construction rather than by
+ * remembering to delete them: they are what a reviewer checks, not what a pet owner
+ * browses. Returning the raw document is how that leaks, so no route does.
+ *
+ * The addresses are published, home ones included. Somebody looking for a vet near
+ * them has to be able to match on where that vet actually works, and one who
+ * practises out of their house has no clinic to match instead. Still withheld is each
+ * address's `fix` — see PublicAddress for why that one is different.
  *
  * The name shown is the one on the licence, with the account's as a fallback. That
  * order matters: an account name is whatever its holder last typed into settings,
  * and printing it beside a verified badge would let a listing drift away from the
  * licence that earned the badge.
  *
- * `clinicAddress` is the one publishable line, and for a vet with no clinic it is a
+ * `clinicAddress` is the line a card leads with, and for a vet with no clinic it is a
  * city rather than a doorstep.
  */
 export function toPublicProfessional(application: ProfessionalWithAccount): PublicProfessional {
@@ -120,6 +142,7 @@ export function toPublicProfessional(application: ProfessionalWithAccount): Publ
     avatarUrl: application.avatarUrl || application.account?.avatarUrl || null,
     clinicName: application.clinicName ?? null,
     clinicAddress: application.clinicAddress,
+    addresses: (application.addresses ?? []).map(toPublicAddress),
     businessPhone: application.businessPhone ?? null,
     specialties: application.specialties ?? [],
     bio: application.bio,

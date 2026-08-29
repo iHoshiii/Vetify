@@ -196,6 +196,12 @@ export async function findProfessionals(
 
 export type FindVerifiedOptions = {
   specialty?: string;
+  /** Name, clinic, or anywhere in either address. */
+  q?: string;
+  minExperience?: number;
+  maxRate?: number;
+  /** Only the vets currently taking work. */
+  available?: boolean;
   page?: number;
   limit?: number;
 };
@@ -220,12 +226,73 @@ export type FindVerifiedOptions = {
 export async function findVerifiedProfessionals(
   options: FindVerifiedOptions = {}
 ): Promise<{ items: ProfessionalWithAccount[]; total: number }> {
-  const { specialty, page = 1, limit = PROFESSIONAL_PAGE_SIZE } = options;
+  const {
+    specialty,
+    q,
+    minExperience,
+    maxRate,
+    available,
+    page = 1,
+    limit = PROFESSIONAL_PAGE_SIZE,
+  } = options;
 
   const match: Filter<ProfessionalDocument> = { status: 'verified' };
   // Specialties are stored lowercase, so an equality match against an array
   // element is all this needs - no $elemMatch, no regex.
   if (specialty) match.specialties = specialty;
+
+  /**
+   * Everything that needs an `$or` of its own, collected rather than assigned — two
+   * of them written straight onto `match.$or` would overwrite each other, and the one
+   * that lost would be a filter the caller believes is applied.
+   *
+   * The `$exists: false` halves below are for rows written before the setting they
+   * test existed. It says the field was never written rather than that it holds
+   * nothing, which is both the truth and what the driver types allow.
+   */
+  const clauses: Filter<ProfessionalDocument>[] = [];
+
+  if (available) {
+    // Absent counts as available, which is what the view already defaults it to: a
+    // listing verified before the setting existed is taking work until its owner says
+    // otherwise.
+    clauses.push({
+      $or: [{ availabilityStatus: 'available' }, { availabilityStatus: { $exists: false } }],
+    });
+  }
+
+  // Written by the schema on every row it has ever inserted, so a plain comparison
+  // needs no allowance for an absent field.
+  if (typeof minExperience === 'number') match.yearsExperience = { $gte: minExperience };
+
+  if (typeof maxRate === 'number') {
+    // A listing with no rate stored predates the setting, and a ceiling is not a
+    // reason to hide somebody who never claimed to exceed it.
+    clauses.push({ $or: [{ hourlyRate: { $lte: maxRate } }, { hourlyRate: { $exists: false } }] });
+  }
+
+  const term = q?.trim();
+  if (term) {
+    // Escaped the way the admin search escapes it, and for the same reason: a search
+    // box is user input, and the query language it lands in is not one it may write.
+    const like = { $regex: escapeRegex(term), $options: 'i' };
+    clauses.push({
+      $or: [
+        // The licence name rather than the account name, because this has to match
+        // before the join to accounts — and the two agree anyway, since approval
+        // copies the licence name onto the account.
+        { fullName: like },
+        { clinicName: like },
+        { clinicAddress: like },
+        { specialties: like },
+        { 'addresses.line1': like },
+        { 'addresses.city': like },
+        { 'addresses.province': like },
+      ],
+    });
+  }
+
+  if (clauses.length > 0) match.$and = clauses;
 
   const [result] = await professionalsCollection()
     .aggregate<{ items: ProfessionalWithAccount[]; total: Array<{ value: number }> }>([
