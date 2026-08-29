@@ -11,6 +11,7 @@ import {
   countActivityPerDay,
   countBlogsBetween,
   countBlogsByStatus,
+  countInquiriesByStatus,
   countBlogsPerDay,
   countProfessionalsByStatus,
   countUsersBy,
@@ -94,7 +95,7 @@ const SERIES_ACTIVITY: Record<Exclude<MetricSeries, 'blogs'>, ActivityType> = {
 /**
  * What each breakdown slices, all of them a single grouped count.
  *
- * The three read from accounts take the role narrowing; the two that do not are
+ * The three read from accounts take the role narrowing; the three that do not are
  * written as thunks that visibly drop it, rather than passed by reference and
  * silently handed an argument they have no field for.
  */
@@ -106,6 +107,7 @@ const BREAKDOWN_READS: Record<
   role: (role) => countUsersBy('role', { role }),
   userStatus: (role) => countUsersBy('status', { role }),
   blogStatus: () => countBlogsByStatus(),
+  inquiryStatus: () => countInquiriesByStatus(),
   professionalStatus: () => countProfessionalsByStatus(),
 };
 

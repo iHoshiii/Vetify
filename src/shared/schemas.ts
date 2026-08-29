@@ -994,6 +994,7 @@ export const BREAKDOWN_DIMENSIONS = [
   'role',
   'userStatus',
   'blogStatus',
+  'inquiryStatus',
   'professionalStatus',
 ] as const;
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];
