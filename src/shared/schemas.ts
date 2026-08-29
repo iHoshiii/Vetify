@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import {
+  APPOINTMENT_PAGE_SIZE,
+  APPOINTMENT_PAGE_SIZE_MAX,
+  APPOINTMENT_REASON_MAX,
+  APPOINTMENT_REASON_MIN,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -372,7 +376,7 @@ const professionalNameField = z
  * and a strict pattern would turn a working +63 (32) 000-0000 into a validation
  * error over its punctuation. What it does refuse is prose.
  */
-const professionalPhoneField = z
+const phoneField = z
   .string()
   .trim()
   .max(32, 'That number is too long')
@@ -536,7 +540,7 @@ export const professionalApplySchema = z
     specialties: professionalFields.specialties.default([]),
     /** The name on the licence, checked against the PRC register. */
     fullName: professionalNameField,
-    businessPhone: professionalPhoneField,
+    businessPhone: phoneField,
     addresses: professionalAddressesField,
     /** The applicant's face, taken now. */
     portrait: capturedPhotoSchema,
@@ -793,7 +797,7 @@ export const professionalInquirySchema = z.object({
       `Tell us in at least ${PROFESSIONAL_MOTIVATION_MIN} characters`
     )
     .max(PROFESSIONAL_MOTIVATION_MAX, 'That is longer than we need at this stage'),
-  phone: professionalPhoneField,
+  phone: phoneField,
   yearsExperience: professionalFields.yearsExperience.optional(),
 });
 
@@ -1067,3 +1071,129 @@ export type BlogHideInput = z.output<typeof blogHideSchema>;
 export type BlogRemoveInput = z.output<typeof blogRemoveSchema>;
 export type UserRoleUpdateInput = z.output<typeof userRoleUpdateSchema>;
 export type UserStatusUpdateInput = z.output<typeof userStatusUpdateSchema>;
+
+/* -------------------------------------------------------------------------- *
+ * Appointments
+ *
+ * A pet owner picks a vet, a kind of visit and a slot; the vet answers. Both
+ * halves read every list below — the client draws the grid and the status chips
+ * from them, the server validates against them, and the professional's console
+ * filters on them. Two copies would be a status one side can store and the other
+ * cannot label.
+ * -------------------------------------------------------------------------- */
+
+/** Onsite is a visit to the address on the listing; virtual is a call. */
+export const APPOINTMENT_KINDS = ['onsite', 'virtual'] as const;
+export type AppointmentKind = (typeof APPOINTMENT_KINDS)[number];
+
+/**
+ * Where a booking sits.
+ *
+ * 'requested' is the only status an owner can create: nobody takes a vet's time
+ * without the vet agreeing to it. 'confirmed' is that yes, 'declined' is a no with
+ * a reason, 'cancelled' is either side calling off something already agreed, and
+ * 'completed' is a consultation that happened. Nothing deletes a booking — an
+ * owner asking why they were turned down deserves an answer months later.
+ */
+export const APPOINTMENT_STATUSES = [
+  'requested',
+  'confirmed',
+  'declined',
+  'cancelled',
+  'completed',
+] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
+/**
+ * The statuses that hold their slot against everybody else.
+ *
+ * 'completed' is among them because that time was in fact used, and a grid that
+ * later offered it again would be lying about the past. 'declined' and 'cancelled'
+ * are not, because the whole point of both is that the time is free again.
+ */
+export const APPOINTMENT_LIVE_STATUSES = ['requested', 'confirmed', 'completed'] as const;
+
+/** A calendar day, as the grid asks for it and the URL carries it. */
+const isoDayField = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a YYYY-MM-DD date');
+
+/**
+ * Asking for the grid. `to` defaults to `from`, so one day is the short form.
+ *
+ * Ordered here rather than in the handler: a range that ends before it starts is a
+ * malformed request, and answering it with an empty grid would read as "that vet
+ * works no days".
+ */
+export const appointmentSlotsQuerySchema = z
+  .object({ from: isoDayField, to: isoDayField.optional() })
+  .refine((query) => !query.to || query.to >= query.from, {
+    path: ['to'],
+    message: 'That range ends before it starts',
+  });
+
+/**
+ * Requesting one appointment.
+ *
+ * `startsAt` is the exact instant the grid offered, and it is re-checked against
+ * the vet's schedule on the way in — a client that invents a time is refused
+ * rather than believed. The pet is described rather than chosen: there is no pet
+ * registry to pick from yet, and a booking that cannot say which animal it is
+ * about is no use to the vet reading it.
+ */
+export const appointmentRequestSchema = z.object({
+  professionalId: objectIdSchema,
+  kind: z.enum(APPOINTMENT_KINDS),
+  startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
+  petName: z.string().trim().min(1, 'Whose visit is this?').max(60, 'That name is too long'),
+  petSpecies: z.string().trim().min(2, 'Dog, cat, something else?').max(40, 'That is too long'),
+  reason: z
+    .string()
+    .trim()
+    .min(
+      APPOINTMENT_REASON_MIN,
+      `Say what it is about in at least ${APPOINTMENT_REASON_MIN} characters`
+    )
+    .max(APPOINTMENT_REASON_MAX, 'That is longer than we need here'),
+  phone: phoneField,
+});
+
+/**
+ * The vet saying yes.
+ *
+ * A virtual booking owes a link, and the service refuses one without it. The rule
+ * is not in this schema because the kind is on the stored booking rather than in
+ * the body: asking the client which rule applies to it is asking the wrong side.
+ */
+export const appointmentConfirmSchema = z.object({
+  meetingUrl: z
+    .string()
+    .trim()
+    .url('That is not a link')
+    .max(500, 'That link is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+});
+
+/** Turning one down, or calling one off. The reason is shown to the other side. */
+export const appointmentRefuseSchema = z.object({ reason: moderationReason });
+
+/** The owner's own bookings, or a professional's incoming ones. */
+export const appointmentListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(APPOINTMENT_PAGE_SIZE_MAX, `Ask for at most ${APPOINTMENT_PAGE_SIZE_MAX} per page`)
+    .default(APPOINTMENT_PAGE_SIZE),
+  status: z.enum(APPOINTMENT_STATUSES).optional(),
+});
+
+export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>;
+export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
+export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
+export type AppointmentConfirm = z.output<typeof appointmentConfirmSchema>;
+export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
+export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
