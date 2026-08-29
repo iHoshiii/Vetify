@@ -1,4 +1,8 @@
-import { ANON_CHAT_PER_IP_PER_HOUR, PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR } from '@shared/limits';
+import {
+  ANON_CHAT_PER_IP_PER_HOUR,
+  APPOINTMENT_REQUESTS_PER_IP_PER_HOUR,
+  PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR,
+} from '@shared/limits';
 import cors from 'cors';
 import type { Express } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -106,6 +110,30 @@ export const inquiryLimiter = rateLimit({
   message: {
     error: 'Too many enquiries from this network. Please try again later.',
     reason: 'inquiry-ip-limit',
+  },
+  skip: () => isTest,
+});
+
+/**
+ * Cap on appointment requests, by network.
+ *
+ * The unique index stops two people holding one slot, but nothing stops one script
+ * holding every slot a vet has — and unlike an enquiry, a held slot denies something
+ * to somebody else immediately. Per hour for the same reason the enquiry cap is: the
+ * honest pattern is a booking and maybe a second for another pet, and an hour-long
+ * window catches a script that a sixty-second one would only pace.
+ *
+ * Read alongside the vet's own defence, which is that every request is a request —
+ * nothing is confirmed without them, and declining puts the slot straight back.
+ */
+export const bookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: APPOINTMENT_REQUESTS_PER_IP_PER_HOUR,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: 'Too many appointment requests from this network. Please try again later.',
+    reason: 'booking-ip-limit',
   },
   skip: () => isTest,
 });

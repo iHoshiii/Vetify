@@ -302,5 +302,14 @@ export const MANILA_UTC_OFFSET_HOURS = 8;
 export const APPOINTMENT_REASON_MIN = 10;
 export const APPOINTMENT_REASON_MAX = 600;
 
+/**
+ * How many bookings one network may request in an hour.
+ *
+ * Lower than it looks like it should be, because a request is not free to the vet:
+ * it holds a slot the moment it lands. Somebody booking for three pets in one
+ * sitting still fits.
+ */
+export const APPOINTMENT_REQUESTS_PER_IP_PER_HOUR = 8;
+
 export const APPOINTMENT_PAGE_SIZE = 20;
 export const APPOINTMENT_PAGE_SIZE_MAX = 50;

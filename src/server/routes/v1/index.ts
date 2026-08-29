@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { dbStatus } from '../../config/db';
 import adminRoute from './admin';
+import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
 import blogsRoute from './blogs.route';
 import chatRoute from './chat.route';
@@ -28,6 +29,7 @@ router.get('/health', (_req, res) => {
 router.use('/chat', chatRoute);
 router.use('/auth', authRoute);
 router.use('/blogs', blogsRoute);
+router.use('/appointments', appointmentsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/admin', adminRoute);
 
