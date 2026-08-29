@@ -68,7 +68,14 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
   }
 
   if (inquiry.status === 'declined') {
-    return <span className="text-xs font-semibold text-rose-700">Declined</span>;
+    return (
+      <span className="text-xs font-semibold text-rose-700">
+        {/* Read off the absence of a reviewer rather than a flag of its own: every
+            decline by hand stamps who made it, so a declined enquiry with nobody
+            against it is the screen at work. One less field to keep in step. */}
+        {inquiry.reviewedBy ? 'Declined' : 'Declined automatically'}
+      </span>
+    );
   }
 
   if (inquiry.status !== 'invited') {
@@ -158,14 +165,19 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
  * with an account and nothing else. Defaults to pending, like the server does,
  * because that is the only status anybody is waiting on.
  *
+ * Some rows arrive already decided. The automatic screen turns away an enquiry that
+ * gives no licence number, or whose own words say its writer is not a registered vet;
+ * those are declined rows with no reviewer against them, which is how the status
+ * column tells them from a decision somebody made.
+ *
  * The link an invitation mints is shown once, in the line under the table. It is
  * stored as a hash and cannot be read again, so if the email bounced this is the
  * only chance to pass it on by hand — and it is deliberately not written into the
  * cache, which would keep a live credential in memory for as long as the tab stayed
  * open.
  */
-export default function EnquiriesTab() {
-  useDocumentTitle('Admin enquiries', 'Invite or turn down professional enquiries.');
+export default function RequestTab() {
+  useDocumentTitle('Admin requests', 'Invite or turn down professional enquiries.');
 
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -252,7 +264,9 @@ export default function EnquiriesTab() {
     <div className="space-y-6">
       <p className="text-sm text-slate-600">
         Read what somebody wrote in with, then either email them the application link or turn the
-        enquiry down. Nobody fills in the long form uninvited.
+        enquiry down. Nobody fills in the long form uninvited. Enquiries that give no licence
+        number, or that say in as many words that their writer is not a registered vet, are turned
+        away before they reach you and show here as declined automatically.
       </p>
 
       <ListToolbar>

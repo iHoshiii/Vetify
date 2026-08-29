@@ -5,12 +5,13 @@ import { RequireRole } from '@/components/providers/RequireRole';
 import RootLayout from '@/layouts/RootLayout';
 import AboutPage from '@/pages/about/about-page';
 import AdminLayout from '@/pages/admin/admin-layout';
+import AdminApplicationQueue from '@/pages/admin/applications/application-queue';
+import AdminApplicationsLayout from '@/pages/admin/applications/applications-layout';
+import AdminRequestTab from '@/pages/admin/applications/request-tab';
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
 import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
-import AdminApplicationsTab from '@/pages/admin/users/applications-tab';
-import AdminEnquiriesTab from '@/pages/admin/users/enquiries-tab';
 import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
@@ -60,19 +61,35 @@ export default function App() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
-        {/* Accounts, the professionals among them and the queue that grants the
-            role are one section with three tabs: the queue decides a role, the
-            role decides a listing, and the account underneath is what gets
-            suspended when any of it goes wrong. */}
+        {/* The licence pipeline, in the three phases somebody moves through. Its own
+            section rather than tabs under Users, because it is a journey rather than a
+            view of an account: the queues decide whether somebody becomes a
+            professional at all, and Users is where the account is administered once
+            they have. */}
+        <Route path="applications" element={<AdminApplicationsLayout />}>
+          <Route index element={<AdminRequestTab />} />
+          <Route path="verification" element={<AdminApplicationQueue phase="verification" />} />
+          <Route path="approved" element={<AdminApplicationQueue phase="approved" />} />
+        </Route>
+        {/* Accounts, and the professionals among them: two views of the same people,
+            which is why they are one section with tabs rather than two in the
+            sidebar. */}
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
-          <Route path="enquiries" element={<AdminEnquiriesTab />} />
-          <Route path="applications" element={<AdminApplicationsTab />} />
+          {/* Where the two queues used to live. Kept as redirects because they are
+              paths people have bookmarked and linked to. */}
+          <Route path="enquiries" element={<Navigate to="/admin/applications" replace />} />
+          <Route
+            path="applications"
+            element={<Navigate to="/admin/applications/verification" replace />}
+          />
         </Route>
-        {/* Where the queue used to live. Kept as a redirect because it is a path
-            people have bookmarked and linked from the overview. */}
-        <Route path="professionals" element={<Navigate to="/admin/users/applications" replace />} />
+        {/* And where it lived before that. */}
+        <Route
+          path="professionals"
+          element={<Navigate to="/admin/applications/verification" replace />}
+        />
         <Route path="blogs" element={<AdminBlogsPage />} />
         <Route path="audit" element={<AdminAuditPage />} />
       </Route>
