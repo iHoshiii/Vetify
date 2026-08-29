@@ -198,6 +198,77 @@ describe('reviewProfessional', () => {
   });
 });
 
+describe('reviewProfessional, and what the applicant is told', () => {
+  it('tells a verified applicant that they are listed', async () => {
+    const applicant = await account();
+    const admin = await account('admin');
+    const filed = await application(applicant);
+
+    const result = await reviewProfessional({
+      id: filed._id,
+      decision: 'verified',
+      reviewer: admin,
+    });
+
+    expect(result?.mail?.delivered).toBe(true);
+    expect(recentMail().at(-1)?.to).toBe(applicant.email);
+    expect(recentMail().at(-1)?.subject).toContain('approved');
+    // Greeted by the name on the licence, which is the one the reviewer has been
+    // reading and the one now on the account.
+    expect(recentMail().at(-1)?.text).toContain(`Hi ${filed.fullName.split(' ')[0]},`);
+  });
+
+  it('quotes the reason back to a rejected applicant', async () => {
+    const applicant = await account();
+    const admin = await account('admin');
+    const filed = await application(applicant);
+    const reason = 'The licence number does not match the board register.';
+
+    const result = await reviewProfessional({
+      id: filed._id,
+      decision: 'rejected',
+      reviewer: admin,
+      reason,
+    });
+
+    expect(result?.mail?.delivered).toBe(true);
+    // Unlike the enquiry decline one stage earlier, which deliberately withholds it.
+    // By here the applicant already reads the same sentence on their own dashboard,
+    // so keeping it out of the email would only make them sign in for it.
+    expect(recentMail().at(-1)?.text).toContain(reason);
+  });
+
+  it('sends nothing at all for a suspension', async () => {
+    const applicant = await account('professional');
+    const admin = await account('admin');
+    const filed = await application(applicant, { status: 'verified' });
+
+    const result = await reviewProfessional({
+      id: filed._id,
+      decision: 'suspended',
+      reviewer: admin,
+      reason: 'A complaint about the practice is being looked into.',
+    });
+
+    // Null rather than a failed delivery. A lever pulled on a listing is not a verdict
+    // the vet is written to about, and the screen says different things about the two.
+    expect(result?.mail).toBeNull();
+    expect(recentMail()).toHaveLength(0);
+    expect((await auditLogsCollection().findOne({}))?.metadata.delivered).toBeNull();
+  });
+
+  it('records in the audit entry whether the email went out', async () => {
+    const admin = await account('admin');
+    const filed = await application(await account());
+
+    await reviewProfessional({ id: filed._id, decision: 'verified', reviewer: admin });
+
+    expect((await auditLogsCollection().findOne({}))?.metadata).toMatchObject({
+      delivered: true,
+    });
+  });
+});
+
 describe('scheduleInterview', () => {
   /** A fortnight out, so the future check has room whatever the clock says. */
   const SOON = () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);

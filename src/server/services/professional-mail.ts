@@ -127,6 +127,10 @@ export function inviteEmail(input: InviteEmailInput): MailMessage {
  * The reason on the record is written for colleagues — "licence not found on the
  * PRC roll" is a note to an admin, not a sentence to send to a stranger. What the
  * recipient needs is the decision, plainly, and the door left open.
+ *
+ * {@link rejectedEmail} one stage later does the opposite on purpose: by then the
+ * reason is already on the applicant's own dashboard, so keeping it out of the
+ * email would only make them sign in to read what we had decided to tell them.
  */
 export function declineEmail(input: { to: string; name: string }): MailMessage {
   const text = [
@@ -161,4 +165,49 @@ export function interviewEmail(input: {
     .join('\n\n');
 
   return compose(input.to, 'Your Vetify interview', text);
+}
+
+/**
+ * The verdict at the end of stage two: verified, listed, and what that unlocks.
+ *
+ * The three things named are the three the applicant can actually go and do — the
+ * directory listing, the dashboard, and the numbers on it that are theirs to set.
+ * The last paragraph exists because the submission is frozen once filed: an
+ * applicant whose clinic moves has to be told to write in rather than left hunting
+ * for a form the dashboard deliberately does not offer.
+ */
+export function verifiedEmail(input: { to: string; name: string }): MailMessage {
+  const text = [
+    `Hi ${firstName(input.name)},`,
+    'Your Vetify application is approved. Your licence checked out against the register, and your profile is live in the directory now — pet owners can find you and book with you.',
+    'Signing in gets you a professional dashboard: the appointments booked with you, your conversations, your history, and the profile the directory shows. Your rate, availability and weekly schedule are yours to set from there.',
+    `If anything we verified changes — your licence, your clinic, where you practise — tell us at ${contactLink()} rather than editing around it.`,
+  ].join('\n\n');
+
+  return compose(input.to, 'Your Vetify application is approved', text);
+}
+
+/**
+ * The refusal at the end of stage two, carrying the reviewer's reason.
+ *
+ * Deliberately unlike {@link declineEmail} one stage earlier, which withholds it.
+ * By this point the reason is not a private note: a rejected application shows
+ * `rejectionReason` on the applicant's own dashboard, so leaving it out of the
+ * email only makes them sign in to read what we already decided to tell them. The
+ * route will not record a rejection without one, so there is always something to
+ * quote.
+ *
+ * Set off under its own label rather than folded into a sentence, because it is the
+ * reviewer talking and not the site: "licence not found on the PRC roll" reads as a
+ * finding when it is attributed and as a taunt when it is not.
+ */
+export function rejectedEmail(input: { to: string; name: string; reason: string }): MailMessage {
+  const text = [
+    `Hi ${firstName(input.name)},`,
+    'We have finished reviewing your Vetify application and are not able to verify your licence at this time.',
+    `What the reviewer noted:\n${input.reason.trim()}`,
+    `This is not permanent. If that is something you can answer — a clearer photograph of your PRC card, a licence number we mis-read, a correction to your clinic details — tell us at ${contactLink()} and we will look again.`,
+  ].join('\n\n');
+
+  return compose(input.to, 'About your Vetify application', text);
 }
