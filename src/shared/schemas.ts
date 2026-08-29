@@ -639,6 +639,26 @@ export const professionalListQuerySchema = z.object({
     .max(PROFESSIONAL_PAGE_SIZE_MAX, `Ask for at most ${PROFESSIONAL_PAGE_SIZE_MAX} per page`)
     .default(PROFESSIONAL_PAGE_SIZE),
   specialty: z.string().trim().toLowerCase().min(1).optional(),
+  /**
+   * One box over the things somebody searches by name: the vet, their clinic, and
+   * anywhere in either address.
+   */
+  q: z.string().trim().min(1).max(120, 'That search is too long').optional(),
+  /** At least this many years on the licence. */
+  minExperience: z.coerce.number().int().min(0).max(80).optional(),
+  /** No more than this per hour. */
+  maxRate: z.coerce.number().min(0).max(PROFESSIONAL_MAX_RATE_CAP).optional(),
+  /**
+   * Only the vets currently taking work.
+   *
+   * An enum rather than `z.coerce.boolean()`, which turns the string 'false' into
+   * true — every non-empty string is truthy — and would quietly do the opposite of
+   * what a URL asked for.
+   */
+  available: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
 });
 
 export const workHistoryItemSchema = z.object({

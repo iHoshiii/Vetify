@@ -106,6 +106,20 @@ function windowFor(
   return { startTime: entry.startTime, endTime: entry.endTime };
 }
 
+/**
+ * The half-open span of instants an inclusive range of Manila days covers.
+ *
+ * The route needs it to read the held rows for the same window the grid will cover,
+ * and it lives here so the offset arithmetic stays in one module — a caller doing its
+ * own "midnight plus a day" is a second place for the eight hours to go missing.
+ */
+export function slotRangeBounds(from: string, to: string): { from: Date; to: Date } {
+  return {
+    from: manilaInstant(from, '00:00'),
+    to: new Date(manilaInstant(to, '00:00').getTime() + DAY_MS),
+  };
+}
+
 export type SlotsInput = {
   schedule: WeeklyScheduleItem[];
   /** Inclusive Manila calendar days, `YYYY-MM-DD`. */

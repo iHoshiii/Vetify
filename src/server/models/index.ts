@@ -234,6 +234,7 @@ export {
   type ProfessionalProfilePatch,
   type ProfessionalStatus,
   type ProfessionalWithAccount,
+  type PublicAddress,
   type PublicProfessional,
 } from './professionals';
 

@@ -47,5 +47,6 @@ export {
   type ProfessionalPage,
   type ProfessionalStatus,
   type ProfessionalWithAccount,
+  type PublicAddress,
   type PublicProfessional,
 } from './types';

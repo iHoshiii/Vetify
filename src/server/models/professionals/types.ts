@@ -79,12 +79,13 @@ export type ProfessionalDocument = {
   /** Null for a vet who practises out of their house and has no clinic to name. */
   clinicName: string | null;
   /**
-   * The one address line the directory publishes.
+   * The address line a listing leads with.
    *
-   * Derived from `addresses` rather than typed, and deliberately not the same
-   * thing: a clinic is published in full, and an applicant with only a home
-   * address is published as their city and province. Nobody's street appears in a
-   * public listing because they had no clinic.
+   * Derived from `addresses` rather than typed, and deliberately not the same thing:
+   * a clinic is written out in full, and an applicant with only a home address gets
+   * their city and province. A summary line rather than the whole answer — the
+   * listing publishes the addresses themselves beside it, so somebody searching by
+   * where they live can find a vet who works from home.
    */
   clinicAddress: string;
   /** Where the applicant lives, practises, or both. At least one. */
@@ -130,6 +131,17 @@ export type ProfessionalWithAccount = ProfessionalDocument & {
     status: UserStatus;
   };
 };
+
+/**
+ * One address as the directory publishes it.
+ *
+ * `ProfessionalAddressView` without the `fix`. That reading came off the applicant's
+ * device during verification and carries its accuracy in metres: it says where a
+ * phone was on the day somebody applied, and nothing in it helps a pet owner find
+ * the door. Verification material, so it stays where a reviewer can see it and
+ * nowhere else.
+ */
+export type PublicAddress = Omit<ProfessionalAddressView, 'fix'>;
 
 /** One address as a response carries it: the fix stamped as an ISO string. */
 export type ProfessionalAddressView = {
@@ -206,6 +218,11 @@ export type PublicProfessional = {
   avatarUrl: string | null;
   clinicName: string | null;
   clinicAddress: string;
+  /**
+   * Where they work, home addresses included, so a search can match on a street that
+   * a clinic name would miss. Without the device fix each one was verified with.
+   */
+  addresses: PublicAddress[];
   businessPhone: string | null;
   specialties: string[];
   bio: string;
