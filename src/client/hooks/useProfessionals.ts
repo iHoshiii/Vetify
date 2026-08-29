@@ -4,6 +4,8 @@ import {
   applyThroughInvite,
   fetchCapture,
   getInvite,
+  getProfessional,
+  getProfessionalSlots,
   getOwnApplication,
   listProfessionals,
   sendProfessionalInquiry,
@@ -12,6 +14,8 @@ import {
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
+  type PublicProfessional,
+  type SlotGrid,
 } from '@/services/professionals.service';
 import type {
   ProfessionalApplyInput,
@@ -33,6 +37,14 @@ export const professionalKeys = {
   mine: () => [...professionalKeys.all, 'mine'] as const,
   invite: (token: string) => [...professionalKeys.all, 'invite', token] as const,
   capture: (id: string) => [...professionalKeys.all, 'capture', id] as const,
+  detail: (id: string) => [...professionalKeys.all, 'detail', id] as const,
+  /**
+   * The bookable grid. `slots()` with no arguments is the whole family, which is what
+   * a booking invalidates: taking one slot changes every grid that was showing it.
+   */
+  slots: () => [...professionalKeys.all, 'slots'] as const,
+  slotsFor: (input: { id: string; from: string; to?: string }) =>
+    [...professionalKeys.slots(), input] as const,
 };
 
 /** A directory changes only when an admin reviews something. */
@@ -183,4 +195,43 @@ export function useCapture(id: string | undefined) {
   }, [query.data]);
 
   return { url, isPending: query.isPending, isError: query.isError };
+}
+
+/**
+ * One directory entry, for the profile a booking starts from.
+ *
+ * Read on its own rather than picked out of a list cache: a profile opened from a
+ * link has no list behind it, and one row is cheaper than a page to find it in.
+ */
+export function useProfessional(id: string | undefined) {
+  return useQuery<PublicProfessional>({
+    queryKey: professionalKeys.detail(id ?? ''),
+    queryFn: ({ signal }) => getProfessional(id as string, signal),
+    enabled: Boolean(id),
+    staleTime: STALE_TIME,
+    retry: retryUnlessMissing,
+  });
+}
+
+/**
+ * The bookable grid for one vet over a range of Manila days.
+ *
+ * Kept fresh for a much shorter time than anything else here. The whole question it
+ * answers is which slots are still free, and a stale answer is one that offers a time
+ * somebody just took — the booking route's 409 is the backstop for the window this
+ * still leaves open.
+ */
+export function useProfessionalSlots(input: { id: string | undefined; from: string; to?: string }) {
+  return useQuery<SlotGrid>({
+    queryKey: professionalKeys.slotsFor({
+      id: input.id ?? '',
+      from: input.from,
+      to: input.to,
+    }),
+    queryFn: ({ signal }) =>
+      getProfessionalSlots({ id: input.id as string, from: input.from, to: input.to }, signal),
+    enabled: Boolean(input.id),
+    staleTime: 15_000,
+    retry: retryUnlessMissing,
+  });
 }
