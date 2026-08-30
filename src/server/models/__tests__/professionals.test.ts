@@ -14,6 +14,7 @@ import {
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
+  updateAddressMap,
   updateProfessional,
   type ProfessionalAttrs,
 } from '../professionals';
@@ -417,6 +418,9 @@ describe('public shapes', () => {
         city: 'Cebu City',
         province: 'Cebu',
         postalCode: '6000',
+        // Nothing on the map until the vet puts it there. Null and not the fix below,
+        // which is the point of the two being separate fields.
+        mapPin: null,
       },
     ]);
     // The device fix stays behind. It says where a phone was on the day somebody
@@ -455,6 +459,10 @@ describe('public shapes', () => {
         province: 'Cebu',
         postalCode: '6000',
         fix: null,
+        mapPin: null,
+        // The switch as a plain boolean, which is the whole job of this view: the
+        // document says the same thing by having no `mapPoint` at all.
+        showOnMap: false,
       },
     ]);
     expect(own.reviewedAt).toMatch(/^\d{4}-/);
@@ -471,6 +479,156 @@ describe('public shapes', () => {
 
   it('rounds a partial last page up', () => {
     expect(toProfessionalPage({ items: [], total: 13, page: 2, limit: 12 }).pages).toBe(2);
+  });
+});
+
+/** A vet with both addresses filed, which is what the per-address switch is for. */
+async function withBothAddresses() {
+  const owner = await account();
+  return await insertProfessional(
+    attrs(owner, {
+      status: 'verified',
+      addresses: [
+        {
+          kind: 'clinic',
+          line1: '12 Mabini Street',
+          city: 'Cebu City',
+          province: 'Cebu',
+          postalCode: '6000',
+          fix: {
+            latitude: 10.3,
+            longitude: 123.9,
+            accuracyMeters: 8,
+            capturedAt: '2026-01-05T02:00:00.000Z',
+          },
+        },
+        {
+          kind: 'home',
+          line1: '44 Sampaguita Lane',
+          city: 'Mandaue',
+          province: 'Cebu',
+          postalCode: '6014',
+          fix: null,
+        },
+      ],
+    })
+  );
+}
+
+function addressOf(application: Awaited<ReturnType<typeof withBothAddresses>>, kind: string) {
+  return application.addresses.find((address) => address.kind === kind);
+}
+
+describe('updateAddressMap', () => {
+  it('stores the pin the vet placed, dated, without publishing it', async () => {
+    const application = await withBothAddresses();
+
+    const updated = await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: false,
+    });
+
+    const clinic = updated?.addresses.find((address) => address.kind === 'clinic');
+    expect(clinic?.mapPin).toMatchObject({ latitude: 10.3157, longitude: 123.8854 });
+    expect(clinic?.mapPin?.placedAt).toBeInstanceOf(Date);
+    // Placing is not publishing. Nothing is in the geospatial index until the switch.
+    expect(clinic?.mapPoint).toBeUndefined();
+  });
+
+  it('writes the indexed point only with the switch on, longitude first', async () => {
+    const application = await withBothAddresses();
+
+    const updated = await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: true,
+    });
+
+    // GeoJSON order, which is the reverse of how the pair reads aloud. Asserted rather
+    // than trusted: the two numbers are both plausible for the Philippines, so a swap
+    // would put a Cebu clinic in the Pacific without anything failing loudly.
+    expect(addressOf(updated!, 'clinic')?.mapPoint).toEqual({
+      type: 'Point',
+      coordinates: [123.8854, 10.3157],
+    });
+  });
+
+  it('keeps the pin when the switch goes off, so republishing is one click', async () => {
+    const application = await withBothAddresses();
+    await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: true,
+    });
+
+    const hidden = await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: false,
+    });
+
+    expect(addressOf(hidden!, 'clinic')?.mapPin?.latitude).toBe(10.3157);
+    // Unset, not null: see `updateAddressMap` for what a null does to the index.
+    expect(addressOf(hidden!, 'clinic')?.mapPoint).toBeUndefined();
+    expect('mapPoint' in addressOf(hidden!, 'clinic')!).toBe(false);
+  });
+
+  it('clears both when the pin is cleared', async () => {
+    const application = await withBothAddresses();
+    await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: true,
+    });
+
+    const cleared = await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: null,
+      showOnMap: true,
+    });
+
+    expect(addressOf(cleared!, 'clinic')?.mapPin).toBeNull();
+    expect(addressOf(cleared!, 'clinic')?.mapPoint).toBeUndefined();
+  });
+
+  it('touches the named address only, and nothing but its two pin fields', async () => {
+    const application = await withBothAddresses();
+
+    const updated = await updateAddressMap(application._id, {
+      kind: 'clinic',
+      pin: { latitude: 10.3157, longitude: 123.8854 },
+      showOnMap: true,
+    });
+
+    const home = addressOf(updated!, 'home');
+    expect(home?.mapPin).toBeNull();
+    expect(home?.mapPoint).toBeUndefined();
+    expect(home?.line1).toBe('44 Sampaguita Lane');
+
+    // The addresses were checked against a register and a device, and this write is the
+    // only one that reaches into the array at all — so what it leaves alone matters as
+    // much as what it sets.
+    const clinic = addressOf(updated!, 'clinic');
+    expect(clinic?.line1).toBe('12 Mabini Street');
+    expect(clinic?.city).toBe('Cebu City');
+    expect(clinic?.postalCode).toBe('6000');
+    expect(clinic?.fix?.accuracyMeters).toBe(8);
+  });
+
+  it('answers null for a kind this vet has no address of', async () => {
+    const owner = await account();
+    const application = await insertProfessional(attrs(owner, { status: 'verified' }));
+
+    // The seeded application has a clinic and no home. Inventing one here would put a
+    // pin on a place nobody checked.
+    const updated = await updateAddressMap(application._id, {
+      kind: 'home',
+      pin: { latitude: 10.3, longitude: 123.9 },
+      showOnMap: true,
+    });
+
+    expect(updated).toBeNull();
   });
 });
 
@@ -491,6 +649,7 @@ describe('professional indexes', () => {
         'status_1_reviewedAt_-1',
         'licenseAuthority_1_licenseNumber_1',
         'specialties_1',
+        'addresses.mapPoint_2dsphere',
       ])
     );
   });

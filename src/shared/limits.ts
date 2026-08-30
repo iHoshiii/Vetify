@@ -210,6 +210,41 @@ export const PROFESSIONAL_LOCATION_MAX_ACCURACY_M = 100;
 /** How long the form waits for a fix before telling the applicant it failed. */
 export const PROFESSIONAL_LOCATION_TIMEOUT_MS = 20_000;
 
+/* ---- The map ---- */
+
+/**
+ * How far out "near you" looks by default, and the furthest a caller may ask for.
+ *
+ * Fifty kilometres is a drive rather than a walk, and it is the radius at which a
+ * search from Manila still answers for somebody in Rizal or Cavite. The cap exists
+ * because the radius is the only thing bounding the work: `$geoNear` walks outwards
+ * from the point until it runs out of index or of documents, so an unbounded radius
+ * over a national collection is a full index scan somebody typed into a query string.
+ */
+export const PROFESSIONAL_NEAR_RADIUS_KM = 50;
+export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 200;
+
+/**
+ * How many nearest vets an answer carries.
+ *
+ * A list somebody reads top to bottom rather than a directory page, and there is no
+ * pager on it: the eleventh-nearest vet is not what "near you" asked for. Somebody
+ * who wants to page through every vet in the country has the directory for that.
+ */
+export const PROFESSIONAL_NEAR_LIMIT = 10;
+export const PROFESSIONAL_NEAR_LIMIT_MAX = 25;
+
+/**
+ * How close two pins have to be before they are taken to be the same building.
+ *
+ * The map draws Vetify's own vets over clinics scraped from OpenStreetMap, and a
+ * verified clinic is frequently already an `amenity=veterinary` node there — so
+ * without this the same door gets two markers. Eighty metres is wide enough to cover
+ * a compound whose OSM node sits on the gate while the vet pinned the consulting
+ * room, and narrow enough not to swallow the practice next door.
+ */
+export const MAP_DEDUP_RADIUS_M = 80;
+
 /**
  * Rows per page on the admin lists, and the ceiling a caller may ask for.
  *

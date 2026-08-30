@@ -14,9 +14,26 @@ const locationFixSchema = z.object({
 });
 
 /**
+ * A pin, as the repository is handed it.
+ *
+ * `placedAt` is optional here and always present on the document: an insert that
+ * carries a pin without a date gets one stamped rather than refused, the way the
+ * document's other dates are filled in.
+ */
+const storedPinSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  placedAt: z.union([z.string(), z.date()]).optional(),
+});
+
+/**
  * One address. The bounds on each line, and the rule that a home address needs a
  * fix, live in `professionalApplySchema` (@shared/schemas) with the rest of the
  * form's rules — what is left here is the shape the document has to have.
+ *
+ * `mapPoint` is absent for the same reason `clinicAddress` is absent below: it is
+ * derived, from the pin and the switch, and a caller who could send one directly
+ * could put a hidden address into the geospatial index by hand.
  */
 const addressSchema = z.object({
   kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
@@ -25,6 +42,9 @@ const addressSchema = z.object({
   province: z.string().trim().min(1, 'An address needs a province'),
   postalCode: z.string().trim().min(1).nullish(),
   fix: locationFixSchema.nullish(),
+  mapPin: storedPinSchema.nullish(),
+  /** Off unless a caller says otherwise: the map is opt-in, per address. */
+  showOnMap: z.boolean().default(false),
 });
 
 /**

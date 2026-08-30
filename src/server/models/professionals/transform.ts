@@ -3,12 +3,14 @@ import type {
   AdminApplicant,
   AdminProfessional,
   AdminProfessionalPage,
+  NearbyProfessional,
   OwnProfessional,
   ProfessionalAddress,
   ProfessionalAddressView,
   ProfessionalDocument,
   ProfessionalPage,
   ProfessionalWithAccount,
+  ProfessionalWithDistance,
   PublicAddress,
   PublicProfessional,
 } from './types';
@@ -28,6 +30,12 @@ const NO_CAPTURES: ProfessionalCaptureIds = {};
  * The device reading keeps its accuracy on the way out. A coordinate on its own
  * invites being read as fact; "within 12 m, taken at this time" is a claim a
  * reviewer can weigh, which is the only reason it was collected.
+ *
+ * This is where `showOnMap` becomes a boolean again. The document stores the switch as
+ * the presence of `mapPoint`, so that the geospatial index holds published pins and
+ * nothing else; a client has no use for that trick and reads a plain flag. The pin
+ * itself is the placement rather than the publication, so it comes back either way —
+ * the picker reopens where the vet left it.
  */
 function toAddressView(address: ProfessionalAddress): ProfessionalAddressView {
   return {
@@ -44,6 +52,14 @@ function toAddressView(address: ProfessionalAddress): ProfessionalAddressView {
           capturedAt: address.fix.capturedAt.toISOString(),
         }
       : null,
+    mapPin: address.mapPin
+      ? {
+          latitude: address.mapPin.latitude,
+          longitude: address.mapPin.longitude,
+          placedAt: address.mapPin.placedAt.toISOString(),
+        }
+      : null,
+    showOnMap: Boolean(address.mapPoint),
   };
 }
 
@@ -103,6 +119,13 @@ export function toOwnProfessional(
  * Every field listed rather than spread from the reviewer view minus a key. This is
  * a privacy boundary, and a spread publishes whatever somebody adds to that view
  * next year without anybody deciding to.
+ *
+ * The pin is read off `mapPoint` and not off `mapPin`, which is the whole of the
+ * difference between the two fields: the point exists only while the vet is publishing
+ * this address, so a pin they placed and then hid cannot leave the server even if the
+ * two ever disagreed. The verification `fix` is still absent and still verification
+ * material — a device reading taken at the door during review is not the same thing as
+ * a coordinate its owner dragged onto a map meaning to be found.
  */
 function toPublicAddress(address: ProfessionalAddress): PublicAddress {
   return {
@@ -111,6 +134,13 @@ function toPublicAddress(address: ProfessionalAddress): PublicAddress {
     city: address.city,
     province: address.province,
     postalCode: address.postalCode ?? null,
+    // `[longitude, latitude]` on the way in, which is why the indices read backwards.
+    mapPin: address.mapPoint
+      ? {
+          latitude: address.mapPoint.coordinates[1],
+          longitude: address.mapPoint.coordinates[0],
+        }
+      : null,
   };
 }
 
@@ -153,6 +183,21 @@ export function toPublicProfessional(application: ProfessionalWithAccount): Publ
     workHistory: application.workHistory ?? [],
     verifiedAt: application.reviewedAt?.toISOString() ?? null,
   };
+}
+
+/**
+ * A directory entry with how far away it is.
+ *
+ * Built on the public entry rather than beside it, so the privacy decisions above are
+ * made once — a field withheld from a listing stays withheld when the same vet turns
+ * up in "near you".
+ *
+ * The distance is rounded to the metre. `$geoNear` answers in fractions of one, and a
+ * card that says "1,243.8829 m away" is a card that has confused precision for
+ * accuracy: the number came from a phone's own idea of where it is standing.
+ */
+export function toNearbyProfessional(row: ProfessionalWithDistance): NearbyProfessional {
+  return { ...toPublicProfessional(row), distanceMeters: Math.round(row.distanceMeters) };
 }
 
 /**

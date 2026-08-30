@@ -46,7 +46,22 @@ export type ProfessionalLocationFix = {
   capturedAt: Date;
 };
 
-/** One address on an application. Private: verification material, not a listing. */
+/**
+ * A point in GeoJSON's own order, which is the reverse of every other pair here.
+ *
+ * `[longitude, latitude]`. Spelled out rather than aliased, because the one bug this
+ * shape invites is writing the pair the way it is read aloud.
+ */
+export type GeoPoint = { type: 'Point'; coordinates: [number, number] };
+
+/**
+ * One address on an application. Private: verification material, not a listing.
+ *
+ * The street lines and the `fix` are frozen once filed — see `ProfessionalPatch` for
+ * why. The two map fields are not: they say nothing about whether the address is real,
+ * only whether and where its owner wants it shown, so they belong beside
+ * `availabilityStatus` rather than beside `line1`.
+ */
 export type ProfessionalAddress = {
   kind: ProfessionalAddressKind;
   line1: string;
@@ -55,6 +70,34 @@ export type ProfessionalAddress = {
   postalCode: string | null;
   /** Present on every home address, and on a clinic only if one was taken. */
   fix: ProfessionalLocationFix | null;
+  /**
+   * Where the vet dragged the marker.
+   *
+   * Kept whether or not the address is currently on the map, so a vet who hides
+   * their clinic for a fortnight does not come back to an empty map and a pin to
+   * place again. Never indexed and never published — `mapPoint` is the field that
+   * does both, and it is derived from this one.
+   */
+  mapPin: { latitude: number; longitude: number; placedAt: Date } | null;
+  /**
+   * The same point, in GeoJSON, present *only* while this address is on the map.
+   *
+   * Presence is the switch. That is the trick `openEmail` plays on an enquiry and
+   * `holdsSlot` on an appointment, and here it is load-bearing rather than tidy:
+   * `$geoNear` can rank only on the indexed field, and on an array field it reports
+   * the distance to the nearest *indexed* element — so were a hidden pin in the
+   * index, a vet who published their clinic and hid their house would be ranked, and
+   * findable, by the house.
+   *
+   * Optional and never null, which is not a style choice. A 2dsphere index skips a
+   * *missing* field, but an explicit null is a value it tries and fails to read: with
+   * one address published and the other holding `mapPoint: null`, every write to the
+   * document is refused with "geo element must be an array or object". Hiding an
+   * address therefore unsets this field rather than nulling it.
+   *
+   * Derived from `(mapPin, showOnMap)` by `updateAddressMap` and by nothing else.
+   */
+  mapPoint?: GeoPoint;
 };
 
 /** An application as the database holds it. */
@@ -132,16 +175,34 @@ export type ProfessionalWithAccount = ProfessionalDocument & {
   };
 };
 
+/** The same, as `$geoNear` hands it back: with the distance it was ranked by. */
+export type ProfessionalWithDistance = ProfessionalWithAccount & { distanceMeters: number };
+
 /**
  * One address as the directory publishes it.
  *
- * `ProfessionalAddressView` without the `fix`. That reading came off the applicant's
- * device during verification and carries its accuracy in metres: it says where a
- * phone was on the day somebody applied, and nothing in it helps a pet owner find
- * the door. Verification material, so it stays where a reviewer can see it and
- * nowhere else.
+ * Written out field by field rather than as the own view minus something. It was an
+ * `Omit<ProfessionalAddressView, 'fix'>` while there was exactly one field to hold
+ * back; now that an address carries two coordinates that mean different things, which
+ * of them is public is a decision worth reading off the type.
+ *
+ * The `fix` is still absent. That reading came off the applicant's device during
+ * verification and carries its accuracy in metres: it says where a phone was on the
+ * day somebody applied, and nothing in it helps a pet owner find the door.
+ * Verification material, so it stays where a reviewer can see it and nowhere else.
+ *
+ * `mapPin` is the other thing entirely — a point the vet dragged into place and then
+ * turned on, and it is here because they asked for it to be.
  */
-export type PublicAddress = Omit<ProfessionalAddressView, 'fix'>;
+export type PublicAddress = {
+  kind: ProfessionalAddressKind;
+  line1: string;
+  city: string;
+  province: string;
+  postalCode: string | null;
+  /** Null unless this address is on the map. */
+  mapPin: { latitude: number; longitude: number } | null;
+};
 
 /** One address as a response carries it: the fix stamped as an ISO string. */
 export type ProfessionalAddressView = {
@@ -156,6 +217,16 @@ export type ProfessionalAddressView = {
     accuracyMeters: number;
     capturedAt: string;
   } | null;
+  /** Where the vet left the marker, whether or not it is currently shown. */
+  mapPin: { latitude: number; longitude: number; placedAt: string } | null;
+  /**
+   * Whether this address is on the public map.
+   *
+   * Derived from `mapPoint` rather than stored, because storing it too would be a
+   * second copy of the same fact and the two could disagree. The client wants a
+   * boolean for a switch; the database wants a field it can index. This is the seam.
+   */
+  showOnMap: boolean;
 };
 
 /**
@@ -234,6 +305,16 @@ export type PublicProfessional = {
   /** When the licence was verified. Every entry in the directory has one. */
   verifiedAt: string | null;
 };
+
+/**
+ * A directory entry and how far away it is, in metres.
+ *
+ * Metres rather than kilometres because that is what `$geoNear` reports for a
+ * spherical query on GeoJSON, and rounding it here would throw away the only case
+ * where the unit matters — a vet three streets over, who should read as "400 m away"
+ * and not as "0 km away".
+ */
+export type NearbyProfessional = PublicProfessional & { distanceMeters: number };
 
 /** One page of directory entries, plus what the client needs to draw a pager. */
 export type ProfessionalPage = {
