@@ -135,7 +135,7 @@ describe('the ranked list', () => {
     expect(rows[1]).toHaveTextContent('Marites Reyes');
   });
 
-  it('offers a booking link only to a vet who is taking bookings', () => {
+  it('offers to book a vet registered with us, and only while they are taking bookings', () => {
     renderPanel({
       status: 'ready',
       places: [
@@ -144,11 +144,15 @@ describe('the ranked list', () => {
       ],
     });
 
-    expect(screen.getByRole('link', { name: /book with marites/i })).toHaveAttribute(
-      'href',
-      '/book-appointment?professional=a1'
-    );
-    expect(screen.queryByRole('link', { name: /book with ramon/i })).toBeNull();
+    // What a visitor reads is the same on every row; what a screen reader reads is not,
+    // which is the only reason either of these can be found by name at all.
+    expect(screen.getByText('Book an Appointment')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Book an appointment with Marites Reyes' })
+    ).toHaveAttribute('href', '/book-appointment?professional=a1');
+
+    // Booked up, so no button: the booking service would refuse this one with a 409.
+    expect(screen.queryByRole('link', { name: 'Book an appointment with Ramon Cruz' })).toBeNull();
     expect(screen.getByText('Booked up')).toBeInTheDocument();
   });
 });
@@ -226,7 +230,7 @@ describe('a clinic that is not ours', () => {
       'https://www.google.com/maps/search/?api=1&query=16.52,121.18'
     );
     // Nothing to book and no profile to open: we have never checked this place.
-    expect(screen.queryByRole('link', { name: /book with/i })).toBeNull();
+    expect(screen.queryByText(/book an appointment/i)).toBeNull();
     expect(screen.queryByRole('link', { name: /solano pet care/i })).toBeNull();
   });
 

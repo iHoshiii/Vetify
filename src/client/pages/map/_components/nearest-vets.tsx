@@ -3,6 +3,7 @@ import type { NearbyProfessional } from '@/services/professionals.service';
 import { PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import {
   AlertTriangle,
+  CalendarPlus,
   Crosshair,
   ExternalLink,
   Loader2,
@@ -61,6 +62,16 @@ function DirectoryLink({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * A vet registered with Vetify: verified, pinned by the person who actually works there,
+ * and the only kind of row on this list that can be booked from the row.
+ *
+ * Hence the button, which the OpenStreetMap rows below have no honest equivalent of — this
+ * is the difference between the two halves of the list, made pressable. It is still gated
+ * on availability, and deliberately: the booking service rejects a vet whose switch is off
+ * with a 409, so offering the button to one who is booked up spends somebody's tap on an
+ * error message. The status line above it already says which it is.
+ */
 function VetRow({ vet }: { vet: NearbyProfessional }) {
   const name = vet.name ?? vet.clinicName ?? 'A verified vet';
   const distance = formatDistance(vet.distanceMeters);
@@ -104,9 +115,13 @@ function VetRow({ vet }: { vet: NearbyProfessional }) {
       {vet.availabilityStatus === 'available' && (
         <Link
           to={`/book-appointment?professional=${vet.id}`}
-          className="mt-1 ml-14 inline-block text-[11px] font-bold text-teal-800 hover:underline"
+          // Every one of these rows shows the same words, so the accessible name is the
+          // one that has to carry the vet: five identical links read aloud are not a list.
+          aria-label={`Book an appointment with ${name}`}
+          className="mt-1.5 ml-14 inline-flex items-center gap-1.5 rounded-full bg-teal-800 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-teal-900"
         >
-          Book with {name.split(' ')[0]} →
+          <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
+          Book an Appointment
         </Link>
       )}
     </li>
