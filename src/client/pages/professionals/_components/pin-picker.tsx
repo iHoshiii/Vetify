@@ -1,3 +1,4 @@
+import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
 import { createMarkerIcon, VETIFY_PALETTE } from '@/components/marker-icon';
 import { Crosshair, MapPin } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -82,14 +83,18 @@ export default function PinPicker({ value, onChange, fallback = null, className 
       const instance = L.map(hostRef.current, {
         center: [at.latitude, at.longitude],
         zoom: seed.current ? PLACED_ZOOM : UNPLACED_ZOOM,
+        // Added by hand below without Leaflet's own name as a prefix, the same way the
+        // public map does it — this is the same basemap, so it owes the same credit.
         attributionControl: false,
       });
+      L.control.attribution({ prefix: false }).addTo(instance);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      L.tileLayer(basemapUrl('land'), {
+        attribution: BASEMAP_ATTRIBUTION,
         subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(instance);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+      L.tileLayer(basemapUrl('labels'), {
         subdomains: 'abcd',
         maxZoom: 19,
         pane: 'overlayPane',

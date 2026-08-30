@@ -76,7 +76,12 @@ const leaflet = vi.hoisted(() => {
     remove() {}
   }
 
-  const state = { maps: [] as FakeMap[], markers: [] as FakeMarker[] };
+  const state = {
+    maps: [] as FakeMap[],
+    markers: [] as FakeMarker[],
+    tiles: [] as string[],
+    credits: 0,
+  };
 
   const L = {
     map(_host: HTMLElement, options: { center: [number, number]; zoom: number }) {
@@ -84,7 +89,16 @@ const leaflet = vi.hoisted(() => {
       state.maps.push(instance);
       return instance;
     },
-    tileLayer: () => ({ addTo: () => undefined }),
+    tileLayer: (url: string) => {
+      state.tiles.push(url);
+      return { addTo: () => undefined };
+    },
+    control: {
+      attribution: () => {
+        state.credits += 1;
+        return { addTo: () => undefined };
+      },
+    },
     marker(at: [number, number]) {
       const pin = new FakeMarker(at);
       state.markers.push(pin);
@@ -101,6 +115,8 @@ vi.mock('leaflet', () => ({ default: leaflet.L }));
 beforeEach(() => {
   leaflet.state.maps.length = 0;
   leaflet.state.markers.length = 0;
+  leaflet.state.tiles.length = 0;
+  leaflet.state.credits = 0;
 });
 
 /** The picker is controlled, so a test has to hold the coordinate the way the page does. */
@@ -126,6 +142,20 @@ describe('placing the pin', () => {
     await mounted();
 
     expect(screen.getByText(/no pin yet/i)).toBeInTheDocument();
+  });
+
+  it('draws the basemap the public map draws, and credits it', async () => {
+    render(<Harness />);
+    await mounted();
+
+    // The point of sharing `basemapUrl`: the vet is dragging their pin across the very
+    // tiles a stranger will see it on. The credit rides along, because CARTO's free
+    // tier is given in exchange for it and Leaflet only draws it with a control added.
+    expect(leaflet.state.tiles).toEqual([
+      expect.stringContaining('/light_all/'),
+      expect.stringContaining('/light_only_labels/'),
+    ]);
+    expect(leaflet.state.credits).toBe(1);
   });
 
   it('follows the marker the vet drags', async () => {

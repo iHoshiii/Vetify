@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { BASEMAP_ATTRIBUTION, basemapUrl } from './basemap';
 import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from './marker-icon';
 import { formatDistance, isSamePlace, type MapVet } from './map-vets';
 
@@ -433,20 +434,24 @@ export default function VetMap({
         scrollWheelZoom: interactive,
         doubleClickZoom: interactive,
         dragging: interactive,
+        // Off here and added by hand below, because the default control carries
+        // Leaflet's own name as a prefix — that credits the library, and the credit
+        // CARTO's free tier is given in exchange for belongs to the tiles and the data.
         attributionControl: false,
       });
 
       leaflet.current = L;
       leafletMap.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      L.control.attribution({ prefix: false }).addTo(map);
+
+      L.tileLayer(basemapUrl('land'), {
+        attribution: BASEMAP_ATTRIBUTION,
         subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(map);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+      L.tileLayer(basemapUrl('labels'), {
         attribution: '',
         subdomains: 'abcd',
         maxZoom: 19,
