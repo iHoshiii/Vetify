@@ -5,7 +5,6 @@ import { PROFESSIONAL_NEAR_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/li
 import { Map as MapIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import InfoCards from './_components/info-cards';
 import InteractiveMap from './_components/interactive-map/map-official';
 import NearestVets from './_components/nearest-vets';
 import { useMyLocation } from './_components/use-my-location';
@@ -87,7 +86,7 @@ export default function MapPage() {
     <main className="min-h-[calc(100vh-80px)] bg-[#f6fbfb] text-slate-950 flex flex-col justify-center">
       {/* ── HERO + MAP ───────────────────────────────────────── */}
       <section className="flex items-center px-5 sm:px-10 max-w-7xl mx-auto py-8 gap-8 lg:gap-12 w-full">
-        {/* LEFT — Text + Info */}
+        {/* LEFT — Text */}
         <div className="flex-1 flex flex-col gap-6">
           {/* Heading */}
           <div>
@@ -102,8 +101,7 @@ export default function MapPage() {
             </p>
           </div>
 
-          {/* The headline's own promise. Above the info cards because it is the thing
-              somebody came to do, and in this column because the map beside it is
+          {/* The headline's own promise, in this column because the map beside it is
               hidden below `lg`. */}
           <NearestVets
             status={status}
@@ -126,9 +124,6 @@ export default function MapPage() {
             <MapIcon className="h-4 w-4" />
             Open the map
           </button>
-
-          {/* Info cards (Static Server Component) */}
-          <InfoCards />
         </div>
 
         {/* RIGHT — Interactive Vet Map (Client Component Boundary) */}
