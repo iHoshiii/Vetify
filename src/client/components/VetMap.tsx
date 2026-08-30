@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from './marker-icon';
+import { formatDistance, isSamePlace, type MapVet } from './map-vets';
 
 interface Clinic {
   id: number;
@@ -9,6 +12,14 @@ interface Clinic {
   phone?: string;
   opening_hours?: string;
 }
+
+/** Where the person reading the map is, as their own browser reported it. */
+export type MapUserLocation = {
+  latitude: number;
+  longitude: number;
+  /** The browser's estimate, drawn as a circle. Absent when it did not offer one. */
+  accuracyMeters?: number | null;
+};
 
 interface VetMapProps {
   zoom?: number;
@@ -21,6 +32,26 @@ interface VetMapProps {
   fetchData?: boolean;
   /** Callback fired when the map (and data if fetched) is fully loaded */
   onReady?: () => void;
+  /**
+   * Vetify's own verified vets, one entry per address a vet chose to publish.
+   *
+   * Arrives from a query, so it is usually empty on the first render and full on a
+   * later one. That is the whole reason the markers live in an effect of their own
+   * rather than in the one that builds the map.
+   */
+  vets?: MapVet[];
+  /** Drawn as a dot and an accuracy ring, and flown to once when the map is interactive. */
+  userLocation?: MapUserLocation | null;
+  /**
+   * Where a link inside a Vetify popup should send the reader.
+   *
+   * This stands in for the marker-click callback the plan named. The click worth acting
+   * on is on a link inside the popup rather than on the pin itself, and a popup built
+   * from an HTML string — which is what Leaflet takes — cannot hold a router `Link`.
+   * Given this, those anchors are handed to the router; without it they navigate the
+   * ordinary way, and a modified click always does.
+   */
+  onNavigate?: (path: string) => void;
 }
 
 const OVERPASS_QUERY = `
@@ -34,28 +65,127 @@ const OVERPASS_QUERY = `
 out center;
 `;
 
-function createMarkerIcon(L: typeof import('leaflet')) {
-  return L.divIcon({
-    className: '',
-    iconSize: [36, 44],
-    iconAnchor: [18, 44],
-    popupAnchor: [0, -46],
-    html: `
-      <div style="position:relative;width:36px;height:44px;filter:drop-shadow(0 4px 8px rgba(37,99,235,0.35));">
-        <svg viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="44">
-          <path d="M18 2C10.268 2 4 8.268 4 16c0 9.941 14 26 14 26S32 25.941 32 16C32 8.268 25.732 2 18 2z"
-            fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
-          <circle cx="18" cy="15" r="9" fill="white" opacity="0.95"/>
-          <g fill="#2563eb">
-            <ellipse cx="18" cy="17" rx="3.5" ry="2.8"/>
-            <ellipse cx="13.5" cy="14.5" rx="2" ry="1.5"/>
-            <ellipse cx="22.5" cy="14.5" rx="2" ry="1.5"/>
-            <ellipse cx="15.5" cy="11.5" rx="1.8" ry="1.4"/>
-            <ellipse cx="20.5" cy="11.5" rx="1.8" ry="1.4"/>
-          </g>
-        </svg>
-      </div>
-    `,
+/**
+ * Names typed by somebody else, made safe to put in an HTML string.
+ *
+ * Both popups are built as markup because that is what Leaflet's `bindPopup` takes, and
+ * both carry text this application did not write — OpenStreetMap tags on one side, a
+ * vet's own profile on the other. The clinic half was interpolating them raw.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** How the three availability values read to somebody who is not a vet. */
+const AVAILABILITY_WORDS: Record<string, string> = {
+  available: 'Taking bookings',
+  busy: 'Booked up at the moment',
+  unavailable: 'Not taking bookings',
+};
+
+const EXTERNAL_LINK_ICON =
+  '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>';
+
+/** A clinic scraped from OpenStreetMap: what the tags said, and a way out to Maps. */
+function clinicPopupHtml(clinic: Clinic): string {
+  const line = (text: string) =>
+    `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">${text}</p>`;
+
+  const details = [
+    clinic.address ? line(escapeHtml(clinic.address)) : '',
+    clinic.phone ? line(`📞 ${escapeHtml(clinic.phone)}`) : '',
+    clinic.opening_hours ? line(`🕐 ${escapeHtml(clinic.opening_hours)}`) : '',
+  ].join('');
+
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.lat},${clinic.lon}`;
+
+  return `<div style="font-family:system-ui,sans-serif;min-width:180px;padding-bottom:4px;">
+              <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${escapeHtml(
+                clinic.name
+              )}</p>
+              ${details}
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+                <p style="margin:0;font-size:11px;color:#94a3b8;font-weight:600;">🐾 Vet Clinic</p>
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                  Open in Maps
+                  ${EXTERNAL_LINK_ICON}
+                </a>
+              </div>
+            </div>`;
+}
+
+/**
+ * A Vetify vet: what a stranger came to the map for, and the two links only we have.
+ *
+ * The distance is shown when the pin arrived from a ranked answer and left out when it
+ * did not, rather than computed here — a number the server did not calculate would be a
+ * second definition of "how far away".
+ */
+function vetPopupHtml(vet: MapVet): string {
+  const heading = escapeHtml(vet.clinicName ?? vet.name);
+  const subheading = vet.clinicName ? escapeHtml(vet.name) : null;
+
+  const rows = [
+    subheading
+      ? `<p style="margin:2px 0 0;color:#475569;font-size:12px;font-weight:600;">${subheading}</p>`
+      : '',
+    `<p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(vet.addressLine)}</p>`,
+    vet.specialties.length
+      ? `<p style="margin:6px 0 0;color:#0f766e;font-size:11px;font-weight:700;">${escapeHtml(
+          vet.specialties.slice(0, 3).join(' · ')
+        )}</p>`
+      : '',
+    `<p style="margin:6px 0 0;color:#64748b;font-size:12px;">₱${vet.hourlyRate} an hour · ${
+      AVAILABILITY_WORDS[vet.availabilityStatus] ?? 'Taking bookings'
+    }</p>`,
+    vet.distanceMeters === undefined
+      ? ''
+      : `<p style="margin:6px 0 0;color:#0f766e;font-size:12px;font-weight:700;">${formatDistance(
+          vet.distanceMeters
+        )} away</p>`,
+  ].join('');
+
+  const link = (href: string, label: string, primary: boolean) =>
+    `<a href="${href}" data-spa style="font-size:11px;font-weight:700;text-decoration:none;padding:6px 10px;border-radius:8px;${
+      primary
+        ? 'background:#0f766e;color:#ffffff;'
+        : 'background:#f1f5f9;color:#0f766e;border:1px solid #cbd5e1;'
+    }">${label}</a>`;
+
+  return `<div style="font-family:system-ui,sans-serif;min-width:200px;padding-bottom:4px;">
+              <p style="margin:0 0 2px;font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0f766e;">✓ Verified on Vetify</p>
+              <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${heading}</p>
+              ${rows}
+              <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:6px;">
+                ${link(`/book-appointment?professional=${vet.id}`, 'Book', true)}
+                ${link(`/professionals/${vet.id}`, 'Profile', false)}
+              </div>
+            </div>`;
+}
+
+/**
+ * Makes the two links inside a Vetify popup navigate without reloading the page.
+ *
+ * The anchors carry real `href`s, because open-in-a-new-tab and middle click have to
+ * keep working; this hands a plain left click to the router instead, and only when the
+ * map was given somewhere to send it.
+ */
+function interceptLinks(
+  root: HTMLElement | null | undefined,
+  navigate?: (path: string) => void
+): void {
+  if (!root || !navigate) return;
+
+  root.querySelectorAll<HTMLAnchorElement>('a[data-spa]').forEach((anchor) => {
+    anchor.addEventListener('click', (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      navigate(anchor.getAttribute('href') ?? '');
+    });
   });
 }
 
@@ -217,12 +347,66 @@ export default function VetMap({
   interactive = true,
   fetchData = true,
   onReady,
+  vets = [],
+  userLocation = null,
+  onNavigate,
 }: VetMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<import('leaflet').Map | null>(null);
-  const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
-  const [clinicCount, setClinicCount] = useState(0);
+  /** The module, kept because the marker effects run long after the import awaited. */
+  const leaflet = useRef<typeof import('leaflet') | null>(null);
+  /** Overpass's clinics, clustered. */
+  const clinicLayer = useRef<import('leaflet').LayerGroup | null>(null);
+  /** Vetify's own pins, deliberately not. */
+  const vetLayer = useRef<import('leaflet').LayerGroup | null>(null);
+  /** The reader's own position. */
+  const youLayer = useRef<import('leaflet').LayerGroup | null>(null);
 
+  const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  /**
+   * Whether the map exists yet.
+   *
+   * State rather than a ref, and that is the point: it is what re-runs the marker
+   * effects once the dynamic import has finished, in the case where the pins were
+   * already in hand before the map was.
+   */
+  const [ready, setReady] = useState(false);
+
+  /**
+   * Whether the map has been moved to the reader's own position yet.
+   *
+   * A ref, because re-centring must happen once: a later, better fix arriving should not
+   * yank the map away from somebody who has since panned it somewhere of their own.
+   */
+  const centred = useRef(false);
+
+  /** Read through a ref so a fresh callback identity does not rebuild every marker. */
+  const navigate = useRef(onNavigate);
+  // Declared before the marker effect, so it is already current when that one runs.
+  useEffect(() => {
+    navigate.current = onNavigate;
+  }, [onNavigate]);
+
+  /**
+   * The scraped clinics worth drawing: the ones with coordinates, minus the ones a
+   * Vetify vet has already pinned.
+   *
+   * Ours wins, because ours is verified, bookable, and maintained by the person who
+   * works there. The badge counts what survives, so the drop shows up as a smaller
+   * number rather than as two markers on one building.
+   */
+  const visibleClinics = useMemo(
+    () =>
+      clinics.filter((clinic) => {
+        if (clinic.lat == null || clinic.lon == null) return false;
+        const here = { latitude: clinic.lat, longitude: clinic.lon, name: clinic.name };
+        return !vets.some((vet) => isSamePlace(vet, here));
+      }),
+    [clinics, vets]
+  );
+
+  // ── The map itself, built once. ─────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) return;
 
@@ -252,6 +436,7 @@ export default function VetMap({
         attributionControl: false,
       });
 
+      leaflet.current = L;
       leafletMap.current = map;
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -268,14 +453,22 @@ export default function VetMap({
         pane: 'overlayPane',
       }).addTo(map);
 
-      const icon = createMarkerIcon(L);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const markers = (L as any).markerClusterGroup({
+      clinicLayer.current = (L as any).markerClusterGroup({
         chunkedLoading: true,
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
         showCoverageOnHover: false,
       });
+      map.addLayer(clinicLayer.current!);
+
+      // Added after the cluster and left unclustered on purpose: a bookable vet folded
+      // into a badge counting scraped nodes is a pin nobody can find.
+      vetLayer.current = L.layerGroup().addTo(map);
+      youLayer.current = L.layerGroup().addTo(map);
+
+      // Both layers exist now, so the marker effects have somewhere to put things.
+      if (!cancelled) setReady(true);
 
       if (!fetchData) {
         if (!cancelled) {
@@ -316,77 +509,29 @@ export default function VetMap({
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const elements: any[] = data.elements ?? [];
-        const clinics: Clinic[] = elements.map((el) => ({
-          id: el.id,
-          lat: el.lat ?? el.center?.lat,
-          lon: el.lon ?? el.center?.lon,
-          name: el.tags?.name ?? el.tags?.['name:en'] ?? 'Unnamed Vet Clinic',
-          address: [el.tags?.['addr:housenumber'], el.tags?.['addr:street'], el.tags?.['addr:city']]
-            .filter(Boolean)
-            .join(' '),
-          phone: el.tags?.phone ?? el.tags?.['contact:phone'],
-          opening_hours: el.tags?.opening_hours,
-        }));
 
-        setClinicCount(clinics.length);
+        // Handed to state rather than drawn here. The effect below owns what is on the
+        // map, because the vets it has to be reconciled against arrive separately.
+        setClinics(
+          elements.map((el) => ({
+            id: el.id,
+            lat: el.lat ?? el.center?.lat,
+            lon: el.lon ?? el.center?.lon,
+            name: el.tags?.name ?? el.tags?.['name:en'] ?? 'Unnamed Vet Clinic',
+            address: [
+              el.tags?.['addr:housenumber'],
+              el.tags?.['addr:street'],
+              el.tags?.['addr:city'],
+            ]
+              .filter(Boolean)
+              .join(' '),
+            phone: el.tags?.phone ?? el.tags?.['contact:phone'],
+            opening_hours: el.tags?.opening_hours,
+          }))
+        );
 
-        if (clinics.length === 0) {
-          clinics.push({
-            id: 0,
-            lat: center[0],
-            lon: center[1],
-            name: 'Default Vet Services',
-            address: 'Philippines',
-          });
-        }
-
-        clinics.forEach((clinic) => {
-          if (clinic.lat == null || clinic.lon == null) return;
-
-          const marker = L.marker([clinic.lat, clinic.lon], { icon });
-
-          marker.bindTooltip(clinic.name, {
-            direction: 'top',
-            offset: [0, -46],
-            className: 'vet-label',
-          });
-
-          const addressHtml = clinic.address
-            ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">${clinic.address}</p>`
-            : '';
-          const phoneHtml = clinic.phone
-            ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">📞 ${clinic.phone}</p>`
-            : '';
-          const hoursHtml = clinic.opening_hours
-            ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">🕐 ${clinic.opening_hours}</p>`
-            : '';
-
-          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.lat},${clinic.lon}`;
-
-          marker.bindPopup(
-            `<div style="font-family:system-ui,sans-serif;min-width:180px;padding-bottom:4px;">
-              <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${clinic.name}</p>
-              ${addressHtml}${phoneHtml}${hoursHtml}
-              <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-                <p style="margin:0;font-size:11px;color:#94a3b8;font-weight:600;">🐾 Vet Clinic</p>
-                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:700;color:#2563eb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-                  Open in Maps
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                </a>
-              </div>
-            </div>`,
-            { maxWidth: 280 }
-          );
-
-          markers.addLayer(marker);
-        });
-
-        map.addLayer(markers);
-
-        if (!cancelled) {
-          setStatus('done');
-          onReady?.();
-        }
+        setStatus('done');
+        onReady?.();
       } catch (_e) {
         if (!cancelled) setStatus('error');
       }
@@ -398,9 +543,117 @@ export default function VetMap({
       cancelled = true;
       leafletMap.current?.remove();
       leafletMap.current = null;
+      leaflet.current = null;
+      clinicLayer.current = null;
+      vetLayer.current = null;
+      youLayer.current = null;
+      setReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── The pins, refilled whenever either source changes. ──────────────────────
+  //
+  // A second effect rather than lines inside the first, which returns early the moment
+  // `leafletMap.current` is set and has to keep doing so. Both sources are asynchronous
+  // and neither waits for the other: the clinics come from Overpass, the vets from a
+  // query that may answer before the map is built or long after.
+  useEffect(() => {
+    const L = leaflet.current;
+    const clinicGroup = clinicLayer.current;
+    const vetGroup = vetLayer.current;
+    if (!ready || !L || !clinicGroup || !vetGroup) return;
+
+    const clinicIcon = createMarkerIcon(L, OSM_PALETTE);
+    const vetIcon = createMarkerIcon(L, VETIFY_PALETTE);
+
+    // Cleared and refilled rather than diffed. Redrawing a few hundred markers is
+    // cheaper than keeping a second index of which ones are already up.
+    clinicGroup.clearLayers();
+    vetGroup.clearLayers();
+
+    visibleClinics.forEach((clinic) => {
+      const marker = L.marker([clinic.lat, clinic.lon], { icon: clinicIcon });
+
+      marker.bindTooltip(escapeHtml(clinic.name), {
+        direction: 'top',
+        offset: POPUP_ANCHOR,
+        className: 'vet-label',
+      });
+      marker.bindPopup(clinicPopupHtml(clinic), { maxWidth: 280 });
+
+      clinicGroup.addLayer(marker);
+    });
+
+    vets.forEach((vet) => {
+      const marker = L.marker([vet.latitude, vet.longitude], {
+        icon: vetIcon,
+        // Drawn over the scraped nodes, whichever way latitude would have stacked them.
+        zIndexOffset: 1000,
+      });
+
+      marker.bindTooltip(escapeHtml(vet.clinicName ?? vet.name), {
+        direction: 'top',
+        offset: POPUP_ANCHOR,
+        className: 'vet-label vetify-label',
+      });
+      marker.bindPopup(vetPopupHtml(vet), { maxWidth: 300 });
+      marker.on('popupopen', (event) => {
+        const popup = (event as import('leaflet').PopupEvent).popup;
+        interceptLinks(popup.getElement(), navigate.current);
+      });
+
+      vetGroup.addLayer(marker);
+    });
+  }, [ready, visibleClinics, vets]);
+
+  // ── Where the reader is. ────────────────────────────────────────────────────
+  //
+  // A dot and a ring rather than the paw pin. The pin means "a clinic is here", and
+  // borrowing it for somebody's own position would say something untrue.
+  useEffect(() => {
+    const L = leaflet.current;
+    const map = leafletMap.current;
+    const youGroup = youLayer.current;
+    if (!ready || !L || !map || !youGroup) return;
+
+    youGroup.clearLayers();
+    if (!userLocation) return;
+
+    const at: [number, number] = [userLocation.latitude, userLocation.longitude];
+
+    // The ring is the browser's own accuracy estimate, drawn because a dot alone claims
+    // a precision a phone indoors does not have.
+    if (userLocation.accuracyMeters) {
+      L.circle(at, {
+        radius: userLocation.accuracyMeters,
+        color: '#0f766e',
+        weight: 1,
+        fillColor: '#14b8a6',
+        fillOpacity: 0.12,
+      }).addTo(youGroup);
+    }
+
+    L.circleMarker(at, {
+      radius: 6,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#0f766e',
+      fillOpacity: 1,
+    })
+      .bindTooltip('You are here', { direction: 'top', offset: [0, -10], className: 'vet-label' })
+      .addTo(youGroup);
+
+    // Once, and only where the map is something you can pan back from: the preview
+    // beside the hero is meant to keep the view it was given.
+    if (interactive && !centred.current) {
+      centred.current = true;
+      map.flyTo(at, Math.max(zoom, 13), { duration: 1.2 });
+    }
+  }, [ready, userLocation, interactive, zoom]);
+
+  /** What is on the map at all — ours plus whatever survived the dedup. */
+  const pinCount = visibleClinics.length + vets.length;
 
   return (
     <div className={`relative w-full h-full ${className}`}>
@@ -437,6 +690,11 @@ export default function VetMap({
           pointer-events: none !important;
         }
         .vet-label::before { display: none !important; }
+        .vetify-label {
+          border-color: #99f6e4 !important;
+          color: #0f766e !important;
+          box-shadow: 0 2px 8px rgba(15,118,110,0.18) !important;
+        }
         .leaflet-popup-content-wrapper {
           border-radius: 14px !important;
           box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
@@ -472,13 +730,14 @@ export default function VetMap({
         }}
       />
 
-      {/* Clinic count badge */}
-      {status === 'done' && clinicCount > 0 && (
+      {/* What is on the map, and how much of it is ours */}
+      {status === 'done' && pinCount > 0 && (
         <div
           className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-blue-100 shadow-md text-xs font-bold text-blue-700 backdrop-blur-sm pointer-events-none"
           style={{ zIndex: 1100 }}
         >
-          🐾 {clinicCount} vet clinic{clinicCount !== 1 ? 's' : ''} found
+          🐾 {visibleClinics.length} vet clinic{visibleClinics.length !== 1 ? 's' : ''}
+          {vets.length > 0 && <span className="text-teal-700"> · {vets.length} on Vetify</span>}
         </div>
       )}
     </div>
