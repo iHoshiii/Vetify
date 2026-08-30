@@ -1,4 +1,5 @@
 import { PROFESSIONAL_PAGE_SIZE } from '@shared/limits';
+import type { ProfessionalAddressKind } from '@shared/schemas';
 import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
@@ -12,10 +13,12 @@ import {
   type ProfessionalAttrsAddress,
 } from './schema';
 import type {
+  GeoPoint,
   ProfessionalAddress,
   ProfessionalDocument,
   ProfessionalStatus,
   ProfessionalWithAccount,
+  ProfessionalWithDistance,
 } from './types';
 
 /** The review queue: applications in the order they arrived, newest first. */
@@ -64,8 +67,42 @@ function publishableAddress(addresses: ProfessionalAddress[]): string {
   return home ? [home.city, home.province].filter(Boolean).join(', ') : '';
 }
 
+/**
+ * The indexed, published half of a pin — or nothing at all, which is how an address
+ * stays off the map.
+ *
+ * The only place `mapPoint` is computed, called by the insert and by
+ * `updateAddressMap` and by nothing else. Two callers deriving it separately is one
+ * caller away from a hidden address sitting in the geospatial index, and the index is
+ * what `$geoNear` ranks on.
+ *
+ * `undefined` and not null, deliberately: see `mapPoint` on ProfessionalAddress — a
+ * 2dsphere index skips a missing field and chokes on an explicit null beside a real
+ * point in the same array.
+ *
+ * Note the order: GeoJSON is `[longitude, latitude]`, the reverse of how the pair is
+ * read aloud and of how every other coordinate in this file is written.
+ */
+function toGeoPoint(
+  pin: { latitude: number; longitude: number } | null,
+  showOnMap: boolean
+): GeoPoint | undefined {
+  return pin && showOnMap
+    ? { type: 'Point', coordinates: [pin.longitude, pin.latitude] }
+    : undefined;
+}
+
 /** An address as the document holds it: dates parsed, absent fields explicit. */
 function toStoredAddress(address: ProfessionalAttrsAddress): ProfessionalAddress {
+  const mapPin = address.mapPin
+    ? {
+        latitude: address.mapPin.latitude,
+        longitude: address.mapPin.longitude,
+        placedAt: address.mapPin.placedAt ? new Date(address.mapPin.placedAt) : new Date(),
+      }
+    : null;
+  const point = toGeoPoint(mapPin, address.showOnMap);
+
   return {
     kind: address.kind,
     line1: address.line1,
@@ -80,6 +117,9 @@ function toStoredAddress(address: ProfessionalAttrsAddress): ProfessionalAddress
           capturedAt: new Date(address.fix.capturedAt),
         }
       : null,
+    mapPin,
+    // Spread rather than assigned, so an unpublished address carries no key at all.
+    ...(point ? { mapPoint: point } : {}),
   };
 }
 
@@ -323,6 +363,102 @@ export async function findVerifiedProfessionals(
   return { items: result?.items ?? [], total: result?.total[0]?.value ?? 0 };
 }
 
+export type FindNearOptions = {
+  /** Where the person searching is. Answers the query and is not stored anywhere. */
+  latitude: number;
+  longitude: number;
+  radiusKm: number;
+  limit: number;
+  /** Only the vets currently taking work. */
+  available?: boolean;
+};
+
+/**
+ * How many rows to ask the database for, per row we intend to return.
+ *
+ * The suspended-account filter cannot run before `$geoNear` — nothing can — so the
+ * limit has to come after the join, and a vet who lost their account would otherwise
+ * occupy one of the ten nearest slots and be dropped from the answer afterwards.
+ */
+const NEAR_OVERFETCH = 3;
+
+/**
+ * The verified vets nearest a point, nearest first.
+ *
+ * A sibling of `findVerifiedProfessionals` rather than an option on it, because
+ * `$geoNear` has to be the first stage of the pipeline and that function starts with
+ * `$match`. What the two share — the account join and the active-account filter — is
+ * repeated here rather than extracted, since the surrounding pipelines have nothing
+ * else in common.
+ *
+ * Three properties of `$geoNear` this leans on, each asserted in a test rather than
+ * trusted from a comment:
+ *
+ * - a document with no indexed value is excluded outright, so an unpinned vet — and a
+ *   vet who placed a pin and left the switch off — is simply not in the answer;
+ * - on an array field the distance reported is to the nearest indexed element, so a
+ *   vet publishing both addresses is ranked by whichever is closer;
+ * - `query` filters whole documents, not array elements, which is exactly why the
+ *   hidden half of a pin must be absent from the index rather than merely flagged.
+ */
+export async function findProfessionalsNear(
+  options: FindNearOptions
+): Promise<ProfessionalWithDistance[]> {
+  const { latitude, longitude, radiusKm, limit, available } = options;
+
+  return await professionalsCollection()
+    .aggregate<ProfessionalWithDistance>([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          // Metres, because the index is 2dsphere and the near point is GeoJSON. No
+          // `distanceMultiplier`: the client is what turns metres into "1.2 km away",
+          // and a rounded kilometre stored here would be a rounded kilometre sorted on.
+          distanceField: 'distanceMeters',
+          maxDistance: radiusKm * 1000,
+          spherical: true,
+          // Named explicitly. There is one 2dsphere index on this collection today and
+          // that will not always be true, and `$geoNear` errors rather than guessing
+          // between two.
+          key: 'addresses.mapPoint',
+          // Nothing may precede `$geoNear`, so its own filter is where the status
+          // guard goes. Absent `availabilityStatus` counts as available, the way the
+          // directory already treats it.
+          query: {
+            status: 'verified',
+            ...(available
+              ? {
+                  $or: [
+                    { availabilityStatus: 'available' },
+                    { availabilityStatus: { $exists: false } },
+                  ],
+                }
+              : {}),
+          },
+        },
+      },
+      // Bounded before the join rather than after it. `$geoNear` walks outwards through
+      // the index until the radius runs out, so an unbounded one over a country's worth
+      // of pins joins every vet it found to their account before anything is dropped.
+      { $limit: limit * NEAR_OVERFETCH },
+      {
+        $lookup: {
+          from: USERS_COLLECTION,
+          localField: 'user',
+          foreignField: '_id',
+          as: 'account',
+          pipeline: [{ $project: { name: 1, avatarUrl: 1, status: 1 } }],
+        },
+      },
+      { $unwind: '$account' },
+      { $match: { 'account.status': 'active' } },
+      // After the join, which is the point of over-fetching above. No `$facet` and no
+      // total: "the ten nearest" is a list, not a directory page.
+      { $limit: limit },
+    ])
+    .toArray();
+}
+
 /**
  * The verdicts that actually decide something.
  *
@@ -416,6 +552,59 @@ export async function updateProfessionalProfile(
     { _id },
     { $set: set },
     { returnDocument: 'after' }
+  );
+}
+
+/**
+ * Where a vet's pin sits, and whether it is published.
+ *
+ * Its own writer rather than a field on `ProfessionalProfilePatch`, because this
+ * updates one element of an array and that patch `$set`s top-level fields. The
+ * separation is worth more than the symmetry: an address was checked against a
+ * register and a device and is deliberately not editable, so the write that touches
+ * one has to be narrow enough that it provably cannot reach a street line.
+ *
+ * `showOnMap` is a parameter and `mapPoint` is derived from it here, so there is no
+ * way through this function to store a published point for an address the vet is
+ * hiding — or a hidden one whose coordinates are still in the index. The same move
+ * `moveTo` makes in the appointments service, where the slot hold is derived from the
+ * status rather than passed alongside it.
+ *
+ * Clearing the pin (`pin: null`) clears the point with it. Turning the switch off
+ * keeps the pin: a vet who publishes again next month should not have to drag it back
+ * into place.
+ */
+export async function updateAddressMap(
+  id: string | ObjectId,
+  input: {
+    kind: ProfessionalAddressKind;
+    pin: { latitude: number; longitude: number } | null;
+    showOnMap: boolean;
+  }
+): Promise<ProfessionalDocument | null> {
+  const pin = input.pin ? { ...input.pin, placedAt: new Date() } : null;
+  const point = toGeoPoint(pin, input.showOnMap);
+  const field = `addresses.$[a].mapPoint`;
+
+  // Hiding *unsets* the point rather than nulling it. A null here is not an empty
+  // value to a 2dsphere index — it is a value it tries to read as a shape and cannot,
+  // and once one address on the document is published every later write to the other
+  // fails with it. Unsetting is also the truer statement: this address is not on the
+  // map, rather than being on it at nowhere.
+  return await professionalsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), 'addresses.kind': input.kind },
+    {
+      // A positional filter rather than a rewrite of `addresses`: the update names the
+      // two pin fields of the one element whose kind matches, so no request through
+      // this path can touch a line, a city, a postcode, or a verification fix.
+      $set: {
+        'addresses.$[a].mapPin': pin,
+        ...(point ? { [field]: point } : {}),
+        updatedAt: new Date(),
+      },
+      ...(point ? {} : { $unset: { [field]: '' } }),
+    },
+    { arrayFilters: [{ 'a.kind': input.kind }], returnDocument: 'after' }
   );
 }
 

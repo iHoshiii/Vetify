@@ -10,13 +10,15 @@ import ApplicationStatus from './_components/application-status';
 import { LockedApplicationDetails } from './_components/locked-application-details';
 
 /**
- * The three views of a working day, in the order a vet opens them. Appointments is
- * the index, so `end` keeps it from staying lit on the pages below it.
+ * The views of a working day, in the order a vet opens them. Appointments is the index,
+ * so `end` keeps it from staying lit on the pages below it. Map & Location sits last
+ * because it is set once and then left alone, unlike the three above it.
  */
 const SECTIONS = [
   { to: '/professionals/dashboard', label: 'Appointments', end: true },
   { to: '/professionals/dashboard/conversations', label: 'Conversations' },
   { to: '/professionals/dashboard/history', label: 'History & Logs' },
+  { to: '/professionals/dashboard/location', label: 'Map & Location' },
 ] as const;
 
 const LINK =

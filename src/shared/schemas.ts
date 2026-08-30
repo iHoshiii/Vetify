@@ -27,6 +27,10 @@ import {
   PROFESSIONAL_MIN_RATE,
   PROFESSIONAL_MOTIVATION_MAX,
   PROFESSIONAL_MOTIVATION_MIN,
+  PROFESSIONAL_NEAR_LIMIT,
+  PROFESSIONAL_NEAR_LIMIT_MAX,
+  PROFESSIONAL_NEAR_RADIUS_KM,
+  PROFESSIONAL_NEAR_RADIUS_MAX_KM,
   PROFESSIONAL_PAGE_SIZE,
   PROFESSIONAL_PAGE_SIZE_MAX,
   PROFESSIONAL_PHOTO_MAX_BYTES,
@@ -457,6 +461,32 @@ export const PROFESSIONAL_ADDRESS_KINDS = ['home', 'clinic'] as const;
 export type ProfessionalAddressKind = (typeof PROFESSIONAL_ADDRESS_KINDS)[number];
 
 /**
+ * The two halves of a coordinate, as factories.
+ *
+ * Shared by every shape below that carries a point — a verification fix, a pin a vet
+ * dragged, a pet owner's browser reading — so there is one answer to "what is a legal
+ * latitude" and one wording when it is not. Factories rather than constants because a
+ * Zod schema object is reused by reference, and `.pipe()`-ing one in the query shape
+ * would otherwise mutate the one the address shape depends on.
+ */
+const latitude = () =>
+  z.number().min(-90, 'That is not a latitude').max(90, 'That is not a latitude');
+const longitude = () =>
+  z.number().min(-180, 'That is not a longitude').max(180, 'That is not a longitude');
+
+/**
+ * A point the professional put there themselves, by dragging a marker.
+ *
+ * Not a `liveLocationSchema`, and deliberately not interchangeable with one. A fix is
+ * a claim about where a device was on the day somebody applied, and it carries the
+ * browser's accuracy estimate because that is what makes the claim readable. A pin
+ * carries no accuracy because there is nothing to estimate: it is exactly where its
+ * owner said the door is, which is the whole point of asking them to place it.
+ */
+export const mapPinSchema = z.object({ latitude: latitude(), longitude: longitude() });
+export type MapPin = z.output<typeof mapPinSchema>;
+
+/**
  * A reading taken from the device while the applicant stood at the address.
  *
  * `accuracyMeters` is the browser's own estimate, and is required rather than
@@ -466,8 +496,8 @@ export type ProfessionalAddressKind = (typeof PROFESSIONAL_ADDRESS_KINDS)[number
  * would be a lie told in a number.
  */
 export const liveLocationSchema = z.object({
-  latitude: z.number().min(-90, 'That is not a latitude').max(90, 'That is not a latitude'),
-  longitude: z.number().min(-180, 'That is not a longitude').max(180, 'That is not a longitude'),
+  latitude: latitude(),
+  longitude: longitude(),
   accuracyMeters: z
     .number()
     .positive('An accuracy reading has to be a positive number')
@@ -724,6 +754,58 @@ export const professionalProfileUpdateSchema = z.object({
 
 export type ProfessionalProfileUpdateInput = z.input<typeof professionalProfileUpdateSchema>;
 export type ProfessionalProfileUpdate = z.output<typeof professionalProfileUpdateSchema>;
+
+/**
+ * One address's answer to "where exactly, and may we show it".
+ *
+ * Its own shape rather than a field on `professionalProfileUpdateSchema`, because it
+ * writes one element of the addresses array rather than a value on the application:
+ * the settings patch is a `$set` of whole fields, and this is a positional update
+ * naming two sub-fields of the one address it matches. Folding it in would mean
+ * bending the one function that owns that patch out of shape.
+ *
+ * `kind` says which address, so the two are independent — a vet may publish the
+ * clinic and keep the house off the map, which is the point of them being separate.
+ * `pin` absent leaves the placement alone and `null` clears it, the same distinction
+ * the settings patch draws everywhere else.
+ */
+export const professionalMapUpdateSchema = z.object({
+  kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
+  pin: mapPinSchema.nullish(),
+  showOnMap: z.boolean().optional(),
+});
+
+export type ProfessionalMapUpdateInput = z.input<typeof professionalMapUpdateSchema>;
+export type ProfessionalMapUpdate = z.output<typeof professionalMapUpdateSchema>;
+
+/**
+ * What a pet owner's browser hands over to be ranked by.
+ *
+ * Coerced, because it arrives in a query string. No accuracy and no timestamp: the
+ * answer is an ordering, and an ordering by a coordinate good to a hundred metres is
+ * the same ordering. Nothing stores it.
+ */
+export const professionalNearQuerySchema = z.object({
+  lat: z.coerce.number().pipe(latitude()),
+  lng: z.coerce.number().pipe(longitude()),
+  radiusKm: z.coerce
+    .number()
+    .positive('A radius has to be a positive number')
+    .max(PROFESSIONAL_NEAR_RADIUS_MAX_KM, `Search within ${PROFESSIONAL_NEAR_RADIUS_MAX_KM}km`)
+    .default(PROFESSIONAL_NEAR_RADIUS_KM),
+  limit: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(PROFESSIONAL_NEAR_LIMIT_MAX)
+    .default(PROFESSIONAL_NEAR_LIMIT),
+  available: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
+});
+
+export type ProfessionalNearQuery = z.output<typeof professionalNearQuerySchema>;
 
 /** Pre-parse: what the form holds, before trimming and normalising. */
 export type ProfessionalApplyInput = z.input<typeof professionalApplySchema>;

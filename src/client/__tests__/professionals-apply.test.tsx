@@ -56,6 +56,8 @@ function application(overrides: Partial<OwnProfessional> = {}): OwnProfessional 
         province: 'Cebu',
         postalCode: '6000',
         fix: null,
+        mapPin: null,
+        showOnMap: false,
       },
     ],
     businessPhone: '+63 32 555 0101',

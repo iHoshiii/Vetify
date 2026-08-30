@@ -16,12 +16,14 @@ import { Link } from 'react-router-dom';
 /**
  * The professional half of the settings tray.
  *
- * Three rows, each a form small enough to finish in the tray rather than a page:
- * the rate, the week, and how early the reminder lands. Everything else a vet has
- * on file was matched against a licence register when they applied, so it is not
- * editable here at any width — the experience row says so and points at support.
+ * Three forms small enough to finish in the tray rather than a page — the rate, the
+ * week, and how early the reminder lands — and one row that only reports, because
+ * placing a map pin needs a map. Everything else a vet has on file was matched
+ * against a licence register when they applied, so it is not editable here at any
+ * width: the experience row says so and points at support, and the map row points at
+ * the console page that owns it.
  *
- * All three are deliberately terse. This panel is ~22rem across and capped at 70vh,
+ * All of them are deliberately terse. This panel is ~22rem across and capped at 70vh,
  * so a field gets a label and, at most, one line saying what the value has to be.
  */
 
@@ -34,6 +36,9 @@ const DAYS = [
   ['Saturday', 'Sat'],
   ['Sunday', 'Sun'],
 ] as const;
+
+/** How an address reads in a one-line summary. */
+const MAP_KIND_LABEL: Record<'clinic' | 'home', string> = { clinic: 'Clinic', home: 'Home' };
 
 const STATUS_LABEL: Record<ProfessionalAvailabilityStatus, string> = {
   available: 'Available',
@@ -435,6 +440,73 @@ export function BookingReminderSection({ isExpanded, onToggle }: SectionProps) {
       onToggle={onToggle}
     >
       <ReminderForm application={application} />
+    </TraySection>
+  );
+}
+
+/**
+ * Where the map decision is shown but not made.
+ *
+ * Read-only on purpose. The pin and the switches live on the console page, because a
+ * switch here would be a second writer for the same field and the two could disagree
+ * about which address is published. What a vet wants from the tray is the answer to
+ * "am I on the map right now" — so that is what this row is, and the way to change it
+ * is one link away.
+ */
+export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
+  const application = useVerifiedApplication();
+  if (!application) return null;
+
+  const addresses = application.addresses ?? [];
+  const shown = addresses.filter((address) => address.showOnMap);
+
+  return (
+    <TraySection
+      label="📍 Map & Location"
+      summary={
+        shown.length === 0
+          ? 'Not on the public map'
+          : `On the map: ${shown.map((address) => MAP_KIND_LABEL[address.kind]).join(', ')}`
+      }
+      isExpanded={isExpanded}
+      onToggle={onToggle}
+    >
+      <div className="space-y-1.5">
+        {addresses.length === 0 ? (
+          <p className="text-[11px] leading-snug text-slate-500">
+            There are no addresses on your application to pin.
+          </p>
+        ) : (
+          addresses.map((address) => (
+            <div
+              key={address.kind}
+              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-2"
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-slate-700">
+                  {MAP_KIND_LABEL[address.kind]}
+                </span>
+                <span className="block truncate text-[11px] text-slate-500">{address.city}</span>
+              </span>
+              <span
+                className={`shrink-0 text-[11px] font-bold ${
+                  address.showOnMap ? 'text-teal-800' : 'text-slate-400'
+                }`}
+              >
+                {address.showOnMap ? 'On the map' : address.mapPin ? 'Pinned, hidden' : 'No pin'}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <p className="text-[11px] leading-snug text-slate-500">
+        Pinning a location needs a map to drag, which does not fit in here.{' '}
+        <Link to="/professionals/dashboard/location" className="font-bold text-teal-800 underline">
+          Open Map &amp; Location
+        </Link>{' '}
+        to place a pin or change what is published.
+      </p>
     </TraySection>
   );
 }
