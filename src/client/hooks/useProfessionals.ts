@@ -8,9 +8,13 @@ import {
   getProfessionalSlots,
   getOwnApplication,
   listProfessionals,
+  listProfessionalsNear,
   sendProfessionalInquiry,
+  updateOwnMapLocation,
   updateOwnProfessionalProfile,
   type InviteSummary,
+  type NearbyParams,
+  type NearbyProfessionals,
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
@@ -20,6 +24,7 @@ import {
 import type {
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
+  ProfessionalMapUpdateInput,
   ProfessionalProfileUpdateInput,
 } from '@shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -45,6 +50,12 @@ export const professionalKeys = {
   slots: () => [...professionalKeys.all, 'slots'] as const,
   slotsFor: (input: { id: string; from: string; to?: string }) =>
     [...professionalKeys.slots(), input] as const,
+  /**
+   * The nearest vets to a point. Its own branch rather than a `list()` with different
+   * params: the answer is an ordering by distance rather than a page of the directory,
+   * and a pin going up or coming down changes it without changing any list.
+   */
+  near: (params: NearbyParams) => [...professionalKeys.all, 'near', params] as const,
 };
 
 /** A directory changes only when an admin reviews something. */
@@ -109,6 +120,43 @@ export function useUpdateProfessionalProfile() {
     onSuccess: (updated) => {
       queryClient.setQueryData(professionalKeys.mine(), updated);
       queryClient.invalidateQueries({ queryKey: professionalKeys.lists() });
+    },
+  });
+}
+
+/**
+ * The verified vets nearest a point, nearest first.
+ *
+ * Disabled until there are coordinates, because there is no sensible default point to
+ * search from: a pet owner who has not shared their location has not asked this
+ * question yet, and guessing at a city centre would answer a question nobody asked.
+ */
+export function useNearbyProfessionals(params: NearbyParams | null) {
+  return useQuery<NearbyProfessionals>({
+    queryKey: professionalKeys.near(params ?? { latitude: 0, longitude: 0 }),
+    queryFn: ({ signal }) => listProfessionalsNear(params!, signal),
+    enabled: Boolean(params),
+    staleTime: STALE_TIME,
+    retry: retryUnlessMissing,
+  });
+}
+
+/**
+ * Moves one address on or off the public map.
+ *
+ * Invalidates the nearest-vets queries as well as the directory, because that is the
+ * list a pin appearing or disappearing actually changes — and the vet who just flipped
+ * the switch is the one most likely to go and look.
+ */
+export function useUpdateMapLocation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<OwnProfessional, Error, ProfessionalMapUpdateInput>({
+    mutationFn: updateOwnMapLocation,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(professionalKeys.mine(), updated);
+      queryClient.invalidateQueries({ queryKey: professionalKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: [...professionalKeys.all, 'near'] });
     },
   });
 }

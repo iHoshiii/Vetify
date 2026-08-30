@@ -1,12 +1,29 @@
+import type { MapUserLocation } from '@/components/VetMap';
+import type { MapVet, OsmClinic } from '@/components/map-vets';
 import { Suspense, lazy, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const VetMap = lazy(() => import('@/components/VetMap'));
 
 interface MapModalProps {
   onClose: () => void;
+  vets: MapVet[];
+  clinics: OsmClinic[];
+  clinicsLoading: boolean;
+  clinicsFailed: boolean;
+  userLocation: MapUserLocation | null;
 }
 
-export default function MapModal({ onClose }: MapModalProps) {
+export default function MapModal({
+  onClose,
+  vets,
+  clinics,
+  clinicsLoading,
+  clinicsFailed,
+  userLocation,
+}: MapModalProps) {
+  const navigate = useNavigate();
+
   // Handle Escape key and body scroll lock on mount
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,7 +68,25 @@ export default function MapModal({ onClose }: MapModalProps) {
           </button>
 
           <Suspense fallback={null}>
-            <VetMap zoom={6} center={[12.87, 121.77]} showOverlay />
+            {/* The whole country when nobody has said where they are, and the map flies
+                to them at street level when they have. A link inside a popup goes
+                through the router rather than reloading the app, and closes this. */}
+            <VetMap
+              zoom={userLocation ? 13 : 6}
+              center={
+                userLocation ? [userLocation.latitude, userLocation.longitude] : [12.87, 121.77]
+              }
+              showOverlay
+              vets={vets}
+              clinics={clinics}
+              clinicsLoading={clinicsLoading}
+              clinicsFailed={clinicsFailed}
+              userLocation={userLocation}
+              onNavigate={(path) => {
+                onClose();
+                navigate(path);
+              }}
+            />
           </Suspense>
         </div>
       </div>

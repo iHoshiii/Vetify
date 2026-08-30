@@ -235,6 +235,16 @@ export const PROFESSIONAL_NEAR_LIMIT = 10;
 export const PROFESSIONAL_NEAR_LIMIT_MAX = 25;
 
 /**
+ * How many of them the panel beside the map actually shows.
+ *
+ * Smaller than the answer above, and a separate number because they are separate jobs.
+ * That one bounds an API response, and every vet in it becomes a pin the map draws with a
+ * distance on it. This one bounds a shortlist somebody reads top to bottom with a sick
+ * animal in the car, and the sixth-nearest door is not what they are deciding between.
+ */
+export const MAP_NEAREST_LIMIT = 5;
+
+/**
  * How close two pins have to be before they are taken to be the same building.
  *
  * The map draws Vetify's own vets over clinics scraped from OpenStreetMap, and a

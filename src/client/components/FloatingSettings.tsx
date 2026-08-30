@@ -10,6 +10,7 @@ import SupportSection from './settings/sections/SupportSection';
 import {
   AvailabilitySection,
   BookingReminderSection,
+  MapVisibilitySection,
   RateExperienceSection,
 } from './settings/sections/ProfessionalSettingsSection';
 import LogoutModal from './settings/LogoutModal';
@@ -83,6 +84,10 @@ export default function FloatingSettings({ variant = 'user' }: { variant?: Setti
                 <BookingReminderSection
                   isExpanded={expandedSection === 2}
                   onToggle={() => setExpandedSection(expandedSection === 2 ? null : 2)}
+                />
+                <MapVisibilitySection
+                  isExpanded={expandedSection === 3}
+                  onToggle={() => setExpandedSection(expandedSection === 3 ? null : 3)}
                 />
               </>
             ) : (

@@ -1,13 +1,72 @@
+import type { MapUserLocation } from '@/components/VetMap';
+import { formatDistance, type MapVet } from '@/components/map-vets';
 import { Suspense, lazy, useState } from 'react';
 
 const VetMap = lazy(() => import('@/components/VetMap'));
 
 interface MapPreviewProps {
   onExpand: () => void;
+  vets: MapVet[];
+  userLocation: MapUserLocation | null;
 }
 
-export default function MapPreview({ onExpand }: MapPreviewProps) {
+/** Availability as a card has room to say it. */
+const OPEN_WORDS: Record<MapVet['availabilityStatus'], string> = {
+  available: 'Taking bookings',
+  busy: 'Booked up',
+  unavailable: 'Not taking bookings',
+};
+
+/**
+ * The two cards floating over the preview.
+ *
+ * They used to be hard-coded — "Happy Paws Clinic ⭐️ 4.9 (120 reviews)" and a
+ * "1.2 km away" nothing had measured — which is exactly what this feature makes real, so
+ * they now hold the first two vets on the map. Ranked ones when a location has been
+ * shared, and simply the first two published pins when it has not. If there are none,
+ * there is nothing to float: an invented clinic in a shop window is worse than an empty
+ * one.
+ */
+function FloatingVetCard({
+  vet,
+  emoji,
+  tone,
+  position,
+  className = '',
+}: {
+  vet: MapVet;
+  emoji: string;
+  tone: string;
+  position: string;
+  className?: string;
+}) {
+  const distance = vet.distanceMeters === undefined ? null : formatDistance(vet.distanceMeters);
+
+  return (
+    <div
+      className={`absolute ${position} z-20 flex items-center gap-3 rounded-2xl border border-white bg-white/95 p-3 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105 ${className}`}
+    >
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-full text-xl shadow-inner ${tone}`}
+      >
+        {emoji}
+      </div>
+      <div className="min-w-0">
+        <p className="max-w-[10rem] truncate text-xs font-bold text-slate-800">
+          {vet.clinicName ?? vet.name}
+        </p>
+        <p className="text-[10px] font-semibold text-teal-600">
+          {OPEN_WORDS[vet.availabilityStatus]}
+          {distance && <span className="font-normal text-slate-400"> • {distance} away</span>}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewProps) {
   const [previewReady, setPreviewReady] = useState(false);
+  const [first, second] = vets;
 
   return (
     <>
@@ -25,31 +84,19 @@ export default function MapPreview({ onExpand }: MapPreviewProps) {
             previewReady ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          {/* Fake Floating UI Card 1 */}
-          <div className="absolute top-8 left-8 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white flex items-center gap-3 transition-transform duration-500 group-hover:-translate-y-2 group-hover:scale-105">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl shadow-inner">
-              🐕
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-800">Happy Paws Clinic</p>
-              <p className="text-[10px] font-semibold text-blue-600">
-                ⭐️ 4.9 <span className="text-slate-400 font-normal">(120 reviews)</span>
-              </p>
-            </div>
-          </div>
+          {first && (
+            <FloatingVetCard vet={first} emoji="🐕" tone="bg-blue-100" position="top-8 left-8" />
+          )}
 
-          {/* Fake Floating UI Card 2 */}
-          <div className="absolute bottom-16 right-8 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white flex items-center gap-3 transition-transform duration-500 delay-75 group-hover:-translate-y-2 group-hover:scale-105">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-xl shadow-inner">
-              🏥
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-800">City Pet Hospital</p>
-              <p className="text-[10px] font-semibold text-teal-600">
-                Open now <span className="text-slate-400 font-normal">• 1.2 km away</span>
-              </p>
-            </div>
-          </div>
+          {second && (
+            <FloatingVetCard
+              vet={second}
+              emoji="🏥"
+              tone="bg-teal-100"
+              position="bottom-16 right-8"
+              className="delay-75"
+            />
+          )}
 
           {/* Center "Click to Explore" Badge */}
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none transition-transform duration-500 group-hover:scale-110">
@@ -66,12 +113,18 @@ export default function MapPreview({ onExpand }: MapPreviewProps) {
           style={{ isolation: 'isolate', opacity: 0.6 }}
         >
           <Suspense fallback={null}>
+            {/* Vetify's own pins and no clinics passed: this is a still behind two
+                cards, where six hundred scraped markers would be six hundred nobody
+                can read. It centres on whoever is looking once they say. */}
             <VetMap
-              zoom={15}
-              center={[14.64, 121.05]}
+              zoom={userLocation ? 14 : 15}
+              center={
+                userLocation ? [userLocation.latitude, userLocation.longitude] : [14.64, 121.05]
+              }
               showOverlay={false}
               interactive={false}
-              fetchData={false}
+              vets={vets}
+              userLocation={userLocation}
               onReady={() => setPreviewReady(true)}
             />
           </Suspense>
