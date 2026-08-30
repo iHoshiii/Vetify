@@ -367,7 +367,9 @@ export default function VetMap({
    * Whether the map has been moved to the reader's own position yet.
    *
    * A ref, because re-centring must happen once: a later, better fix arriving should not
-   * yank the map away from somebody who has since panned it somewhere of their own.
+   * yank the map away from somebody who has since panned it somewhere of their own. It is
+   * also what stops the effect below following the `center` prop any further — once
+   * somebody has said where they are, no later answer to a different question outranks it.
    */
   const centred = useRef(false);
 
@@ -536,6 +538,24 @@ export default function VetMap({
     });
   }, [ready, visibleClinics, vets]);
 
+  // ── The view, until the reader's own position claims it. ────────────────────
+  //
+  // `L.map` reads `center` and `zoom` once, when it is constructed, and both of these maps
+  // are built before any query has answered — so a `center` that changed afterwards used
+  // to change nothing at all. The preview beside the hero paid for that: handed a
+  // coordinate on the first render, it kept it for the rest of the session, however far
+  // from the vets it was drawing or from the person looking at it.
+  //
+  // Only where the map cannot be dragged. On one that can, the view belongs to whoever is
+  // dragging it, and the position below is the single thing allowed to take it from them.
+  const [centreLat, centreLng] = center;
+  useEffect(() => {
+    const map = leafletMap.current;
+    if (!ready || !map || interactive || centred.current) return;
+
+    map.setView([centreLat, centreLng], zoom);
+  }, [ready, interactive, centreLat, centreLng, zoom]);
+
   // ── Where the reader is. ────────────────────────────────────────────────────
   //
   // A dot and a ring rather than the paw pin. The pin means "a clinic is here", and
@@ -573,11 +593,17 @@ export default function VetMap({
       .bindTooltip('You are here', { direction: 'top', offset: [0, -10], className: 'vet-label' })
       .addTo(youGroup);
 
-    // Once, and only where the map is something you can pan back from: the preview
-    // beside the hero is meant to keep the view it was given.
-    if (interactive && !centred.current) {
+    // Once, and wherever it lands. This used to hold for interactive maps only, reading
+    // the preview's stillness as a view worth protecting — but a map that cannot be
+    // dragged has no view of its own to protect, and the one it was given was a guess
+    // made before anybody had said anything. Flown where flying means something and set
+    // where it does not: a second of gliding across a still life behind two cards is
+    // motion nobody asked for.
+    if (!centred.current) {
       centred.current = true;
-      map.flyTo(at, Math.max(zoom, 13), { duration: 1.2 });
+      const close = Math.max(zoom, 13);
+      if (interactive) map.flyTo(at, close, { duration: 1.2 });
+      else map.setView(at, close);
     }
   }, [ready, userLocation, interactive, zoom]);
 
