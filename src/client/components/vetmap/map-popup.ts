@@ -1,4 +1,4 @@
-import { formatDistance, type MapVet, type OsmClinic } from '../map-vets';
+import { formatDistance, type MapVet, type OsmClinic } from '../map-prof-vet';
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import type { VetMapProps } from '@/types/vetmap';
-import { isSamePlace } from '../map-vets';
+import { isSamePlace } from '../map-prof-vet';
 import { MapSkeleton } from './map-skeleton';
 import { MapStyles } from './map-styles';
 import { useLeafletCore } from './use-leaflet-core';

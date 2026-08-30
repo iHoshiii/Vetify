@@ -1,6 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
 import type { MyLocationStatus } from '../use-my-location';
-import { DirectoryLink } from './directory-link';
 
 type LocationFeedbackProps = {
   status: MyLocationStatus;
@@ -20,10 +19,9 @@ export function LocationFeedback({
   if (status === 'idle') {
     return (
       <p className="text-xs leading-relaxed text-slate-500">
-        Share your location and we will rank every vet on the map by how far away they are —
-        Vetify&apos;s verified vets and the clinics listed on OpenStreetMap alike. It is used to
-        sort this list and nothing else — we do not store it. Rather not?{' '}
-        <DirectoryLink>Browse the directory</DirectoryLink> by city instead.
+        Share your location to know the top 5 nearest vets and clinics within your location or you
+        can click the &apos;Click to Explore Map&apos; button to see all vets and clinics on the
+        map.
       </p>
     );
   }
@@ -31,7 +29,7 @@ export function LocationFeedback({
   if (status === 'asking') {
     return (
       <p className="text-xs font-semibold text-slate-500">
-        Waiting for your browser… you may need to allow the prompt.
+        Locating… please check your location permissions if error occurs.
       </p>
     );
   }
@@ -39,9 +37,8 @@ export function LocationFeedback({
   if (status === 'denied') {
     return (
       <p className="text-xs leading-relaxed text-slate-500">
-        No problem — your browser is keeping your location private. You can still{' '}
-        <DirectoryLink>search the directory</DirectoryLink> by city and province, or allow location
-        for this site in your browser&apos;s address bar and press the button again.
+        Connection denied... please allow location access in your browser`to see the nearest vets
+        and clinics.
       </p>
     );
   }
@@ -49,8 +46,8 @@ export function LocationFeedback({
   if (status === 'unsupported') {
     return (
       <p className="text-xs leading-relaxed text-slate-500">
-        This browser cannot share a location. <DirectoryLink>Search the directory</DirectoryLink> by
-        city and province instead.
+        Cannot share location... Please use the &apos;Click to Explore Map&apos; button to see all
+        vets and clinics on the map.
       </p>
     );
   }
@@ -60,8 +57,8 @@ export function LocationFeedback({
       <p className="flex items-start gap-1.5 text-xs leading-relaxed text-slate-500">
         <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-500" />
         <span>
-          Your device could not get a fix just now. Try again, or{' '}
-          <DirectoryLink>search the directory</DirectoryLink> by city.
+          Connection failed... Please check your internet connection or use the &apos;Click to
+          Explore Map&apos; button to see all vets and clinics on the map.
         </span>
       </p>
     );
@@ -75,9 +72,7 @@ export function LocationFeedback({
       return (
         <p className="flex items-start gap-1.5 text-xs leading-relaxed text-slate-500">
           <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-500" />
-          <span>
-            We could not reach the directory or OpenStreetMap. Press the button to try again.
-          </span>
+          <span>We could not reach your location. Press the button to try again.</span>
         </p>
       );
     }
@@ -85,10 +80,8 @@ export function LocationFeedback({
     if (placesCount === 0) {
       return (
         <p className="text-xs leading-relaxed text-slate-500">
-          Nothing is on the map within {radiusKm} km of you. Our vets choose whether to appear here,
-          and OpenStreetMap only knows the clinics somebody has added —{' '}
-          <DirectoryLink>search the directory</DirectoryLink> by city and province, which does not
-          depend on either.
+          Nothing is on the map within {radiusKm} km of you. Click the &apos;Click to Explore
+          Map&apos; button to see all vets and clinics on the map.
         </p>
       );
     }

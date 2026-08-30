@@ -1,9 +1,3 @@
-/**
- * Leaflet's own stylesheets, and the label, popup and cluster looks layered over them.
- *
- * A fragment rather than a global stylesheet: the map is loaded on demand, and these
- * are the rules only it uses.
- */
 export function MapStyles() {
   return (
     <>
@@ -23,8 +17,6 @@ export function MapStyles() {
         href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
         crossOrigin=""
       />
-
-      {/* Custom marker / popup styles */}
       <style>{`
         .vet-label {
           background: white !important;

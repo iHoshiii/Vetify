@@ -1,3 +1,5 @@
+// customize vet clinic icon on the map
+
 export type MarkerPalette = {
   fill: string;
   stroke: string;
@@ -38,13 +40,6 @@ export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
     `;
 }
 
-/**
- * The Leaflet icon.
- *
- * Takes the module rather than importing it, because Leaflet is loaded dynamically —
- * it touches `window` on import, and both callers are inside an effect that has
- * already awaited it.
- */
 export function createMarkerIcon(
   L: typeof import('leaflet'),
   palette: MarkerPalette = OSM_PALETTE

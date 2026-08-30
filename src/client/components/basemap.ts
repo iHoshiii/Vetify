@@ -1,3 +1,4 @@
+// carto (map base image)
 const TILES = 'https://{s}.basemaps.cartocdn.com';
 export const BASEMAP_LAYERS = { land: 'light_all', labels: 'light_only_labels' } as const;
 export function basemapUrl(layer: keyof typeof BASEMAP_LAYERS): string {
