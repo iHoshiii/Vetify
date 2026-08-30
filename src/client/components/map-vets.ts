@@ -2,7 +2,7 @@ import { MAP_DEDUP_RADIUS_M } from '@shared/limits';
 import type { ProfessionalAvailabilityStatus } from '@shared/limits';
 import type { ProfessionalAddressKind } from '@shared/schemas';
 
-import type { PublicProfessional } from '../services/professionals.service';
+import type { NearbyProfessional, PublicProfessional } from '../services/professionals.service';
 
 /**
  * What a Vetify vet looks like once it is a pin, and the arithmetic the map needs to
@@ -10,7 +10,7 @@ import type { PublicProfessional } from '../services/professionals.service';
  *
  * Its own module rather than lines inside `VetMap`, because three callers convert the
  * same directory entries — the map, the preview beside it, and the full-screen modal —
- * and because the two functions at the bottom are the ones worth testing on their own.
+ * and because the arithmetic at the bottom is what is worth testing on its own.
  */
 
 /** One pin: a published address, and enough of its vet to be worth clicking. */
@@ -34,6 +34,26 @@ export type MapVet = {
   availabilityStatus: ProfessionalAvailabilityStatus;
   /** Only present when the vet arrived from a ranked "near me" answer. */
   distanceMeters?: number;
+};
+
+/**
+ * A clinic as OpenStreetMap has it: a name, a coordinate, and whatever tags somebody
+ * in that neighbourhood happened to fill in.
+ *
+ * Here rather than inside `VetMap` because it stopped being the map's private business
+ * the moment the panel beside the map had to rank these against Vetify's own vets. The
+ * coordinate is spelled out rather than left as Overpass's `lat`/`lon`, so one
+ * vocabulary serves both sources and the arithmetic below needs no adapter.
+ */
+export type OsmClinic = {
+  /** OSM's own name for it, `node/123` or `way/456` — unique across both, which a bare id is not. */
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string;
+  phone?: string;
+  openingHours?: string;
 };
 
 /**
@@ -171,4 +191,72 @@ export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} m`;
   if (meters < 10_000) return `${(meters / 1000).toFixed(1)} km`;
   return `${Math.round(meters / 1000)} km`;
+}
+
+/**
+ * One row of "nearest you", from whichever of the two sources it came.
+ *
+ * A tagged union rather than one flattened shape, because the two are not the same claim
+ * and the panel must not pretend they are: a Vetify vet is verified, has a profile and
+ * can be booked, and an OpenStreetMap clinic is a name somebody typed into a public map.
+ * Making the caller narrow on `source` is what forces it to say which it is showing.
+ *
+ * The Vetify branch carries the whole `NearbyProfessional` rather than a `MapVet`, so the
+ * row keeps the avatar, the rate and the availability it already renders.
+ */
+export type NearbyPlace =
+  | { source: 'vetify'; key: string; distanceMeters: number; vet: NearbyProfessional }
+  | { source: 'osm'; key: string; distanceMeters: number; clinic: OsmClinic };
+
+/**
+ * The two sources, merged into one list, nearest first.
+ *
+ * Vetify's vets arrive already ranked by `$geoNear`, so their distance is the server's and
+ * is not recomputed — nothing good comes of a list whose numbers disagree with the
+ * query that produced it. The OpenStreetMap clinics have never been near a database, so
+ * theirs is measured here, against the same haversine the dedup uses.
+ *
+ * Two things get dropped. A clinic further than the radius, because the radius is what the
+ * panel promised in writing; and a clinic that is one of ours under another name, by the
+ * same `isSamePlace` test the map uses — a door with a Vetify pin on it appears once,
+ * as the verified vet, not twice.
+ */
+export function rankNearby(input: {
+  from: { latitude: number; longitude: number };
+  /** Server-ranked and already inside the radius. Their distance is taken as given. */
+  professionals: NearbyProfessional[];
+  clinics: OsmClinic[];
+  /** Every Vetify pin the page knows of, which is what an OSM clinic is checked against. */
+  pins: MapVet[];
+  radiusKm: number;
+  limit: number;
+}): NearbyPlace[] {
+  const ours: NearbyPlace[] = input.professionals.map((vet) => ({
+    source: 'vetify',
+    key: `vetify:${vet.id}`,
+    distanceMeters: vet.distanceMeters,
+    vet,
+  }));
+
+  // The ranked vets' own pins are folded in, so a caller that passes only the directory's
+  // pins still cannot end up showing a vet and their OSM twin side by side.
+  const pins = [...input.pins, ...toMapVets(input.professionals)];
+  const radiusMeters = input.radiusKm * 1000;
+
+  const theirs: NearbyPlace[] = input.clinics.flatMap((clinic) => {
+    const distanceMeters = metersBetween(input.from, clinic);
+    if (distanceMeters > radiusMeters) return [];
+    if (pins.some((pin) => isSamePlace(pin, clinic))) return [];
+
+    return [{ source: 'osm' as const, key: `osm:${clinic.id}`, distanceMeters, clinic }];
+  });
+
+  return [...ours, ...theirs]
+    .sort(
+      (a, b) =>
+        // Ours first on a tie: at the same distance the bookable one is the better answer.
+        a.distanceMeters - b.distanceMeters ||
+        Number(a.source === 'osm') - Number(b.source === 'osm')
+    )
+    .slice(0, input.limit);
 }

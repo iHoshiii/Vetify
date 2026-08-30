@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { NearbyPlace, OsmClinic } from '../components/map-vets';
 import NearestVets, { type NearestVetsProps } from '../pages/map/_components/nearest-vets';
 import type { NearbyProfessional } from '../services/professionals.service';
 
@@ -14,6 +15,12 @@ import type { NearbyProfessional } from '../services/professionals.service';
  * a sentence and a way onward, and the way onward is the directory, which answers the
  * same question by city and needs no permission at all. A panel that goes blank after a
  * denied prompt is worse than no button.
+ *
+ * The rows come from two sources and are asserted to read differently, because they are
+ * different claims: a Vetify vet is verified and bookable, and an OpenStreetMap clinic is
+ * a name on a public map with directions and nothing else. The merging itself is
+ * `rankNearby`'s job and is tested in `map-vets.test.ts`; this file is about what the
+ * panel says.
  */
 
 function nearby(overrides: Partial<NearbyProfessional> = {}): NearbyProfessional {
@@ -39,6 +46,26 @@ function nearby(overrides: Partial<NearbyProfessional> = {}): NearbyProfessional
   };
 }
 
+function clinic(overrides: Partial<OsmClinic> = {}): OsmClinic {
+  return {
+    id: 'node/1',
+    name: 'Solano Pet Care',
+    latitude: 16.52,
+    longitude: 121.18,
+    address: '5 Burgos Street, Solano',
+    ...overrides,
+  };
+}
+
+/** The two branches of the union, so a test can say what it means in one line. */
+function ours(vet: NearbyProfessional): NearbyPlace {
+  return { source: 'vetify', key: `vetify:${vet.id}`, distanceMeters: vet.distanceMeters, vet };
+}
+
+function theirs(from: OsmClinic, distanceMeters: number): NearbyPlace {
+  return { source: 'osm', key: `osm:${from.id}`, distanceMeters, clinic: from };
+}
+
 function renderPanel(props: Partial<NearestVetsProps> = {}) {
   const onAsk = vi.fn();
 
@@ -47,9 +74,10 @@ function renderPanel(props: Partial<NearestVetsProps> = {}) {
       <NearestVets
         status="idle"
         onAsk={onAsk}
-        vets={[]}
+        places={[]}
         loading={false}
-        failed={false}
+        vetsFailed={false}
+        clinicsFailed={false}
         {...props}
       />
     </MemoryRouter>
@@ -82,9 +110,9 @@ describe('the ranked list', () => {
   it('writes a distance the way a person would say it', () => {
     renderPanel({
       status: 'ready',
-      vets: [
-        nearby({ distanceMeters: 1234 }),
-        nearby({ id: 'a2', name: 'Ramon Cruz', distanceMeters: 8600 }),
+      places: [
+        ours(nearby({ distanceMeters: 1234 })),
+        ours(nearby({ id: 'a2', name: 'Ramon Cruz', distanceMeters: 8600 })),
       ],
     });
 
@@ -95,9 +123,9 @@ describe('the ranked list', () => {
   it('keeps the order the server ranked them in', () => {
     renderPanel({
       status: 'ready',
-      vets: [
-        nearby({ id: 'a2', name: 'Ramon Cruz', distanceMeters: 420 }),
-        nearby({ distanceMeters: 1234 }),
+      places: [
+        ours(nearby({ id: 'a2', name: 'Ramon Cruz', distanceMeters: 420 })),
+        ours(nearby({ distanceMeters: 1234 })),
       ],
     });
 
@@ -110,7 +138,10 @@ describe('the ranked list', () => {
   it('offers a booking link only to a vet who is taking bookings', () => {
     renderPanel({
       status: 'ready',
-      vets: [nearby(), nearby({ id: 'a2', name: 'Ramon Cruz', availabilityStatus: 'busy' })],
+      places: [
+        ours(nearby()),
+        ours(nearby({ id: 'a2', name: 'Ramon Cruz', availabilityStatus: 'busy' })),
+      ],
     });
 
     expect(screen.getByRole('link', { name: /book with marites/i })).toHaveAttribute(
@@ -158,16 +189,70 @@ describe('the answers that are not a list', () => {
   });
 
   it('admits it when the lookup fails', () => {
-    renderPanel({ status: 'ready', failed: true });
+    renderPanel({ status: 'ready', vetsFailed: true, clinicsFailed: true });
 
-    expect(screen.getByText(/could not reach the directory/i)).toBeInTheDocument();
+    expect(screen.getByText(/could not reach the directory or OpenStreetMap/i)).toBeInTheDocument();
   });
 
-  it('names the radius when no vet is pinned inside it', () => {
-    renderPanel({ status: 'ready', vets: [], radiusKm: 25 });
+  it('names the radius when there is nothing inside it', () => {
+    renderPanel({ status: 'ready', places: [], radiusKm: 25 });
 
-    expect(screen.getByText(/within 25 km of you yet/i)).toBeInTheDocument();
-    // And says why that is not the same as there being no vet there.
-    expect(screen.getByText(/choose\s+whether to appear on the map/i)).toBeInTheDocument();
+    expect(screen.getByText(/within 25 km of you/i)).toBeInTheDocument();
+    // And says why that is not the same as there being nothing there, for either source.
+    expect(screen.getByText(/choose whether to appear/i)).toBeInTheDocument();
+    expect(screen.getByText(/only knows the clinics somebody has added/i)).toBeInTheDocument();
+  });
+
+  it('says which half is missing when only one source is down', () => {
+    renderPanel({ status: 'ready', clinicsFailed: true, places: [ours(nearby())] });
+
+    // The rows still render: one source down is a short list, not no answer.
+    expect(screen.getByText('Marites Reyes')).toBeInTheDocument();
+    expect(screen.getByText(/OpenStreetMap could not be reached/i)).toBeInTheDocument();
+    expect(screen.queryByText(/could not reach the directory or OpenStreetMap/i)).toBeNull();
+  });
+});
+
+describe('a clinic that is not ours', () => {
+  it('offers directions and no booking, and says whose listing it is', () => {
+    renderPanel({ status: 'ready', places: [theirs(clinic(), 620)] });
+
+    expect(screen.getByText('Solano Pet Care')).toBeInTheDocument();
+    expect(screen.getByText('620 m away')).toBeInTheDocument();
+    expect(screen.getByText(/listed on openstreetmap/i)).toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: /open in maps/i })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=16.52,121.18'
+    );
+    // Nothing to book and no profile to open: we have never checked this place.
+    expect(screen.queryByRole('link', { name: /book with/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /solano pet care/i })).toBeNull();
+  });
+
+  it('shows a phone number when OpenStreetMap has one', () => {
+    renderPanel({ status: 'ready', places: [theirs(clinic({ phone: '+63 917 000 1234' }), 620)] });
+
+    expect(screen.getByRole('link', { name: /917 000 1234/ })).toHaveAttribute(
+      'href',
+      'tel:+63 917 000 1234'
+    );
+  });
+
+  it('mixes both sources in the order it was given', () => {
+    renderPanel({
+      status: 'ready',
+      places: [
+        theirs(clinic(), 300),
+        ours(nearby({ distanceMeters: 1234 })),
+        theirs(clinic({ id: 'way/9', name: 'Bambang Vet' }), 4100),
+      ],
+    });
+
+    const rows = screen.getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent('Solano Pet Care');
+    expect(rows[1]).toHaveTextContent('Marites Reyes');
+    expect(rows[2]).toHaveTextContent('Bambang Vet');
   });
 });

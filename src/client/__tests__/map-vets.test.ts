@@ -4,17 +4,24 @@ import {
   formatDistance,
   isSamePlace,
   metersBetween,
+  rankNearby,
   toMapVets,
   type MapVet,
+  type OsmClinic,
 } from '../components/map-vets';
-import type { PublicAddress, PublicProfessional } from '../services/professionals.service';
+import type {
+  NearbyProfessional,
+  PublicAddress,
+  PublicProfessional,
+} from '../services/professionals.service';
 
 /**
  * The arithmetic the map is honest because of.
  *
  * Tested here rather than through `VetMap`, which needs Leaflet and a laid-out DOM to
- * say anything: the decision to drop a marker is made by `isSamePlace`, and the number a
- * popup prints is made by `formatDistance`. The component only obeys them.
+ * say anything: the decision to drop a marker is made by `isSamePlace`, the number a
+ * popup prints is made by `formatDistance`, and the order of the list beside the map is
+ * made by `rankNearby`. The components only obey them.
  */
 
 function address(overrides: Partial<PublicAddress> = {}): PublicAddress {
@@ -153,5 +160,125 @@ describe('writing a distance a person can picture', () => {
   it('says nothing rather than something wrong', () => {
     expect(formatDistance(Number.NaN)).toBe('');
     expect(formatDistance(-1)).toBe('');
+  });
+});
+
+describe('merging the two sources into one list', () => {
+  /** Solano, Nueva Vizcaya — the corner of the map the report came from. */
+  const from = { latitude: 16.51, longitude: 121.18 };
+
+  /** A point a known number of metres due north, so a distance can be asserted. */
+  function north(meters: number, name = 'A Clinic'): OsmClinic {
+    return {
+      id: `node/${Math.round(meters)}`,
+      name,
+      latitude: from.latitude + meters / 111_195,
+      longitude: from.longitude,
+    };
+  }
+
+  /** A server-ranked vet: the pin it published, and the distance $geoNear measured. */
+  function ranked(
+    distanceMeters: number,
+    overrides: Partial<PublicProfessional> = {}
+  ): NearbyProfessional {
+    return {
+      ...vet({
+        addresses: [address({ mapPin: { latitude: from.latitude, longitude: from.longitude } })],
+        ...overrides,
+      }),
+      distanceMeters,
+    };
+  }
+
+  const OPTIONS = { from, pins: [] as MapVet[], radiusKm: 50, limit: 10 };
+
+  it('interleaves both sources by distance', () => {
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [ranked(1200)],
+      clinics: [north(4100, 'Bambang Vet'), north(300, 'Solano Pet Care')],
+    });
+
+    expect(places.map((place) => place.source)).toEqual(['osm', 'vetify', 'osm']);
+    expect(places[0].source === 'osm' && places[0].clinic.name).toBe('Solano Pet Care');
+    expect(places[0].distanceMeters).toBeCloseTo(300, 0);
+    expect(places[2].distanceMeters).toBeCloseTo(4100, 0);
+  });
+
+  it("takes the server's distance rather than recomputing it", () => {
+    // The published pin is exactly `from`, so measuring here would say nought metres.
+    // The list must still print what $geoNear said, or two halves of one page disagree.
+    const [place] = rankNearby({ ...OPTIONS, professionals: [ranked(872)], clinics: [] });
+
+    expect(place.distanceMeters).toBe(872);
+  });
+
+  it('drops an OpenStreetMap clinic that is one of ours under another name', () => {
+    // ~40 m from the published pin: the same door, mapped twice.
+    const twin = north(40, 'Veterinary Office');
+
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [ranked(1200)],
+      clinics: [twin, north(300, 'Solano Pet Care')],
+    });
+
+    // Ours survives and the scraped twin does not, exactly as the map draws it.
+    expect(places).toHaveLength(2);
+    expect(places.some((place) => place.source === 'osm' && place.clinic.id === twin.id)).toBe(
+      false
+    );
+  });
+
+  it('checks a clinic against pins the ranked answer never mentioned', () => {
+    // A vet on the map but outside the radius: not in `professionals`, still one door.
+    const pins = toMapVets([
+      vet({
+        addresses: [address({ mapPin: { latitude: from.latitude, longitude: from.longitude } })],
+      }),
+    ]);
+
+    const places = rankNearby({ ...OPTIONS, pins, professionals: [], clinics: [north(40)] });
+
+    expect(places).toEqual([]);
+  });
+
+  it('excludes a clinic beyond the radius the panel promised', () => {
+    const places = rankNearby({
+      ...OPTIONS,
+      radiusKm: 5,
+      professionals: [],
+      clinics: [north(4100, 'Bambang Vet'), north(6000, 'Bayombong Vet')],
+    });
+
+    expect(places).toHaveLength(1);
+    expect(places[0].source === 'osm' && places[0].clinic.name).toBe('Bambang Vet');
+  });
+
+  it('puts ours first when the two are the same distance apart', () => {
+    // Measured rather than assumed: `north(300)` is 300 m to within a rounding error, and
+    // an exact tie is the only thing that exercises the tie-break.
+    const theirs = north(300, 'Somebody Else');
+
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [ranked(metersBetween(from, theirs))],
+      clinics: [theirs],
+    });
+
+    expect(places.map((place) => place.source)).toEqual(['vetify', 'osm']);
+  });
+
+  it('keeps only as many as it was asked for', () => {
+    const places = rankNearby({
+      ...OPTIONS,
+      limit: 3,
+      professionals: [ranked(1200)],
+      clinics: [north(100), north(200), north(400), north(800)],
+    });
+
+    expect(places).toHaveLength(3);
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([100, 200, 400]);
   });
 });

@@ -1,5 +1,7 @@
-import { toMapVets, type MapVet } from '@/components/map-vets';
+import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-vets';
+import { useOsmClinics } from '@/hooks/useOsmClinics';
 import { useNearbyProfessionals, useProfessionals } from '@/hooks/useProfessionals';
+import { PROFESSIONAL_NEAR_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import { Map as MapIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -11,14 +13,20 @@ import { useMyLocation } from './_components/use-my-location';
 /**
  * The page that has to mean its own headline.
  *
- * Two queries feed it, and they answer different questions. The directory page draws
+ * Three queries feed it, and they answer different questions. The directory page draws
  * every published pin on the map, whether or not the visitor has shared a location — a
  * vet who turned their switch on is on the map for everybody. The nearest query only
  * runs once somebody has pressed the button, and its answer is an *ordering*, which is
- * what the panel under the headline is for.
+ * what the panel under the headline is for. And OpenStreetMap's clinics, which the map
+ * has always drawn, are fetched here rather than inside `VetMap`.
  *
- * They are merged for the map because the ranked answer carries a distance and the
- * directory does not: a popup that can say "1.2 km away" should.
+ * That last move is the point of this page owning them. While the map fetched its own
+ * clinics they went into its private state, so the panel beside it could rank only
+ * Vetify's vets — and "find a vet near you" would answer with nothing while a clinic
+ * sat visible on the map two streets away. One owner, two readers.
+ *
+ * The first two are merged for the map because the ranked answer carries a distance and
+ * the directory does not: a popup that can say "1.2 km away" should.
  */
 
 /**
@@ -37,6 +45,14 @@ export default function MapPage() {
     location ? { latitude: location.latitude, longitude: location.longitude } : null
   );
 
+  /**
+   * Overpass is asked once somebody has a reason to care: they shared a location, so the
+   * list has to rank clinics, or they opened the full-screen map, which draws them. A
+   * country-wide scan of a volunteer-run service is not something to run for a visitor
+   * who only read the headline.
+   */
+  const clinics = useOsmClinics(Boolean(location) || expanded);
+
   const vets = useMemo<MapVet[]>(() => {
     const byKey = new Map<string, MapVet>();
     for (const vet of toMapVets(directory.data?.items ?? [])) byKey.set(vet.key, vet);
@@ -45,6 +61,27 @@ export default function MapPage() {
     for (const vet of toMapVets(nearby.data?.items ?? [])) byKey.set(vet.key, vet);
     return [...byKey.values()];
   }, [directory.data, nearby.data]);
+
+  /**
+   * The panel's list: both sources, nearest first.
+   *
+   * Empty without a location, because every row in it is a distance and there is nothing
+   * to measure from. `vets` rather than only the ranked answer is handed in as the dedup
+   * set, so a clinic that already has a Vetify pin on it is dropped here exactly as the
+   * map drops it — one door, one row, ours.
+   */
+  const places = useMemo<NearbyPlace[]>(() => {
+    if (!location) return [];
+
+    return rankNearby({
+      from: location,
+      professionals: nearby.data?.items ?? [],
+      clinics: clinics.data ?? [],
+      pins: vets,
+      radiusKm: nearby.data?.radiusKm ?? PROFESSIONAL_NEAR_RADIUS_KM,
+      limit: PROFESSIONAL_NEAR_LIMIT,
+    });
+  }, [location, nearby.data, clinics.data, vets]);
 
   return (
     <main className="min-h-[calc(100vh-80px)] bg-[#f6fbfb] text-slate-950 flex flex-col justify-center">
@@ -71,9 +108,10 @@ export default function MapPage() {
           <NearestVets
             status={status}
             onAsk={ask}
-            vets={nearby.data?.items ?? []}
-            loading={nearby.isPending && Boolean(location)}
-            failed={nearby.isError}
+            places={places}
+            loading={(nearby.isPending && Boolean(location)) || clinics.isLoading}
+            vetsFailed={nearby.isError}
+            clinicsFailed={clinics.isError}
             radiusKm={nearby.data?.radiusKm}
           />
 
@@ -96,6 +134,9 @@ export default function MapPage() {
         {/* RIGHT — Interactive Vet Map (Client Component Boundary) */}
         <InteractiveMap
           vets={vets}
+          clinics={clinics.data ?? []}
+          clinicsLoading={clinics.isLoading}
+          clinicsFailed={clinics.isError}
           userLocation={location}
           expanded={expanded}
           onExpand={() => setExpanded(true)}

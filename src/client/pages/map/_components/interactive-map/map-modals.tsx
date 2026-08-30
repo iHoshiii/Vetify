@@ -1,5 +1,5 @@
 import type { MapUserLocation } from '@/components/VetMap';
-import type { MapVet } from '@/components/map-vets';
+import type { MapVet, OsmClinic } from '@/components/map-vets';
 import { Suspense, lazy, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,10 +8,20 @@ const VetMap = lazy(() => import('@/components/VetMap'));
 interface MapModalProps {
   onClose: () => void;
   vets: MapVet[];
+  clinics: OsmClinic[];
+  clinicsLoading: boolean;
+  clinicsFailed: boolean;
   userLocation: MapUserLocation | null;
 }
 
-export default function MapModal({ onClose, vets, userLocation }: MapModalProps) {
+export default function MapModal({
+  onClose,
+  vets,
+  clinics,
+  clinicsLoading,
+  clinicsFailed,
+  userLocation,
+}: MapModalProps) {
   const navigate = useNavigate();
 
   // Handle Escape key and body scroll lock on mount
@@ -68,6 +78,9 @@ export default function MapModal({ onClose, vets, userLocation }: MapModalProps)
               }
               showOverlay
               vets={vets}
+              clinics={clinics}
+              clinicsLoading={clinicsLoading}
+              clinicsFailed={clinicsFailed}
               userLocation={userLocation}
               onNavigate={(path) => {
                 onClose();

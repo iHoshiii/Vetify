@@ -113,9 +113,9 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
           style={{ isolation: 'isolate', opacity: 0.6 }}
         >
           <Suspense fallback={null}>
-            {/* Vetify's own pins, and no Overpass fetch: this is a still behind two
-                cards, and a country-wide clinic query for a decoration is bandwidth
-                somebody pays for. It centres on whoever is looking once they say. */}
+            {/* Vetify's own pins and no clinics passed: this is a still behind two
+                cards, where six hundred scraped markers would be six hundred nobody
+                can read. It centres on whoever is looking once they say. */}
             <VetMap
               zoom={userLocation ? 14 : 15}
               center={
@@ -123,7 +123,6 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
               }
               showOverlay={false}
               interactive={false}
-              fetchData={false}
               vets={vets}
               userLocation={userLocation}
               onReady={() => setPreviewReady(true)}

@@ -2,17 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { BASEMAP_ATTRIBUTION, basemapUrl } from './basemap';
 import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from './marker-icon';
-import { formatDistance, isSamePlace, type MapVet } from './map-vets';
-
-interface Clinic {
-  id: number;
-  lat: number;
-  lon: number;
-  name: string;
-  address?: string;
-  phone?: string;
-  opening_hours?: string;
-}
+import { formatDistance, isSamePlace, type MapVet, type OsmClinic } from './map-vets';
 
 /** Where the person reading the map is, as their own browser reported it. */
 export type MapUserLocation = {
@@ -29,9 +19,19 @@ interface VetMapProps {
   showOverlay?: boolean;
   /** If false, disables all map interactions (zooming, dragging, clicking pins) */
   interactive?: boolean;
-  /** If false, the map will not fetch any clinic data (useful for static preview maps) */
-  fetchData?: boolean;
-  /** Callback fired when the map (and data if fetched) is fully loaded */
+  /**
+   * OpenStreetMap's clinics, fetched by the page rather than by the map.
+   *
+   * It used to fetch them itself, into private state, which meant the panel beside it
+   * could not rank what the map was showing. The owner is now
+   * `useOsmClinics`, and a map with none passed simply draws none — which is what the
+   * preview beside the hero wants, and what the `fetchData={false}` prop used to say.
+   */
+  clinics?: OsmClinic[];
+  /** That query in flight, and having failed: both are somebody else's news now. */
+  clinicsLoading?: boolean;
+  clinicsFailed?: boolean;
+  /** Callback fired when the map itself is up. */
   onReady?: () => void;
   /**
    * Vetify's own verified vets, one entry per address a vet chose to publish.
@@ -54,17 +54,6 @@ interface VetMapProps {
    */
   onNavigate?: (path: string) => void;
 }
-
-const OVERPASS_QUERY = `
-[out:json][timeout:25];
-(
-  node["amenity"="veterinary"](4.5,116.9,21.4,126.6);
-  way["amenity"="veterinary"](4.5,116.9,21.4,126.6);
-  node["amenity"="animal_shelter"](4.5,116.9,21.4,126.6);
-  node["shop"="veterinary"](4.5,116.9,21.4,126.6);
-);
-out center;
-`;
 
 /**
  * Names typed by somebody else, made safe to put in an HTML string.
@@ -92,17 +81,17 @@ const EXTERNAL_LINK_ICON =
   '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>';
 
 /** A clinic scraped from OpenStreetMap: what the tags said, and a way out to Maps. */
-function clinicPopupHtml(clinic: Clinic): string {
+function clinicPopupHtml(clinic: OsmClinic): string {
   const line = (text: string) =>
     `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">${text}</p>`;
 
   const details = [
     clinic.address ? line(escapeHtml(clinic.address)) : '',
     clinic.phone ? line(`📞 ${escapeHtml(clinic.phone)}`) : '',
-    clinic.opening_hours ? line(`🕐 ${escapeHtml(clinic.opening_hours)}`) : '',
+    clinic.openingHours ? line(`🕐 ${escapeHtml(clinic.openingHours)}`) : '',
   ].join('');
 
-  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.lat},${clinic.lon}`;
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.latitude},${clinic.longitude}`;
 
   return `<div style="font-family:system-ui,sans-serif;min-width:180px;padding-bottom:4px;">
               <p style="font-weight:700;font-size:14px;margin:0;color:#1e293b;">${escapeHtml(
@@ -346,7 +335,9 @@ export default function VetMap({
   className = '',
   showOverlay: _showOverlay = true,
   interactive = true,
-  fetchData = true,
+  clinics = [],
+  clinicsLoading = false,
+  clinicsFailed = false,
   onReady,
   vets = [],
   userLocation = null,
@@ -363,8 +354,6 @@ export default function VetMap({
   /** The reader's own position. */
   const youLayer = useRef<import('leaflet').LayerGroup | null>(null);
 
-  const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
-  const [clinics, setClinics] = useState<Clinic[]>([]);
   /**
    * Whether the map exists yet.
    *
@@ -390,20 +379,16 @@ export default function VetMap({
   }, [onNavigate]);
 
   /**
-   * The scraped clinics worth drawing: the ones with coordinates, minus the ones a
-   * Vetify vet has already pinned.
+   * The scraped clinics worth drawing: all of them, minus the ones a Vetify vet has
+   * already pinned.
    *
    * Ours wins, because ours is verified, bookable, and maintained by the person who
    * works there. The badge counts what survives, so the drop shows up as a smaller
-   * number rather than as two markers on one building.
+   * number rather than as two markers on one building. The same test runs again in
+   * `rankNearby` for the list beside the map, so a door dropped here is dropped there.
    */
   const visibleClinics = useMemo(
-    () =>
-      clinics.filter((clinic) => {
-        if (clinic.lat == null || clinic.lon == null) return false;
-        const here = { latitude: clinic.lat, longitude: clinic.lon, name: clinic.name };
-        return !vets.some((vet) => isSamePlace(vet, here));
-      }),
+    () => clinics.filter((clinic) => !vets.some((vet) => isSamePlace(vet, clinic))),
     [clinics, vets]
   );
 
@@ -473,72 +458,11 @@ export default function VetMap({
       youLayer.current = L.layerGroup().addTo(map);
 
       // Both layers exist now, so the marker effects have somewhere to put things.
-      if (!cancelled) setReady(true);
-
-      if (!fetchData) {
-        if (!cancelled) {
-          setStatus('done');
-          onReady?.();
-        }
-        return;
-      }
-
-      try {
-        const endpoints = [
-          'https://lz4.overpass-api.de/api/interpreter',
-          'https://overpass-api.de/api/interpreter',
-          'https://overpass.kumi.systems/api/interpreter',
-        ];
-
-        let data = null;
-        for (const endpoint of endpoints) {
-          if (cancelled) break;
-          try {
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
-            });
-            if (res.ok) {
-              data = await res.json();
-              break; // Success!
-            }
-          } catch (_e) {
-            console.warn(`Overpass fetch failed for ${endpoint}`, _e);
-          }
-        }
-
-        if (!data) throw new Error('All Overpass API endpoints failed');
-
-        if (cancelled) return;
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const elements: any[] = data.elements ?? [];
-
-        // Handed to state rather than drawn here. The effect below owns what is on the
-        // map, because the vets it has to be reconciled against arrive separately.
-        setClinics(
-          elements.map((el) => ({
-            id: el.id,
-            lat: el.lat ?? el.center?.lat,
-            lon: el.lon ?? el.center?.lon,
-            name: el.tags?.name ?? el.tags?.['name:en'] ?? 'Unnamed Vet Clinic',
-            address: [
-              el.tags?.['addr:housenumber'],
-              el.tags?.['addr:street'],
-              el.tags?.['addr:city'],
-            ]
-              .filter(Boolean)
-              .join(' '),
-            phone: el.tags?.phone ?? el.tags?.['contact:phone'],
-            opening_hours: el.tags?.opening_hours,
-          }))
-        );
-
-        setStatus('done');
+      // Announced in the same breath: this component's own job is finished here, and
+      // whether anybody is still fetching clinics is not its news to break.
+      if (!cancelled) {
+        setReady(true);
         onReady?.();
-      } catch (_e) {
-        if (!cancelled) setStatus('error');
       }
     }
 
@@ -578,7 +502,7 @@ export default function VetMap({
     vetGroup.clearLayers();
 
     visibleClinics.forEach((clinic) => {
-      const marker = L.marker([clinic.lat, clinic.lon], { icon: clinicIcon });
+      const marker = L.marker([clinic.latitude, clinic.longitude], { icon: clinicIcon });
 
       marker.bindTooltip(escapeHtml(clinic.name), {
         direction: 'top',
@@ -660,6 +584,17 @@ export default function VetMap({
   /** What is on the map at all — ours plus whatever survived the dedup. */
   const pinCount = visibleClinics.length + vets.length;
 
+  /**
+   * Whether there is anything left to wait for.
+   *
+   * Two things now, and only one of them is this component's: the map has to exist, and
+   * the clinics have to have arrived from the page above. The skeleton still covers the
+   * second, because a map that fades in and then sprouts six hundred markers reads as
+   * broken — but a failed Overpass is reported as the clinic failure it is, over a
+   * basemap and Vetify's own pins that are both perfectly fine.
+   */
+  const settled = ready && !clinicsLoading && !clinicsFailed;
+
   return (
     <div className={`relative w-full h-full ${className}`}>
       {/* Leaflet CSS */}
@@ -717,9 +652,9 @@ export default function VetMap({
       `}</style>
 
       {/* ── Skeleton: shown while loading or on error. Sits above map. ── */}
-      {status !== 'done' && (
+      {!settled && (
         <div className="absolute inset-0" style={{ zIndex: 1100 }}>
-          <MapSkeleton error={status === 'error'} />
+          <MapSkeleton error={clinicsFailed} />
         </div>
       )}
 
@@ -729,20 +664,29 @@ export default function VetMap({
         ref={mapRef}
         className="absolute inset-0 w-full h-full"
         style={{
-          opacity: status === 'done' ? 1 : 0,
+          opacity: settled ? 1 : 0,
           transition: 'opacity 0.5s ease',
-          pointerEvents: status === 'done' ? 'auto' : 'none',
+          pointerEvents: settled ? 'auto' : 'none',
         }}
       />
 
       {/* What is on the map, and how much of it is ours */}
-      {status === 'done' && pinCount > 0 && (
+      {settled && pinCount > 0 && (
         <div
           className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-blue-100 shadow-md text-xs font-bold text-blue-700 backdrop-blur-sm pointer-events-none"
           style={{ zIndex: 1100 }}
         >
-          🐾 {visibleClinics.length} vet clinic{visibleClinics.length !== 1 ? 's' : ''}
-          {vets.length > 0 && <span className="text-teal-700"> · {vets.length} on Vetify</span>}
+          {/* Each half only when it has something to report: this map is given its
+              clinics now rather than fetching its own, and the preview beside the hero
+              is given none at all, so "0 vet clinics" would be a count of nothing. */}
+          🐾{' '}
+          {visibleClinics.length > 0 && (
+            <>
+              {visibleClinics.length} vet clinic{visibleClinics.length !== 1 ? 's' : ''}
+              {vets.length > 0 && ' · '}
+            </>
+          )}
+          {vets.length > 0 && <span className="text-teal-700">{vets.length} on Vetify</span>}
         </div>
       )}
     </div>

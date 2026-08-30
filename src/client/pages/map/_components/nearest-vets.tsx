@@ -1,7 +1,15 @@
-import { formatDistance } from '@/components/map-vets';
+import { formatDistance, type NearbyPlace, type OsmClinic } from '@/components/map-vets';
 import type { NearbyProfessional } from '@/services/professionals.service';
 import { PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
-import { AlertTriangle, Crosshair, Loader2, MapPin, Stethoscope } from 'lucide-react';
+import {
+  AlertTriangle,
+  Crosshair,
+  ExternalLink,
+  Loader2,
+  MapPin,
+  Phone,
+  Stethoscope,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import type { MyLocationStatus } from './use-my-location';
@@ -11,7 +19,15 @@ import type { MyLocationStatus } from './use-my-location';
  *
  * This is the half of the hero a phone can see — the map column beside it is
  * `hidden lg:block` — so it has to work on its own: a button that asks for a location,
- * and then the verified vets nearest it, nearest first.
+ * and then everything on the map nearest it, nearest first.
+ *
+ * Everything, from both sources: Vetify's own verified vets, ranked by the server, and
+ * the OpenStreetMap clinics the map has always drawn. Ranking only ours would have been
+ * the easier list and the wrong answer to "find a vet near you" — a stranger with a sick
+ * animal wants the nearest door, and the honest thing is to show them all of them and be
+ * clear about which ones we stand behind. So the two are visibly different rows: one has
+ * a profile, a rate and a booking link, and the other says plainly that it is a listing
+ * from a public map and offers directions.
  *
  * Most of what follows is the refusals. Asking for somebody's location opens a browser
  * prompt, and the majority of the answers to a prompt are not "yes": they can decline,
@@ -95,33 +111,105 @@ function VetRow({ vet }: { vet: NearbyProfessional }) {
   );
 }
 
+/**
+ * A clinic from OpenStreetMap, which is a different kind of claim and says so.
+ *
+ * No profile link and no booking link, because there is nothing behind them: this is a
+ * name and a coordinate somebody added to a public map, and Vetify has never checked it,
+ * spoken to them, or seen a licence. What it can honestly offer is directions, which is
+ * why the only affordance is Maps. The blue matches the pin this same clinic has on the
+ * map, so the two halves of the screen agree about which is which.
+ */
+function ClinicRow({ clinic, distanceMeters }: { clinic: OsmClinic; distanceMeters: number }) {
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${clinic.latitude},${clinic.longitude}`;
+
+  return (
+    <li className="flex items-center gap-3 rounded-2xl border border-slate-200 border-dashed bg-slate-50/60 p-3">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-2 ring-blue-100">
+        <MapPin className="h-5 w-5" />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate text-sm font-bold text-slate-800">{clinic.name}</span>
+          <span className="shrink-0 text-xs font-black text-slate-600">
+            {formatDistance(distanceMeters)} away
+          </span>
+        </span>
+
+        {clinic.address && (
+          <span className="block truncate text-xs text-slate-500">{clinic.address}</span>
+        )}
+
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold">
+          <span className="text-slate-400">Listed on OpenStreetMap · not verified by us</span>
+          {clinic.phone && (
+            <a
+              href={`tel:${clinic.phone}`}
+              className="inline-flex items-center gap-1 text-slate-600 hover:underline"
+            >
+              <Phone className="h-3 w-3" />
+              {clinic.phone}
+            </a>
+          )}
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-blue-700 hover:underline"
+          >
+            Open in Maps
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </span>
+      </span>
+    </li>
+  );
+}
+
 export type NearestVetsProps = {
   status: MyLocationStatus;
   onAsk: () => void;
-  /** Nearest first, as the server ranked them. Empty until a location is shared. */
-  vets: NearbyProfessional[];
+  /**
+   * Both sources, already merged and sorted nearest first by `rankNearby`. Empty until a
+   * location is shared, because there is nowhere to measure from until then.
+   */
+  places: NearbyPlace[];
   loading: boolean;
-  /** The query failed — a network problem rather than a refused prompt. */
-  failed: boolean;
+  /** Vetify's ranked query failed — a network problem rather than a refused prompt. */
+  vetsFailed: boolean;
+  /** Overpass failed. Its own flag, because one source being down is not both. */
+  clinicsFailed: boolean;
   radiusKm?: number;
 };
 
 export default function NearestVets({
   status,
   onAsk,
-  vets,
+  places,
   loading,
-  failed,
+  vetsFailed,
+  clinicsFailed,
   radiusKm = PROFESSIONAL_NEAR_RADIUS_KM,
 }: NearestVetsProps) {
   const asking = status === 'asking' || (status === 'ready' && loading);
+
+  /**
+   * One source down is a shorter list; both down is no answer at all.
+   *
+   * Told apart because they fail for unrelated reasons — our API and a volunteer-run
+   * Overpass mirror — and because a visitor who can see six clinics does not need a
+   * warning, only a note that the list is short of one half.
+   */
+  const bothFailed = vetsFailed && clinicsFailed;
+  const halfFailed = !bothFailed && (vetsFailed || clinicsFailed);
 
   return (
     <div className="rounded-3xl border border-blue-900/10 bg-white p-4 shadow-lg shadow-blue-900/5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-black tracking-tight text-slate-900">
           <MapPin className="h-4 w-4 text-blue-600" />
-          Vets nearest you
+          Nearest you
         </h2>
 
         {status !== 'unsupported' && (
@@ -144,8 +232,9 @@ export default function NearestVets({
       <div className="mt-3">
         {status === 'idle' && (
           <p className="text-xs leading-relaxed text-slate-500">
-            Share your location and we will rank Vetify&apos;s verified vets by how far away they
-            are. It is used to sort this list and nothing else — we do not store it. Rather not?{' '}
+            Share your location and we will rank every vet on the map by how far away they are —
+            Vetify&apos;s verified vets and the clinics listed on OpenStreetMap alike. It is used to
+            sort this list and nothing else — we do not store it. Rather not?{' '}
             <DirectoryLink>Browse the directory</DirectoryLink> by city instead.
           </p>
         )}
@@ -185,27 +274,51 @@ export default function NearestVets({
           <p className="text-xs font-semibold text-slate-500">Looking for vets near you…</p>
         )}
 
-        {status === 'ready' && !loading && failed && (
+        {status === 'ready' && !loading && bothFailed && (
           <p className="flex items-start gap-1.5 text-xs leading-relaxed text-slate-500">
             <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-500" />
-            <span>We could not reach the directory. Press the button to try again.</span>
+            <span>
+              We could not reach the directory or OpenStreetMap. Press the button to try again.
+            </span>
           </p>
         )}
 
-        {status === 'ready' && !loading && !failed && vets.length === 0 && (
+        {status === 'ready' && !loading && !bothFailed && places.length === 0 && (
           <p className="text-xs leading-relaxed text-slate-500">
-            No Vetify vet has pinned a location within {radiusKm} km of you yet. Our vets choose
-            whether to appear on the map, so there may well be one nearby who has not —{' '}
-            <DirectoryLink>search the directory</DirectoryLink> by city and province.
+            Nothing is on the map within {radiusKm} km of you. Our vets choose whether to appear
+            here, and OpenStreetMap only knows the clinics somebody has added —{' '}
+            <DirectoryLink>search the directory</DirectoryLink> by city and province, which does not
+            depend on either.
           </p>
         )}
 
-        {vets.length > 0 && !loading && (
+        {places.length > 0 && !loading && (
           <ul className="space-y-2">
-            {vets.map((vet) => (
-              <VetRow key={vet.id} vet={vet} />
-            ))}
+            {places.map((place) =>
+              place.source === 'vetify' ? (
+                <VetRow key={place.key} vet={place.vet} />
+              ) : (
+                <ClinicRow
+                  key={place.key}
+                  clinic={place.clinic}
+                  distanceMeters={place.distanceMeters}
+                />
+              )
+            )}
           </ul>
+        )}
+
+        {/* One half missing is a short list rather than no answer, so it is a footnote
+            under the rows and not a warning in place of them. */}
+        {status === 'ready' && !loading && halfFailed && (
+          <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400">
+            <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span>
+              {vetsFailed
+                ? 'Vetify’s own vets could not be loaded just now, so this list is only the clinics from OpenStreetMap.'
+                : 'OpenStreetMap could not be reached, so this list is only Vetify’s own verified vets.'}
+            </span>
+          </p>
         )}
       </div>
     </div>
