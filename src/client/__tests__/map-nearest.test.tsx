@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { NearbyPlace, OsmClinic } from '../components/map-prof-vet';
-import NearestVets, { type NearestVetsProps } from '../pages/map/_components/nearest-vets';
+import NearestVets, { type NearestVetsProps } from '../pages/map/_components/nearest-vet';
 import type { NearbyProfessional } from '../services/professionals.service';
 
 /**

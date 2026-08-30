@@ -1,5 +1,5 @@
-import type { MapUserLocation } from '@/components/vetmap';
 import type { MapVet, OsmClinic } from '@/components/map-prof-vet';
+import type { MapUserLocation } from '@/components/vetmap';
 import { Suspense, lazy, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 

@@ -51,13 +51,11 @@ export default function MapPage() {
           {/* Heading */}
           <div>
             <h1 className="text-4xl font-black tracking-tight leading-[1.1] text-slate-900 sm:text-5xl">
-              Find a vet
-              <br />
-              <span className="text-blue-600">near you.</span>
+              Find a vet <span className="text-blue-600">near you.</span>
             </h1>
             <p className="mt-4 text-base leading-relaxed text-slate-500 max-w-md">
-              Vetify&apos;s verified vets, plus veterinary clinics and pet care services sourced
-              live from OpenStreetMap — click any marker for details.
+              Vetify helps you track the nearest vet clinics and professional based on your
+              location. You can also explore the map to find more clinics and vets in your area.
             </p>
           </div>
 

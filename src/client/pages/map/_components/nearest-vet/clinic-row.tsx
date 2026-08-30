@@ -29,7 +29,7 @@ export function ClinicRow({
         )}
 
         <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold">
-          <span className="text-slate-400">Listed on OpenStreetMap · not verified by us</span>
+          <span className="text-slate-400">Listed on Map · not verified by us</span>
           {clinic.phone && (
             <a
               href={`tel:${clinic.phone}`}
@@ -45,7 +45,7 @@ export function ClinicRow({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-blue-700 hover:underline"
           >
-            Open in Maps
+            Open in Map
             <ExternalLink className="h-3 w-3" />
           </a>
         </span>

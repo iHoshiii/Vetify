@@ -1,5 +1,5 @@
-import type { MapUserLocation } from '@/components/vetmap';
 import { formatDistance, type MapVet } from '@/components/map-prof-vet';
+import type { MapUserLocation } from '@/components/vetmap';
 import { Suspense, lazy, useState } from 'react';
 
 const VetMap = lazy(() => import('@/components/vetmap'));
@@ -16,17 +16,6 @@ const OPEN_WORDS: Record<MapVet['availabilityStatus'], string> = {
   busy: 'Booked up',
   unavailable: 'Not taking bookings',
 };
-
-/**
- * The two cards floating over the preview.
- *
- * They used to be hard-coded — "Happy Paws Clinic ⭐️ 4.9 (120 reviews)" and a
- * "1.2 km away" nothing had measured — which is exactly what this feature makes real, so
- * they now hold the first two vets on the map. Ranked ones when a location has been
- * shared, and simply the first two published pins when it has not. If there are none,
- * there is nothing to float: an invented clinic in a shop window is worse than an empty
- * one.
- */
 function FloatingVetCard({
   vet,
   emoji,
@@ -67,16 +56,6 @@ function FloatingVetCard({
 export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewProps) {
   const [previewReady, setPreviewReady] = useState(false);
   const [first, second] = vets;
-
-  /**
-   * Where the still opens.
-   *
-   * Whoever is looking, once they have said. Before that the first pin the map is drawing,
-   * which is at worst a real vet somewhere; and with no pins yet, `VetMap`'s own default
-   * rather than a number invented here. It was a hard-coded street in Quezon City, which is
-   * two hundred kilometres from the vets this map serves — near enough to a real place to
-   * look deliberate, and the reason "use my location" read as sending somebody to Manila.
-   */
   const centre: [number, number] | undefined = userLocation
     ? [userLocation.latitude, userLocation.longitude]
     : first
@@ -147,13 +126,7 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
 
       {/* Caption below map */}
       <div className="flex items-center justify-between mt-4 px-1">
-        <p className="text-xs text-slate-400 font-medium">🐾 Vet clinics · Philippines</p>
-        <button
-          onClick={onExpand}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline underline-offset-4 transition-colors"
-        >
-          Open full map →
-        </button>
+        <p className="text-xs text-slate-400 font-medium">🐾 Vet clinics in the Philippines</p>
       </div>
     </>
   );

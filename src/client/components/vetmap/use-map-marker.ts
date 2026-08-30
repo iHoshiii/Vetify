@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import type { MapUserLocation } from '@/types/vetmap';
-import type { MapVet, OsmClinic } from '../map-vets';
+import type { MapVet, OsmClinic } from '@/types/map-prof-vet';
 import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from '../marker-icon';
 import { clinicPopupHtml, escapeHtml, interceptLinks, vetPopupHtml } from './map-popup';
 

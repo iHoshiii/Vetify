@@ -34,7 +34,7 @@ export default function NearestVets({
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-sm font-black tracking-tight text-slate-900">
           <MapPin className="h-4 w-4 text-blue-600" />
-          Nearest you
+          Nearest Vet From You
         </h2>
 
         {status !== 'unsupported' && (
@@ -49,7 +49,7 @@ export default function NearestVets({
             ) : (
               <Crosshair className="h-3.5 w-3.5" />
             )}
-            {status === 'ready' ? 'Update' : asking ? 'Locating…' : 'Use my location'}
+            {status === 'ready' ? 'Update' : asking ? 'Locating…' : 'Scan my location'}
           </button>
         )}
       </div>
@@ -70,8 +70,8 @@ export default function NearestVets({
             <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-400" />
             <span>
               {vetsFailed
-                ? 'Vetify’s own vets could not be loaded just now, so this list is only the clinics from OpenStreetMap.'
-                : 'OpenStreetMap could not be reached, so this list is only Vetify’s own verified vets.'}
+                ? 'Vetify’s own vets could not be loaded just now, so this list is only the clinics from the Map.'
+                : 'Map could not be reached, so this list is only Vetify’s own verified vets.'}
             </span>
           </p>
         )}
