@@ -4,12 +4,16 @@ import {
   professionalApplySchema,
   professionalInquirySchema,
   professionalListQuerySchema,
+  professionalMapUpdateSchema,
+  professionalNearQuerySchema,
   professionalProfileUpdateSchema,
   type AppointmentSlotsQuery,
   type ProfessionalApply,
   type ProfessionalInquiry,
   type ProfessionalInviteRefusal,
   type ProfessionalListQuery,
+  type ProfessionalMapUpdate,
+  type ProfessionalNearQuery,
   type ProfessionalProfileUpdate,
 } from '@shared/schemas';
 import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
@@ -25,6 +29,7 @@ import {
   findProfessionalById,
   findProfessionalByUser,
   findProfessionalCapture,
+  findProfessionalsNear,
   findVerifiedProfessionals,
   findHeldSlots,
   findUserById,
@@ -36,9 +41,11 @@ import {
   isValidObjectId,
   recordActivity,
   toInviteSummary,
+  toNearbyProfessional,
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
+  updateAddressMap,
   updateProfessionalProfile,
   type ProfessionalCaptureIds,
   type ProfessionalProfilePatch,
@@ -190,6 +197,88 @@ router.patch(
 
     const updated = await updateProfessionalProfile(application._id, patch);
     if (!updated) return fail(res, 500, 'Failed to update professional profile');
+
+    const captures = await findCaptureIds(updated._id);
+    ok(res, toOwnProfessional(updated, captures));
+  }
+);
+
+/**
+ * PATCH /api/v1/professionals/me/map-location
+ *
+ * Where one of a vet's addresses sits on the public map, and whether it is there at
+ * all. One address per request, named by kind, so a vet who publishes their clinic and
+ * keeps their home off the map does exactly that.
+ *
+ * Its own route rather than another field on `/me/profile`, because this writes one
+ * element of the addresses array and that handler builds a patch of top-level fields.
+ * Keeping them apart is what lets the write below name the two pin fields and nothing
+ * else: the addresses themselves were checked against a register and a device, and no
+ * request through here can reach a street line.
+ *
+ * A partial merge like its neighbour. An absent `pin` leaves the placement alone — so
+ * flipping the switch does not require re-sending coordinates — and an absent
+ * `showOnMap` leaves the publication alone, which is what lets the picker save a
+ * dragged pin without also deciding to publish it.
+ */
+router.patch(
+  '/me/map-location',
+  optionalAuth,
+  signedIn,
+  validate(professionalMapUpdateSchema),
+  async (req, res) => {
+    const actor = actorOf(req);
+    const body = req.body as ProfessionalMapUpdate;
+
+    const application = await findProfessionalByUser(actor._id);
+    if (!application) return failReason(res, 404, 'You have not applied yet.', 'no-application');
+
+    if (application.status !== 'verified') {
+      return failReason(
+        res,
+        403,
+        'Your licence is still under review, so there is nothing to publish yet.',
+        'not-verified'
+      );
+    }
+
+    // The kind has to be one this vet actually filed. A vet who works from home has no
+    // clinic address, and inventing one here would put a pin on a place nobody checked.
+    const current = (application.addresses ?? []).find((address) => address.kind === body.kind);
+    if (!current) {
+      return failReason(
+        res,
+        404,
+        `You have no ${body.kind} address on your application.`,
+        'no-address'
+      );
+    }
+
+    // The half the request did not carry, read off the stored address. Merged here so
+    // the repository is handed a complete pair and derives the indexed point from it —
+    // the same division of labour the appointments service uses for the slot hold.
+    const pin =
+      body.pin === undefined
+        ? current.mapPin && {
+            latitude: current.mapPin.latitude,
+            longitude: current.mapPin.longitude,
+          }
+        : body.pin;
+    const showOnMap = body.showOnMap ?? Boolean(current.mapPoint);
+
+    // A switch that silently does nothing is worse than a refusal. There is no sensible
+    // pin to invent: the verification fix is not one the vet chose to publish, and the
+    // centre of their city is a lie about where they work.
+    if (showOnMap && !pin) {
+      return failReason(res, 400, 'Pin your location on the map before publishing it.', 'no-pin');
+    }
+
+    const updated = await updateAddressMap(application._id, {
+      kind: body.kind,
+      pin: pin ?? null,
+      showOnMap,
+    });
+    if (!updated) return fail(res, 500, 'Failed to update your map location');
 
     const captures = await findCaptureIds(updated._id);
     ok(res, toOwnProfessional(updated, captures));
@@ -452,6 +541,40 @@ async function listedProfessional(id: string) {
     },
   };
 }
+
+/**
+ * GET /api/v1/professionals/near?lat=&lng=&radiusKm=&limit=&available=
+ *
+ * The verified vets nearest a point, nearest first, with how far away each one is.
+ *
+ * Registered above `/:id` deliberately: Express matches in order, so the param route
+ * would otherwise take "near" for an id and answer 404 for it.
+ *
+ * Public, like the directory it ranks — this is the same rows in a different order, and
+ * a pet owner should not have to sign in to find out who is nearby. Only vets who put
+ * a pin on the map and switched it on are in the answer at all; the rest are absent
+ * because their coordinates are absent from the index, not because a filter here
+ * remembered to exclude them.
+ *
+ * The caller's own coordinates are used to answer and then dropped. Nothing writes them
+ * and nothing logs them: knowing where somebody stood while searching is not something
+ * this service needs to keep.
+ */
+router.get('/near', validateQuery(professionalNearQuerySchema), async (req, res) => {
+  const query = req.validatedQuery as ProfessionalNearQuery;
+
+  const items = await findProfessionalsNear({
+    latitude: query.lat,
+    longitude: query.lng,
+    radiusKm: query.radiusKm,
+    limit: query.limit,
+    available: query.available,
+  });
+
+  // The radius comes back with the answer so an empty list can say what was searched
+  // rather than leaving a screen to guess at the number it asked with.
+  ok(res, { items: items.map(toNearbyProfessional), radiusKm: query.radiusKm });
+});
 
 /**
  * GET /api/v1/professionals/:id

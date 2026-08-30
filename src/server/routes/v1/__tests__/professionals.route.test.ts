@@ -883,3 +883,310 @@ describe('GET /api/v1/professionals/me', () => {
     expect(res.body.captures).toEqual(filed.body.captures);
   });
 });
+
+/**
+ * The two addresses a pin gets dropped on: a clinic that was verified with a device
+ * reading, and a house that was not.
+ *
+ * The clinic's `fix` is the point of the fixture. It is the material the tests below
+ * prove never leaves the server, and having one on the record is the only way an
+ * assertion that it is absent from a response can mean anything.
+ */
+const CLINIC_ADDRESS = {
+  kind: 'clinic' as const,
+  line1: '12 Mabini Street',
+  city: 'Cebu City',
+  province: 'Cebu',
+  postalCode: '6000',
+  fix: {
+    latitude: 10.3157,
+    longitude: 123.8854,
+    accuracyMeters: 8,
+    capturedAt: '2026-01-05T02:00:00.000Z',
+  },
+};
+
+const HOME_ADDRESS = {
+  kind: 'home' as const,
+  line1: '44 Sikatuna Street',
+  city: 'Dumaguete',
+  province: 'Negros Oriental',
+  postalCode: '6200',
+  fix: null,
+};
+
+/** A verified vet, the token that proves it, and the application behind both. */
+async function onTheRegister(overrides: Partial<ProfessionalAttrs> = {}) {
+  const { user, token } = await account('professional');
+  const filed = await seed(user._id, { addresses: [CLINIC_ADDRESS, HOME_ADDRESS], ...overrides });
+
+  const application = await updateProfessional(filed._id, {
+    status: 'verified',
+    reviewedBy: new ObjectId(),
+    reviewedAt: new Date(),
+  });
+
+  if (!application) throw new Error('the fixture failed to verify its own application');
+  return { user, token, application };
+}
+
+/** The picker's save, as the console page sends it. */
+function pinAt(auth: string, body: Record<string, unknown>) {
+  return request(app)
+    .patch('/api/v1/professionals/me/map-location')
+    .set('Authorization', `Bearer ${auth}`)
+    .send(body);
+}
+
+/** One address off a response body, by kind. */
+function shown(body: { addresses?: Array<Record<string, unknown>> }, kind: string) {
+  return (body.addresses ?? []).find((address) => address.kind === kind);
+}
+
+/** Somewhere in Cebu City, used as the placement in most of what follows. */
+const HERE = { latitude: 10.3157, longitude: 123.8854 };
+
+describe('PATCH /api/v1/professionals/me/map-location', () => {
+  it('turns an anonymous caller away', async () => {
+    const res = await request(app)
+      .patch('/api/v1/professionals/me/map-location')
+      .send({ kind: 'clinic', pin: HERE });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('says there is nothing to publish while the licence is still under review', async () => {
+    const { user, token } = await account('professional');
+    await seed(user._id, { addresses: [CLINIC_ADDRESS] });
+
+    const res = await pinAt(token, { kind: 'clinic', pin: HERE });
+
+    expect(res.status).toBe(403);
+    expect(res.body.reason).toBe('not-verified');
+  });
+
+  it('says so plainly when the caller has not applied at all', async () => {
+    const stranger = await account();
+
+    const res = await pinAt(stranger.token, { kind: 'clinic', pin: HERE });
+
+    expect(res.status).toBe(404);
+    expect(res.body.reason).toBe('no-application');
+  });
+
+  it('refuses a kind the vet has no address of', async () => {
+    const { token } = await onTheRegister({ addresses: [CLINIC_ADDRESS] });
+
+    const res = await pinAt(token, { kind: 'home', pin: HERE });
+
+    // A vet who works out of a clinic has no house on file, and inventing one here
+    // would put a pin on a place nobody checked.
+    expect(res.status).toBe(404);
+    expect(res.body.reason).toBe('no-address');
+  });
+
+  it('refuses the switch when there is no pin to publish', async () => {
+    const { token } = await onTheRegister();
+
+    const res = await pinAt(token, { kind: 'clinic', showOnMap: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body.reason).toBe('no-pin');
+  });
+
+  it('saves a placement without publishing it', async () => {
+    const { token } = await onTheRegister();
+
+    const res = await pinAt(token, { kind: 'clinic', pin: HERE });
+
+    expect(res.status).toBe(200);
+    // Dragging the marker and deciding to be findable are two separate acts. A save
+    // that published on its own would make the switch beside it a decoration.
+    expect(shown(res.body, 'clinic')).toMatchObject({ mapPin: HERE, showOnMap: false });
+    expect(shown(res.body, 'home')).toMatchObject({ mapPin: null, showOnMap: false });
+  });
+
+  it('publishes an already-placed pin from the switch alone', async () => {
+    const { token } = await onTheRegister();
+    await pinAt(token, { kind: 'clinic', pin: HERE });
+
+    const res = await pinAt(token, { kind: 'clinic', showOnMap: true });
+
+    // No coordinates in the request: the stored half is read off the address, which
+    // is what lets the switch be a switch rather than a second placement.
+    expect(res.status).toBe(200);
+    expect(shown(res.body, 'clinic')).toMatchObject({ mapPin: HERE, showOnMap: true });
+  });
+
+  it('keeps the placement when the vet takes the address back off the map', async () => {
+    const { token } = await onTheRegister();
+    await pinAt(token, { kind: 'clinic', pin: HERE, showOnMap: true });
+
+    const res = await pinAt(token, { kind: 'clinic', showOnMap: false });
+
+    // The marker stays where it was left, so turning the map back on next month is a
+    // switch and not another afternoon of dragging.
+    expect(shown(res.body, 'clinic')).toMatchObject({ mapPin: HERE, showOnMap: false });
+  });
+
+  it('leaves the address itself alone, and the reading it was verified with', async () => {
+    const { token, application } = await onTheRegister();
+
+    const res = await pinAt(token, { kind: 'clinic', pin: HERE, showOnMap: true });
+
+    // The narrowness of the write is the point of the route existing: the addresses
+    // were checked against a register and a device, and nothing that arrives here can
+    // reach a street line.
+    expect(shown(res.body, 'clinic')).toMatchObject({
+      line1: application.addresses[0].line1,
+      city: 'Cebu City',
+      postalCode: '6000',
+    });
+    expect(shown(res.body, 'home')).toMatchObject({ line1: '44 Sikatuna Street' });
+  });
+
+  it('refuses a coordinate that is not one', async () => {
+    const { token } = await onTheRegister();
+
+    const res = await pinAt(token, { kind: 'clinic', pin: { latitude: 91, longitude: 123.9 } });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues).toBeTruthy();
+  });
+});
+
+describe('what a stranger reads off a published pin', () => {
+  it('publishes the pin for a switched-on address and nothing for the other', async () => {
+    const { token, application } = await onTheRegister();
+    await pinAt(token, { kind: 'clinic', pin: HERE, showOnMap: true });
+    await pinAt(token, { kind: 'home', pin: { latitude: 9.3, longitude: 123.3 } });
+
+    const res = await request(app).get(`/api/v1/professionals/${application._id.toString()}`);
+
+    expect(res.status).toBe(200);
+    expect(shown(res.body, 'clinic')).toMatchObject({ mapPin: HERE });
+    // Placed and not published. The public shape is read off the indexed point rather
+    // than off the pin, so this is absent by construction and not by a filter.
+    expect(shown(res.body, 'home')!.mapPin).toBeNull();
+  });
+
+  it('never publishes the reading an address was verified with', async () => {
+    const { token, application } = await onTheRegister();
+    await pinAt(token, { kind: 'clinic', pin: HERE, showOnMap: true });
+
+    const one = await request(app).get(`/api/v1/professionals/${application._id.toString()}`);
+    const list = await request(app).get('/api/v1/professionals');
+
+    // The clinic address has a fix on the record, so its absence here is a decision the
+    // transform makes rather than an accident of the fixture.
+    expect(shown(one.body, 'clinic')!.fix).toBeUndefined();
+    expect(shown(list.body.items[0], 'clinic')!.fix).toBeUndefined();
+    expect(shown(list.body.items[0], 'clinic')).toMatchObject({ mapPin: HERE });
+  });
+
+  it('stops publishing the pin the moment the switch goes off', async () => {
+    const { token, application } = await onTheRegister();
+    await pinAt(token, { kind: 'clinic', pin: HERE, showOnMap: true });
+    await pinAt(token, { kind: 'clinic', showOnMap: false });
+
+    const res = await request(app).get(`/api/v1/professionals/${application._id.toString()}`);
+
+    expect(shown(res.body, 'clinic')!.mapPin).toBeNull();
+  });
+});
+
+/** A vet on the map, `northKm` north of HERE. */
+async function pinnedNorthOf(northKm: number, overrides: Partial<ProfessionalAttrs> = {}) {
+  const { token, application } = await onTheRegister({ addresses: [CLINIC_ADDRESS], ...overrides });
+
+  await pinAt(token, {
+    kind: 'clinic',
+    // A degree of latitude is the same length everywhere, so offsetting north keeps
+    // the expected distance a multiplication rather than a spherical calculation.
+    pin: { latitude: HERE.latitude + (northKm * 1000) / 111_195, longitude: HERE.longitude },
+    showOnMap: true,
+  });
+
+  return { token, application };
+}
+
+function near(params: Record<string, string | number> = {}) {
+  const query = new URLSearchParams({
+    lat: String(HERE.latitude),
+    lng: String(HERE.longitude),
+    ...Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)])),
+  });
+
+  return request(app).get(`/api/v1/professionals/near?${query.toString()}`);
+}
+
+describe('GET /api/v1/professionals/near', () => {
+  it('answers instead of being taken for an id', async () => {
+    // Express matches in order, so this is a test about the route table: `/:id` sits
+    // below it and would otherwise answer 404 for the word "near".
+    const res = await near();
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ items: [], radiusKm: 50 });
+  });
+
+  it('ranks the nearest first, in metres', async () => {
+    await pinnedNorthOf(9, { clinicName: 'Nine north' });
+    await pinnedNorthOf(2, { clinicName: 'Two north' });
+
+    const res = await near();
+
+    expect(res.body.items.map((item: { clinicName: string }) => item.clinicName)).toEqual([
+      'Two north',
+      'Nine north',
+    ]);
+    expect(res.body.items[0].distanceMeters).toBeGreaterThan(1900);
+    expect(res.body.items[0].distanceMeters).toBeLessThan(2100);
+  });
+
+  it('leaves out a vet who placed a pin and never turned the switch on', async () => {
+    const { token } = await onTheRegister({ addresses: [CLINIC_ADDRESS] });
+    await pinAt(token, { kind: 'clinic', pin: HERE });
+
+    const res = await near();
+
+    // Absent because the coordinates are absent from the index, not because a filter
+    // here remembered to exclude them.
+    expect(res.body.items).toEqual([]);
+  });
+
+  it('keeps the search inside the radius it was given', async () => {
+    await pinnedNorthOf(80, { clinicName: 'Too far' });
+    await pinnedNorthOf(4, { clinicName: 'Close enough' });
+
+    const res = await near({ radiusKm: 10 });
+
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].clinicName).toBe('Close enough');
+    expect(res.body.radiusKm).toBe(10);
+  });
+
+  it('refuses a radius past the cap rather than quietly clamping it', async () => {
+    const res = await near({ radiusKm: 5000 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues.radiusKm).toBeTruthy();
+  });
+
+  it('refuses a coordinate that is not on the planet', async () => {
+    const res = await request(app).get('/api/v1/professionals/near?lat=200&lng=123.9');
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues.lat).toBeTruthy();
+  });
+
+  it('publishes the pin and no licence material with each result', async () => {
+    await pinnedNorthOf(1);
+
+    const res = await near();
+
+    expect(res.body.items[0].addresses[0].mapPin).toBeTruthy();
+    expect(res.body.items[0].addresses[0].fix).toBeUndefined();
+    expect(res.body.items[0].licenseNumber).toBeUndefined();
+  });
+});
