@@ -19,15 +19,17 @@ import type { MyLocationStatus } from './use-my-location';
  *
  * This is the half of the hero a phone can see — the map column beside it is
  * `hidden lg:block` — so it has to work on its own: a button that asks for a location,
- * and then everything on the map nearest it, nearest first.
+ * and then a short list of what is near it: the vets registered with Vetify first, then
+ * the clinics that are only on a public map, each group nearest first. `rankNearby` makes
+ * that decision and this panel obeys it — the order arrives already made.
  *
- * Everything, from both sources: Vetify's own verified vets, ranked by the server, and
- * the OpenStreetMap clinics the map has always drawn. Ranking only ours would have been
- * the easier list and the wrong answer to "find a vet near you" — a stranger with a sick
- * animal wants the nearest door, and the honest thing is to show them all of them and be
- * clear about which ones we stand behind. So the two are visibly different rows: one has
- * a profile, a rate and a booking link, and the other says plainly that it is a listing
- * from a public map and offers directions.
+ * Both sources, though not on equal footing: Vetify's own verified vets, ranked by the
+ * server, and the OpenStreetMap clinics the map has always drawn. Listing only ours would
+ * have been the easier answer and the wrong one to "find a vet near you" — a stranger with
+ * a sick animal wants a door they can actually get to, so the scraped ones are here too,
+ * under ours and labelled for what they are. Which is why the rows read differently: one
+ * has a profile, a rate and a button that books an appointment, and the other says plainly
+ * that it is a listing from a public map and offers directions and nothing else.
  *
  * Most of what follows is the refusals. Asking for somebody's location opens a browser
  * prompt, and the majority of the answers to a prompt are not "yes": they can decline,

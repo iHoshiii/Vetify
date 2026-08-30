@@ -1,3 +1,4 @@
+import { MAP_NEAREST_LIMIT } from '@shared/limits';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -193,17 +194,18 @@ describe('merging the two sources into one list', () => {
 
   const OPTIONS = { from, pins: [] as MapVet[], radiusKm: 50, limit: 10 };
 
-  it('interleaves both sources by distance', () => {
+  it('groups ours above theirs, nearest first inside each group', () => {
     const places = rankNearby({
       ...OPTIONS,
-      professionals: [ranked(1200)],
+      professionals: [ranked(9000), ranked(1200, { id: 'a2' })],
       clinics: [north(4100, 'Bambang Vet'), north(300, 'Solano Pet Care')],
     });
 
-    expect(places.map((place) => place.source)).toEqual(['osm', 'vetify', 'osm']);
-    expect(places[0].source === 'osm' && places[0].clinic.name).toBe('Solano Pet Care');
-    expect(places[0].distanceMeters).toBeCloseTo(300, 0);
-    expect(places[2].distanceMeters).toBeCloseTo(4100, 0);
+    expect(places.map((place) => place.source)).toEqual(['vetify', 'vetify', 'osm', 'osm']);
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([
+      1200, 9000, 300, 4100,
+    ]);
+    expect(places[2].source === 'osm' && places[2].clinic.name).toBe('Solano Pet Care');
   });
 
   it("takes the server's distance rather than recomputing it", () => {
@@ -256,21 +258,29 @@ describe('merging the two sources into one list', () => {
     expect(places[0].source === 'osm' && places[0].clinic.name).toBe('Bambang Vet');
   });
 
-  it('puts ours first when the two are the same distance apart', () => {
-    // Measured rather than assumed: `north(300)` is 300 m to within a rounding error, and
-    // an exact tie is the only thing that exercises the tie-break.
-    const theirs = north(300, 'Somebody Else');
-
+  it('keeps one of ours above a much nearer clinic, which is the point of grouping', () => {
+    // The uncomfortable case, asserted rather than left to be discovered: a registered vet
+    // right at the edge of the radius still outranks a scraped clinic three streets away.
     const places = rankNearby({
       ...OPTIONS,
-      professionals: [ranked(metersBetween(from, theirs))],
-      clinics: [theirs],
+      professionals: [ranked(48_000)],
+      clinics: [north(300, 'Somebody Else')],
     });
 
     expect(places.map((place) => place.source)).toEqual(['vetify', 'osm']);
   });
 
-  it('keeps only as many as it was asked for', () => {
+  it('still orders ours among themselves by the distance the server gave', () => {
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [ranked(4000), ranked(120, { id: 'a2' }), ranked(2000, { id: 'a3' })],
+      clinics: [],
+    });
+
+    expect(places.map((place) => place.distanceMeters)).toEqual([120, 2000, 4000]);
+  });
+
+  it('keeps only as many as it was asked for, ours taking the slots first', () => {
     const places = rankNearby({
       ...OPTIONS,
       limit: 3,
@@ -279,6 +289,22 @@ describe('merging the two sources into one list', () => {
     });
 
     expect(places).toHaveLength(3);
-    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([100, 200, 400]);
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([1200, 100, 200]);
+  });
+
+  it('gives every slot to ours when there are enough of them to fill the list', () => {
+    // What MAP_NEAREST_LIMIT does on a busy map: five registered vets in range and the
+    // scraped clinics are off the list, wherever they are. The map still draws them.
+    const places = rankNearby({
+      ...OPTIONS,
+      limit: MAP_NEAREST_LIMIT,
+      professionals: [1000, 2000, 3000, 4000, 5000, 6000].map((meters, index) =>
+        ranked(meters, { id: `a${index}` })
+      ),
+      clinics: [north(300, 'Right There')],
+    });
+
+    expect(places).toHaveLength(MAP_NEAREST_LIMIT);
+    expect(places.every((place) => place.source === 'vetify')).toBe(true);
   });
 });

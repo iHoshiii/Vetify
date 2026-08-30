@@ -1,7 +1,7 @@
 import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-vets';
 import { useOsmClinics } from '@/hooks/useOsmClinics';
 import { useNearbyProfessionals, useProfessionals } from '@/hooks/useProfessionals';
-import { PROFESSIONAL_NEAR_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
+import { MAP_NEAREST_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import { Map as MapIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -62,12 +62,16 @@ export default function MapPage() {
   }, [directory.data, nearby.data]);
 
   /**
-   * The panel's list: both sources, nearest first.
+   * The panel's list: both sources, ours first and nearest first within each.
    *
    * Empty without a location, because every row in it is a distance and there is nothing
    * to measure from. `vets` rather than only the ranked answer is handed in as the dedup
    * set, so a clinic that already has a Vetify pin on it is dropped here exactly as the
    * map drops it — one door, one row, ours.
+   *
+   * Cut to `MAP_NEAREST_LIMIT` rather than to the length of the query's answer: the ranked
+   * request brings back more than the panel shows, and the surplus is not wasted — every
+   * one of them is a pin on the map with a distance in its popup.
    */
   const places = useMemo<NearbyPlace[]>(() => {
     if (!location) return [];
@@ -78,7 +82,7 @@ export default function MapPage() {
       clinics: clinics.data ?? [],
       pins: vets,
       radiusKm: nearby.data?.radiusKm ?? PROFESSIONAL_NEAR_RADIUS_KM,
-      limit: PROFESSIONAL_NEAR_LIMIT,
+      limit: MAP_NEAREST_LIMIT,
     });
   }, [location, nearby.data, clinics.data, vets]);
 

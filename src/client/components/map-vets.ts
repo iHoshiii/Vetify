@@ -209,7 +209,19 @@ export type NearbyPlace =
   | { source: 'osm'; key: string; distanceMeters: number; clinic: OsmClinic };
 
 /**
- * The two sources, merged into one list, nearest first.
+ * The two sources, merged into one list: ours first, and nearest first within each.
+ *
+ * Not one run of distances, because the two are not comparable answers. A vet registered
+ * with Vetify has published a clinic or home pin, had a licence checked, and can be booked
+ * from the row itself; an OpenStreetMap clinic is a name somebody typed into a public map
+ * and a coordinate nobody has stood on. Sorting the two together lets the second kind take
+ * the top of a short list, so which source it is, is the first key and the distance is the
+ * second.
+ *
+ * The cost of that is real and worth naming rather than discovering: with a small `limit`,
+ * a clinic three streets away can be pushed off the list entirely by one of ours forty
+ * kilometres out. The map beside the panel still draws every one of them, which is where
+ * "what about that one right there" gets answered.
  *
  * Vetify's vets arrive already ranked by `$geoNear`, so their distance is the server's and
  * is not recomputed — nothing good comes of a list whose numbers disagree with the
@@ -254,9 +266,9 @@ export function rankNearby(input: {
   return [...ours, ...theirs]
     .sort(
       (a, b) =>
-        // Ours first on a tie: at the same distance the bookable one is the better answer.
-        a.distanceMeters - b.distanceMeters ||
-        Number(a.source === 'osm') - Number(b.source === 'osm')
+        // Registered with us first, however far away, and then nearest within the group.
+        Number(a.source === 'osm') - Number(b.source === 'osm') ||
+        a.distanceMeters - b.distanceMeters
     )
     .slice(0, input.limit);
 }
