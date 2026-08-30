@@ -1,4 +1,4 @@
-import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-vets';
+import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-prof-vet';
 import { useOsmClinics } from '@/hooks/useOsmClinics';
 import { useNearbyProfessionals, useProfessionals } from '@/hooks/useProfessionals';
 import { MAP_NEAREST_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';

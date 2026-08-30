@@ -1,4 +1,4 @@
-import { formatDistance } from '@/components/map-vets';
+import { formatDistance } from '@/components/map-prof-vet';
 import type { NearbyProfessional } from '@/services/professionals.service';
 import { CalendarPlus, Stethoscope } from 'lucide-react';
 import { Link } from 'react-router-dom';

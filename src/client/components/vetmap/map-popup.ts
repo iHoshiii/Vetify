@@ -1,12 +1,4 @@
 import { formatDistance, type MapVet, type OsmClinic } from '../map-vets';
-
-/**
- * Names typed by somebody else, made safe to put in an HTML string.
- *
- * Both popups are built as markup because that is what Leaflet's `bindPopup` takes, and
- * both carry text this application did not write — OpenStreetMap tags on one side, a
- * vet's own profile on the other. The clinic half was interpolating them raw.
- */
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -52,14 +44,6 @@ export function clinicPopupHtml(clinic: OsmClinic): string {
               </div>
             </div>`;
 }
-
-/**
- * A Vetify vet: what a stranger came to the map for, and the two links only we have.
- *
- * The distance is shown when the pin arrived from a ranked answer and left out when it
- * did not, rather than computed here — a number the server did not calculate would be a
- * second definition of "how far away".
- */
 export function vetPopupHtml(vet: MapVet): string {
   const heading = escapeHtml(vet.clinicName ?? vet.name);
   const subheading = vet.clinicName ? escapeHtml(vet.name) : null;
@@ -101,14 +85,6 @@ export function vetPopupHtml(vet: MapVet): string {
               </div>
             </div>`;
 }
-
-/**
- * Makes the two links inside a Vetify popup navigate without reloading the page.
- *
- * The anchors carry real `href`s, because open-in-a-new-tab and middle click have to
- * keep working; this hands a plain left click to the router instead, and only when the
- * map was given somewhere to send it.
- */
 export function interceptLinks(
   root: HTMLElement | null | undefined,
   navigate?: (path: string) => void

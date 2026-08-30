@@ -1,4 +1,4 @@
-import type { OsmClinic } from '@/components/map-vets';
+import type { OsmClinic } from '@/components/map-prof-vet';
 
 /**
  * Veterinary clinics as OpenStreetMap has them, for the whole of the Philippines.

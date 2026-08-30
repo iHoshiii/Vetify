@@ -1,5 +1,5 @@
 import type { MapUserLocation } from '@/components/vetmap';
-import type { MapVet, OsmClinic } from '@/components/map-vets';
+import type { MapVet, OsmClinic } from '@/components/map-prof-vet';
 import MapModal from './map-modals';
 import MapPreview from './map-preview';
 

@@ -1,4 +1,4 @@
-import { formatDistance, type NearbyPlace, type OsmClinic } from '@/components/map-vets';
+import { formatDistance, type NearbyPlace, type OsmClinic } from '@/components/map-prof-vet';
 import type { NearbyProfessional } from '@/services/professionals.service';
 import { PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import {

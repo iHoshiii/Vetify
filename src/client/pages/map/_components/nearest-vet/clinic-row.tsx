@@ -1,4 +1,4 @@
-import { formatDistance, type OsmClinic } from '@/components/map-vets';
+import { formatDistance, type OsmClinic } from '@/components/map-prof-vet';
 import { ExternalLink, MapPin, Phone } from 'lucide-react';
 
 export function ClinicRow({

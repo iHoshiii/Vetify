@@ -1,5 +1,5 @@
 import type { MapUserLocation } from '@/components/vetmap';
-import { formatDistance, type MapVet } from '@/components/map-vets';
+import { formatDistance, type MapVet } from '@/components/map-prof-vet';
 import { Suspense, lazy, useState } from 'react';
 
 const VetMap = lazy(() => import('@/components/vetmap'));

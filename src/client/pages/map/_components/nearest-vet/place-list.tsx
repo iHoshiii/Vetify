@@ -1,4 +1,4 @@
-import type { NearbyPlace } from '@/components/map-vets';
+import type { NearbyPlace } from '@/components/map-prof-vet';
 import { ClinicRow } from './clinic-row';
 import { VetRow } from './vet-row';
 

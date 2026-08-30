@@ -1,4 +1,4 @@
-import type { NearbyPlace } from '@/components/map-vets';
+import type { NearbyPlace } from '@/components/map-prof-vet';
 import { PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import { AlertTriangle, Crosshair, Loader2, MapPin } from 'lucide-react';
 import type { MyLocationStatus } from '../use-my-location';
