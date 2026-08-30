@@ -68,6 +68,21 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
   const [previewReady, setPreviewReady] = useState(false);
   const [first, second] = vets;
 
+  /**
+   * Where the still opens.
+   *
+   * Whoever is looking, once they have said. Before that the first pin the map is drawing,
+   * which is at worst a real vet somewhere; and with no pins yet, `VetMap`'s own default
+   * rather than a number invented here. It was a hard-coded street in Quezon City, which is
+   * two hundred kilometres from the vets this map serves — near enough to a real place to
+   * look deliberate, and the reason "use my location" read as sending somebody to Manila.
+   */
+  const centre: [number, number] | undefined = userLocation
+    ? [userLocation.latitude, userLocation.longitude]
+    : first
+    ? [first.latitude, first.longitude]
+    : undefined;
+
   return (
     <>
       <div
@@ -115,12 +130,11 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
           <Suspense fallback={null}>
             {/* Vetify's own pins and no clinics passed: this is a still behind two
                 cards, where six hundred scraped markers would be six hundred nobody
-                can read. It centres on whoever is looking once they say. */}
+                can read. It centres on whoever is looking once they say — which is a
+                promise `VetMap` now keeps, having built the map before they said. */}
             <VetMap
               zoom={userLocation ? 14 : 15}
-              center={
-                userLocation ? [userLocation.latitude, userLocation.longitude] : [14.64, 121.05]
-              }
+              center={centre}
               showOverlay={false}
               interactive={false}
               vets={vets}
