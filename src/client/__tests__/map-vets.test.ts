@@ -292,6 +292,22 @@ describe('merging the two sources into one list', () => {
     expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([1200, 100, 200]);
   });
 
+  it('returns what it has when that is fewer than the limit, padding nothing', () => {
+    // The other half of "the top five nearest": five when there are more than five, and
+    // two when there are two. `slice` is what makes that true and it never pads, but the
+    // phrasing is the kind that invites a fixed-length list of five with three blanks in
+    // it, so the rule is pinned here rather than left to be inferred from the method.
+    const places = rankNearby({
+      ...OPTIONS,
+      limit: MAP_NEAREST_LIMIT,
+      professionals: [ranked(1200)],
+      clinics: [north(300, 'Solano Pet Care')],
+    });
+
+    expect(places).toHaveLength(2);
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([1200, 300]);
+  });
+
   it('gives every slot to ours when there are enough of them to fill the list', () => {
     // What MAP_NEAREST_LIMIT does on a busy map: five registered vets in range and the
     // scraped clinics are off the list, wherever they are. The map still draws them.
