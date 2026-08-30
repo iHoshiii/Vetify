@@ -9,7 +9,7 @@ import InteractiveMap from './_components/interactive-map/map-official';
 import NearestVets from './_components/nearest-vet';
 import { useMyLocation } from './_components/use-my-location';
 
-const MAP_PIN_LIMIT = 50;
+const MAP_PIN_LIMIT = 20;
 
 export default function MapPage() {
   const [expanded, setExpanded] = useState(false);

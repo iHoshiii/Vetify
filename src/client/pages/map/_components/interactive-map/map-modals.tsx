@@ -1,9 +1,9 @@
-import type { MapUserLocation } from '@/components/VetMap';
+import type { MapUserLocation } from '@/components/vetmap';
 import type { MapVet, OsmClinic } from '@/components/map-vets';
 import { Suspense, lazy, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const VetMap = lazy(() => import('@/components/VetMap'));
+const VetMap = lazy(() => import('@/components/vetmap'));
 
 interface MapModalProps {
   onClose: () => void;

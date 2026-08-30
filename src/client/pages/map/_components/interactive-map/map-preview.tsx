@@ -1,8 +1,8 @@
-import type { MapUserLocation } from '@/components/VetMap';
+import type { MapUserLocation } from '@/components/vetmap';
 import { formatDistance, type MapVet } from '@/components/map-vets';
 import { Suspense, lazy, useState } from 'react';
 
-const VetMap = lazy(() => import('@/components/VetMap'));
+const VetMap = lazy(() => import('@/components/vetmap'));
 
 interface MapPreviewProps {
   onExpand: () => void;
