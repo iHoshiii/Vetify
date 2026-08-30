@@ -85,6 +85,7 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
         city: 'Cebu City',
         province: 'Cebu',
         postalCode: '6000',
+        mapPin: null,
       },
     ],
     businessPhone: null,

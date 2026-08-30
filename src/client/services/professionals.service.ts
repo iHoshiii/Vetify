@@ -8,6 +8,7 @@ import type {
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalInviteRefusal,
+  ProfessionalMapUpdateInput,
   ProfessionalProfileUpdateInput,
   ProfessionalStatus,
   WeeklyScheduleItem,
@@ -56,10 +57,34 @@ export type ProfessionalAddressView = {
     accuracyMeters: number;
     capturedAt: string;
   } | null;
+  /**
+   * Where the vet dropped the pin, kept whether or not it is published — which is
+   * what lets the picker reopen on the marker they left rather than on a guess.
+   */
+  mapPin: { latitude: number; longitude: number; placedAt: string } | null;
+  /** Whether that pin is on the public map. Decided per address, off until it is not. */
+  showOnMap: boolean;
 };
 
-/** The same address as the directory publishes it: everything but the device fix. */
-export type PublicAddress = Omit<ProfessionalAddressView, 'fix'>;
+/**
+ * The same address as the directory publishes it.
+ *
+ * Spelled out rather than `Omit<…, 'fix'>`. The omission read clearly while there was
+ * one field to take away; with a verification fix and a published pin to tell apart,
+ * naming what a stranger may read is the point — and it is the shape the server's own
+ * transform is written field-by-field for the same reason.
+ *
+ * No `showOnMap` and no `placedAt`: a pin that is here is published, and when the vet
+ * put it there is between them and their console.
+ */
+export type PublicAddress = {
+  kind: ProfessionalAddressKind;
+  line1: string;
+  city: string;
+  province: string;
+  postalCode: string | null;
+  mapPin: { latitude: number; longitude: number } | null;
+};
 
 /** The ids of the three photographs, to be fetched one at a time. */
 export type ProfessionalCaptureIds = Partial<Record<ProfessionalPhotoKind, string>>;
@@ -162,6 +187,46 @@ export async function listProfessionals(
   return apiFetch<ProfessionalPage>(`/professionals${query ? `?${query}` : ''}`, { signal });
 }
 
+/** A directory entry with how far away it is, as `GET /professionals/near` ranks them. */
+export type NearbyProfessional = PublicProfessional & { distanceMeters: number };
+
+/**
+ * The nearest vets, and the radius they were looked for in.
+ *
+ * The radius comes back so an empty list can say what was searched rather than leaving
+ * the panel to guess at the number it asked with.
+ */
+export type NearbyProfessionals = { items: NearbyProfessional[]; radiusKm: number };
+
+export type NearbyParams = {
+  latitude: number;
+  longitude: number;
+  radiusKm?: number;
+  limit?: number;
+  available?: boolean;
+};
+
+/**
+ * GET /api/v1/professionals/near — the verified vets nearest a point, nearest first.
+ *
+ * Public, like the directory it reorders. Only vets who placed a pin and switched it on
+ * are in the answer; the rest have no coordinates to rank.
+ */
+export async function listProfessionalsNear(
+  params: NearbyParams,
+  signal?: AbortSignal
+): Promise<NearbyProfessionals> {
+  const search = new URLSearchParams({
+    lat: String(params.latitude),
+    lng: String(params.longitude),
+  });
+  if (params.radiusKm) search.set('radiusKm', String(params.radiusKm));
+  if (params.limit) search.set('limit', String(params.limit));
+  if (params.available !== undefined) search.set('available', String(params.available));
+
+  return apiFetch<NearbyProfessionals>(`/professionals/near?${search.toString()}`, { signal });
+}
+
 /** One bookable start, and whether somebody already holds it. */
 export type Slot = { at: string; taken: boolean };
 
@@ -228,6 +293,23 @@ export async function updateOwnProfessionalProfile(
   input: ProfessionalProfileUpdateInput
 ): Promise<OwnProfessional> {
   return apiFetch<OwnProfessional>('/professionals/me/profile', {
+    method: 'PATCH',
+    body: input,
+  });
+}
+
+/**
+ * PATCH /api/v1/professionals/me/map-location — one address's place on the map.
+ *
+ * One address per call, named by `kind`, so publishing the clinic and keeping the house
+ * off it is two calls that cannot interfere. A partial merge like its neighbour: leave
+ * `pin` out to move the switch alone, leave `showOnMap` out to save a dragged marker
+ * without deciding to publish it.
+ */
+export async function updateOwnMapLocation(
+  input: ProfessionalMapUpdateInput
+): Promise<OwnProfessional> {
+  return apiFetch<OwnProfessional>('/professionals/me/map-location', {
     method: 'PATCH',
     body: input,
   });
