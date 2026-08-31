@@ -18,6 +18,9 @@ const EMPTY = {
   name: '',
   email: '',
   licenseNumber: '',
+  licenseAuthority: 'Professional Regulation Commission',
+  yearsExperience: '',
+  clinicName: '',
   currentLocation: '',
   clinicLocation: '',
   motivation: '',
@@ -83,6 +86,9 @@ export default function InquiryForm() {
       name: values.name,
       email: values.email,
       licenseNumber: values.licenseNumber,
+      licenseAuthority: values.licenseAuthority,
+      yearsExperience: values.yearsExperience,
+      clinicName: values.clinicName,
       currentLocation: values.currentLocation,
       clinicLocation: values.clinicLocation,
       motivation: values.motivation,
@@ -162,7 +168,31 @@ export default function InquiryForm() {
           required
         />
         <Input
-          label="Contact number (optional)"
+          label="Issuing authority"
+          value={values.licenseAuthority}
+          onChange={set('licenseAuthority')}
+          error={errors.licenseAuthority}
+          required
+        />
+        <Input
+          label="Years in practice"
+          type="number"
+          min={0}
+          max={70}
+          value={values.yearsExperience}
+          onChange={set('yearsExperience')}
+          error={errors.yearsExperience}
+          required
+        />
+        <Input
+          label="Clinic name"
+          value={values.clinicName}
+          onChange={set('clinicName')}
+          error={errors.clinicName}
+          placeholder="Bayside Animal Clinic"
+        />
+        <Input
+          label="Business contact number (optional)"
           value={values.phone}
           onChange={set('phone')}
           error={errors.phone}
