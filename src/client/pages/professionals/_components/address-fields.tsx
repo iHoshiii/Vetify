@@ -2,6 +2,7 @@ import Input from '@/components/ui/Input';
 import { PROFESSIONAL_LOCATION_MAX_ACCURACY_M } from '@shared/limits';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import LocationPickerField from './location-picker-field';
 /** A device reading, in the shape the application schema expects it. */
 export type LocationFix = {
   latitude: number;
@@ -18,10 +19,11 @@ export type AddressValue = {
   province: string;
   postalCode: string;
   fix: LocationFix | null;
+  pin: { latitude: number; longitude: number } | null;
 };
 
 export function emptyAddress(kind: AddressValue['kind']): AddressValue {
-  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null };
+  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null, pin: null };
 }
 
 /**
@@ -42,7 +44,7 @@ const GOOD_ENOUGH_M = 20;
  * worse reading cannot undo a better one, and the applicant watches the number
  * fall rather than wondering whether anything is happening.
  */
-export function useLiveFix(onFix: (fix: LocationFix) => void) {
+export function useLiveFix(onFix: (fix: LocationFix) => void, stopAfterFirstFix = false) {
   const watch = useRef<number | null>(null);
   const bestRef = useRef<number>(Number.POSITIVE_INFINITY);
   const [tracking, setTracking] = useState(false);
@@ -85,6 +87,8 @@ export function useLiveFix(onFix: (fix: LocationFix) => void) {
           capturedAt: new Date().toISOString(),
         });
 
+        if (stopAfterFirstFix) stop();
+
         if (accuracyMeters <= GOOD_ENOUGH_M) stop();
       },
       () => {
@@ -93,7 +97,7 @@ export function useLiveFix(onFix: (fix: LocationFix) => void) {
       },
       { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 }
     );
-  }, [onFix, stop]);
+  }, [onFix, stop, stopAfterFirstFix]);
 
   return { tracking, accuracy, message, start, stop };
 }
@@ -131,10 +135,28 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
       onChange({ ...value, [field]: event.target.value });
   }
 
+  function setFromPin(
+    _point: { latitude: number; longitude: number },
+    address: { line1: string; city: string; province: string; postalCode: string }
+  ) {
+    onChange({ ...value, ...address, pin: _point });
+  }
+
   return (
     <fieldset className="rounded-lg border border-slate-200 bg-white p-4">
       <legend className="px-1 text-sm font-bold text-slate-900">{copy.title}</legend>
       <p className="text-xs leading-5 text-slate-500">{copy.hint}</p>
+
+      <div className="mt-3">
+        <LocationPickerField
+          label="Pin this address on the map"
+          value={value.pin}
+          address={[value.line1, value.city, value.province, value.postalCode]
+            .filter(Boolean)
+            .join(', ')}
+          onChange={setFromPin}
+        />
+      </div>
 
       <div className="mt-3 space-y-3">
         <Input
@@ -142,6 +164,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
           label="Street and number"
           value={value.line1}
           onChange={set('line1')}
+          readOnly
           error={errors.line1}
           placeholder="12 Mabini Street"
           required
@@ -153,6 +176,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="City or municipality"
             value={value.city}
             onChange={set('city')}
+            readOnly
             error={errors.city}
             placeholder="Cebu City"
             required
@@ -162,6 +186,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="Province"
             value={value.province}
             onChange={set('province')}
+            readOnly
             error={errors.province}
             placeholder="Cebu"
             required
@@ -171,6 +196,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="Postal code"
             value={value.postalCode}
             onChange={set('postalCode')}
+            readOnly
             error={errors.postalCode}
             placeholder="6000"
           />

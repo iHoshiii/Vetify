@@ -530,6 +530,7 @@ const professionalAddressSchema = z
      * on an unnamed road cannot.
      */
     fix: liveLocationSchema.nullish(),
+    mapPin: mapPinSchema.nullish(),
   })
   .superRefine((address, ctx) => {
     if (address.kind === 'home' && !address.fix) {

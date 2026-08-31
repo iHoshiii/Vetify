@@ -1,7 +1,11 @@
 import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
-import { createMarkerIcon, VETIFY_PALETTE } from '@/components/marker-icon';
+import { toMapVets } from '@/components/map-prof-vet/to-map-vets';
+import { MapStyles } from '@/components/vetmap/map-styles';
+import { createMarkerIcon, OSM_PALETTE, VETIFY_PALETTE } from '@/components/marker-icon';
+import { useOsmClinics } from '@/hooks/useOsmClinics';
+import { useProfessionals } from '@/hooks/useProfessionals';
 import { Crosshair, MapPin } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useLiveFix } from './address-fields';
 
@@ -38,16 +42,39 @@ type Props = {
    */
   fallback?: Point | null;
   className?: string;
+  autoLocate?: boolean;
+  hideReadout?: boolean;
+  onReady?: () => void;
 };
 
-export default function PinPicker({ value, onChange, fallback = null, className = '' }: Props) {
+export default function PinPicker({
+  value,
+  onChange,
+  fallback = null,
+  className = '',
+  autoLocate = false,
+  hideReadout = false,
+  onReady,
+}: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const map = useRef<import('leaflet').Map | null>(null);
   const marker = useRef<import('leaflet').Marker | null>(null);
+  const autoStarted = useRef(false);
+  const readyCallback = useRef(onReady);
+  const referenceMarkers = useRef<import('leaflet').Layer[]>([]);
+  const referenceCluster = useRef<import('leaflet').LayerGroup | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  // Match /map: show every published professional pin, not only vets taking bookings.
+  const directory = useProfessionals({ limit: 20 });
+  const clinics = useOsmClinics(true);
 
   /** Read through refs, so a new callback identity does not rebuild the map. */
   const change = useRef(onChange);
   const seed = useRef<Point | null>(value ?? fallback);
+  useEffect(() => {
+    readyCallback.current = onReady;
+  }, [onReady]);
+
   useEffect(() => {
     change.current = onChange;
   }, [onChange]);
@@ -65,9 +92,21 @@ export default function PinPicker({ value, onChange, fallback = null, className 
    * reading is good enough. This is the one place in the product where a coarse fix is
    * not good enough, because the number being saved is a doorway.
    */
-  const { tracking, accuracy, message, start } = useLiveFix((fix) =>
-    place({ latitude: fix.latitude, longitude: fix.longitude }, 18)
+  const { tracking, accuracy, message, start } = useLiveFix(
+    (fix) => place({ latitude: fix.latitude, longitude: fix.longitude }, 18),
+    true
   );
+
+  useEffect(() => {
+    if (!autoLocate) {
+      autoStarted.current = false;
+      return;
+    }
+    if (!autoStarted.current) {
+      autoStarted.current = true;
+      start();
+    }
+  }, [autoLocate, start]);
 
   // ── The map, once. ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -121,6 +160,7 @@ export default function PinPicker({ value, onChange, fallback = null, className 
 
       map.current = instance;
       marker.current = pin;
+      setMapReady(true);
 
       // The container is frequently laid out after this runs — inside a card that was
       // still measuring — and a Leaflet map sized against a zero-height div renders grey.
@@ -137,6 +177,45 @@ export default function PinPicker({ value, onChange, fallback = null, className 
     };
   }, []);
 
+  useEffect(() => {
+    if (!mapReady || !map.current) return;
+    let cancelled = false;
+    void import('leaflet').then(async ({ default: L }) => {
+      await import('leaflet.markercluster');
+      if (cancelled || !map.current) return;
+      referenceCluster.current?.remove();
+      const leafletWithClusters = L as typeof L & {
+        markerClusterGroup?: () => import('leaflet').LayerGroup;
+      };
+      const cluster = leafletWithClusters.markerClusterGroup
+        ? leafletWithClusters.markerClusterGroup()
+        : L.layerGroup();
+      cluster.addTo(map.current);
+      const vetIcon = createMarkerIcon(L, VETIFY_PALETTE);
+      const clinicIcon = createMarkerIcon(L, OSM_PALETTE);
+      const vets = toMapVets(directory.data?.items ?? []);
+      const vetMarkers = vets.map((vet) =>
+        L.marker([vet.latitude, vet.longitude], { icon: vetIcon, opacity: 0.85 }).bindTooltip(
+          vet.clinicName ?? vet.name,
+          { direction: 'top' }
+        )
+      );
+      const clinicMarkers = (clinics.data ?? []).map((clinic) =>
+        L.marker([clinic.latitude, clinic.longitude], {
+          icon: clinicIcon,
+          opacity: 0.8,
+        }).bindTooltip(clinic.name, { direction: 'top' })
+      );
+      referenceMarkers.current = [...vetMarkers, ...clinicMarkers];
+      referenceMarkers.current.forEach((marker) => cluster.addLayer(marker));
+      referenceCluster.current = cluster;
+      if (directory.isFetched && clinics.isFetched) readyCallback.current?.();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clinics.data, clinics.isFetched, directory.data, directory.isFetched, mapReady]);
+
   // A pin cleared or replaced from outside — a reset, or another card saving — has to
   // move the marker too, or the readout and the map would disagree.
   useEffect(() => {
@@ -148,13 +227,24 @@ export default function PinPicker({ value, onChange, fallback = null, className 
 
   return (
     <div className={`space-y-2 ${className}`}>
+      <MapStyles />
       <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         crossOrigin=""
       />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+        crossOrigin=""
+      />
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+        crossOrigin=""
+      />
 
-      <div className="relative h-64 w-full overflow-hidden rounded-xl border border-slate-200 sm:h-72">
+      <div className="relative min-h-[28rem] w-full overflow-hidden rounded-xl border border-slate-200 sm:h-[68vh] sm:min-h-[32rem]">
         <div ref={hostRef} className="absolute inset-0" />
 
         <button
@@ -171,17 +261,19 @@ export default function PinPicker({ value, onChange, fallback = null, className 
       {/* The readout is the point of the exercise: the vet can see the thing that will
           be published, and six decimal places is about a tenth of a metre — enough that
           nudging the pin visibly changes the number. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="inline-flex items-center gap-1.5 font-mono font-semibold text-slate-700">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-700" />
-          {value
-            ? `${value.latitude.toFixed(6)}, ${value.longitude.toFixed(6)}`
-            : 'No pin yet — tap the map or drag the marker'}
-        </span>
-        {tracking && accuracy !== null && (
-          <span className="font-semibold text-slate-500">accurate to about {accuracy} m</span>
-        )}
-      </div>
+      {!hideReadout && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="inline-flex items-center gap-1.5 font-mono font-semibold text-slate-700">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-700" />
+            {value
+              ? `${value.latitude.toFixed(6)}, ${value.longitude.toFixed(6)}`
+              : 'No pin yet — tap the map or drag the marker'}
+          </span>
+          {tracking && accuracy !== null && (
+            <span className="font-semibold text-slate-500">accurate to about {accuracy} m</span>
+          )}
+        </div>
+      )}
 
       {message && <p className="text-xs font-semibold text-rose-700">{message}</p>}
     </div>
