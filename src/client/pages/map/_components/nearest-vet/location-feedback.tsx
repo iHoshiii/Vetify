@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import type { MyLocationStatus } from '../use-my-location';
+import type { MyLocationStatus } from '@/hooks/use-my-location';
 
 type LocationFeedbackProps = {
   status: MyLocationStatus;

@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react';
 
 import InteractiveMap from './_components/interactive-map/map-official';
 import NearestVets from './_components/nearest-vet';
-import { useMyLocation } from './_components/use-my-location';
+import { useMyLocation } from '@/hooks/use-my-location';
 
 const MAP_PIN_LIMIT = 20;
 

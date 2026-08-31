@@ -2,31 +2,18 @@ import { PROFESSIONAL_MAX_RATE_CAP } from '@shared/limits';
 import { Search } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 
-/** What the list is narrowed by. Every field optional: absent means "do not narrow". */
+import { FIELD, LABEL } from './styles';
+
 export type VetFilters = {
   q: string;
-  specialty: string;
   minExperience: string;
   maxRate: string;
 };
 
-export const NO_FILTERS: VetFilters = { q: '', specialty: '', minExperience: '', maxRate: '' };
-
-const FIELD =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2';
-const LABEL = 'text-xs font-bold uppercase tracking-wider text-slate-500';
-
-/** How long to wait before searching, so typing a word is one request and not six. */
+export const NO_FILTERS: VetFilters = { q: '', minExperience: '', maxRate: '' };
 const DEBOUNCE_MS = 300;
 
-/**
- * The search box and the three sliders over it.
- *
- * The text box is debounced and the selects are not: a name is typed a letter at a
- * time, and a dropdown changes once. `onChange` is called with the whole filter set
- * rather than a field, so the page holds one piece of state and the URL could later be
- * derived from it without this component learning about routing.
- */
+/** Search and optional filters for the vet directory. */
 export default function VetFilters({
   value,
   onChange,
@@ -34,14 +21,11 @@ export default function VetFilters({
   value: VetFilters;
   onChange: (filters: VetFilters) => void;
 }) {
-  const ids = { q: useId(), specialty: useId(), experience: useId(), rate: useId() };
-
-  // The box keeps its own text so it stays responsive while the debounce waits.
+  const ids = { q: useId(), experience: useId(), rate: useId() };
   const [typed, setTyped] = useState(value.q);
 
   useEffect(() => {
     if (typed === value.q) return;
-
     const timer = setTimeout(() => onChange({ ...value, q: typed }), DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [typed, value, onChange]);
@@ -52,10 +36,16 @@ export default function VetFilters({
   }
 
   return (
-    <div className="grid gap-4 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-      <div className="sm:col-span-2">
+    <form
+      className="grid gap-3 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-[minmax(260px,1fr)_96px_110px_auto] sm:items-end"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onChange({ ...value, q: typed });
+      }}
+    >
+      <div className="min-w-0">
         <label htmlFor={ids.q} className={LABEL}>
-          Search
+          Search by name or location
         </label>
         <div className="relative mt-1">
           <Search
@@ -68,44 +58,36 @@ export default function VetFilters({
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             placeholder="Name, clinic, city or street"
-            className={`${FIELD} pl-9`}
+            className={`${FIELD} w-full pl-9`}
           />
         </div>
       </div>
 
-      <div>
-        <label htmlFor={ids.specialty} className={LABEL}>
-          Specialty
+      <div className="min-w-0">
+        <label htmlFor={ids.experience} className={LABEL}>
+          Min years
         </label>
         <input
-          id={ids.specialty}
-          value={value.specialty}
-          onChange={set('specialty')}
-          placeholder="Dentistry, surgery…"
-          className={`${FIELD} mt-1`}
+          id={ids.experience}
+          type="number"
+          min={0}
+          max={80}
+          value={value.minExperience}
+          onChange={set('minExperience')}
+          placeholder="Any"
+          className={`${FIELD} mt-1 w-full`}
         />
       </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={ids.experience} className={LABEL}>
-            Min years
-          </label>
-          <input
-            id={ids.experience}
-            type="number"
-            min={0}
-            max={80}
-            value={value.minExperience}
-            onChange={set('minExperience')}
-            placeholder="Any"
-            className={`${FIELD} mt-1`}
-          />
-        </div>
-        <div>
-          <label htmlFor={ids.rate} className={LABEL}>
-            Max rate
-          </label>
+      <div className="min-w-0">
+        <label htmlFor={ids.rate} className={LABEL}>
+          Max rate (/hr)
+        </label>
+        <div className="relative mt-1">
+          {value.maxRate !== '' && (
+            <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm text-slate-500">
+              ₱
+            </span>
+          )}
           <input
             id={ids.rate}
             type="number"
@@ -114,10 +96,18 @@ export default function VetFilters({
             value={value.maxRate}
             onChange={set('maxRate')}
             placeholder="Any"
-            className={`${FIELD} mt-1`}
+            className={`${FIELD} w-full ${value.maxRate !== '' ? 'pl-7' : ''}`}
           />
         </div>
       </div>
-    </div>
+
+      <button
+        type="submit"
+        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-teal-800 px-4 text-sm font-bold text-white transition hover:bg-teal-900 sm:w-auto"
+      >
+        <Search className="h-4 w-4" aria-hidden />
+        Search vets
+      </button>
+    </form>
   );
 }

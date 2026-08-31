@@ -1,5 +1,5 @@
 import type { PublicProfessional } from '@/services/professionals.service';
-import { Briefcase, MapPin } from 'lucide-react';
+import { Briefcase, MapPin, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ACTION =
@@ -7,13 +7,7 @@ const ACTION =
 const PICK = `${ACTION} bg-teal-800 text-white hover:bg-teal-900`;
 const VISIT = `${ACTION} border border-slate-900/15 bg-white text-slate-900 hover:border-slate-900/30`;
 
-/**
- * Where the card says this vet works.
- *
- * The published line first, because it is the one written for reading. The addresses
- * underneath are what a search matched on, and showing them is what makes a result
- * explicable — somebody who searched "Sikatuna" should see why this card came back.
- */
+/** Where this vet works: the published line first, then what a search matched on. */
 function Where({ vet }: { vet: PublicProfessional }) {
   const extra = vet.addresses.filter((address) => !vet.clinicAddress.includes(address.line1));
 
@@ -33,22 +27,17 @@ function Where({ vet }: { vet: PublicProfessional }) {
   );
 }
 
-/**
- * One vet, as a row in the list somebody is choosing from.
- *
- * Two actions, deliberately not one. "Request an appointment" is the flow, and "View
- * profile" is the way out of it for somebody who wants to read the work history first
- * — which is a different question from which slot to take, and answering it should not
- * cost them the choices they have already made.
- */
+/** One vet as a row, with two actions: the flow, and the way out to their profile. */
 export default function VetCard({
   vet,
   onPick,
   picked,
+  away,
 }: {
   vet: PublicProfessional;
   onPick: (vet: PublicProfessional) => void;
   picked: boolean;
+  away?: string;
 }) {
   return (
     <li
@@ -60,8 +49,7 @@ export default function VetCard({
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             {vet.avatarUrl ? (
-              // The alt is empty because the name is right beside it: a screen reader
-              // announcing it twice is worse than not announcing the picture.
+              // The alt is empty because the name is right beside it.
               <img src={vet.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
             ) : null}
             <div className="min-w-0">
@@ -81,7 +69,13 @@ export default function VetCard({
               <Briefcase className="h-4 w-4 text-slate-400" aria-hidden />
               {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
             </span>
-            <span className="font-semibold text-slate-900">${vet.hourlyRate}/hr</span>
+            <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
+            {away && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-teal-900">
+                <Navigation className="h-4 w-4 text-teal-700" aria-hidden />
+                {away}
+              </span>
+            )}
           </div>
 
           {vet.specialties.length > 0 && (
