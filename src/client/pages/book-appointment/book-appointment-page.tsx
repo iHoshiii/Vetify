@@ -41,7 +41,6 @@ export default function BookAppointmentPage() {
     available: true,
     limit: 24,
     ...(filters.q ? { q: filters.q } : {}),
-    ...(filters.specialty ? { specialty: filters.specialty } : {}),
     ...(filters.minExperience ? { minExperience: Number(filters.minExperience) } : {}),
     ...(filters.maxRate ? { maxRate: Number(filters.maxRate) } : {}),
   });

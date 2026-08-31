@@ -67,7 +67,7 @@ export default function VetCard({
               <Briefcase className="h-4 w-4 text-slate-400" aria-hidden />
               {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
             </span>
-            <span className="font-semibold text-slate-900">${vet.hourlyRate}/hr</span>
+            <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
           </div>
 
           {vet.specialties.length > 0 && (

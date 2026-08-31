@@ -7,17 +7,16 @@ import { FIELD, LABEL } from './styles';
 /** What the list is narrowed by. Every field optional: absent means "do not narrow". */
 export type VetFilters = {
   q: string;
-  specialty: string;
   minExperience: string;
   maxRate: string;
 };
 
-export const NO_FILTERS: VetFilters = { q: '', specialty: '', minExperience: '', maxRate: '' };
+export const NO_FILTERS: VetFilters = { q: '', minExperience: '', maxRate: '' };
 
 /** How long to wait before searching, so typing a word is one request and not six. */
 const DEBOUNCE_MS = 300;
 
-/** The box is debounced and the selects are not: a dropdown changes once. */
+/** The box is debounced and the numbers are not: a stepper changes once. */
 export default function VetFilters({
   value,
   onChange,
@@ -25,7 +24,8 @@ export default function VetFilters({
   value: VetFilters;
   onChange: (filters: VetFilters) => void;
 }) {
-  const ids = { q: useId(), specialty: useId(), experience: useId(), rate: useId() };
+  // No specialty field: every listing on Vetify is a vet, so it never narrows anything.
+  const ids = { q: useId(), experience: useId(), rate: useId() };
 
   // The box keeps its own text so it stays responsive while the debounce waits.
   const [typed, setTyped] = useState(value.q);
@@ -43,8 +43,8 @@ export default function VetFilters({
   }
 
   return (
-    <div className="grid gap-4 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
-      <div className="sm:col-span-2">
+    <div className="grid gap-4 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-2">
+      <div>
         <label htmlFor={ids.q} className={LABEL}>
           Search
         </label>
@@ -62,19 +62,6 @@ export default function VetFilters({
             className={`${FIELD} pl-9`}
           />
         </div>
-      </div>
-
-      <div>
-        <label htmlFor={ids.specialty} className={LABEL}>
-          Specialty
-        </label>
-        <input
-          id={ids.specialty}
-          value={value.specialty}
-          onChange={set('specialty')}
-          placeholder="Dentistry, surgery…"
-          className={`${FIELD} mt-1`}
-        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -95,7 +82,7 @@ export default function VetFilters({
         </div>
         <div>
           <label htmlFor={ids.rate} className={LABEL}>
-            Max rate
+            Max rate (₱/hr)
           </label>
           <input
             id={ids.rate}
