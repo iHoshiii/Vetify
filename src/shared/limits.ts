@@ -217,13 +217,24 @@ export const PROFESSIONAL_LOCATION_TIMEOUT_MS = 20_000;
  *
  * Twenty kilometres is a drive somebody makes with a sick animal in the car, and the
  * radius at which a search still answers for a city and the towns beside it rather than
- * across a whole region. The cap exists because the radius is the only thing bounding
- * the work: `$geoNear` walks outwards from the point until it runs out of index or of
- * documents, so an unbounded radius over a national collection is a full index scan
- * somebody typed into a query string.
+ * across a whole region. The cap is nationwide rather than regional because booking an
+ * online consultation is a search where distance only breaks ties; what bounds the work
+ * is the limit, which `$geoNear` walks outwards only far enough to fill.
  */
 export const PROFESSIONAL_NEAR_RADIUS_KM = 20;
-export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 200;
+export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 2_000;
+
+/**
+ * The radius that covers the whole country, for a search where distance is a tiebreak
+ * rather than a filter: an online consultation from Mindanao is a call either way.
+ */
+export const PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM = 2_000;
+
+/** How far somebody drives to a clinic — wider than the map's 20 km, still a drive. */
+export const BOOKING_CLINIC_RADIUS_KM = 50;
+
+/** How many nearest vets step two shortlists before the full directory. */
+export const BOOKING_NEAREST_LIMIT = 5;
 
 /**
  * How many nearest vets an answer carries.
