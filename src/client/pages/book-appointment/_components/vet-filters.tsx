@@ -2,6 +2,8 @@ import { PROFESSIONAL_MAX_RATE_CAP } from '@shared/limits';
 import { Search } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 
+import { FIELD, LABEL } from './styles';
+
 /** What the list is narrowed by. Every field optional: absent means "do not narrow". */
 export type VetFilters = {
   q: string;
@@ -12,21 +14,10 @@ export type VetFilters = {
 
 export const NO_FILTERS: VetFilters = { q: '', specialty: '', minExperience: '', maxRate: '' };
 
-const FIELD =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2';
-const LABEL = 'text-xs font-bold uppercase tracking-wider text-slate-500';
-
 /** How long to wait before searching, so typing a word is one request and not six. */
 const DEBOUNCE_MS = 300;
 
-/**
- * The search box and the three sliders over it.
- *
- * The text box is debounced and the selects are not: a name is typed a letter at a
- * time, and a dropdown changes once. `onChange` is called with the whole filter set
- * rather than a field, so the page holds one piece of state and the URL could later be
- * derived from it without this component learning about routing.
- */
+/** The box is debounced and the selects are not: a dropdown changes once. */
 export default function VetFilters({
   value,
   onChange,
