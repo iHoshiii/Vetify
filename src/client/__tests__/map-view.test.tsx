@@ -2,7 +2,7 @@ import { render, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import VetMap from '../components/VetMap';
+import VetMap from '../components/vetmap';
 
 /**
  * Which view the map settles on, which is the one thing about it a stub can prove.

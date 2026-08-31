@@ -215,13 +215,14 @@ export const PROFESSIONAL_LOCATION_TIMEOUT_MS = 20_000;
 /**
  * How far out "near you" looks by default, and the furthest a caller may ask for.
  *
- * Fifty kilometres is a drive rather than a walk, and it is the radius at which a
- * search from Manila still answers for somebody in Rizal or Cavite. The cap exists
- * because the radius is the only thing bounding the work: `$geoNear` walks outwards
- * from the point until it runs out of index or of documents, so an unbounded radius
- * over a national collection is a full index scan somebody typed into a query string.
+ * Twenty kilometres is a drive somebody makes with a sick animal in the car, and the
+ * radius at which a search still answers for a city and the towns beside it rather than
+ * across a whole region. The cap exists because the radius is the only thing bounding
+ * the work: `$geoNear` walks outwards from the point until it runs out of index or of
+ * documents, so an unbounded radius over a national collection is a full index scan
+ * somebody typed into a query string.
  */
-export const PROFESSIONAL_NEAR_RADIUS_KM = 50;
+export const PROFESSIONAL_NEAR_RADIUS_KM = 20;
 export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 200;
 
 /**

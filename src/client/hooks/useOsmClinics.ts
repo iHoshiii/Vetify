@@ -1,4 +1,4 @@
-import type { OsmClinic } from '@/components/map-vets';
+import type { OsmClinic } from '@/components/map-prof-vet';
 import { fetchOsmClinics } from '@/services/osm.service';
 import { useQuery } from '@tanstack/react-query';
 
