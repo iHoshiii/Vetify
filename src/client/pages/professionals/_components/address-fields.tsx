@@ -2,7 +2,6 @@ import Input from '@/components/ui/Input';
 import { PROFESSIONAL_LOCATION_MAX_ACCURACY_M } from '@shared/limits';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import LocationPickerField from './location-picker-field';
 /** A device reading, in the shape the application schema expects it. */
 export type LocationFix = {
   latitude: number;
@@ -19,11 +18,10 @@ export type AddressValue = {
   province: string;
   postalCode: string;
   fix: LocationFix | null;
-  pin: { latitude: number; longitude: number } | null;
 };
 
 export function emptyAddress(kind: AddressValue['kind']): AddressValue {
-  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null, pin: null };
+  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null };
 }
 
 /**
@@ -135,28 +133,10 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
       onChange({ ...value, [field]: event.target.value });
   }
 
-  function setFromPin(
-    _point: { latitude: number; longitude: number },
-    address: { line1: string; city: string; province: string; postalCode: string }
-  ) {
-    onChange({ ...value, ...address, pin: _point });
-  }
-
   return (
     <fieldset className="rounded-lg border border-slate-200 bg-white p-4">
       <legend className="px-1 text-sm font-bold text-slate-900">{copy.title}</legend>
       <p className="text-xs leading-5 text-slate-500">{copy.hint}</p>
-
-      <div className="mt-3">
-        <LocationPickerField
-          label="Pin this address on the map"
-          value={value.pin}
-          address={[value.line1, value.city, value.province, value.postalCode]
-            .filter(Boolean)
-            .join(', ')}
-          onChange={setFromPin}
-        />
-      </div>
 
       <div className="mt-3 space-y-3">
         <Input

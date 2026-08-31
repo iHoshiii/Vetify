@@ -54,7 +54,6 @@ function addressPayload(address: AddressValue) {
     province: address.province,
     postalCode: address.postalCode.trim() || undefined,
     fix: address.fix,
-    mapPin: address.pin ?? undefined,
   };
 }
 
