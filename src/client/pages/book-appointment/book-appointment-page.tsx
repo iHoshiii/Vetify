@@ -1,5 +1,6 @@
 import { useRequestAppointment } from '@/hooks/useAppointments';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useMyLocation } from '@/hooks/use-my-location';
 import { useProfessionals } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { PublicProfessional } from '@/services/professionals.service';
@@ -46,6 +47,10 @@ export default function BookAppointmentPage() {
   });
 
   const request = useRequestAppointment();
+
+  // Held on the page rather than in the shortlist, so a granted location outlives a
+  // change of visit type.
+  const place = useMyLocation();
 
   const vets = list.data?.items ?? [];
   // A vet named in the URL is chosen for them, so arriving from a profile skips a step.
@@ -101,6 +106,8 @@ export default function BookAppointmentPage() {
         {kind && (
           <Step number={2} title="Who would you like to see?">
             <VetStep
+              kind={kind}
+              place={place}
               filters={filters}
               onFilters={setFilters}
               vets={vets}

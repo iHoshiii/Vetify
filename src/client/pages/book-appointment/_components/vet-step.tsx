@@ -1,11 +1,16 @@
+import type { useMyLocation } from '@/hooks/use-my-location';
 import type { PublicProfessional } from '@/services/professionals.service';
+import type { AppointmentKind } from '@shared/schemas';
 
 import ErrorNote, { messageOf } from './error-note';
+import NearestVets from './nearest-vets';
 import VetCard from './vet-card';
 import VetFilters, { type VetFilters as Filters } from './vet-filters';
 
-/** Step two: narrowing the directory, then choosing somebody out of what is left. */
+/** Step two: search first, then the shortlist for where somebody is, then everyone. */
 export default function VetStep({
+  kind,
+  place,
   filters,
   onFilters,
   vets,
@@ -16,6 +21,8 @@ export default function VetStep({
   chosenId,
   onPick,
 }: {
+  kind: AppointmentKind;
+  place: ReturnType<typeof useMyLocation>;
   filters: Filters;
   onFilters: (filters: Filters) => void;
   vets: PublicProfessional[];
@@ -29,6 +36,14 @@ export default function VetStep({
   return (
     <>
       <VetFilters value={filters} onChange={onFilters} />
+
+      <div className="mt-4">
+        <NearestVets kind={kind} place={place} chosenId={chosenId} onPick={onPick} />
+      </div>
+
+      <p className="mt-6 text-sm font-black uppercase tracking-wider text-slate-500">
+        Every vet taking bookings
+      </p>
 
       {isPending && <p className="mt-4 text-sm text-slate-600">Finding vets…</p>}
 

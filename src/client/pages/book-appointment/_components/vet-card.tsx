@@ -1,5 +1,5 @@
 import type { PublicProfessional } from '@/services/professionals.service';
-import { Briefcase, MapPin } from 'lucide-react';
+import { Briefcase, MapPin, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ACTION =
@@ -32,10 +32,12 @@ export default function VetCard({
   vet,
   onPick,
   picked,
+  away,
 }: {
   vet: PublicProfessional;
   onPick: (vet: PublicProfessional) => void;
   picked: boolean;
+  away?: string;
 }) {
   return (
     <li
@@ -68,6 +70,12 @@ export default function VetCard({
               {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
             </span>
             <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
+            {away && (
+              <span className="inline-flex items-center gap-1.5 font-semibold text-teal-900">
+                <Navigation className="h-4 w-4 text-teal-700" aria-hidden />
+                {away}
+              </span>
+            )}
           </div>
 
           {vet.specialties.length > 0 && (
