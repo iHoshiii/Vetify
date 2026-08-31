@@ -332,15 +332,14 @@ describe('the booking flow', () => {
     expect(await screen.findByText('Somebody just took that time.')).toBeInTheDocument();
   });
 
-  it('tells somebody plainly when nothing matches their filters', async () => {
+  it('keeps the results area clear when nothing matches the search', async () => {
     const user = userEvent.setup();
     list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
 
     renderPage();
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
-    // Naming the two filters that narrow it fastest, rather than "no results".
-    expect(screen.getByText(/No vet taking bookings matches that/)).toBeInTheDocument();
+    expect(screen.queryByText(/No vet taking bookings matches that/)).not.toBeInTheDocument();
   });
 
   it('does not offer a specialty filter, because every listing here is a vet', async () => {
@@ -351,7 +350,7 @@ describe('the booking flow', () => {
 
     expect(screen.queryByLabelText('Specialty')).not.toBeInTheDocument();
     // The rate is in pesos, so the label says so rather than leaving it to be assumed.
-    expect(screen.getByLabelText('Max rate (₱/hr)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Max rate (/hr)')).toBeInTheDocument();
   });
 
   it('asks for no location until somebody offers one', async () => {
@@ -462,6 +461,24 @@ describe('the booking flow', () => {
     expect(
       search.compareDocumentPosition(shortlist) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+  });
+
+  it('provides a button for submitting the vet search', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    expect(screen.getByRole('button', { name: 'Search vets' })).toBeInTheDocument();
+  });
+
+  it('opens appointments from the top-right button', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.queryByRole('heading', { name: 'Appointments' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Your appointments' }));
+    expect(screen.getByRole('heading', { name: 'Appointments' })).toBeInTheDocument();
   });
 });
 

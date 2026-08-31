@@ -4,7 +4,6 @@ import { useEffect, useId, useState } from 'react';
 
 import { FIELD, LABEL } from './styles';
 
-/** What the list is narrowed by. Every field optional: absent means "do not narrow". */
 export type VetFilters = {
   q: string;
   minExperience: string;
@@ -12,11 +11,9 @@ export type VetFilters = {
 };
 
 export const NO_FILTERS: VetFilters = { q: '', minExperience: '', maxRate: '' };
-
-/** How long to wait before searching, so typing a word is one request and not six. */
 const DEBOUNCE_MS = 300;
 
-/** The box is debounced and the numbers are not: a stepper changes once. */
+/** Search and optional filters for the vet directory. */
 export default function VetFilters({
   value,
   onChange,
@@ -24,15 +21,11 @@ export default function VetFilters({
   value: VetFilters;
   onChange: (filters: VetFilters) => void;
 }) {
-  // No specialty field: every listing on Vetify is a vet, so it never narrows anything.
   const ids = { q: useId(), experience: useId(), rate: useId() };
-
-  // The box keeps its own text so it stays responsive while the debounce waits.
   const [typed, setTyped] = useState(value.q);
 
   useEffect(() => {
     if (typed === value.q) return;
-
     const timer = setTimeout(() => onChange({ ...value, q: typed }), DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [typed, value, onChange]);
@@ -43,10 +36,16 @@ export default function VetFilters({
   }
 
   return (
-    <div className="grid gap-4 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-2">
-      <div>
+    <form
+      className="grid gap-3 rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm sm:grid-cols-[minmax(260px,1fr)_96px_110px_auto] sm:items-end"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onChange({ ...value, q: typed });
+      }}
+    >
+      <div className="min-w-0">
         <label htmlFor={ids.q} className={LABEL}>
-          Search
+          Search by name or location
         </label>
         <div className="relative mt-1">
           <Search
@@ -59,31 +58,36 @@ export default function VetFilters({
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             placeholder="Name, clinic, city or street"
-            className={`${FIELD} pl-9`}
+            className={`${FIELD} w-full pl-9`}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor={ids.experience} className={LABEL}>
-            Min years
-          </label>
-          <input
-            id={ids.experience}
-            type="number"
-            min={0}
-            max={80}
-            value={value.minExperience}
-            onChange={set('minExperience')}
-            placeholder="Any"
-            className={`${FIELD} mt-1`}
-          />
-        </div>
-        <div>
-          <label htmlFor={ids.rate} className={LABEL}>
-            Max rate (₱/hr)
-          </label>
+      <div className="min-w-0">
+        <label htmlFor={ids.experience} className={LABEL}>
+          Min years
+        </label>
+        <input
+          id={ids.experience}
+          type="number"
+          min={0}
+          max={80}
+          value={value.minExperience}
+          onChange={set('minExperience')}
+          placeholder="Any"
+          className={`${FIELD} mt-1 w-full`}
+        />
+      </div>
+      <div className="min-w-0">
+        <label htmlFor={ids.rate} className={LABEL}>
+          Max rate (/hr)
+        </label>
+        <div className="relative mt-1">
+          {value.maxRate !== '' && (
+            <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-sm text-slate-500">
+              ₱
+            </span>
+          )}
           <input
             id={ids.rate}
             type="number"
@@ -92,10 +96,18 @@ export default function VetFilters({
             value={value.maxRate}
             onChange={set('maxRate')}
             placeholder="Any"
-            className={`${FIELD} mt-1`}
+            className={`${FIELD} w-full ${value.maxRate !== '' ? 'pl-7' : ''}`}
           />
         </div>
       </div>
-    </div>
+
+      <button
+        type="submit"
+        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-teal-800 px-4 text-sm font-bold text-white transition hover:bg-teal-900 sm:w-auto"
+      >
+        <Search className="h-4 w-4" aria-hidden />
+        Search vets
+      </button>
+    </form>
   );
 }
