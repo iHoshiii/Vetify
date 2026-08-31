@@ -6,7 +6,7 @@ import type { InviteSummary } from '@/services/professionals.service';
 import { professionalApplySchema, type ProfessionalApplyInput } from '@shared/schemas';
 import { useState, type FormEvent } from 'react';
 
-import AddressCard, { emptyAddress, type AddressValue } from './address-fields';
+import type { AddressValue } from './address-fields';
 import PhotoCapture, { type Capture } from './photo-capture';
 
 const FIELD =
@@ -14,35 +14,32 @@ const FIELD =
 
 type Errors = Record<string, string | undefined>;
 
+const REQUIRED_MESSAGES: Record<string, string> = {
+  portrait: 'Take a photo of your face before submitting.',
+  licenseFront: 'Take a photo of the front of your licence before submitting.',
+  licenseBack: 'Take a photo of the back of your licence before submitting.',
+};
+
 const EMPTY = {
   licenseAuthority: 'Professional Regulation Commission',
-  credentialUrls: '',
-  specialties: '',
   clinicName: '',
   businessPhone: '',
-  bio: '',
   yearsExperience: '',
 };
 
-/** One credential per line: easier to paste into than a repeating field set. */
-function linesOf(value: string): string[] {
-  return value
-    .split(/\r?\n/)
-    .map((one) => one.trim())
-    .filter(Boolean);
-}
-
-/** Specialties as a comma-separated list. Deduping happens server-side. */
-function listOf(value: string): string[] {
-  return value
-    .split(',')
-    .map((one) => one.trim())
-    .filter(Boolean);
-}
-
 /** First message per field, which is all a field can show. */
 function firstErrors(issues: Record<string, string[] | undefined>): Errors {
-  return Object.fromEntries(Object.entries(issues).map(([field, list]) => [field, list?.[0]]));
+  return Object.fromEntries(
+    Object.entries(issues).map(([field, list]) => {
+      const message = list?.[0];
+      return [
+        field,
+        message === 'Invalid input: expected object, received undefined'
+          ? REQUIRED_MESSAGES[field] ?? 'This field is required.'
+          : message,
+      ];
+    })
+  );
 }
 
 /** An address as the schema wants it: blank postal code dropped, fix as taken. */
@@ -55,6 +52,17 @@ function addressPayload(address: AddressValue) {
     postalCode: address.postalCode.trim() || undefined,
     fix: address.fix,
   };
+}
+
+function reviewedAddress(location: string): AddressValue {
+  const parts = location
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const city = parts.length > 1 ? parts[parts.length - 2] : location;
+  const province = parts.length > 1 ? parts[parts.length - 1] : location;
+  const line1 = parts.length > 2 ? parts.slice(0, -2).join(', ') : location;
+  return { kind: 'home', line1, city, province, postalCode: '', fix: null };
 }
 
 type Props = { token: string; invite: InviteSummary };
@@ -73,7 +81,7 @@ type Props = { token: string; invite: InviteSummary };
  */
 export default function InvitedApplyForm({ token, invite }: Props) {
   const [values, setValues] = useState(EMPTY);
-  const [addresses, setAddresses] = useState<AddressValue[]>([emptyAddress('home')]);
+  const [addresses] = useState<AddressValue[]>([reviewedAddress(invite.currentLocation)]);
   const [portrait, setPortrait] = useState<Capture | null>(null);
   const [licenseFront, setLicenseFront] = useState<Capture | null>(null);
   const [licenseBack, setLicenseBack] = useState<Capture | null>(null);
@@ -88,24 +96,16 @@ export default function InvitedApplyForm({ token, invite }: Props) {
       setValues((current) => ({ ...current, [field]: event.target.value }));
   }
 
-  function setAddress(index: number) {
-    return (value: AddressValue) =>
-      setAddresses((current) => current.map((one, at) => (at === index ? value : one)));
-  }
-
-  function addAddress() {
-    const missing = addresses.some((one) => one.kind === 'home') ? 'clinic' : 'home';
-    setAddresses((current) => [...current, emptyAddress(missing)]);
-  }
-
-  function removeAddress(index: number) {
-    setAddresses((current) => current.filter((_, at) => at !== index));
-  }
-
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setErrors({});
     setMessage('');
+
+    if (!consent) {
+      setErrors({ backgroundCheckConsent: 'Consent to a background check is required' });
+      setMessage('Please confirm the background-check consent before submitting.');
+      return;
+    }
 
     const payload = {
       // Sent rather than trusted from the token alone: the schema wants the name on
@@ -113,15 +113,12 @@ export default function InvitedApplyForm({ token, invite }: Props) {
       fullName: invite.name,
       licenseNumber: invite.licenseNumber,
       licenseAuthority: values.licenseAuthority,
-      credentialUrls: linesOf(values.credentialUrls),
-      specialties: listOf(values.specialties),
       clinicName: values.clinicName.trim() || undefined,
       businessPhone: values.businessPhone,
       addresses: addresses.map(addressPayload),
       portrait: portrait ?? undefined,
       licenseFront: licenseFront ?? undefined,
       licenseBack: licenseBack ?? undefined,
-      bio: values.bio,
       yearsExperience: values.yearsExperience,
       backgroundCheckConsent: consent,
     } as ProfessionalApplyInput;
@@ -141,8 +138,25 @@ export default function InvitedApplyForm({ token, invite }: Props) {
     });
   }
 
+  const mandatoryFieldsFilled =
+    consent &&
+    Boolean(portrait && licenseFront && licenseBack) &&
+    values.licenseAuthority.trim().length > 0 &&
+    values.yearsExperience.trim().length > 0 &&
+    Number.isInteger(Number(values.yearsExperience)) &&
+    Number(values.yearsExperience) >= 0 &&
+    Number(values.yearsExperience) <= 70 &&
+    addresses.length > 0 &&
+    addresses.every(
+      (address) =>
+        address.line1.trim().length >= 6 &&
+        address.city.trim().length >= 2 &&
+        address.province.trim().length >= 2 &&
+        (address.kind !== 'clinic' || values.clinicName.trim().length >= 2)
+    );
+
   return (
-    <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="mt-10 space-y-6">
       {message && (
         <div
           role="alert"
@@ -209,7 +223,7 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         />
       </section>
 
-      <section className="space-y-4">
+      <section className="hidden">
         <div>
           <h2 className="text-lg font-black tracking-tight">Where you are</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -220,25 +234,6 @@ export default function InvitedApplyForm({ token, invite }: Props) {
             <p className="mt-2 text-xs font-medium text-red-600">{errors.addresses}</p>
           )}
         </div>
-
-        {addresses.map((address, index) => (
-          <AddressCard
-            key={address.kind}
-            value={address}
-            onChange={setAddress(index)}
-            onRemove={addresses.length > 1 ? () => removeAddress(index) : undefined}
-          />
-        ))}
-
-        {addresses.length < 2 && (
-          <button
-            type="button"
-            onClick={addAddress}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-          >
-            Add {addresses.some((one) => one.kind === 'home') ? 'a clinic' : 'a home'} address
-          </button>
-        )}
       </section>
 
       <section className="space-y-5">
@@ -282,50 +277,6 @@ export default function InvitedApplyForm({ token, invite }: Props) {
             placeholder="+63 32 555 0101"
           />
         </div>
-
-        <Input
-          label="Specialties (comma separated)"
-          value={values.specialties}
-          onChange={set('specialties')}
-          error={errors.specialties}
-          placeholder="dentistry, soft tissue surgery"
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="credentialUrls" className="text-sm font-medium text-slate-700">
-            Credential links, one per line (optional)
-          </label>
-          <textarea
-            id="credentialUrls"
-            rows={3}
-            value={values.credentialUrls}
-            onChange={set('credentialUrls')}
-            className={FIELD}
-          />
-          <p className="text-xs text-slate-500">
-            A diploma or a board certificate, if you have them online. The licence itself is the
-            photographs above.
-          </p>
-          {errors.credentialUrls && (
-            <p className="text-xs font-medium text-red-500">{errors.credentialUrls}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bio" className="text-sm font-medium text-slate-700">
-            How you introduce yourself to pet owners
-          </label>
-          <textarea
-            id="bio"
-            rows={5}
-            value={values.bio}
-            onChange={set('bio')}
-            className={FIELD}
-            placeholder="What you practise, where, and how long you have been doing it."
-            required
-          />
-          {errors.bio && <p className="text-xs font-medium text-red-500">{errors.bio}</p>}
-        </div>
       </section>
 
       <label className="flex items-start gap-3 text-sm text-slate-700">
@@ -333,6 +284,8 @@ export default function InvitedApplyForm({ token, invite }: Props) {
           type="checkbox"
           checked={consent}
           onChange={(event) => setConsent(event.target.checked)}
+          required
+          aria-invalid={Boolean(errors.backgroundCheckConsent)}
           className="mt-0.5 h-4 w-4 rounded border-slate-300"
         />
         <span>
@@ -347,7 +300,7 @@ export default function InvitedApplyForm({ token, invite }: Props) {
       </label>
 
       <div className="space-y-3">
-        <Button type="submit" size="lg" loading={apply.isPending}>
+        <Button type="submit" size="lg" loading={apply.isPending} disabled={!mandatoryFieldsFilled}>
           {apply.isPending ? 'Submitting' : 'Submit application'}
         </Button>
         <p className="text-xs leading-5 text-slate-500">
