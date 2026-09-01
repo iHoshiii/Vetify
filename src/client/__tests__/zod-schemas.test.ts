@@ -390,8 +390,20 @@ describe('admin moderation contract', () => {
   });
 
   it('opens the review queue on pending applications', () => {
-    expect(adminProfessionalListQuerySchema.parse({})).toMatchObject({ status: 'pending' });
+    // A list of one, because the Completed archive needs several and a filter that
+    // sometimes hands back a string and sometimes an array is one the route would have
+    // to unwrap twice.
+    expect(adminProfessionalListQuerySchema.parse({})).toMatchObject({ status: ['pending'] });
+    expect(adminProfessionalListQuerySchema.parse({ status: 'verified,rejected' })).toMatchObject({
+      status: ['verified', 'rejected'],
+    });
     expect(adminProfessionalListQuerySchema.safeParse({ status: 'unknown' }).success).toBe(false);
+    // One bad name spoils the list rather than being dropped from it: a filter that
+    // silently narrows shows a shorter queue than it claims to.
+    expect(adminProfessionalListQuerySchema.safeParse({ status: 'verified,unknown' }).success).toBe(
+      false
+    );
+    expect(adminProfessionalListQuerySchema.safeParse({ status: '' }).success).toBe(false);
   });
 
   it('bounds a chart window by how long events are kept', () => {

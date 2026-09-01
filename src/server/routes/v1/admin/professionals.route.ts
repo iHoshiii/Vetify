@@ -68,15 +68,20 @@ async function applicantsOf(
 /**
  * GET /api/v1/admin/professionals
  *
- * The verification queue. `status` defaults to 'pending' in the schema, because
- * that is the only reason to open this screen; the other statuses are there for
- * looking up what was decided and, for a suspension, undoing it.
+ * The review queue. `status` defaults to 'pending' in the schema, because that is
+ * the only reason to open this screen; the other statuses are there for looking up
+ * what was decided and, for a suspension, undoing it.
+ *
+ * It arrives as a list rather than one value, so a single read can serve the
+ * Completed archive — every application that reached an end, across the three
+ * statuses that count as one. `findProfessionals` already filtered on a set, so this
+ * is the query catching up with the repository rather than a new capability.
  */
 router.get('/', validateQuery(adminProfessionalListQuerySchema), async (req, res) => {
   const query = req.validatedQuery as AdminProfessionalListQuery;
 
   const { items, total } = await findProfessionals({
-    statuses: [query.status],
+    statuses: query.status,
     q: query.q,
     page: query.page,
     limit: query.limit,
