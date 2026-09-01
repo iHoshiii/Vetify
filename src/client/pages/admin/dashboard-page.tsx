@@ -12,6 +12,17 @@ import { Link } from 'react-router-dom';
 import { BreakdownChart } from './_components/breakdown-chart';
 import { MetricChart } from './_components/metric-chart';
 import { StatCard, StatCardSkeleton } from './_components/stat-card';
+import {
+  BUTTON_SM,
+  CARD,
+  CHIP,
+  CHIP_OFF,
+  CHIP_ON,
+  FRAME,
+  HEADING,
+  MUTED,
+  PANEL_HEADING,
+} from './_components/ui';
 
 /**
  * A week, a month, a quarter.
@@ -30,12 +41,15 @@ const SERIES_LABEL: Record<MetricSeries, string> = {
   applications: 'Applications',
 };
 
-const TAB = 'rounded-md px-3 py-1.5 text-xs font-bold transition-colors';
-const TAB_ON = 'bg-teal-900 text-white';
-const TAB_OFF = 'text-slate-600 hover:bg-teal-900/5 hover:text-teal-900';
-
+/**
+ * How the database is doing, said in a colour and a word.
+ *
+ * The word carries it — these are washes behind text that already reads
+ * 'connected' or 'unreachable', which is what keeps the pill from being the only
+ * place the state is written down.
+ */
 const DB_TONE: Record<string, string> = {
-  connected: 'bg-emerald-50 text-emerald-800',
+  connected: 'bg-forest-100 text-forest-800',
   disconnected: 'bg-rose-50 text-rose-800',
   uninitialized: 'bg-amber-50 text-amber-800',
 };
@@ -77,7 +91,7 @@ function Waiting({
 
   return (
     <section className="rounded-lg border border-amber-300/60 bg-amber-50 p-5">
-      <h2 className="text-sm font-black tracking-tight text-amber-900">
+      <h2 className="text-sm font-bold tracking-tight text-amber-900">
         {count} {noun}
         {count === 1 ? '' : 's'} {tail}
       </h2>
@@ -123,7 +137,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-black tracking-tight">Last {days} days</h2>
+          <h2 className={HEADING}>Last {days} days</h2>
 
           <div role="group" aria-label="Window" className="flex gap-1">
             {WINDOWS.map((window) => (
@@ -132,7 +146,7 @@ export default function AdminDashboardPage() {
                 type="button"
                 onClick={() => setDays(window)}
                 aria-pressed={days === window}
-                className={`${TAB} ${days === window ? TAB_ON : TAB_OFF}`}
+                className={`${CHIP} ${days === window ? CHIP_ON : CHIP_OFF}`}
               >
                 {window} days
               </button>
@@ -141,15 +155,12 @@ export default function AdminDashboardPage() {
         </div>
 
         {overview.isError ? (
-          <div
-            role="alert"
-            className="mt-4 rounded-lg border border-teal-900/10 bg-white p-6 text-sm"
-          >
+          <div role="alert" className={`mt-4 ${FRAME} p-6 text-sm`}>
             <p className="font-semibold text-slate-700">{messageOf(overview.error)}</p>
             <button
               type="button"
               onClick={() => void overview.refetch()}
-              className="mt-3 rounded-md bg-teal-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-900"
+              className={`mt-3 ${BUTTON_SM}`}
             >
               Try again
             </button>
@@ -188,7 +199,7 @@ export default function AdminDashboardPage() {
         count={pending}
         noun="application"
         tail="waiting on a decision"
-        to="/admin/applications/verification"
+        to="/admin/applications/application"
       />
       {/* Posts the screen would not pass. Linked with the filter already applied,
           because the queue is a view of the post list rather than a page. */}
@@ -196,7 +207,7 @@ export default function AdminDashboardPage() {
 
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-black tracking-tight">Activity</h2>
+          <h2 className={HEADING}>Activity</h2>
 
           <div role="group" aria-label="Metric" className="flex flex-wrap gap-1">
             {METRIC_SERIES.map((option) => (
@@ -205,7 +216,7 @@ export default function AdminDashboardPage() {
                 type="button"
                 onClick={() => setMetric(option)}
                 aria-pressed={metric === option}
-                className={`${TAB} ${metric === option ? TAB_ON : TAB_OFF}`}
+                className={`${CHIP} ${metric === option ? CHIP_ON : CHIP_OFF}`}
               >
                 {SERIES_LABEL[option]}
               </button>
@@ -226,7 +237,7 @@ export default function AdminDashboardPage() {
 
         {/* Said once, here, rather than on each chart: events age out, and a line
             that stops at 90 days is retention and not a quiet platform. */}
-        <p className="mt-2 text-xs font-semibold text-slate-500">
+        <p className={`mt-2 ${MUTED}`}>
           Signups, sign-ins, chats and applications are counted from activity events, which are kept
           for 90 days. Posts are counted from the posts themselves, so that line goes back further
           than the events do.
@@ -234,9 +245,12 @@ export default function AdminDashboardPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-black tracking-tight">Composition</h2>
+        <h2 className={HEADING}>Composition</h2>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {/* Three across on a wide screen rather than two: these are four short panels,
+            and a two-column grid on a 1600px console leaves half the row empty while
+            making each chart wider than its longest bar needs. */}
+        <div className="mt-4 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           <BreakdownChart
             label="Accounts by role"
             slices={roles.data?.slices ?? []}
@@ -255,7 +269,6 @@ export default function AdminDashboardPage() {
           />
           <BreakdownChart
             label="Posts by status"
-            variant="bar"
             slices={posts.data?.slices ?? []}
             total={posts.data?.total ?? 0}
             isPending={posts.isPending}
@@ -264,7 +277,6 @@ export default function AdminDashboardPage() {
           />
           <BreakdownChart
             label="Applications by status"
-            variant="bar"
             slices={applications.data?.slices ?? []}
             total={applications.data?.total ?? 0}
             isPending={applications.isPending}
@@ -274,14 +286,14 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-teal-900/10 bg-white p-5">
-        <h2 className="text-sm font-black tracking-tight">System</h2>
+      <section className={CARD}>
+        <h2 className={PANEL_HEADING}>System</h2>
 
         {/* Polled, and 'unreachable' when the poll itself fails — a health check
             that cannot be fetched is a health answer, not a blank space. */}
         <dl className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
           <div className="flex items-center gap-2">
-            <dt className="font-semibold text-slate-500">Database</dt>
+            <dt className="font-semibold text-slate-600">Database</dt>
             <dd>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
@@ -296,21 +308,21 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <dt className="font-semibold text-slate-500">API uptime</dt>
+            <dt className="font-semibold text-slate-600">API uptime</dt>
             <dd className="font-bold text-slate-950">
               {health.data ? uptimeOf(health.data.uptime) : '\u2014'}
             </dd>
           </div>
 
           <div className="flex items-center gap-2">
-            <dt className="font-semibold text-slate-500">Metrics generated</dt>
+            <dt className="font-semibold text-slate-600">Metrics generated</dt>
             <dd className="font-bold text-slate-950">
               {overview.data ? new Date(overview.data.generatedAt).toLocaleTimeString() : '\u2014'}
             </dd>
           </div>
         </dl>
 
-        <p className="mt-3 text-xs font-semibold text-slate-500">
+        <p className={`mt-3 ${MUTED}`}>
           Aggregates are cached for a minute, so the generated time can trail the clock. The lists
           read live.
         </p>

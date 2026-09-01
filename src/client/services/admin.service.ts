@@ -265,7 +265,18 @@ export type AdminProfessional = OwnProfessional & {
   reviewedBy: string | null;
 };
 
-export type AdminProfessionalListParams = Paged & { status?: ProfessionalStatus; q?: string };
+/**
+ * One page of the review queue.
+ *
+ * `status` takes one status or several, because the Completed archive is a single
+ * list spanning the three statuses an application can end in. Several are sent as
+ * one comma-separated param rather than as repeated keys, which is the shape the
+ * server's schema parses.
+ */
+export type AdminProfessionalListParams = Paged & {
+  status?: ProfessionalStatus | ProfessionalStatus[];
+  q?: string;
+};
 
 export type ProfessionalDecisionResult = {
   application: AdminProfessional;
@@ -284,7 +295,17 @@ export function listAdminProfessionals(
   params: AdminProfessionalListParams = {},
   signal?: AbortSignal
 ): Promise<AdminPage<AdminProfessional>> {
-  return apiFetch(`/admin/professionals${queryOf({ ...params })}`, { signal });
+  const { status, ...rest } = params;
+
+  return apiFetch(
+    `/admin/professionals${queryOf({
+      ...rest,
+      // An empty array would send `?status=`, which the schema refuses; `queryOf`
+      // only knows to drop undefined.
+      status: Array.isArray(status) ? status.join(',') || undefined : status,
+    })}`,
+    { signal }
+  );
 }
 
 export function getAdminProfessional(id: string, signal?: AbortSignal): Promise<AdminProfessional> {

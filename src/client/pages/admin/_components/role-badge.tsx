@@ -7,8 +7,8 @@ const PILL = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-b
  * account, so it reads as the loud one.
  */
 const TONE: Record<UserRole, string> = {
-  admin: 'bg-teal-900 text-white',
-  professional: 'bg-teal-100 text-teal-900',
+  admin: 'bg-forest-800 text-white',
+  professional: 'bg-forest-100 text-forest-900',
   user: 'bg-slate-100 text-slate-700',
 };
 

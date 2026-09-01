@@ -1,5 +1,7 @@
 import type { MetricTrend } from '@/services/admin.service';
 
+import { CARD, LABEL, MUTED } from './ui';
+
 type StatCardProps = {
   label: string;
   value: number;
@@ -9,8 +11,6 @@ type StatCardProps = {
   /** A second line under the number, for the detail the label cannot carry. */
   hint?: string;
 };
-
-const CARD = 'rounded-lg border border-teal-900/10 bg-white p-5';
 
 /** Locale grouping, so 12400 reads as a number rather than a serial. */
 function formatted(value: number): string {
@@ -27,7 +27,7 @@ function formatted(value: number): string {
 function Trend({ trend }: { trend: MetricTrend }) {
   if (trend.change === null) {
     return (
-      <p className="mt-2 text-xs font-semibold text-slate-500">
+      <p className={`mt-2 ${MUTED}`}>
         {formatted(trend.current)} in this period, no earlier activity to compare
       </p>
     );
@@ -35,14 +35,16 @@ function Trend({ trend }: { trend: MetricTrend }) {
 
   const up = trend.change > 0;
   const flat = trend.change === 0;
-  const tone = flat ? 'text-slate-500' : up ? 'text-emerald-700' : 'text-rose-700';
+  // The console's own green for a rise, so movement reads in the palette the rest of
+  // the page is drawn in rather than in a second, brighter one.
+  const tone = flat ? 'text-slate-600' : up ? 'text-forest-700' : 'text-rose-700';
 
   return (
     <p className={`mt-2 text-xs font-bold ${tone}`}>
       {/* The arrow is decorative: the sign is already in the number beside it. */}
       <span aria-hidden="true">{flat ? '→' : up ? '↑' : '↓'}</span>{' '}
       {flat ? 'No change' : `${up ? '+' : ''}${trend.change}%`}
-      <span className="font-semibold text-slate-500"> vs {formatted(trend.previous)} before</span>
+      <span className="font-semibold text-slate-600"> vs {formatted(trend.previous)} before</span>
     </p>
   );
 }
@@ -57,9 +59,11 @@ function Trend({ trend }: { trend: MetricTrend }) {
 export function StatCard({ label, value, trend, hint }: StatCardProps) {
   return (
     <div className={CARD}>
-      <dt className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</dt>
-      <dd className="mt-2 text-3xl font-black tracking-tight text-slate-950">{formatted(value)}</dd>
-      {hint && <p className="mt-2 text-xs font-semibold text-slate-500">{hint}</p>}
+      <dt className={LABEL}>{label}</dt>
+      {/* Proportional figures at this size, and tabular only where numbers have to
+          line up vertically — a lone headline figure is read, not scanned down. */}
+      <dd className="mt-2 text-3xl font-bold tracking-tight text-forest-900">{formatted(value)}</dd>
+      {hint && <p className={`mt-2 ${MUTED}`}>{hint}</p>}
       {trend && <Trend trend={trend} />}
     </div>
   );
@@ -69,9 +73,9 @@ export function StatCard({ label, value, trend, hint }: StatCardProps) {
 export function StatCardSkeleton() {
   return (
     <div className={`${CARD} animate-pulse`} aria-hidden="true">
-      <div className="h-3 w-24 rounded bg-slate-200" />
-      <div className="mt-3 h-8 w-16 rounded bg-teal-900/10" />
-      <div className="mt-3 h-3 w-32 rounded bg-slate-200" />
+      <div className="h-3 w-24 rounded bg-forest-100" />
+      <div className="mt-3 h-8 w-16 rounded bg-forest-200" />
+      <div className="mt-3 h-3 w-32 rounded bg-forest-100" />
     </div>
   );
 }

@@ -1051,10 +1051,35 @@ export const userStatusUpdateSchema = z
     message: 'Say why in at least 10 characters',
   });
 
+/**
+ * One status, or several comma separated.
+ *
+ * A list rather than a single value because the Completed tab is an archive rather
+ * than a queue: it shows every application that has reached an end, and those ends
+ * are three different statuses. Sending three requests and stitching the pages
+ * together in the client would break paging — page 2 of "everything decided" is not
+ * page 2 of any one status.
+ *
+ * The transform runs before the enum, so `?status=verified,rejected` is validated
+ * member by member and a typo in one of them is still a 400 naming the enum. The
+ * default is spelled as the string a URL would carry, which is what makes it the
+ * same path as an explicit `?status=pending`.
+ */
+const professionalStatusFilter = z
+  .string()
+  .default('pending')
+  .transform((value) =>
+    value
+      .split(',')
+      .map((one) => one.trim())
+      .filter(Boolean)
+  )
+  .pipe(z.array(z.enum(PROFESSIONAL_STATUSES)).min(1, 'Name at least one status'));
+
 /** The review queue. Defaults to 'pending', which is the only reason to open it. */
 export const adminProfessionalListQuerySchema = z.object({
   ...adminPageFields,
-  status: z.enum(PROFESSIONAL_STATUSES).default('pending'),
+  status: professionalStatusFilter,
   q: z.string().trim().min(2, 'Search for at least 2 characters').max(120).optional(),
 });
 

@@ -30,7 +30,7 @@ type Pending =
   | { kind: 'status'; user: AdminUser; status: UserStatus };
 
 const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5 disabled:cursor-not-allowed disabled:opacity-40';
+  'inline-flex items-center justify-center rounded-md border border-forest-200 bg-white px-2.5 py-1 text-xs font-bold text-forest-700 transition-colors hover:border-forest-400 hover:bg-forest-50 disabled:cursor-not-allowed disabled:opacity-40';
 
 /** Reinstating needs no justification; taking access away does. */
 const STATUS_REASON: Record<UserStatus, ReasonMode> = {

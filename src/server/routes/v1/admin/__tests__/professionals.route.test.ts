@@ -87,6 +87,21 @@ async function verified(overrides: Partial<ProfessionalAttrs> = {}) {
   return { user, application: listing as ProfessionalDocument };
 }
 
+/** One that was turned down, which is the other half of the Completed archive. */
+async function rejected(overrides: Partial<ProfessionalAttrs> = {}) {
+  const { user } = await account();
+  const application = await filed(user._id, overrides);
+
+  const refused = await updateProfessional(application._id, {
+    status: 'rejected',
+    reviewedBy: new ObjectId(),
+    reviewedAt: new Date(),
+    rejectionReason: 'The licence number is not on the board register.',
+  });
+
+  return { user, application: refused as ProfessionalDocument };
+}
+
 const REASON = 'The licence number does not match the register for that authority.';
 
 /** The three photographs an application carries, written the way the route does. */
@@ -172,6 +187,49 @@ describe('GET /api/v1/admin/professionals', () => {
 
     expect(res.body.total).toBe(1);
     expect(res.body.items[0].status).toBe('verified');
+  });
+
+  /**
+   * The Completed archive, which is one list of two endings.
+   *
+   * Asserted as a single request rather than as three stitched together, because that
+   * is the whole reason the filter takes a list: page 2 of "everything decided" is not
+   * page 2 of any one status, and a client merging three pages would have no honest
+   * total to draw a pager from.
+   */
+  it('lists several statuses in one read when the filter names them', async () => {
+    const { token } = await account('admin');
+    const waiting = await account();
+    await filed(waiting.user._id, { clinicName: 'Still Waiting Veterinary' });
+    await verified({ clinicName: 'Already Listed Veterinary' });
+    await rejected({ clinicName: 'Turned Down Veterinary' });
+
+    const res = await request(app)
+      .get('/api/v1/admin/professionals?status=verified,rejected,suspended')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+    expect(res.body.items.map((row: { status: string }) => row.status).sort()).toEqual([
+      'rejected',
+      'verified',
+    ]);
+    // The queue is not an ending, so it is not in the archive.
+    expect(res.body.items.map((row: { clinicName: string }) => row.clinicName)).not.toContain(
+      'Still Waiting Veterinary'
+    );
+  });
+
+  it('refuses a status list with a name the enum does not have', async () => {
+    const { token } = await account('admin');
+
+    const res = await request(app)
+      .get('/api/v1/admin/professionals?status=verified,retired')
+      .set('Authorization', `Bearer ${token}`);
+
+    // Refused rather than quietly narrowed to the half that parsed: a filter that
+    // silently drops a status shows a shorter list than it says it is showing.
+    expect(res.status).toBe(400);
   });
 
   it('refuses a page size above the cap', async () => {
