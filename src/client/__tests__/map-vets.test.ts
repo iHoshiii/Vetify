@@ -9,7 +9,7 @@ import {
   toMapVets,
   type MapVet,
   type OsmClinic,
-} from '../components/map-vets';
+} from '../components/map-prof-vet';
 import type {
   NearbyProfessional,
   PublicAddress,

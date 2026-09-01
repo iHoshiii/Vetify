@@ -7,6 +7,8 @@ import { PROFESSIONAL_MOTIVATION_MAX, PROFESSIONAL_MOTIVATION_MIN } from '@share
 import { professionalInquirySchema, type ProfessionalInquiryInput } from '@shared/schemas';
 import { useState, type FormEvent } from 'react';
 
+import LocationPickerField, { type PickedAddress } from './location-picker-field';
+import type { Point } from './pin-picker';
 const FIELD =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2';
 
@@ -16,11 +18,13 @@ const EMPTY = {
   name: '',
   email: '',
   licenseNumber: '',
+  licenseAuthority: 'Professional Regulation Commission',
+  yearsExperience: '',
+  clinicName: '',
   currentLocation: '',
   clinicLocation: '',
   motivation: '',
   phone: '',
-  yearsExperience: '',
 };
 
 /** First message per field, which is all a field can show. */
@@ -45,6 +49,10 @@ export default function InquiryForm() {
   const { user } = useAuth();
 
   const [values, setValues] = useState(() => ({ ...EMPTY, email: user?.email ?? '' }));
+  const [pins, setPins] = useState<{ current: Point | null; clinic: Point | null }>({
+    current: null,
+    clinic: null,
+  });
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState('');
 
@@ -53,6 +61,20 @@ export default function InquiryForm() {
   function set(field: keyof typeof EMPTY) {
     return (event: { target: { value: string } }) =>
       setValues((current) => ({ ...current, [field]: event.target.value }));
+  }
+
+  function setLocation(
+    field: 'currentLocation' | 'clinicLocation',
+    pinField: 'current' | 'clinic'
+  ) {
+    return (point: Point, address: PickedAddress) => {
+      setPins((current) => ({ ...current, [pinField]: point }));
+      const parts = [address.line1, address.city, address.province, address.postalCode].filter(
+        Boolean
+      );
+      const unique = parts.filter((part, index) => parts.indexOf(part) === index);
+      setValues((current) => ({ ...current, [field]: unique.join(', ') }));
+    };
   }
 
   function handleSubmit(event: FormEvent) {
@@ -64,11 +86,13 @@ export default function InquiryForm() {
       name: values.name,
       email: values.email,
       licenseNumber: values.licenseNumber,
+      licenseAuthority: values.licenseAuthority,
+      yearsExperience: values.yearsExperience,
+      clinicName: values.clinicName,
       currentLocation: values.currentLocation,
       clinicLocation: values.clinicLocation,
       motivation: values.motivation,
       phone: values.phone,
-      yearsExperience: values.yearsExperience,
     };
 
     // The same schema the route validates with, so the first pass costs no round
@@ -144,36 +168,64 @@ export default function InquiryForm() {
           required
         />
         <Input
-          label="Contact number (optional)"
-          value={values.phone}
-          onChange={set('phone')}
-          error={errors.phone}
-          placeholder="+63 32 555 0101"
-        />
-        <Input
-          label="Where you are based"
-          value={values.currentLocation}
-          onChange={set('currentLocation')}
-          error={errors.currentLocation}
-          placeholder="Cebu City, Cebu"
+          label="Issuing authority"
+          value={values.licenseAuthority}
+          onChange={set('licenseAuthority')}
+          error={errors.licenseAuthority}
           required
         />
         <Input
-          label="Where you practise (optional)"
-          value={values.clinicLocation}
-          onChange={set('clinicLocation')}
-          error={errors.clinicLocation}
-          placeholder="Mandaue, Cebu"
-        />
-        <Input
-          label="Years in practice (optional)"
+          label="Years in practice"
           type="number"
           min={0}
           max={70}
           value={values.yearsExperience}
           onChange={set('yearsExperience')}
           error={errors.yearsExperience}
+          required
         />
+        <Input
+          label="Clinic name"
+          value={values.clinicName}
+          onChange={set('clinicName')}
+          error={errors.clinicName}
+          placeholder="Bayside Animal Clinic"
+        />
+        <Input
+          label="Business contact number (optional)"
+          value={values.phone}
+          onChange={set('phone')}
+          error={errors.phone}
+          placeholder="+63 32 555 0101"
+        />
+        <div className="space-y-2">
+          <LocationPickerField
+            label="Where you are based"
+            value={pins.current}
+            address={values.currentLocation}
+            onChange={setLocation('currentLocation', 'current')}
+          />
+          <p className="text-xs text-slate-500">
+            {values.currentLocation || 'Drop the pin to fill your address automatically.'}
+          </p>
+          {errors.currentLocation && (
+            <p className="text-xs font-medium text-red-500">{errors.currentLocation}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <LocationPickerField
+            label="Where you practise (optional)"
+            value={pins.clinic}
+            address={values.clinicLocation}
+            onChange={setLocation('clinicLocation', 'clinic')}
+          />
+          <p className="text-xs text-slate-500">
+            {values.clinicLocation || 'Optional: pin where you practise.'}
+          </p>
+          {errors.clinicLocation && (
+            <p className="text-xs font-medium text-red-500">{errors.clinicLocation}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">

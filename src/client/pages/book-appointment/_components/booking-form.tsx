@@ -2,9 +2,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { APPOINTMENT_REASON_MAX, APPOINTMENT_REASON_MIN } from '@shared/limits';
 import { useId, useState, type FormEvent } from 'react';
 
-const FIELD =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2';
-const LABEL = 'text-xs font-bold uppercase tracking-wider text-slate-500';
+import { FIELD, LABEL } from './styles';
 
 export type BookingDetails = {
   petName: string;
@@ -14,16 +12,8 @@ export type BookingDetails = {
 };
 
 /**
- * Step four: the animal, and why.
- *
- * The pet is typed rather than chosen from a list. Vetify has a pets collection but no
- * endpoint and no screen to manage one, so a picker would be a picker over nothing —
- * and a booking that cannot say which animal it is about is no use to the vet reading
- * it. When a pet registry exists, this becomes a select and the fields stay as the
- * fallback for an animal that is not on it.
- *
- * The reason has a floor for the same purpose the enquiry motivation does: this is
- * what the vet decides on, and "sick" is not something anybody can act on.
+ * Step four: the animal, and why. The pet is typed rather than picked — there is no
+ * screen to manage one yet, so a picker would be a picker over nothing.
  */
 export default function BookingForm({
   isPending,
@@ -94,6 +84,7 @@ export default function BookingForm({
         <label htmlFor={ids.reason} className={LABEL}>
           What is it about?
         </label>
+        {/* A floor, because this is what the vet decides on and "sick" is not actionable. */}
         <textarea
           id={ids.reason}
           value={values.reason}
@@ -125,8 +116,6 @@ export default function BookingForm({
           className={`${FIELD} mt-1`}
         />
         <p className="mt-1 text-xs text-slate-500">
-          {/* Said plainly, because handing a stranger your number is a decision rather
-              than a form field. */}
           Given to this vet only, so they can reach you about this booking. They already have{' '}
           {user?.email ?? 'your email address'}.
         </p>

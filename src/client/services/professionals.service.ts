@@ -140,8 +140,12 @@ export type InviteSummary = {
   name: string;
   email: string;
   licenseNumber: string;
+  licenseAuthority?: string;
   currentLocation: string;
   clinicLocation: string | null;
+  clinicName?: string | null;
+  phone?: string | null;
+  yearsExperience?: number;
   expiresAt: string;
 };
 

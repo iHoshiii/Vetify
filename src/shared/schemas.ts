@@ -508,38 +508,29 @@ export const liveLocationSchema = z.object({
   capturedAt: z.string().datetime({ message: 'A location fix has to say when it was taken' }),
 });
 
-const professionalAddressSchema = z
-  .object({
-    kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
-    line1: z
-      .string()
-      .trim()
-      .min(6, 'Give the street and number')
-      .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
-    city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
-    province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
-    postalCode: z
-      .string()
-      .trim()
-      .max(12, 'That postal code is too long')
-      .optional()
-      .or(z.literal('').transform(() => undefined)),
-    /**
-     * Where the device said this was. Required on a home address and welcome on a
-     * clinic one: a clinic can be found by its name and its street, and a house
-     * on an unnamed road cannot.
-     */
-    fix: liveLocationSchema.nullish(),
-  })
-  .superRefine((address, ctx) => {
-    if (address.kind === 'home' && !address.fix) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['fix'],
-        message: 'A home address needs a live location fix taken at the address.',
-      });
-    }
-  });
+const professionalAddressSchema = z.object({
+  kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
+  line1: z
+    .string()
+    .trim()
+    .min(6, 'Give the street and number')
+    .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
+  city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
+  province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
+  postalCode: z
+    .string()
+    .trim()
+    .max(12, 'That postal code is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  /**
+   * Where the device said this was. Required on a home address and welcome on a
+   * clinic one: a clinic can be found by its name and its street, and a house
+   * on an unnamed road cannot.
+   */
+  fix: liveLocationSchema.nullish(),
+  mapPin: mapPinSchema.nullish(),
+});
 
 const professionalAddressesField = z
   .array(professionalAddressSchema)
@@ -568,6 +559,7 @@ export const professionalApplySchema = z
   .object({
     ...professionalFields,
     specialties: professionalFields.specialties.default([]),
+    bio: professionalFields.bio.default(''),
     /** The name on the licence, checked against the PRC register. */
     fullName: professionalNameField,
     businessPhone: phoneField,
@@ -880,6 +872,9 @@ export const professionalInquirySchema = z.object({
     .trim()
     .min(2, 'Where are you based?')
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line'),
+  licenseAuthority: professionalFields.licenseAuthority.default(
+    'Professional Regulation Commission'
+  ),
   /** Where they practise, when that is somewhere else. Often the same place. */
   clinicLocation: z
     .string()
@@ -887,6 +882,7 @@ export const professionalInquirySchema = z.object({
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  clinicName: professionalFields.clinicName,
   /**
    * "Why do you want to join our team?" — the whole basis for the invite decision,
    * which is why it has a floor. A reviewer cannot act on three words.

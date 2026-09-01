@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
+import { PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
 import { ObjectId } from 'mongodb';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -1127,7 +1128,7 @@ describe('GET /api/v1/professionals/near', () => {
     const res = await near();
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ items: [], radiusKm: 50 });
+    expect(res.body).toMatchObject({ items: [], radiusKm: PROFESSIONAL_NEAR_RADIUS_KM });
   });
 
   it('ranks the nearest first, in metres', async () => {

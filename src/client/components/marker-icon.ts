@@ -1,58 +1,24 @@
-/**
- * The pin every Vetify map draws, in one place.
- *
- * Lifted out of `VetMap` when the vets' own addresses arrived on it, for a reason
- * that is really a product decision rather than a tidiness one: a clinic scraped from
- * OpenStreetMap and a clinic a verified vet pinned themselves are the same *kind* of
- * thing to somebody reading the map, so they get the same teardrop and the same paw,
- * drawn by the same function. The settings-side picker imports it too, so the marker
- * a vet drags into place is literally the marker a stranger will see.
- *
- * Only the fill differs. Finding *ours* is the point of the feature, and two pins in
- * identical blue would bury the handful that are bookable under the thousands that
- * are not.
- */
+// customize vet clinic icon on the map
 
 export type MarkerPalette = {
-  /** The teardrop body, and the paw inside the white circle. */
   fill: string;
-  /** The teardrop's outline, a shade darker. */
   stroke: string;
-  /** The drop shadow under the whole thing, as an rgba() string. */
   shadow: string;
 };
-
-/** OpenStreetMap's clinics: the blue this map has drawn since it was written. */
 export const OSM_PALETTE: MarkerPalette = {
   fill: '#2563eb',
   stroke: '#1d4ed8',
   shadow: 'rgba(37,99,235,0.35)',
 };
 
-/** Vetify's own verified vets, in the teal the rest of the product is built from. */
 export const VETIFY_PALETTE: MarkerPalette = {
   fill: '#0f766e',
   stroke: '#115e59',
   shadow: 'rgba(15,118,110,0.4)',
 };
-
-/**
- * The pin's box, and where on it the point is.
- *
- * Exported because a tooltip or popup offset that does not match the anchor floats
- * away from the pin it belongs to, and two modules now place things against it.
- */
 export const MARKER_SIZE: [number, number] = [36, 44];
 export const MARKER_ANCHOR: [number, number] = [18, 44];
 export const POPUP_ANCHOR: [number, number] = [0, -46];
-
-/**
- * The drawing itself: a teardrop, a white disc, and a five-ellipse paw.
- *
- * A string rather than JSX because Leaflet's `divIcon` takes HTML, and because the
- * same markup is what a popup or a legend would need. Nothing here is interpolated
- * from user input — only from the palettes above.
- */
 export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
   const [width, height] = MARKER_SIZE;
 
@@ -74,13 +40,6 @@ export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
     `;
 }
 
-/**
- * The Leaflet icon.
- *
- * Takes the module rather than importing it, because Leaflet is loaded dynamically —
- * it touches `window` on import, and both callers are inside an effect that has
- * already awaited it.
- */
 export function createMarkerIcon(
   L: typeof import('leaflet'),
   palette: MarkerPalette = OSM_PALETTE
