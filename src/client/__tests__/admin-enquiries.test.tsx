@@ -194,11 +194,11 @@ describe('the enquiries tab', () => {
     expect(screen.getByText('Sent 2 times')).toBeInTheDocument();
   });
 
-  it('demands a reason to decline, and sends it', async () => {
+  it('demands a reason to reject, and sends it', async () => {
     const user = userEvent.setup();
     renderTab();
 
-    await user.click(screen.getByRole('button', { name: 'Decline' }));
+    await user.click(screen.getByRole('button', { name: 'Reject' }));
 
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('(required)')).toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('the enquiries tab', () => {
       within(dialog).getByRole('textbox'),
       'The licence number is not on the board register.'
     );
-    await user.click(within(dialog).getByRole('button', { name: 'Decline' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Reject' }));
 
     expect(decline.mutate).toHaveBeenCalledTimes(1);
     expect(decline.mutate.mock.calls[0][0]).toEqual({
@@ -229,12 +229,15 @@ describe('the enquiries tab', () => {
 
     renderTab();
 
-    // Scoped to the table: the status filter has an option reading 'Declined' too.
+    // Scoped to the table: the status filter has an option reading 'Declined' too —
+    // that one is the stored status, which the rename deliberately left alone.
     const table = screen.getByRole('table');
     expect(within(table).getByText(/Application filed/)).toBeInTheDocument();
-    expect(within(table).getByText('Declined')).toBeInTheDocument();
+    // A filed enquiry is spent, not finished: the row says where the verdict is owed.
+    expect(within(table).getByText(/Awaiting a verdict in Application/)).toBeInTheDocument();
+    expect(within(table).getByText('Rejected')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Invite' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
   });
 
   it('tells an automatic refusal from a decision somebody made', () => {
@@ -242,7 +245,7 @@ describe('the enquiries tab', () => {
       inquiry({
         status: 'declined',
         declineReason: 'Automatic: no licence number was given',
-        // What the screen leaves behind: a decline with nobody against it.
+        // What the screen leaves behind: a rejection with nobody against it.
         reviewedBy: null,
       }),
     ]);
@@ -250,7 +253,7 @@ describe('the enquiries tab', () => {
     renderTab();
 
     const table = screen.getByRole('table');
-    expect(within(table).getByText('Declined automatically')).toBeInTheDocument();
+    expect(within(table).getByText('Rejected automatically')).toBeInTheDocument();
     // The rule stays readable, because it is the first thing a reviewer checking up on
     // the screen wants to see.
     expect(within(table).getByText(/no licence number was given/)).toBeInTheDocument();
