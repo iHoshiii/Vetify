@@ -75,8 +75,6 @@ export default function App() {
           <Route path="accepted" element={<AdminApplicationQueue phase="accepted" />} />
           <Route path="rejected" element={<AdminApplicationQueue phase="rejected" />} />
           <Route path="completed" element={<AdminApplicationQueue phase="completed" />} />
-          {/* The one tab that is not a list of people: the pipeline in aggregate. */}
-          <Route path="statistics" element={<AdminApplicationStatistics />} />
           {/* What the two review tabs were called before the phases were named after
               the decision each one asks for. Bookmarked paths, so they redirect rather
               than 404. */}
@@ -91,7 +89,9 @@ export default function App() {
             sidebar. */}
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
+          <Route path="public" element={<AdminAccountsTab role="user" />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="admins" element={<AdminAccountsTab role="admin" />} />
           {/* Where the two queues used to live. Kept as redirects because they are
               paths people have bookmarked and linked to. */}
           <Route path="enquiries" element={<Navigate to="/admin/applications" replace />} />
@@ -100,6 +100,8 @@ export default function App() {
             element={<Navigate to="/admin/applications/application" replace />}
           />
         </Route>
+        {/* Statistics is a sidebar workspace, separate from the application phase rail. */}
+        <Route path="applications/statistics" element={<AdminApplicationStatistics />} />
         {/* And where it lived before that. */}
         <Route
           path="professionals"

@@ -2,6 +2,7 @@ export {
   activityEventsCollection,
   countActivityBetween,
   countActivityPerDay,
+  countActivityPerDayByProvider,
   flushActivity,
   recordActivity,
   type RecordActivityInput,

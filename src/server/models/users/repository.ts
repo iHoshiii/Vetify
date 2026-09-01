@@ -142,6 +142,7 @@ export type FindUsersOptions = {
   sort?: AdminUserSort;
   page?: number;
   limit?: number;
+  days?: 7 | 30 | 90;
 };
 
 const USER_SORTS: Record<AdminUserSort, Sort> = {
@@ -166,12 +167,22 @@ const USER_SORTS: Record<AdminUserSort, Sort> = {
 export async function findUsersPaginated(
   options: FindUsersOptions = {}
 ): Promise<{ items: User[]; total: number }> {
-  const { q, role, status, provider, sort = 'newest', page = 1, limit = ADMIN_PAGE_SIZE } = options;
+  const {
+    q,
+    role,
+    status,
+    provider,
+    sort = 'newest',
+    page = 1,
+    limit = ADMIN_PAGE_SIZE,
+    days,
+  } = options;
 
   const filter: Filter<UserDocument> = {};
   if (role) filter.role = role;
   if (status) filter.status = status;
   if (provider) filter.provider = provider;
+  if (days) filter.createdAt = { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) };
 
   const term = q?.trim();
   if (term) {

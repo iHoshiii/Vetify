@@ -1020,6 +1020,13 @@ export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number];
 
 export const adminUserListQuerySchema = z.object({
   ...adminPageFields,
+  /** The signup window the list can be narrowed to. Three literals rather than a
+   * range, so the filter the console offers and the type it hands the query agree. */
+  days: z.coerce
+    .number()
+    .int()
+    .pipe(z.literal([7, 30, 90], 'Filter by 7, 30 or 90 days'))
+    .optional(),
   q: z.string().trim().min(2, 'Search for at least 2 characters').max(120).optional(),
   role: z.enum(USER_ROLES).optional(),
   status: z.enum(USER_STATUSES).optional(),
@@ -1160,6 +1167,11 @@ export const metricsTimeseriesQuerySchema = z.object({
   days: daysField,
 });
 
+export const metricsProviderTimeseriesQuerySchema = z.object({
+  metric: z.enum(['signups', 'logins', 'applications', 'users']),
+  days: daysField,
+});
+
 /**
  * One breakdown chart, optionally narrowed to a single role.
  *
@@ -1188,6 +1200,7 @@ export type AdminProfessionalListQuery = z.output<typeof adminProfessionalListQu
 export type AdminAuditListQuery = z.output<typeof adminAuditListQuerySchema>;
 export type MetricsOverviewQuery = z.output<typeof metricsOverviewQuerySchema>;
 export type MetricsTimeseriesQuery = z.output<typeof metricsTimeseriesQuerySchema>;
+export type MetricsProviderTimeseriesQuery = z.output<typeof metricsProviderTimeseriesQuerySchema>;
 export type MetricsBreakdownQuery = z.output<typeof metricsBreakdownQuerySchema>;
 
 export type BlogHideInput = z.output<typeof blogHideSchema>;

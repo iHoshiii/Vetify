@@ -37,11 +37,53 @@ const series = {
   error: null,
   refetch: vi.fn(),
 };
+const providerSeries = {
+  data: {
+    lines: ['facebook', 'tiktok', 'local', 'google', 'total'].map((provider) => ({
+      provider,
+      points: [{ date: '2026-08-30', count: provider === 'total' ? 2 : 0 }],
+    })),
+  },
+  isPending: false,
+  isFetching: false,
+  isError: false,
+  error: null,
+};
+const overview = {
+  data: {
+    days: 30,
+    generatedAt: '2026-08-31T00:00:00.000Z',
+    totals: {
+      users: 10,
+      admins: 1,
+      professionals: 6,
+      pendingApplications: 4,
+      blogs: 8,
+      publishedBlogs: 7,
+      flaggedBlogs: 1,
+      moderatedBlogs: 2,
+    },
+    trend: {
+      signups: { current: 5, previous: 2, change: 150 },
+      logins: { current: 12, previous: 8, change: 50 },
+      chats: { current: 3, previous: 3, change: 0 },
+      blogs: { current: 4, previous: 2, change: 100 },
+      applications: { current: 6, previous: 3, change: 100 },
+    },
+  },
+  isPending: false,
+  isFetching: false,
+  isError: false,
+  error: null,
+  refetch: vi.fn(),
+};
 
 /** What the line chart was asked for, which is what the window control changes. */
 const asked: { days: number | undefined } = { days: undefined };
 
 vi.mock('@/hooks/useAdminMetrics', () => ({
+  useMetricsOverview: () => overview,
+  useMetricsProviderTimeseries: () => providerSeries,
   useMetricsBreakdown: (dimension: string) =>
     dimension === 'inquiryStatus' ? inquiries : applications,
   useMetricsTimeseries: (_metric: string, days: number) => {
@@ -70,26 +112,6 @@ beforeEach(() => {
 });
 
 describe('the statistics tab', () => {
-  it('shows both halves of the funnel, so the two can be compared', () => {
-    renderTab();
-
-    // The enquiry split is the half the old pair of charts never drew: without it
-    // there is no way to see invitations going out and not coming back.
-    expect(screen.getByText('Enquiries by status')).toBeInTheDocument();
-    expect(screen.getByText('Applications by status')).toBeInTheDocument();
-  });
-
-  it('reads every slice as text, not only as a bar', () => {
-    renderTab();
-
-    // The relief channel the palette depends on: two of its hues sit under 3:1 on a
-    // white panel, which is legal only because the count and share are written out.
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-    expect(screen.getByText('57%')).toBeInTheDocument();
-    expect(screen.getByText('Verified')).toBeInTheDocument();
-    expect(screen.getByText('75%')).toBeInTheDocument();
-  });
-
   it('opens on a month and moves the line, not the splits', async () => {
     const user = userEvent.setup();
     renderTab();
@@ -101,8 +123,7 @@ describe('the statistics tab', () => {
 
     // A breakdown is the shape of what exists now, so the window says nothing about
     // it — the label that carries a span is the line's alone.
-    expect(screen.getByText('Applications filed, last 7 days')).toBeInTheDocument();
-    expect(screen.getByText('Applications by status')).toBeInTheDocument();
+    expect(screen.getByText('Signups, last 7 days')).toBeInTheDocument();
   });
 
   it('says which window is on, for anybody not reading the fill', async () => {
@@ -157,7 +178,7 @@ describe('the phase rail', () => {
 
     const rail = screen.getByRole('navigation', { name: 'Application phases' });
     const items = within(rail).getAllByRole('listitem');
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(5);
 
     // The complaint this fixes: content-width tabs left most of the rail empty on a
     // console-width screen. Each tab is at least as wide as its label and they share
@@ -165,14 +186,20 @@ describe('the phase rail', () => {
     for (const item of items) expect(item.className).toContain('sm:flex-1');
   });
 
-  it('carries a badge only on the queues that owe somebody a decision', () => {
+  it('keeps statistics out of the application phase rail', () => {
     renderWith(<AdminApplicationsLayout />);
 
     const rail = screen.getByRole('navigation', { name: 'Application phases' });
-    // 4 pending enquiries; the application queue has none waiting in this fixture, and
-    // an outcome tab is not a queue, so neither gets a number.
-    expect(within(rail).getByText('4')).toBeInTheDocument();
     expect(within(rail).getByRole('link', { name: /^Accepted$/ })).toBeInTheDocument();
-    expect(within(rail).getByRole('link', { name: /^Statistics$/ })).toBeInTheDocument();
+    expect(within(rail).queryByRole('link', { name: /^Statistics$/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the requested platform activity metrics', () => {
+    renderTab();
+
+    const filters = screen.getByRole('group', { name: 'Platform metric' });
+    for (const label of ['Signups', 'Sign-ins', 'Users', 'Posts written', 'Applications']) {
+      expect(within(filters).getByRole('button', { name: label })).toBeInTheDocument();
+    }
   });
 });

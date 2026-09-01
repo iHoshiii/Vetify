@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { BUTTON, CONTROL, LABEL } from './ui';
 
@@ -63,21 +63,37 @@ export function SearchBox({
   value,
   placeholder,
   onSearch,
+  live = false,
 }: {
   label: string;
   value: string | undefined;
   placeholder: string;
   onSearch: (value: string | undefined) => void;
+  live?: boolean;
 }) {
   const id = useId();
   const [text, setText] = useState(value ?? '');
+  const onSearchRef = useRef(onSearch);
 
   // Follows the URL, so the back button and a cleared filter both land in the box.
   useEffect(() => setText(value ?? ''), [value]);
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    if (!live) return;
+
+    const timer = window.setTimeout(() => {
+      onSearchRef.current(text.trim() || undefined);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [text, live]);
 
   return (
     <form
-      className="flex items-center gap-2"
+      className="flex min-w-0 flex-1 items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
         onSearch(text.trim() || undefined);
@@ -92,7 +108,7 @@ export function SearchBox({
         value={text}
         onChange={(event) => setText(event.target.value)}
         placeholder={placeholder}
-        className={`${CONTROL} w-56`}
+        className={`${CONTROL} min-w-0 flex-1`}
       />
       <button type="submit" className={BUTTON}>
         Search
@@ -110,5 +126,5 @@ export function SearchBox({
  * has columns to put in it.
  */
 export function ListToolbar({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-3">{children}</div>;
+  return <div className="flex w-full flex-wrap items-center gap-3">{children}</div>;
 }

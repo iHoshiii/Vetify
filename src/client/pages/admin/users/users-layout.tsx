@@ -1,9 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { HEADING, LEDE, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_components/ui';
+import { HEADING, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_components/ui';
 
 /**
- * The two views of the same people.
+ * The four role filters for the same people.
  *
  * Accounts first because it is every account and the landing, then the role with a
  * directory listing attached. Routes rather than local state, so a tab is a link
@@ -14,8 +14,10 @@ import { HEADING, LEDE, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_com
  * with an outcome, not another way of looking at an account.
  */
 const TABS = [
-  { to: '/admin/users', label: 'Accounts', end: true },
-  { to: '/admin/users/professionals', label: 'Professionals', end: false },
+  { to: '/admin/users', label: 'Total', end: true },
+  { to: '/admin/users/public', label: 'Public users', end: true },
+  { to: '/admin/users/professionals', label: 'Professionals', end: true },
+  { to: '/admin/users/admins', label: 'Admins', end: true },
 ] as const;
 
 /**
@@ -31,9 +33,6 @@ export default function AdminUsersLayout() {
     <div className="space-y-5">
       <div>
         <h2 className={HEADING}>User management</h2>
-        <p className={`mt-1 ${LEDE}`}>
-          Roles and access for every account, and the professionals among them.
-        </p>
       </div>
 
       <nav aria-label="User management views">

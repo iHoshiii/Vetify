@@ -89,9 +89,14 @@ export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
   const { user: me } = useAuth();
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
+  const rawDays = get('days');
+  const days: 7 | 30 | 90 | undefined =
+    rawDays === '7' ? 7 : rawDays === '30' ? 30 : rawDays === '90' ? 90 : undefined;
 
   const params = {
     page,
+    limit: 20,
+    days,
     q: get('q'),
     role,
     status: pick(get('status'), USER_STATUSES),
@@ -188,18 +193,20 @@ export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
 
         return (
           <div className="flex flex-wrap justify-end gap-1.5">
-            {USER_ROLES.filter((option) => option !== row.role).map((option) => (
-              <button
-                key={option}
-                type="button"
-                disabled={isSelf}
-                title={isSelf ? 'You cannot change your own role.' : undefined}
-                onClick={() => open({ kind: 'role', user: row, role: option })}
-                className={ACTION}
-              >
-                Make {option}
-              </button>
-            ))}
+            {USER_ROLES.filter((option) => option !== row.role && option !== 'professional').map(
+              (option) => (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={isSelf}
+                  title={isSelf ? 'You cannot change your own role.' : undefined}
+                  onClick={() => open({ kind: 'role', user: row, role: option })}
+                  className={ACTION}
+                >
+                  Make {option}
+                </button>
+              )
+            )}
 
             {USER_STATUSES.filter((status) => status !== row.status).map((status) => (
               <button
@@ -226,6 +233,7 @@ export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
           label="Search accounts"
           value={get('q')}
           placeholder="Name or email"
+          live
           onSearch={(q) => set({ q })}
         />
         {roleFilter && (
@@ -247,6 +255,24 @@ export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
           value={get('provider')}
           options={AUTH_PROVIDERS}
           onChange={(provider) => set({ provider })}
+        />
+        <FilterSelect
+          label="Signed up"
+          value={days ? `${days} days` : undefined}
+          options={['7 days', '30 days', '90 days']}
+          allLabel="All Time"
+          onChange={(value) =>
+            set({
+              days:
+                value === '7 days'
+                  ? 7
+                  : value === '30 days'
+                  ? 30
+                  : value === '90 days'
+                  ? 90
+                  : undefined,
+            })
+          }
         />
       </ListToolbar>
 

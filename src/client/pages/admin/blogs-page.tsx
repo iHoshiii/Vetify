@@ -94,6 +94,7 @@ export default function AdminBlogsPage() {
 
   const params = {
     page,
+    limit: 20,
     q: get('q'),
     tag: get('tag'),
     status: pick(get('status'), BLOG_STATUSES),
