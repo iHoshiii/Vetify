@@ -2,9 +2,11 @@ import {
   metricsBreakdownQuerySchema,
   metricsOverviewQuerySchema,
   metricsTimeseriesQuerySchema,
+  metricsProviderTimeseriesQuerySchema,
   type MetricsBreakdownQuery,
   type MetricsOverviewQuery,
   type MetricsTimeseriesQuery,
+  type MetricsProviderTimeseriesQuery,
 } from '@shared/schemas';
 import { Router } from 'express';
 
@@ -13,6 +15,7 @@ import {
   metricsBreakdown,
   metricsOverview,
   metricsTimeseries,
+  metricsProviderTimeseries,
 } from '../../../services/metrics.service';
 import { ok } from '../../../utils/response';
 
@@ -54,6 +57,15 @@ router.get('/timeseries', validateQuery(metricsTimeseriesQuerySchema), async (re
 
   ok(res, await metricsTimeseries(query.metric, query.days));
 });
+
+router.get(
+  '/timeseries/providers',
+  validateQuery(metricsProviderTimeseriesQuerySchema),
+  async (req, res) => {
+    const query = req.validatedQuery as MetricsProviderTimeseriesQuery;
+    ok(res, await metricsProviderTimeseries(query.metric, query.days));
+  }
+);
 
 /**
  * GET /api/v1/admin/metrics/breakdown?dimension=&role=

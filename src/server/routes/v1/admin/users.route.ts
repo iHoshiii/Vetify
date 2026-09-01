@@ -41,6 +41,7 @@ router.get('/', validateQuery(adminUserListQuerySchema), async (req, res) => {
     sort: query.sort,
     page: query.page,
     limit: query.limit,
+    days: query.days,
   });
 
   ok(res, toAdminUserPage({ items, total, page: query.page, limit: query.limit }));

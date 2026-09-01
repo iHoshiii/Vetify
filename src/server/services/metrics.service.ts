@@ -9,12 +9,14 @@ import {
   countActiveAdmins,
   countActivityBetween,
   countActivityPerDay,
+  countActivityPerDayByProvider,
   countBlogsBetween,
   countBlogsByStatus,
   countInquiriesByStatus,
   countBlogsPerDay,
   countProfessionalsByStatus,
   countUsersBy,
+  countAuditPerDay,
   type ActivityType,
   type DailyCount,
 } from '../models';
@@ -67,6 +69,14 @@ export type MetricsTimeseries = {
   from: string;
   to: string;
   points: DailyCount[];
+};
+
+export type MetricsProviderTimeseries = {
+  metric: 'signups' | 'logins' | 'applications' | 'users';
+  days: number;
+  from: string;
+  to: string;
+  lines: { provider: string; points: DailyCount[] }[];
 };
 
 export type MetricsBreakdown = {
@@ -290,6 +300,101 @@ export async function metricsTimeseries(
       to: isoDay(new Date(to.getTime() - DAY_MS)),
       points,
     };
+  });
+}
+
+/**
+ * The sign-in methods a provider-split chart draws a line for, in legend order.
+ *
+ * Written out rather than taken from AUTH_PROVIDERS: this is the order the chart
+ * reads in, and a provider with no events still owes the legend a flat line.
+ */
+const PROVIDER_LINES = ['facebook', 'tiktok', 'local', 'google'] as const;
+
+export async function metricsProviderTimeseries(
+  metric: 'signups' | 'logins' | 'applications' | 'users',
+  days: number,
+  now = new Date()
+): Promise<MetricsProviderTimeseries> {
+  return cached(`provider-timeseries:${metric}:${days}`, async () => {
+    const { from, to } = windowOf(days, now);
+    if (metric === 'users') {
+      const roles = await countUsersBy('role');
+      const date = isoDay(new Date(to.getTime() - DAY_MS));
+      const roleLines = [
+        { provider: 'admin', count: roles.admin ?? 0 },
+        { provider: 'professionals', count: roles.professional ?? 0 },
+        { provider: 'public', count: roles.user ?? 0 },
+      ];
+      return {
+        metric,
+        days,
+        from: isoDay(from),
+        to: date,
+        lines: [
+          ...roleLines.map(({ provider, count }) => ({ provider, points: [{ date, count }] })),
+          {
+            provider: 'total',
+            points: [{ date, count: roleLines.reduce((sum, role) => sum + role.count, 0) }],
+          },
+        ],
+      };
+    }
+
+    /**
+     * The named lines, plus the 'total' drawn over them.
+     *
+     * The total is summed from the lines rather than counted again, so a line and
+     * the total above it cannot disagree about the same day.
+     */
+    function seriesOf(
+      named: { provider: string; rows: DailyCount[] }[]
+    ): MetricsProviderTimeseries {
+      const lines = named.map(({ provider, rows }) => ({
+        provider,
+        points: fill(rows, from, days),
+      }));
+      const totals = Array.from({ length: days }, (_, index) => ({
+        date: lines[0]?.points[index]?.date ?? isoDay(new Date(from.getTime() + index * DAY_MS)),
+        count: lines.reduce((sum, line) => sum + (line.points[index]?.count ?? 0), 0),
+      }));
+
+      return {
+        metric,
+        days,
+        from: isoDay(from),
+        to: isoDay(new Date(to.getTime() - DAY_MS)),
+        lines: [...lines, { provider: 'total', points: totals }],
+      };
+    }
+
+    // A phase is not a sign-in method: what was filed comes from the activity
+    // events, and the two verdicts from the audit log, because a decision is
+    // written down there and nowhere else.
+    if (metric === 'applications') {
+      const [filed, approved, rejected] = await Promise.all([
+        countActivityPerDay({ type: SERIES_ACTIVITY.applications, from }),
+        countAuditPerDay('professional.verified', from),
+        countAuditPerDay('professional.rejected', from),
+      ]);
+
+      return seriesOf([
+        { provider: 'pending', rows: filed },
+        { provider: 'approved', rows: approved },
+        { provider: 'rejected', rows: rejected },
+      ]);
+    }
+
+    const rows = await countActivityPerDayByProvider({ type: SERIES_ACTIVITY[metric], from });
+
+    return seriesOf(
+      PROVIDER_LINES.map((provider) => ({
+        provider,
+        rows: rows
+          .filter((row) => row.provider === provider)
+          .map(({ date, count }) => ({ date, count })),
+      }))
+    );
   });
 }
 
