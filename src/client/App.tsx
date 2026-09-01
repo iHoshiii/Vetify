@@ -63,15 +63,25 @@ export default function App() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
-        {/* The licence pipeline, in the three phases somebody moves through. Its own
+        {/* The licence pipeline, in the phases somebody moves through. Its own
             section rather than tabs under Users, because it is a journey rather than a
             view of an account: the queues decide whether somebody becomes a
             professional at all, and Users is where the account is administered once
             they have. */}
         <Route path="applications" element={<AdminApplicationsLayout />}>
           <Route index element={<AdminRequestTab />} />
-          <Route path="verification" element={<AdminApplicationQueue phase="verification" />} />
-          <Route path="approved" element={<AdminApplicationQueue phase="approved" />} />
+          <Route path="application" element={<AdminApplicationQueue phase="application" />} />
+          <Route path="accepted" element={<AdminApplicationQueue phase="accepted" />} />
+          <Route path="rejected" element={<AdminApplicationQueue phase="rejected" />} />
+          <Route path="completed" element={<AdminApplicationQueue phase="completed" />} />
+          {/* What the two review tabs were called before the phases were named after
+              the decision each one asks for. Bookmarked paths, so they redirect rather
+              than 404. */}
+          <Route
+            path="verification"
+            element={<Navigate to="/admin/applications/application" replace />}
+          />
+          <Route path="approved" element={<Navigate to="/admin/applications/accepted" replace />} />
         </Route>
         {/* Accounts, and the professionals among them: two views of the same people,
             which is why they are one section with tabs rather than two in the
@@ -84,13 +94,13 @@ export default function App() {
           <Route path="enquiries" element={<Navigate to="/admin/applications" replace />} />
           <Route
             path="applications"
-            element={<Navigate to="/admin/applications/verification" replace />}
+            element={<Navigate to="/admin/applications/application" replace />}
           />
         </Route>
         {/* And where it lived before that. */}
         <Route
           path="professionals"
-          element={<Navigate to="/admin/applications/verification" replace />}
+          element={<Navigate to="/admin/applications/application" replace />}
         />
         <Route path="blogs" element={<AdminBlogsPage />} />
         <Route path="audit" element={<AdminAuditPage />} />

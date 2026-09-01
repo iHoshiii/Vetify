@@ -188,7 +188,7 @@ export default function AdminDashboardPage() {
         count={pending}
         noun="application"
         tail="waiting on a decision"
-        to="/admin/applications/verification"
+        to="/admin/applications/application"
       />
       {/* Posts the screen would not pass. Linked with the filter already applied,
           because the queue is a view of the post list rather than a page. */}

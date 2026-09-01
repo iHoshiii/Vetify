@@ -6,17 +6,20 @@ import { MetricChart } from '../_components/metric-chart';
 import { StatCard, StatCardSkeleton } from '../_components/stat-card';
 
 /**
- * The three phases, in the order somebody moves through them.
+ * The phases, in the order somebody moves through them.
  *
  * Routes rather than local state, so a phase is a link that can be sent and each one
  * keeps its own filters and page in the address bar. `waiting` names the figure that
- * belongs on the tab as a badge — Approved has none, because a directory is not a
- * queue and nobody is waiting on it.
+ * belongs on the tab as a badge — only the two queues have one, because the tabs after
+ * them are outcomes rather than work: nobody is waiting on the directory, on a refusal,
+ * or on an archive.
  */
 const TABS = [
   { to: '/admin/applications', label: 'Request', end: true, waiting: 'request' },
-  { to: '/admin/applications/verification', label: 'Verification', end: false, waiting: 'review' },
-  { to: '/admin/applications/approved', label: 'Approved', end: false, waiting: null },
+  { to: '/admin/applications/application', label: 'Application', end: false, waiting: 'review' },
+  { to: '/admin/applications/accepted', label: 'Accepted', end: false, waiting: null },
+  { to: '/admin/applications/rejected', label: 'Rejected', end: false, waiting: null },
+  { to: '/admin/applications/completed', label: 'Completed', end: false, waiting: null },
 ] as const;
 
 const TAB = 'rounded-md px-3 py-1.5 text-sm font-bold transition-colors';
@@ -34,15 +37,20 @@ function messageOf(error: unknown): string {
  * A licence application, from the first few lines somebody writes in with to a
  * listing in the directory.
  *
- * One section rather than three, because it is one journey: an enquiry earns an
- * emailed link, the link earns an application, and the application earns the role and
- * the listing. Splitting the phases across the sidebar made an admin navigate between
- * three views of the same person.
+ * One section rather than five, because it is one journey: an enquiry earns an
+ * emailed link, the link earns an application, and a verdict on that application
+ * earns the role and the listing. Splitting the phases across the sidebar made an
+ * admin navigate between several views of the same person.
+ *
+ * Two queues and three outcomes. The split is what an admin is being asked for: the
+ * first two tabs owe somebody a decision, the last three are the record of decisions
+ * already made — and Completed is both endings in one list, for looking something up
+ * rather than acting on it.
  *
  * The figures and both charts live here rather than on a tab. They describe the
  * pipeline as a whole — where the queue is deep, and whether anything is arriving at
  * all — and a reviewer reading the Request queue has the same use for them as one
- * reading Verification.
+ * reading Application.
  */
 export default function AdminApplicationsLayout() {
   const enquiries = useMetricsBreakdown('inquiryStatus');
@@ -68,8 +76,8 @@ export default function AdminApplicationsLayout() {
       <div>
         <h2 className="text-lg font-black tracking-tight">Professional applications</h2>
         <p className="mt-1 text-sm text-slate-600">
-          The three phases a vet passes through: the enquiry they write in with, the application the
-          link opens, and the listing that follows.
+          The two queues a vet passes through — the enquiry they write in with, and the application
+          the emailed link opens — and where each one ended up.
         </p>
       </div>
 
