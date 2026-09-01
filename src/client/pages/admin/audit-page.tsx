@@ -76,6 +76,7 @@ export default function AdminAuditPage() {
 
   const params = {
     page,
+    limit: 20,
     action: pick(get('action'), AUDIT_ACTIONS),
     targetType: pick(get('targetType'), AUDIT_TARGET_TYPES),
     targetId: get('targetId'),

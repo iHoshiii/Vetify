@@ -267,6 +267,7 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
 
   const params = {
     page,
+    limit: 20,
     q: get('q'),
     // Falls back to the phase rather than to the server default. Accepted has to open
     // on 'verified'; letting the server choose would open it on the pending queue.

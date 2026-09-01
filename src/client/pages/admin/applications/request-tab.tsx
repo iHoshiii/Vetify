@@ -188,6 +188,7 @@ export default function RequestTab() {
 
   const params = {
     page,
+    limit: 20,
     q: get('q'),
     status: pick(get('status'), PROFESSIONAL_INQUIRY_STATUSES),
   };
