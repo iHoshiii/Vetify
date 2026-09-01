@@ -35,10 +35,12 @@ export type ProfessionalInquiryDocument = {
    */
   openEmail: string | null;
   licenseNumber: string;
+  licenseAuthority: string;
   /** Where the applicant is now — the city an interview would happen in. */
   currentLocation: string;
   /** Where they practise, when that is somewhere else. */
   clinicLocation: string | null;
+  clinicName: string | null;
   motivation: string;
   phone: string | null;
   yearsExperience: number | null;
@@ -79,8 +81,10 @@ export type AdminInquiry = {
   name: string;
   email: string;
   licenseNumber: string;
+  licenseAuthority: string;
   currentLocation: string;
   clinicLocation: string | null;
+  clinicName: string | null;
   motivation: string;
   phone: string | null;
   yearsExperience: number | null;
@@ -121,8 +125,12 @@ export type InviteSummary = {
   name: string;
   email: string;
   licenseNumber: string;
+  licenseAuthority: string;
   currentLocation: string;
   clinicLocation: string | null;
+  clinicName: string | null;
+  phone: string | null;
+  yearsExperience: number;
   expiresAt: string;
 };
 

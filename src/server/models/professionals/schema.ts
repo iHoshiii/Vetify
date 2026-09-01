@@ -72,7 +72,7 @@ export const professionalAttrsSchema = z.object({
   clinicName: z.string().trim().min(1).nullish(),
   addresses: z.array(addressSchema).min(1, 'At least one address is required'),
   businessPhone: z.string().trim().min(1).nullish(),
-  bio: z.string().trim().min(1, 'Bio is required'),
+  bio: z.string().trim().default(''),
   yearsExperience: z.number().int().min(0).default(0),
   hourlyRate: z.number().min(0).default(50),
   availabilityStatus: z.enum(['available', 'unavailable', 'busy']).default('available'),

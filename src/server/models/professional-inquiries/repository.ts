@@ -47,8 +47,10 @@ export async function insertProfessionalInquiry(
     // unique index actually watches.
     openEmail: parsed.email,
     licenseNumber: parsed.licenseNumber,
+    licenseAuthority: parsed.licenseAuthority,
     currentLocation: parsed.currentLocation,
     clinicLocation: parsed.clinicLocation ?? null,
+    clinicName: parsed.clinicName ?? null,
     motivation: parsed.motivation,
     phone: parsed.phone ?? null,
     yearsExperience: parsed.yearsExperience ?? null,

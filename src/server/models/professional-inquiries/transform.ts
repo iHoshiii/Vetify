@@ -20,8 +20,10 @@ export function toAdminInquiry(inquiry: ProfessionalInquiryDocument): AdminInqui
     name: inquiry.name,
     email: inquiry.email,
     licenseNumber: inquiry.licenseNumber,
+    licenseAuthority: inquiry.licenseAuthority ?? 'Professional Regulation Commission',
     currentLocation: inquiry.currentLocation,
     clinicLocation: inquiry.clinicLocation,
+    clinicName: inquiry.clinicName ?? null,
     motivation: inquiry.motivation,
     phone: inquiry.phone,
     yearsExperience: inquiry.yearsExperience,
@@ -73,8 +75,12 @@ export function toInviteSummary(inquiry: ProfessionalInquiryDocument): InviteSum
     name: inquiry.name,
     email: inquiry.email,
     licenseNumber: inquiry.licenseNumber,
+    licenseAuthority: inquiry.licenseAuthority ?? 'Professional Regulation Commission',
     currentLocation: inquiry.currentLocation,
     clinicLocation: inquiry.clinicLocation,
+    clinicName: inquiry.clinicName ?? null,
+    phone: inquiry.phone,
+    yearsExperience: inquiry.yearsExperience ?? 0,
     // Only ever called for a live invite, so the date is there. Falling back to
     // the epoch would be a lie; an empty string is at least obviously wrong.
     expiresAt: inquiry.inviteExpiresAt?.toISOString() ?? '',

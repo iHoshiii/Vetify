@@ -42,7 +42,7 @@ const GOOD_ENOUGH_M = 20;
  * worse reading cannot undo a better one, and the applicant watches the number
  * fall rather than wondering whether anything is happening.
  */
-export function useLiveFix(onFix: (fix: LocationFix) => void) {
+export function useLiveFix(onFix: (fix: LocationFix) => void, stopAfterFirstFix = false) {
   const watch = useRef<number | null>(null);
   const bestRef = useRef<number>(Number.POSITIVE_INFINITY);
   const [tracking, setTracking] = useState(false);
@@ -85,6 +85,8 @@ export function useLiveFix(onFix: (fix: LocationFix) => void) {
           capturedAt: new Date().toISOString(),
         });
 
+        if (stopAfterFirstFix) stop();
+
         if (accuracyMeters <= GOOD_ENOUGH_M) stop();
       },
       () => {
@@ -93,7 +95,7 @@ export function useLiveFix(onFix: (fix: LocationFix) => void) {
       },
       { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 }
     );
-  }, [onFix, stop]);
+  }, [onFix, stop, stopAfterFirstFix]);
 
   return { tracking, accuracy, message, start, stop };
 }
@@ -142,6 +144,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
           label="Street and number"
           value={value.line1}
           onChange={set('line1')}
+          readOnly
           error={errors.line1}
           placeholder="12 Mabini Street"
           required
@@ -153,6 +156,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="City or municipality"
             value={value.city}
             onChange={set('city')}
+            readOnly
             error={errors.city}
             placeholder="Cebu City"
             required
@@ -162,6 +166,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="Province"
             value={value.province}
             onChange={set('province')}
+            readOnly
             error={errors.province}
             placeholder="Cebu"
             required
@@ -171,6 +176,7 @@ export default function AddressCard({ value, onChange, onRemove, errors = {} }: 
             label="Postal code"
             value={value.postalCode}
             onChange={set('postalCode')}
+            readOnly
             error={errors.postalCode}
             placeholder="6000"
           />

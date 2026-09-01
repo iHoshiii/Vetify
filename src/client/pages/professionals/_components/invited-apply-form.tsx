@@ -1,48 +1,35 @@
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { useApplyThroughInvite } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { InviteSummary } from '@/services/professionals.service';
 import { professionalApplySchema, type ProfessionalApplyInput } from '@shared/schemas';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
-import AddressCard, { emptyAddress, type AddressValue } from './address-fields';
+import type { AddressValue } from './address-fields';
 import PhotoCapture, { type Capture } from './photo-capture';
-
-const FIELD =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2';
 
 type Errors = Record<string, string | undefined>;
 
-const EMPTY = {
-  licenseAuthority: 'Professional Regulation Commission',
-  credentialUrls: '',
-  specialties: '',
-  clinicName: '',
-  businessPhone: '',
-  bio: '',
-  yearsExperience: '',
+const REQUIRED_MESSAGES: Record<string, string> = {
+  portrait: 'Take a photo of your face before submitting.',
+  licenseFront: 'Take a photo of the front of your licence before submitting.',
+  licenseBack: 'Take a photo of the back of your licence before submitting.',
 };
-
-/** One credential per line: easier to paste into than a repeating field set. */
-function linesOf(value: string): string[] {
-  return value
-    .split(/\r?\n/)
-    .map((one) => one.trim())
-    .filter(Boolean);
-}
-
-/** Specialties as a comma-separated list. Deduping happens server-side. */
-function listOf(value: string): string[] {
-  return value
-    .split(',')
-    .map((one) => one.trim())
-    .filter(Boolean);
-}
 
 /** First message per field, which is all a field can show. */
 function firstErrors(issues: Record<string, string[] | undefined>): Errors {
-  return Object.fromEntries(Object.entries(issues).map(([field, list]) => [field, list?.[0]]));
+  return Object.fromEntries(
+    Object.entries(issues).map(([field, list]) => {
+      const message = list?.[0];
+      return [
+        field,
+        message === 'Invalid input: expected object, received undefined'
+          ? REQUIRED_MESSAGES[field] ?? 'This field is required.'
+          : message,
+      ];
+    })
+  );
 }
 
 /** An address as the schema wants it: blank postal code dropped, fix as taken. */
@@ -55,6 +42,17 @@ function addressPayload(address: AddressValue) {
     postalCode: address.postalCode.trim() || undefined,
     fix: address.fix,
   };
+}
+
+function reviewedAddress(location: string): AddressValue {
+  const parts = location
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const city = parts.length > 1 ? parts[parts.length - 2] : location;
+  const province = parts.length > 1 ? parts[parts.length - 1] : location;
+  const line1 = parts.length > 2 ? parts.slice(0, -2).join(', ') : location;
+  return { kind: 'home', line1, city, province, postalCode: '', fix: null };
 }
 
 type Props = { token: string; invite: InviteSummary };
@@ -72,8 +70,7 @@ type Props = { token: string; invite: InviteSummary };
  * and the photographs against a face.
  */
 export default function InvitedApplyForm({ token, invite }: Props) {
-  const [values, setValues] = useState(EMPTY);
-  const [addresses, setAddresses] = useState<AddressValue[]>([emptyAddress('home')]);
+  const [addresses] = useState<AddressValue[]>([reviewedAddress(invite.currentLocation)]);
   const [portrait, setPortrait] = useState<Capture | null>(null);
   const [licenseFront, setLicenseFront] = useState<Capture | null>(null);
   const [licenseBack, setLicenseBack] = useState<Capture | null>(null);
@@ -83,46 +80,30 @@ export default function InvitedApplyForm({ token, invite }: Props) {
 
   const apply = useApplyThroughInvite(token);
 
-  function set(field: keyof typeof EMPTY) {
-    return (event: { target: { value: string } }) =>
-      setValues((current) => ({ ...current, [field]: event.target.value }));
-  }
-
-  function setAddress(index: number) {
-    return (value: AddressValue) =>
-      setAddresses((current) => current.map((one, at) => (at === index ? value : one)));
-  }
-
-  function addAddress() {
-    const missing = addresses.some((one) => one.kind === 'home') ? 'clinic' : 'home';
-    setAddresses((current) => [...current, emptyAddress(missing)]);
-  }
-
-  function removeAddress(index: number) {
-    setAddresses((current) => current.filter((_, at) => at !== index));
-  }
-
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setErrors({});
     setMessage('');
+
+    if (!consent) {
+      setErrors({ backgroundCheckConsent: 'Consent to a background check is required' });
+      setMessage('Please confirm the background-check consent before submitting.');
+      return;
+    }
 
     const payload = {
       // Sent rather than trusted from the token alone: the schema wants the name on
       // the application, and this is the one the reviewer saw.
       fullName: invite.name,
       licenseNumber: invite.licenseNumber,
-      licenseAuthority: values.licenseAuthority,
-      credentialUrls: linesOf(values.credentialUrls),
-      specialties: listOf(values.specialties),
-      clinicName: values.clinicName.trim() || undefined,
-      businessPhone: values.businessPhone,
+      licenseAuthority: invite.licenseAuthority ?? 'Professional Regulation Commission',
+      clinicName: invite.clinicName ?? undefined,
+      businessPhone: invite.phone ?? undefined,
       addresses: addresses.map(addressPayload),
       portrait: portrait ?? undefined,
       licenseFront: licenseFront ?? undefined,
       licenseBack: licenseBack ?? undefined,
-      bio: values.bio,
-      yearsExperience: values.yearsExperience,
+      yearsExperience: invite.yearsExperience ?? 0,
       backgroundCheckConsent: consent,
     } as ProfessionalApplyInput;
 
@@ -141,8 +122,31 @@ export default function InvitedApplyForm({ token, invite }: Props) {
     });
   }
 
+  const mandatoryFieldsFilled =
+    consent &&
+    Boolean(portrait && licenseFront && licenseBack) &&
+    Boolean(invite.licenseAuthority?.trim() || 'Professional Regulation Commission') &&
+    Number.isInteger(invite.yearsExperience ?? 0) &&
+    (invite.yearsExperience ?? 0) >= 0 &&
+    (invite.yearsExperience ?? 0) <= 70 &&
+    addresses.length > 0 &&
+    addresses.every(
+      (address) =>
+        address.line1.trim().length >= 6 &&
+        address.city.trim().length >= 2 &&
+        address.province.trim().length >= 2 &&
+        (address.kind !== 'clinic' || Boolean(invite.clinicName?.trim()))
+    );
+
+  const submissionRequirements = [
+    { label: 'Take a photo of your face', complete: Boolean(portrait) },
+    { label: 'Take a photo of the front of your licence', complete: Boolean(licenseFront) },
+    { label: 'Take a photo of the back of your licence', complete: Boolean(licenseBack) },
+    { label: 'Check the background-check consent box', complete: consent },
+  ];
+
   return (
-    <form onSubmit={handleSubmit} className="mt-10 space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="mt-10 space-y-6">
       {message && (
         <div
           role="alert"
@@ -152,8 +156,11 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         </div>
       )}
 
-      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-bold text-slate-900">From your enquiry</h2>
+      <section className="rounded-xl border border-teal-900/10 bg-white p-5 shadow-sm sm:p-6">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+          Reviewed details
+        </p>
+        <h2 className="mt-2 text-lg font-black tracking-tight text-slate-950">From your enquiry</h2>
         <p className="mt-1 text-xs leading-5 text-slate-500">
           These three are the ones a reviewer approved, so they are fixed here. The name has to
           match the one on your PRC licence — if it does not, write to us rather than filing this.
@@ -174,42 +181,49 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         </dl>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         <div>
-          <h2 className="text-lg font-black tracking-tight">Photographs, taken now</h2>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+            Verification photos
+          </p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+            Photographs, taken now
+          </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             All three are taken through the camera on this device. There is no way to choose a file:
             the point is a picture of you and of the card in your hand, today.
           </p>
         </div>
 
-        <PhotoCapture
-          label="Your face"
-          hint="Look straight at the camera, somewhere with even light."
-          facing="user"
-          value={portrait}
-          onChange={setPortrait}
-          error={errors.portrait}
-        />
-        <PhotoCapture
-          label="PRC licence, front"
-          hint="Fill the frame with the card. The licence number has to be readable."
-          facing="environment"
-          value={licenseFront}
-          onChange={setLicenseFront}
-          error={errors.licenseFront}
-        />
-        <PhotoCapture
-          label="PRC licence, back"
-          hint="The same card, turned over."
-          facing="environment"
-          value={licenseBack}
-          onChange={setLicenseBack}
-          error={errors.licenseBack}
-        />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <PhotoCapture
+            label="Your face"
+            hint="Look straight at the camera, somewhere with even light."
+            facing="user"
+            value={portrait}
+            onChange={setPortrait}
+            error={errors.portrait}
+          />
+          <PhotoCapture
+            label="PRC licence, front"
+            hint="Fill the frame with the card. The licence number has to be readable."
+            facing="environment"
+            value={licenseFront}
+            onChange={setLicenseFront}
+            error={errors.licenseFront}
+          />
+          <PhotoCapture
+            label="PRC licence, back"
+            hint="The same card, turned over."
+            facing="environment"
+            value={licenseBack}
+            onChange={setLicenseBack}
+            error={errors.licenseBack}
+          />
+        </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="hidden">
         <div>
           <h2 className="text-lg font-black tracking-tight">Where you are</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -220,134 +234,65 @@ export default function InvitedApplyForm({ token, invite }: Props) {
             <p className="mt-2 text-xs font-medium text-red-600">{errors.addresses}</p>
           )}
         </div>
-
-        {addresses.map((address, index) => (
-          <AddressCard
-            key={address.kind}
-            value={address}
-            onChange={setAddress(index)}
-            onRemove={addresses.length > 1 ? () => removeAddress(index) : undefined}
-          />
-        ))}
-
-        {addresses.length < 2 && (
-          <button
-            type="button"
-            onClick={addAddress}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-          >
-            Add {addresses.some((one) => one.kind === 'home') ? 'a clinic' : 'a home'} address
-          </button>
-        )}
       </section>
 
-      <section className="space-y-5">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div>
-          <h2 className="text-lg font-black tracking-tight">Your practice</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            What pet owners are shown, and what a reviewer checks against the register.
+          <h2 className="text-sm font-black tracking-tight text-slate-950">Before you submit</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Complete each item below. The button will activate when the application is ready.
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Input
-            label="Issuing authority"
-            value={values.licenseAuthority}
-            onChange={set('licenseAuthority')}
-            error={errors.licenseAuthority}
-            required
-          />
-          <Input
-            label="Years in practice"
-            type="number"
-            min={0}
-            max={70}
-            value={values.yearsExperience}
-            onChange={set('yearsExperience')}
-            error={errors.yearsExperience}
-            required
-          />
-          <Input
-            label="Clinic name"
-            value={values.clinicName}
-            onChange={set('clinicName')}
-            error={errors.clinicName}
-            placeholder="Bayside Animal Clinic"
-          />
-          <Input
-            label="Business contact number (optional)"
-            value={values.businessPhone}
-            onChange={set('businessPhone')}
-            error={errors.businessPhone}
-            placeholder="+63 32 555 0101"
-          />
-        </div>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {submissionRequirements.map((requirement) => (
+            <li
+              key={requirement.label}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold ${
+                requirement.complete
+                  ? 'border-teal-200 bg-teal-50 text-teal-900'
+                  : 'border-rose-200 bg-rose-50 text-rose-700'
+              }`}
+            >
+              {requirement.complete ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-700" aria-hidden />
+              ) : (
+                <Circle className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
+              )}
+              {requirement.label}
+            </li>
+          ))}
+        </ul>
 
-        <Input
-          label="Specialties (comma separated)"
-          value={values.specialties}
-          onChange={set('specialties')}
-          error={errors.specialties}
-          placeholder="dentistry, soft tissue surgery"
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="credentialUrls" className="text-sm font-medium text-slate-700">
-            Credential links, one per line (optional)
-          </label>
-          <textarea
-            id="credentialUrls"
-            rows={3}
-            value={values.credentialUrls}
-            onChange={set('credentialUrls')}
-            className={FIELD}
-          />
-          <p className="text-xs text-slate-500">
-            A diploma or a board certificate, if you have them online. The licence itself is the
-            photographs above.
-          </p>
-          {errors.credentialUrls && (
-            <p className="text-xs font-medium text-red-500">{errors.credentialUrls}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bio" className="text-sm font-medium text-slate-700">
-            How you introduce yourself to pet owners
-          </label>
-          <textarea
-            id="bio"
-            rows={5}
-            value={values.bio}
-            onChange={set('bio')}
-            className={FIELD}
-            placeholder="What you practise, where, and how long you have been doing it."
+        <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
             required
+            aria-invalid={Boolean(errors.backgroundCheckConsent)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-800 focus:ring-teal-700"
           />
-          {errors.bio && <p className="text-xs font-medium text-red-500">{errors.bio}</p>}
-        </div>
+          <span>
+            I consent to a professional background check, and confirm the licence photographed above
+            is current and mine.
+            {errors.backgroundCheckConsent && (
+              <span className="mt-1 block text-xs font-medium text-red-600">
+                {errors.backgroundCheckConsent}
+              </span>
+            )}
+          </span>
+        </label>
       </section>
-
-      <label className="flex items-start gap-3 text-sm text-slate-700">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(event) => setConsent(event.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300"
-        />
-        <span>
-          I consent to a professional background check, and confirm the licence photographed above
-          is current and mine.
-          {errors.backgroundCheckConsent && (
-            <span className="mt-1 block text-xs font-medium text-red-500">
-              {errors.backgroundCheckConsent}
-            </span>
-          )}
-        </span>
-      </label>
 
       <div className="space-y-3">
-        <Button type="submit" size="lg" loading={apply.isPending}>
+        <Button
+          type="submit"
+          size="lg"
+          loading={apply.isPending}
+          disabled={!mandatoryFieldsFilled}
+          className="w-full rounded-xl bg-slate-950 shadow-lg shadow-slate-900/10 hover:bg-slate-800 disabled:bg-slate-300 sm:w-auto"
+        >
           {apply.isPending ? 'Submitting' : 'Submit application'}
         </Button>
         <p className="text-xs leading-5 text-slate-500">
