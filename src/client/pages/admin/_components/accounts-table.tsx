@@ -193,18 +193,20 @@ export function AccountsTable({ role, roleFilter }: AccountsTableProps) {
 
         return (
           <div className="flex flex-wrap justify-end gap-1.5">
-            {USER_ROLES.filter((option) => option !== row.role).map((option) => (
-              <button
-                key={option}
-                type="button"
-                disabled={isSelf}
-                title={isSelf ? 'You cannot change your own role.' : undefined}
-                onClick={() => open({ kind: 'role', user: row, role: option })}
-                className={ACTION}
-              >
-                Make {option}
-              </button>
-            ))}
+            {USER_ROLES.filter((option) => option !== row.role && option !== 'professional').map(
+              (option) => (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={isSelf}
+                  title={isSelf ? 'You cannot change your own role.' : undefined}
+                  onClick={() => open({ kind: 'role', user: row, role: option })}
+                  className={ACTION}
+                >
+                  Make {option}
+                </button>
+              )
+            )}
 
             {USER_STATUSES.filter((status) => status !== row.status).map((status) => (
               <button
