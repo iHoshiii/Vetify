@@ -89,7 +89,9 @@ export default function App() {
             sidebar. */}
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
+          <Route path="public" element={<AdminAccountsTab role="user" />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="admins" element={<AdminAccountsTab role="admin" />} />
           {/* Where the two queues used to live. Kept as redirects because they are
               paths people have bookmarked and linked to. */}
           <Route path="enquiries" element={<Navigate to="/admin/applications" replace />} />
