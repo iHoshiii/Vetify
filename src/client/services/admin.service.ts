@@ -87,6 +87,7 @@ export type AdminUser = {
 };
 
 export type AdminUserListParams = Paged & {
+  days?: 7 | 30 | 90;
   q?: string;
   role?: UserRole;
   status?: UserStatus;
@@ -510,6 +511,14 @@ export type MetricsTimeseries = {
   points: MetricPoint[];
 };
 
+export type MetricsProviderTimeseries = {
+  metric: 'signups' | 'logins' | 'applications' | 'users';
+  days: number;
+  from: string;
+  to: string;
+  lines: { provider: string; points: MetricPoint[] }[];
+};
+
 export type MetricsBreakdown = {
   dimension: BreakdownDimension;
   /** The role it was narrowed to, echoed back, or null for every account. */
@@ -528,6 +537,13 @@ export function getMetricsTimeseries(
   signal?: AbortSignal
 ): Promise<MetricsTimeseries> {
   return apiFetch(`/admin/metrics/timeseries${queryOf({ ...params })}`, { signal });
+}
+
+export function getMetricsProviderTimeseries(
+  params: { metric: 'signups' | 'logins' | 'applications' | 'users'; days?: number },
+  signal?: AbortSignal
+): Promise<MetricsProviderTimeseries> {
+  return apiFetch(`/admin/metrics/timeseries/providers${queryOf({ ...params })}`, { signal });
 }
 
 /**

@@ -2,9 +2,11 @@ import {
   getMetricsBreakdown,
   getMetricsOverview,
   getMetricsTimeseries,
+  getMetricsProviderTimeseries,
   type MetricsBreakdown,
   type MetricsOverview,
   type MetricsTimeseries,
+  type MetricsProviderTimeseries,
 } from '@/services/admin.service';
 import type { BreakdownDimension, MetricSeries, UserRole } from '@shared/schemas';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +36,18 @@ export function useMetricsTimeseries(metric: MetricSeries, days?: number) {
     queryFn: ({ signal }) => getMetricsTimeseries({ metric, days }, signal),
     staleTime: METRICS_STALE_TIME,
     placeholderData: (previous) => previous,
+    retry: retryUnlessRefused,
+  });
+}
+
+export function useMetricsProviderTimeseries(
+  metric: 'signups' | 'logins' | 'applications' | 'users',
+  days?: number
+) {
+  return useQuery<MetricsProviderTimeseries>({
+    queryKey: [...adminKeys.timeseries(metric, days), 'providers'],
+    queryFn: ({ signal }) => getMetricsProviderTimeseries({ metric, days }, signal),
+    staleTime: METRICS_STALE_TIME,
     retry: retryUnlessRefused,
   });
 }
