@@ -1,6 +1,6 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { GROUND } from './_components/ui';
 
@@ -14,13 +14,14 @@ import { GROUND } from './_components/ui';
  *
  * Applications is one entry with three phases inside it, and Users is one with two
  * views of the same people. Both are worked through rather than picked between,
- * which is why the sidebar lists five things and not eight.
+ * which is why the sidebar lists the major workspaces rather than every view.
  */
 const SECTIONS = [
   { to: '/admin', label: 'Overview', end: true },
-  { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/users', label: 'Users' },
+  { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/blogs', label: 'Posts' },
+  { to: '/admin/applications/statistics', label: 'Statistics', end: true },
   { to: '/admin/audit', label: 'Audit log' },
 ] as const;
 
@@ -51,6 +52,8 @@ const IDLE = 'text-slate-600 hover:bg-forest-100 hover:text-forest-800';
  * check on every endpoint the pages inside call.
  */
 export default function AdminLayout() {
+  const location = useLocation();
+
   return (
     <div className={`min-h-screen ${GROUND}`}>
       <ScrollToTop />
@@ -71,7 +74,7 @@ export default function AdminLayout() {
             to="/"
             className="ml-auto inline-flex h-9 items-center justify-center rounded-md border border-forest-200 bg-white px-4 text-sm font-bold text-forest-700 transition-colors hover:bg-forest-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
           >
-            View site
+            View User Console
           </Link>
         </div>
       </div>
@@ -88,7 +91,12 @@ export default function AdminLayout() {
                 <NavLink
                   to={section.to}
                   end={'end' in section ? section.end : false}
-                  className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
+                  className={({ isActive }) => {
+                    const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
+                    const active =
+                      isActive && !(section.to === '/admin/applications' && statisticsIsOpen);
+                    return `${LINK} ${active ? ACTIVE : IDLE}`;
+                  }}
                 >
                   {section.label}
                 </NavLink>
