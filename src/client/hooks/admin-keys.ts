@@ -44,7 +44,7 @@ export const adminKeys = {
 
   metrics: () => [...adminKeys.all, 'metrics'] as const,
   overview: (days: number | undefined) => [...adminKeys.metrics(), 'overview', days] as const,
-  timeseries: (metric: MetricSeries, days: number | undefined) =>
+  timeseries: (metric: MetricSeries | 'users', days: number | undefined) =>
     [...adminKeys.metrics(), 'timeseries', metric, days] as const,
   breakdown: (dimension: BreakdownDimension, role?: UserRole) =>
     [...adminKeys.metrics(), 'breakdown', dimension, role ?? 'any'] as const,

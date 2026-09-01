@@ -9,21 +9,23 @@ import { useState } from 'react';
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
+import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
 
 type Decision = 'invite' | 'decline';
 
 type Pending = { inquiry: AdminInquiry; decision: Decision };
 
-const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
-
 /**
  * What each decision does, and whether it owes an explanation.
  *
  * Inviting does not: an approval owes nobody a paragraph, and a required box here
- * would only ever collect the word "ok". Declining does, because the reason is what
+ * would only ever collect the word "ok". Rejecting does, because the reason is what
  * the queue and the audit log are left with — the applicant is told only that the
  * enquiry was not taken further.
+ *
+ * The key is the server's word and the verb is the screen's. The route and the stored
+ * status are still 'declined'; only the label says "Reject", so the two stages of the
+ * pipeline ask for the same word from a reviewer.
  */
 const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: string }> = {
   invite: {
@@ -33,7 +35,7 @@ const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: stri
       'Emails a link to the full application, good for a fortnight. Anything you type goes in the email above the link.',
   },
   decline: {
-    verb: 'Decline',
+    verb: 'Reject',
     reason: 'required',
     blurb:
       'Closes the enquiry and frees the address so they can write in again. The reason stays here and in the audit log; the email says only that it was not taken further.',
@@ -63,6 +65,10 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
     return (
       <span className="text-xs font-semibold text-emerald-800">
         Application filed{inquiry.completedAt ? ` ${on(inquiry.completedAt)}` : ''}
+        {/* Said out loud because it is the one status on this tab that reads like an
+            ending and is not one: the enquiry is spent, and the application it bought
+            is waiting on a verdict one tab over. */}
+        <span className="block font-normal text-slate-500">Awaiting a verdict in Application</span>
       </span>
     );
   }
@@ -71,9 +77,9 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
     return (
       <span className="text-xs font-semibold text-rose-700">
         {/* Read off the absence of a reviewer rather than a flag of its own: every
-            decline by hand stamps who made it, so a declined enquiry with nobody
+            rejection by hand stamps who made it, so a declined enquiry with nobody
             against it is the screen at work. One less field to keep in step. */}
-        {inquiry.reviewedBy ? 'Declined' : 'Declined automatically'}
+        {inquiry.reviewedBy ? 'Rejected' : 'Rejected automatically'}
       </span>
     );
   }
@@ -84,7 +90,9 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
 
   return (
     <span
-      className={`text-xs font-semibold ${inquiry.inviteLive ? 'text-teal-800' : 'text-amber-700'}`}
+      className={`text-xs font-semibold ${
+        inquiry.inviteLive ? 'text-forest-700' : 'text-amber-700'
+      }`}
     >
       {inquiry.inviteLive ? 'Link live' : 'Link expired'}
       {inquiry.inviteExpiresAt && (
@@ -104,17 +112,17 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
   return (
     <details className="mt-2">
       {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-teal-800 hover:underline">
+      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
         Read the enquiry
       </summary>
 
       <dl className="mt-2 space-y-2 text-xs text-slate-600">
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Licence claimed</dt>
+          <dt className={LABEL}>Licence claimed</dt>
           <dd>{inquiry.licenseNumber}</dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Where</dt>
+          <dt className={LABEL}>Where</dt>
           <dd>
             {inquiry.currentLocation}
             {inquiry.clinicLocation ? ` · practises in ${inquiry.clinicLocation}` : ''}
@@ -122,7 +130,7 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
         </div>
         {(inquiry.phone || inquiry.yearsExperience !== null) && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">Also given</dt>
+            <dt className={LABEL}>Also given</dt>
             <dd>
               {[
                 inquiry.phone,
@@ -134,22 +142,18 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
           </div>
         )}
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">
-            Why they want to join
-          </dt>
+          <dt className={LABEL}>Why they want to join</dt>
           <dd className="whitespace-pre-line leading-6">{inquiry.motivation}</dd>
         </div>
         {inquiry.inviteNote && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">Note you sent</dt>
+            <dt className={LABEL}>Note you sent</dt>
             <dd className="leading-6">{inquiry.inviteNote}</dd>
           </div>
         )}
         {inquiry.declineReason && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Why it was declined
-            </dt>
+            <dt className={LABEL}>Why it was rejected</dt>
             <dd className="leading-6">{inquiry.declineReason}</dd>
           </div>
         )}
@@ -167,7 +171,7 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
  *
  * Some rows arrive already decided. The automatic screen turns away an enquiry that
  * gives no licence number, or whose own words say its writer is not a registered vet;
- * those are declined rows with no reviewer against them, which is how the status
+ * those are rejected rows with no reviewer against them, which is how the status
  * column tells them from a decision somebody made.
  *
  * The link an invitation mints is shown once, in the line under the table. It is
@@ -184,6 +188,7 @@ export default function RequestTab() {
 
   const params = {
     page,
+    limit: 20,
     q: get('q'),
     status: pick(get('status'), PROFESSIONAL_INQUIRY_STATUSES),
   };
@@ -246,7 +251,7 @@ export default function RequestTab() {
               key={decision}
               type="button"
               onClick={() => open({ inquiry: row, decision })}
-              className={`${ACTION} ${decision === 'invite' ? '' : 'text-rose-700'}`}
+              className={decision === 'invite' ? ACTION : ACTION_DANGER}
             >
               {/* A second invitation is a resend, and saying so is the difference
                   between "again?" and "the first one went astray". */}
@@ -262,11 +267,11 @@ export default function RequestTab() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
+      <p className={LEDE}>
         Read what somebody wrote in with, then either email them the application link or turn the
         enquiry down. Nobody fills in the long form uninvited. Enquiries that give no licence
         number, or that say in as many words that their writer is not a registered vet, are turned
-        away before they reach you and show here as declined automatically.
+        away before they reach you and show here as rejected automatically.
       </p>
 
       <ListToolbar>
@@ -324,7 +329,10 @@ export default function RequestTab() {
       )}
 
       {invite.isSuccess && (
-        <div role="status" className="rounded-md bg-teal-50 px-3 py-2 text-sm text-slate-700">
+        <div
+          role="status"
+          className="rounded-md border border-forest-200 bg-forest-50 px-3 py-2 text-sm text-slate-700"
+        >
           <p className="font-semibold">
             {invite.data.delivered
               ? `Link emailed to ${invite.data.inquiry.email}.`
@@ -334,7 +342,7 @@ export default function RequestTab() {
             This is the only time the link is readable — it is kept as a hash. Send it on by hand if
             the email bounced.
           </p>
-          <code className="mt-1 block break-all text-xs font-semibold text-teal-900">
+          <code className="mt-1 block break-all text-xs font-semibold text-forest-800">
             {invite.data.link}
           </code>
         </div>
@@ -342,7 +350,7 @@ export default function RequestTab() {
 
       {decline.isSuccess && (
         <p role="status" className="text-sm font-semibold text-slate-600">
-          Enquiry declined
+          Enquiry rejected
           {decline.data.delivered
             ? ' and the applicant has been told.'
             : `, but the email did not go out: ${decline.data.deliveryError}`}

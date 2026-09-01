@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { BUTTON_SM, FRAME, HEADER_WASH, LABEL, MUTED, PAGE_BUTTON, ROW_HOVER } from './ui';
+
 /**
  * One sort the server actually understands.
  *
@@ -41,11 +43,9 @@ type DataTableProps<T> = {
   empty?: string;
 };
 
-const FRAME = 'overflow-hidden rounded-lg border border-teal-900/10 bg-white';
-const TH = 'px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500';
+const PANEL = `overflow-hidden ${FRAME}`;
+const TH = `px-4 py-3 text-left ${LABEL}`;
 const TD = 'px-4 py-3 text-sm text-slate-700';
-const PAGE_BUTTON =
-  'rounded-md border border-teal-900/15 bg-white px-3 py-1.5 text-xs font-bold text-teal-900 hover:bg-teal-900/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white';
 
 /** The next token in this column's cycle, given whatever is sorted now. */
 function nextSort(column: Column<unknown>, current?: string): string | null {
@@ -102,14 +102,10 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (error) {
     return (
-      <div className={`${FRAME} p-6`} role="alert">
+      <div className={`${PANEL} p-6`} role="alert">
         <p className="text-sm font-semibold text-slate-700">{error}</p>
         {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-3 rounded-md bg-teal-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-teal-900"
-          >
+          <button type="button" onClick={onRetry} className={`mt-3 ${BUTTON_SM}`}>
             Try again
           </button>
         )}
@@ -118,12 +114,12 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={FRAME}>
+    <div className={PANEL}>
       <div className={`overflow-x-auto ${isFetching && !isPending ? 'opacity-60' : ''}`}>
         <table className="w-full border-collapse">
           <caption className="sr-only">{caption}</caption>
 
-          <thead className="border-b border-teal-900/10 bg-teal-900/[0.03]">
+          <thead className={`border-b border-forest-200 ${HEADER_WASH}`}>
             <tr>
               {columns.map((column) => {
                 const state = sortStateOf(column as Column<unknown>, sort);
@@ -142,7 +138,7 @@ export function DataTable<T>({
                       <button
                         type="button"
                         onClick={() => onSort?.(target)}
-                        className="inline-flex items-center gap-1 font-black uppercase tracking-wider hover:text-teal-800"
+                        className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-forest-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
                       >
                         {column.header}
                         {/* Decorative: aria-sort on the header already says it. */}
@@ -163,7 +159,7 @@ export function DataTable<T>({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-teal-900/5">
+          <tbody className="divide-y divide-forest-100">
             {isPending ? (
               // Four rows, because that is enough to look like a table and not
               // enough to jump when the real page is shorter.
@@ -174,20 +170,20 @@ export function DataTable<T>({
                       key={column.header}
                       className={`${TD} ${column.secondary ? 'hidden sm:table-cell' : ''}`}
                     >
-                      <div className="h-3 w-24 rounded bg-slate-200" />
+                      <div className="h-3 w-24 rounded bg-forest-100" />
                     </td>
                   ))}
                 </tr>
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center">
-                  <p className="text-sm font-semibold text-slate-500">{empty}</p>
+                <td colSpan={columns.length} className="px-4 py-12 text-center">
+                  <p className="text-sm font-semibold text-slate-600">{empty}</p>
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={rowKey(row)} className="hover:bg-teal-900/[0.02]">
+                <tr key={rowKey(row)} className={ROW_HOVER}>
                   {columns.map((column) => (
                     <td
                       key={column.header}
@@ -207,10 +203,10 @@ export function DataTable<T>({
 
       <nav
         aria-label={`${caption} pages`}
-        className="flex items-center justify-between gap-4 border-t border-teal-900/10 px-4 py-3"
+        className={`flex items-center justify-between gap-4 border-t border-forest-200 ${HEADER_WASH} px-4 py-3`}
       >
         {/* Announced on change so paging is audible without moving focus. */}
-        <p aria-live="polite" className="text-xs font-semibold text-slate-600">
+        <p aria-live="polite" className={`${MUTED} tabular-nums`}>
           {isPending ? 'Loading\u2026' : rangeOf(page, rows.length, limit, total)}
         </p>
 
@@ -224,7 +220,7 @@ export function DataTable<T>({
             >
               Previous
             </button>
-            <span className="text-xs font-bold text-slate-500">
+            <span className="text-xs font-bold tabular-nums text-slate-600">
               {page} / {pages}
             </span>
             <button

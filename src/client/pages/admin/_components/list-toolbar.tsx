@@ -1,7 +1,6 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
-const CONTROL =
-  'rounded-md border border-teal-900/15 bg-white px-3 py-2 text-sm font-semibold text-slate-800 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700';
+import { BUTTON, CONTROL, LABEL } from './ui';
 
 /**
  * A filter with an explicit "everything" option.
@@ -32,7 +31,7 @@ export function FilterSelect({
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id} className="text-xs font-bold uppercase tracking-wider text-slate-500">
+      <label htmlFor={id} className={LABEL}>
         {label}
       </label>
       <select
@@ -64,21 +63,37 @@ export function SearchBox({
   value,
   placeholder,
   onSearch,
+  live = false,
 }: {
   label: string;
   value: string | undefined;
   placeholder: string;
   onSearch: (value: string | undefined) => void;
+  live?: boolean;
 }) {
   const id = useId();
   const [text, setText] = useState(value ?? '');
+  const onSearchRef = useRef(onSearch);
 
   // Follows the URL, so the back button and a cleared filter both land in the box.
   useEffect(() => setText(value ?? ''), [value]);
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  useEffect(() => {
+    if (!live) return;
+
+    const timer = window.setTimeout(() => {
+      onSearchRef.current(text.trim() || undefined);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [text, live]);
 
   return (
     <form
-      className="flex items-center gap-2"
+      className="flex min-w-0 flex-1 items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
         onSearch(text.trim() || undefined);
@@ -93,19 +108,23 @@ export function SearchBox({
         value={text}
         onChange={(event) => setText(event.target.value)}
         placeholder={placeholder}
-        className={`${CONTROL} w-56`}
+        className={`${CONTROL} min-w-0 flex-1`}
       />
-      <button
-        type="submit"
-        className="rounded-md bg-teal-800 px-3 py-2 text-sm font-bold text-white hover:bg-teal-900"
-      >
+      <button type="submit" className={BUTTON}>
         Search
       </button>
     </form>
   );
 }
 
-/** The row the filters sit in. Wraps on a phone, one line on a desktop. */
+/**
+ * The row the filters sit in. Wraps on a phone, one line on a desktop.
+ *
+ * Left-aligned, deliberately. Pushing the filters to the far right would spend the
+ * width, but it also puts the two controls a reviewer alternates between at opposite
+ * ends of a console-wide screen — the width is better spent by the table below, which
+ * has columns to put in it.
+ */
 export function ListToolbar({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-3">{children}</div>;
+  return <div className="flex w-full flex-wrap items-center gap-3">{children}</div>;
 }

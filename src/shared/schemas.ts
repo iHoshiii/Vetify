@@ -1020,6 +1020,13 @@ export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number];
 
 export const adminUserListQuerySchema = z.object({
   ...adminPageFields,
+  /** The signup window the list can be narrowed to. Three literals rather than a
+   * range, so the filter the console offers and the type it hands the query agree. */
+  days: z.coerce
+    .number()
+    .int()
+    .pipe(z.literal([7, 30, 90], 'Filter by 7, 30 or 90 days'))
+    .optional(),
   q: z.string().trim().min(2, 'Search for at least 2 characters').max(120).optional(),
   role: z.enum(USER_ROLES).optional(),
   status: z.enum(USER_STATUSES).optional(),
@@ -1051,10 +1058,35 @@ export const userStatusUpdateSchema = z
     message: 'Say why in at least 10 characters',
   });
 
+/**
+ * One status, or several comma separated.
+ *
+ * A list rather than a single value because the Completed tab is an archive rather
+ * than a queue: it shows every application that has reached an end, and those ends
+ * are three different statuses. Sending three requests and stitching the pages
+ * together in the client would break paging — page 2 of "everything decided" is not
+ * page 2 of any one status.
+ *
+ * The transform runs before the enum, so `?status=verified,rejected` is validated
+ * member by member and a typo in one of them is still a 400 naming the enum. The
+ * default is spelled as the string a URL would carry, which is what makes it the
+ * same path as an explicit `?status=pending`.
+ */
+const professionalStatusFilter = z
+  .string()
+  .default('pending')
+  .transform((value) =>
+    value
+      .split(',')
+      .map((one) => one.trim())
+      .filter(Boolean)
+  )
+  .pipe(z.array(z.enum(PROFESSIONAL_STATUSES)).min(1, 'Name at least one status'));
+
 /** The review queue. Defaults to 'pending', which is the only reason to open it. */
 export const adminProfessionalListQuerySchema = z.object({
   ...adminPageFields,
-  status: z.enum(PROFESSIONAL_STATUSES).default('pending'),
+  status: professionalStatusFilter,
   q: z.string().trim().min(2, 'Search for at least 2 characters').max(120).optional(),
 });
 
@@ -1135,6 +1167,11 @@ export const metricsTimeseriesQuerySchema = z.object({
   days: daysField,
 });
 
+export const metricsProviderTimeseriesQuerySchema = z.object({
+  metric: z.enum(['signups', 'logins', 'applications', 'users']),
+  days: daysField,
+});
+
 /**
  * One breakdown chart, optionally narrowed to a single role.
  *
@@ -1163,6 +1200,7 @@ export type AdminProfessionalListQuery = z.output<typeof adminProfessionalListQu
 export type AdminAuditListQuery = z.output<typeof adminAuditListQuerySchema>;
 export type MetricsOverviewQuery = z.output<typeof metricsOverviewQuerySchema>;
 export type MetricsTimeseriesQuery = z.output<typeof metricsTimeseriesQuerySchema>;
+export type MetricsProviderTimeseriesQuery = z.output<typeof metricsProviderTimeseriesQuerySchema>;
 export type MetricsBreakdownQuery = z.output<typeof metricsBreakdownQuerySchema>;
 
 export type BlogHideInput = z.output<typeof blogHideSchema>;

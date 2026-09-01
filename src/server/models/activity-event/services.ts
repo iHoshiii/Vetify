@@ -119,3 +119,26 @@ export function countActivityPerDay(input: {
     ])
     .toArray();
 }
+
+/** Daily counts grouped by the authentication provider stored on the event. */
+export function countActivityPerDayByProvider(input: {
+  type: ActivityType;
+  from: Date;
+}): Promise<{ date: string; provider: string; count: number }[]> {
+  return activityEventsCollection()
+    .aggregate<{ date: string; provider: string; count: number }>([
+      { $match: { type: input.type, createdAt: { $gte: input.from } } },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
+            provider: { $ifNull: ['$metadata.provider', 'local'] },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $project: { _id: 0, date: '$_id.date', provider: '$_id.provider', count: 1 } },
+      { $sort: { date: 1, provider: 1 } },
+    ])
+    .toArray();
+}

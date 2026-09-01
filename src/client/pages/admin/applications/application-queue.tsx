@@ -17,21 +17,24 @@ import { InterviewDialog } from '../_components/interview-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
 import { RoleBadge } from '../_components/role-badge';
 import { StatusBadge } from '../_components/status-badge';
+import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
 
 type Decision = 'verify' | 'reject' | 'suspend';
 
 type Pending = { application: AdminProfessional; decision: Decision };
 
-const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
-
 /**
  * Turning somebody down, or pulling a live listing, is the record they will ask
- * about later. Approving is not, so it does not demand a paragraph.
+ * about later. Accepting is not, so it does not demand a paragraph.
+ *
+ * The keys are the server's words and the verbs are the screen's: the route is still
+ * `/verify`, because renaming a status enum would mean migrating every row that
+ * already holds one, and 'verified' is what the public directory reads. Only the
+ * label changed, so this map is the one place the two vocabularies meet.
  */
 const DECISION: Record<Decision, { verb: string; reason: ReasonMode; blurb: string }> = {
   verify: {
-    verb: 'Verify',
+    verb: 'Accept',
     reason: 'optional',
     blurb:
       'Publishes them to the directory, makes their account a professional, and emails them to say so.',
@@ -68,52 +71,97 @@ const OPEN_TO: Record<string, Decision[]> = {
  */
 const INTERVIEWABLE = ['pending', 'interview', 'rejected'];
 
-export type Phase = 'verification' | 'approved';
+export type Phase = 'application' | 'accepted' | 'rejected' | 'completed';
 
 /**
  * What each phase of the queue is looking at.
  *
- * One component parameterised rather than two that would drift apart. A phase
- * decides only where the queue starts and how far its filter reaches — which actions
- * a row offers still comes from `OPEN_TO` and `INTERVIEWABLE` above, keyed on the
- * status the row is actually in, so the two screens cannot disagree about what may be
- * done to a verified application.
+ * One component parameterised rather than four that would drift apart. A phase
+ * decides only where the queue starts, how far its filter reaches, and whether its
+ * rows are still open to a verdict — which verdicts a row offers still comes from
+ * `OPEN_TO` and `INTERVIEWABLE` above, keyed on the status the row is actually in, so
+ * no two screens can disagree about what may be done to a verified application.
  *
- * 'rejected' sits under Verification rather than Approved: a refusal is something a
- * reviewer goes back to, and an appeal is re-opened from the screen that made it.
+ * 'rejected' has its own tab rather than sitting under Application: a refusal is not
+ * waiting on anybody, and leaving it in the queue of things that are made the count
+ * on the tab badge a number nobody could act on.
  */
 const PHASE: Record<
   Phase,
   {
     title: string;
     description: string;
-    /** Where the queue opens, and how far the filter reaches. */
-    status: ProfessionalStatus;
+    /**
+     * The statuses the tab opens on when the URL names none. Several for a tab that
+     * spans them; exactly one wherever `allLabel` is null, since the filter then has
+     * no "everything" option to fall back to.
+     */
+    opens: ProfessionalStatus[];
+    /** How far the filter reaches. Never past the phase. */
     statuses: ProfessionalStatus[];
+    /** The "no filter" option, or null on a tab that opens on a single status. */
+    allLabel: string | null;
+    /** Whether rows here are still open to a verdict. */
+    decides: boolean;
     blurb: string;
     caption: string;
     empty: string;
   }
 > = {
-  verification: {
-    title: 'Verification',
-    description: 'Verify or turn down professional applications.',
-    status: 'pending',
-    statuses: ['pending', 'interview', 'rejected'],
+  application: {
+    title: 'Application',
+    description: 'Accept or turn down filed professional applications.',
+    // Both, because both are waiting on a verdict: an application being talked about
+    // is no less open than one nobody has read yet.
+    opens: ['pending', 'interview'],
+    statuses: ['pending', 'interview'],
+    allLabel: 'Awaiting a verdict',
+    decides: true,
     blurb:
-      'Open the submission and check the licence against the issuing authority before verifying. Both verdicts email the applicant — a rejection carries the reason you give.',
-    caption: 'Applications waiting on verification',
+      'The long form, filed. Open the submission and check the licence against the issuing authority before accepting. Both verdicts email the applicant — a rejection carries the reason you give.',
+    caption: 'Applications awaiting a verdict',
     empty: 'Nothing waiting on a decision.',
   },
-  approved: {
-    title: 'Approved',
+  accepted: {
+    title: 'Accepted',
     description: 'The vets in the directory, and the ones pulled out of it.',
-    status: 'verified',
+    opens: ['verified'],
     statuses: ['verified', 'suspended'],
+    allLabel: null,
+    decides: true,
     blurb:
       'Everyone the directory shows. Suspending is the reversible half of a rejection, for a licence that was good when it was checked and something has since come up.',
-    caption: 'Verified professionals',
+    caption: 'Accepted professionals',
     empty: 'Nobody is listed yet.',
+  },
+  rejected: {
+    title: 'Rejected',
+    description: 'Applications that were turned down.',
+    opens: ['rejected'],
+    statuses: ['rejected'],
+    allLabel: null,
+    decides: true,
+    // Still open to a verdict, which is the point of the tab rather than an oversight:
+    // an appeal is re-opened from the screen that shows the refusal.
+    blurb:
+      'Turned down, with the reason each one was given. An appeal is heard from here — book an interview, or accept the application outright if the objection has been answered.',
+    caption: 'Rejected applications',
+    empty: 'Nothing has been turned down.',
+  },
+  completed: {
+    title: 'Completed',
+    description: 'Every application that reached an end, whichever end it was.',
+    opens: ['verified', 'rejected', 'suspended'],
+    statuses: ['verified', 'rejected', 'suspended'],
+    allLabel: 'Any outcome',
+    // Read-only on purpose. The same rows are actionable one tab over, under the
+    // outcome they actually landed in; an archive that could also change what it
+    // records is two screens fighting over one row.
+    decides: false,
+    blurb:
+      'The finished pipeline, both outcomes in one list. A record rather than a queue: to act on any of these, open Accepted or Rejected.',
+    caption: 'Completed applications',
+    empty: 'Nothing has been decided yet.',
   },
 };
 
@@ -130,27 +178,25 @@ function Submission({ application }: { application: AdminProfessional }) {
   return (
     <details className="mt-2">
       {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-teal-800 hover:underline">
+      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
         Read the application
       </summary>
 
       <dl className="mt-2 space-y-2 text-xs text-slate-600">
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Licence</dt>
+          <dt className={LABEL}>Licence</dt>
           <dd>
             {application.licenseNumber} &middot; {application.licenseAuthority}
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Clinic</dt>
+          <dt className={LABEL}>Clinic</dt>
           <dd>
             {application.clinicName} &middot; {application.clinicAddress}
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">
-            Experience &amp; rate
-          </dt>
+          <dt className={LABEL}>Experience &amp; rate</dt>
           <dd className="space-y-1">
             <div>
               {application.yearsExperience} year{application.yearsExperience === 1 ? '' : 's'}{' '}
@@ -168,11 +214,11 @@ function Submission({ application }: { application: AdminProfessional }) {
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Introduction</dt>
+          <dt className={LABEL}>Introduction</dt>
           <dd className="whitespace-pre-line leading-6">{application.bio}</dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Credentials</dt>
+          <dt className={LABEL}>Credentials</dt>
           <dd>
             <ul className="space-y-1">
               {application.credentialUrls.map((url) => (
@@ -183,7 +229,7 @@ function Submission({ application }: { application: AdminProfessional }) {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="break-all font-semibold text-teal-800 hover:underline"
+                    className="break-all font-semibold text-forest-700 hover:underline"
                   >
                     {url}
                   </a>
@@ -200,10 +246,11 @@ function Submission({ application }: { application: AdminProfessional }) {
 /**
  * One phase of the application pipeline, drawn as a queue.
  *
- * Opens on the status the phase is about — for Verification the only one anybody is
- * waiting on, for Approved the directory as it stands. The filter reaches the rest of
- * that phase and no further; the figures describing the pipeline as a whole belong to
- * the section above, where both phases can see them.
+ * Opens on the statuses the phase is about — for Application the two anybody is
+ * waiting on, for Accepted the directory as it stands, for Completed both endings at
+ * once. The filter reaches the rest of that phase and no further; the figures
+ * describing the pipeline as a whole belong to the section above, where every phase
+ * can see them.
  *
  * A verdict moves two things at once: the application's status and the applicant's
  * role. The reply carries both, and the line under the table says what moved, so
@@ -220,10 +267,11 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
 
   const params = {
     page,
+    limit: 20,
     q: get('q'),
-    // Falls back to the phase rather than to the server default. Approved has to open
+    // Falls back to the phase rather than to the server default. Accepted has to open
     // on 'verified'; letting the server choose would open it on the pending queue.
-    status: pick(get('status'), view.statuses) ?? view.status,
+    status: pick(get('status'), view.statuses) ?? view.opens,
   };
 
   const list = useAdminProfessionals(params);
@@ -312,35 +360,56 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
       secondary: true,
       cell: (row) => <span className="text-xs text-slate-600">{submitted(row.createdAt)}</span>,
     },
-    {
-      header: 'Decision',
-      align: 'right',
-      cell: (row) => (
-        <div className="flex flex-wrap justify-end gap-1.5">
-          {INTERVIEWABLE.includes(row.status) && (
-            <button type="button" onClick={() => openBooking(row)} className={ACTION}>
-              {/* A booking that already exists is being moved, not made. */}
-              {row.interviewAt ? 'Rebook' : 'Interview'}
-            </button>
-          )}
-          {(OPEN_TO[row.status] ?? []).map((decision) => (
-            <button
-              key={decision}
-              type="button"
-              onClick={() => open({ application: row, decision })}
-              className={`${ACTION} ${decision === 'verify' ? '' : 'text-rose-700'}`}
-            >
-              {DECISION[decision].verb}
-            </button>
-          ))}
-        </div>
-      ),
-    },
+    // The archive's own column, and the only thing it has that the outcome tabs do
+    // not: on a record of what was decided, when it was decided is half the record.
+    ...(view.decides
+      ? []
+      : [
+          {
+            header: 'Decided',
+            secondary: true,
+            cell: (row: AdminProfessional) => (
+              <span className="text-xs text-slate-600">
+                {row.reviewedAt ? submitted(row.reviewedAt) : '—'}
+              </span>
+            ),
+          },
+        ]),
+    // Absent rather than empty on the archive. A column of blank cells reads as
+    // "you may act here and cannot", which is the opposite of what it would mean.
+    ...(view.decides
+      ? [
+          {
+            header: 'Decision',
+            align: 'right' as const,
+            cell: (row: AdminProfessional) => (
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {INTERVIEWABLE.includes(row.status) && (
+                  <button type="button" onClick={() => openBooking(row)} className={ACTION}>
+                    {/* A booking that already exists is being moved, not made. */}
+                    {row.interviewAt ? 'Rebook' : 'Interview'}
+                  </button>
+                )}
+                {(OPEN_TO[row.status] ?? []).map((decision) => (
+                  <button
+                    key={decision}
+                    type="button"
+                    onClick={() => open({ application: row, decision })}
+                    className={decision === 'verify' ? ACTION : ACTION_DANGER}
+                  >
+                    {DECISION[decision].verb}
+                  </button>
+                ))}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">{view.blurb}</p>
+      <p className={LEDE}>{view.blurb}</p>
 
       <ListToolbar>
         <SearchBox
@@ -349,14 +418,16 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
           placeholder="Clinic, licence or name"
           onSearch={(q) => set({ q })}
         />
-        {/* No "any status": the phase is the scope here, and an "any" that reached
-            across both phases would make the two tabs the same screen twice. */}
+        {/* No "any status" that reaches past the phase — that would make two tabs the
+            same screen twice. A phase spanning several statuses does get an
+            "everything here" option, because narrowing within a phase is the one thing
+            this filter is for. */}
         <FilterSelect
           label="Status"
-          value={get('status') ?? view.status}
+          value={get('status') ?? (view.allLabel === null ? view.opens[0] : undefined)}
           options={view.statuses}
           onChange={(status) => set({ status })}
-          allLabel={null}
+          allLabel={view.allLabel}
         />
       </ListToolbar>
 

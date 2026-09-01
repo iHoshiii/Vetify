@@ -1,6 +1,8 @@
 import { MODERATION_REASON_MAX, MODERATION_REASON_MIN } from '@shared/limits';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
+import { CONTROL, MUTED } from './ui';
+
 /**
  * Whether this decision needs saying why.
  *
@@ -26,9 +28,9 @@ type ConfirmDialogProps = {
 };
 
 const CANCEL =
-  'rounded-md border border-teal-900/15 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50';
+  'rounded-md border border-forest-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-forest-50 disabled:opacity-50';
 const CONFIRM =
-  'rounded-md px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40';
+  'rounded-md px-4 py-2 text-sm font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40';
 
 export function ConfirmDialog({
   open,
@@ -100,9 +102,9 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        className="relative w-full max-w-lg rounded-lg border border-teal-900/10 bg-white p-6 shadow-xl"
+        className="relative w-full max-w-lg rounded-lg border border-forest-200 bg-white p-6 shadow-lg"
       >
-        <h2 id={titleId} className="text-lg font-black tracking-tight text-slate-950">
+        <h2 id={titleId} className="text-lg font-bold tracking-tight text-forest-900">
           {title}
         </h2>
         <div id={bodyId} className="mt-2 text-sm leading-6 text-slate-600">
@@ -113,7 +115,7 @@ export function ConfirmDialog({
           <div className="mt-4">
             <label htmlFor={reasonId} className="text-sm font-bold text-slate-800">
               Reason{' '}
-              <span className="font-semibold text-slate-500">
+              <span className="font-semibold text-slate-600">
                 {reason === 'required' ? '(required)' : '(optional)'}
               </span>
             </label>
@@ -126,15 +128,11 @@ export function ConfirmDialog({
               maxLength={MODERATION_REASON_MAX}
               aria-describedby={`${reasonId}-help`}
               aria-invalid={tooShort || short || undefined}
-              className="mt-1.5 w-full rounded-md border border-teal-900/15 px-3 py-2 text-sm text-slate-800 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700"
+              className={`mt-1.5 w-full ${CONTROL} font-normal`}
               placeholder="What did this break, and how did you check?"
             />
             {/* Live, so the count and the floor are heard as they are typed. */}
-            <p
-              id={`${reasonId}-help`}
-              aria-live="polite"
-              className="mt-1.5 text-xs font-semibold text-slate-500"
-            >
+            <p id={`${reasonId}-help`} aria-live="polite" className={`mt-1.5 ${MUTED}`}>
               {tooShort || short
                 ? `At least ${MODERATION_REASON_MIN} characters \u2014 ${trimmed.length} so far.`
                 : `${text.length} of ${MODERATION_REASON_MAX} characters. This is kept in the audit log.`}
@@ -161,7 +159,7 @@ export function ConfirmDialog({
             onClick={submit}
             disabled={isPending || tooShort || short}
             className={`${CONFIRM} ${
-              destructive ? 'bg-rose-700 hover:bg-rose-800' : 'bg-teal-800 hover:bg-teal-900'
+              destructive ? 'bg-rose-700 hover:bg-rose-800' : 'bg-forest-700 hover:bg-forest-800'
             }`}
           >
             {isPending ? 'Working\u2026' : confirmLabel}

@@ -1,6 +1,8 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+
+import { GROUND } from './_components/ui';
 
 /**
  * The sections, in the order somebody works them.
@@ -12,30 +14,21 @@ import { Link, NavLink, Outlet } from 'react-router-dom';
  *
  * Applications is one entry with three phases inside it, and Users is one with two
  * views of the same people. Both are worked through rather than picked between,
- * which is why the sidebar lists five things and not eight.
+ * which is why the sidebar lists the major workspaces rather than every view.
  */
 const SECTIONS = [
   { to: '/admin', label: 'Overview', end: true },
-  { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/users', label: 'Users' },
+  { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/blogs', label: 'Posts' },
+  { to: '/admin/applications/statistics', label: 'Statistics', end: true },
   { to: '/admin/audit', label: 'Audit log' },
 ] as const;
 
 const LINK =
-  'block rounded-md px-3 py-2 text-sm font-bold transition-colors hover:bg-teal-900/5 hover:text-teal-900';
-const ACTIVE = 'bg-teal-900 text-white hover:bg-teal-900 hover:text-white';
-const IDLE = 'text-slate-600';
-
-/**
- * The way out, drawn as a control rather than as a word.
- *
- * It was plain text next to a sign-out that has since gone, and a lone unstyled
- * link in an otherwise empty bar reads as a caption. An outline is what says it
- * can be clicked.
- */
-const BAR_LINK =
-  'inline-flex h-9 items-center justify-center rounded-xl border border-teal-900/20 bg-white px-4 text-sm font-bold text-teal-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-700 hover:shadow-md';
+  'block rounded-md px-3 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700';
+const ACTIVE = 'bg-forest-800 text-white';
+const IDLE = 'text-slate-600 hover:bg-forest-100 hover:text-forest-800';
 
 /**
  * Chrome for every admin page: the top bar, the section list, and where the page
@@ -59,27 +52,38 @@ const BAR_LINK =
  * check on every endpoint the pages inside call.
  */
 export default function AdminLayout() {
+  const location = useLocation();
+
   return (
-    <div className="min-h-screen bg-[#f6fbfb] text-slate-950">
+    <div className={`min-h-screen ${GROUND}`}>
       <ScrollToTop />
 
-      <div className="border-b border-teal-900/10 bg-white">
-        <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+      <div className="border-b border-forest-200 bg-white">
+        <div className="flex items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           {/* To the console, not to the marketing site: leaving is the explicit
               link beside it rather than the thing you hit by aiming for home. */}
           <NavBrand to="/admin" />
-          <span className="rounded-md bg-teal-900 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-white">
+          <span className="rounded-md bg-forest-800 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
             Admin
           </span>
 
-          <Link to="/" className={`ml-auto ${BAR_LINK}`}>
-            View site
+          {/* An outline rather than plain text: a lone unstyled link in an otherwise
+              empty bar reads as a caption. Flat, because a console's chrome should be
+              the quietest thing on the page. */}
+          <Link
+            to="/"
+            className="ml-auto inline-flex h-9 items-center justify-center rounded-md border border-forest-200 bg-white px-4 text-sm font-bold text-forest-700 transition-colors hover:bg-forest-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
+          >
+            View User Console
           </Link>
         </div>
       </div>
 
-      <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8">
-        <nav aria-label="Admin sections" className="lg:w-48 lg:shrink-0">
+      {/* No max-width. A console is a workspace: its tables have five columns, a
+          pager and a filter row, and a reading measure would spend the width they
+          want on empty margin. */}
+      <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8 lg:px-8">
+        <nav aria-label="Admin sections" className="lg:w-52 lg:shrink-0">
           {/* Scrolls sideways under lg, stacks above it. */}
           <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
             {SECTIONS.map((section) => (
@@ -87,7 +91,12 @@ export default function AdminLayout() {
                 <NavLink
                   to={section.to}
                   end={'end' in section ? section.end : false}
-                  className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
+                  className={({ isActive }) => {
+                    const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
+                    const active =
+                      isActive && !(section.to === '/admin/applications' && statisticsIsOpen);
+                    return `${LINK} ${active ? ACTIVE : IDLE}`;
+                  }}
                 >
                   {section.label}
                 </NavLink>

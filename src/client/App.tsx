@@ -8,6 +8,7 @@ import AdminLayout from '@/pages/admin/admin-layout';
 import AdminApplicationQueue from '@/pages/admin/applications/application-queue';
 import AdminApplicationsLayout from '@/pages/admin/applications/applications-layout';
 import AdminRequestTab from '@/pages/admin/applications/request-tab';
+import AdminApplicationStatistics from '@/pages/admin/applications/statistics-tab';
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
@@ -63,34 +64,48 @@ export default function App() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
-        {/* The licence pipeline, in the three phases somebody moves through. Its own
+        {/* The licence pipeline, in the phases somebody moves through. Its own
             section rather than tabs under Users, because it is a journey rather than a
             view of an account: the queues decide whether somebody becomes a
             professional at all, and Users is where the account is administered once
             they have. */}
         <Route path="applications" element={<AdminApplicationsLayout />}>
           <Route index element={<AdminRequestTab />} />
-          <Route path="verification" element={<AdminApplicationQueue phase="verification" />} />
-          <Route path="approved" element={<AdminApplicationQueue phase="approved" />} />
+          <Route path="application" element={<AdminApplicationQueue phase="application" />} />
+          <Route path="accepted" element={<AdminApplicationQueue phase="accepted" />} />
+          <Route path="rejected" element={<AdminApplicationQueue phase="rejected" />} />
+          <Route path="completed" element={<AdminApplicationQueue phase="completed" />} />
+          {/* What the two review tabs were called before the phases were named after
+              the decision each one asks for. Bookmarked paths, so they redirect rather
+              than 404. */}
+          <Route
+            path="verification"
+            element={<Navigate to="/admin/applications/application" replace />}
+          />
+          <Route path="approved" element={<Navigate to="/admin/applications/accepted" replace />} />
         </Route>
         {/* Accounts, and the professionals among them: two views of the same people,
             which is why they are one section with tabs rather than two in the
             sidebar. */}
         <Route path="users" element={<AdminUsersLayout />}>
           <Route index element={<AdminAccountsTab />} />
+          <Route path="public" element={<AdminAccountsTab role="user" />} />
           <Route path="professionals" element={<AdminAccountsTab role="professional" />} />
+          <Route path="admins" element={<AdminAccountsTab role="admin" />} />
           {/* Where the two queues used to live. Kept as redirects because they are
               paths people have bookmarked and linked to. */}
           <Route path="enquiries" element={<Navigate to="/admin/applications" replace />} />
           <Route
             path="applications"
-            element={<Navigate to="/admin/applications/verification" replace />}
+            element={<Navigate to="/admin/applications/application" replace />}
           />
         </Route>
+        {/* Statistics is a sidebar workspace, separate from the application phase rail. */}
+        <Route path="applications/statistics" element={<AdminApplicationStatistics />} />
         {/* And where it lived before that. */}
         <Route
           path="professionals"
-          element={<Navigate to="/admin/applications/verification" replace />}
+          element={<Navigate to="/admin/applications/application" replace />}
         />
         <Route path="blogs" element={<AdminBlogsPage />} />
         <Route path="audit" element={<AdminAuditPage />} />
