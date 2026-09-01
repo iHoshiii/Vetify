@@ -10,6 +10,7 @@ type StatCardProps = {
   trend?: MetricTrend;
   /** A second line under the number, for the detail the label cannot carry. */
   hint?: string;
+  className?: string;
 };
 
 /** Locale grouping, so 12400 reads as a number rather than a serial. */
@@ -56,9 +57,9 @@ function Trend({ trend }: { trend: MetricTrend }) {
  * description list of figures — and it gives a screen reader the pairing without
  * any aria at all.
  */
-export function StatCard({ label, value, trend, hint }: StatCardProps) {
+export function StatCard({ label, value, trend, hint, className }: StatCardProps) {
   return (
-    <div className={CARD}>
+    <div className={`${CARD} ${className ?? ''}`}>
       <dt className={LABEL}>{label}</dt>
       {/* Proportional figures at this size, and tabular only where numbers have to
           line up vertically — a lone headline figure is read, not scanned down. */}
