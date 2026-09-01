@@ -1,5 +1,6 @@
 export {
   auditLogsCollection,
+  countAuditPerDay,
   findAuditEntries,
   recordAudit,
   type FindAuditOptions,

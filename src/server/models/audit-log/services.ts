@@ -3,6 +3,7 @@ import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
+import { dailyCountStages, type DailyCount } from '../daily-count';
 import {
   AUDIT_LOGS_COLLECTION,
   type AuditAction,
@@ -12,6 +13,15 @@ import {
 
 export function auditLogsCollection(): Collection<AuditLogDocument> {
   return getDb().collection<AuditLogDocument>(AUDIT_LOGS_COLLECTION);
+}
+
+export function countAuditPerDay(action: AuditAction, from: Date): Promise<DailyCount[]> {
+  return auditLogsCollection()
+    .aggregate<DailyCount>([
+      { $match: { action, createdAt: { $gte: from } } },
+      ...dailyCountStages('createdAt'),
+    ])
+    .toArray();
 }
 
 export type RecordAuditInput = {
