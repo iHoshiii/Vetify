@@ -126,7 +126,7 @@ export default function AdminAuditPage() {
           type="button"
           onClick={() => set({ targetId: row.targetId, targetType: row.targetType })}
           title="Show every entry for this record"
-          className="font-mono text-[11px] text-teal-800 hover:underline"
+          className="font-mono text-[11px] text-forest-700 hover:underline"
         >
           {row.targetType} {row.targetId.slice(-8)}
         </button>
@@ -179,7 +179,7 @@ export default function AdminAuditPage() {
           <button
             type="button"
             onClick={() => set({ targetId: undefined })}
-            className="text-sm font-bold text-teal-800 hover:underline"
+            className="text-sm font-bold text-forest-700 hover:underline"
           >
             Clear record {target.slice(-8)}
           </button>

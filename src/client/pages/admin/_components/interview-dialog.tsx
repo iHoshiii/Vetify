@@ -1,6 +1,8 @@
 import { MODERATION_REASON_MAX, MODERATION_REASON_MIN } from '@shared/limits';
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { CONTROL } from './ui';
+
 type Props = {
   open: boolean;
   /** Who the interview is with, for the heading. */
@@ -12,9 +14,9 @@ type Props = {
 };
 
 const CANCEL =
-  'rounded-md border border-teal-900/15 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50';
+  'rounded-md border border-forest-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-forest-50 disabled:opacity-50';
 const CONFIRM =
-  'rounded-md bg-teal-800 px-4 py-2 text-sm font-bold text-white hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-40';
+  'rounded-md bg-forest-700 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-forest-800 disabled:cursor-not-allowed disabled:opacity-40';
 
 /**
  * `datetime-local` wants "YYYY-MM-DDTHH:mm" in the reader's own zone, which is not
@@ -108,7 +110,7 @@ export function InterviewDialog({ open, applicant, isPending, error, onCancel, o
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        className="relative w-full max-w-lg rounded-lg border border-teal-900/10 bg-white p-6 shadow-xl"
+        className="relative w-full max-w-lg rounded-lg border border-forest-200 bg-white p-6 shadow-lg"
       >
         <h2 id={titleId} className="text-lg font-black tracking-tight text-slate-950">
           Book an interview with {applicant}?
@@ -132,7 +134,7 @@ export function InterviewDialog({ open, applicant, isPending, error, onCancel, o
             onChange={(event) => setWhen(event.target.value)}
             aria-describedby={`${whenId}-help`}
             aria-invalid={when !== '' && !valid ? true : undefined}
-            className="mt-1.5 w-full rounded-md border border-teal-900/15 px-3 py-2 text-sm text-slate-800 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700"
+            className={`mt-1.5 w-full ${CONTROL} font-normal`}
           />
           <p
             id={`${whenId}-help`}
@@ -159,7 +161,7 @@ export function InterviewDialog({ open, applicant, isPending, error, onCancel, o
             maxLength={MODERATION_REASON_MAX}
             aria-describedby={`${noteId}-help`}
             aria-invalid={noteShort || undefined}
-            className="mt-1.5 w-full rounded-md border border-teal-900/15 px-3 py-2 text-sm text-slate-800 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700"
+            className={`mt-1.5 w-full ${CONTROL} font-normal`}
             placeholder="Anything they should bring, or how the call happens."
           />
           <p

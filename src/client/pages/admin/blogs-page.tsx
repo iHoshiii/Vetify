@@ -19,7 +19,7 @@ type Decision = 'approve' | 'hide' | 'remove' | 'restore' | 'delete';
 type Pending = { post: AdminBlogSummary; decision: Decision };
 
 const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
+  'inline-flex items-center justify-center rounded-md border border-forest-200 bg-white px-2.5 py-1 text-xs font-bold text-forest-700 transition-colors hover:border-forest-400 hover:bg-forest-50';
 
 /**
  * Hiding is what an admin reaches for while still deciding, so it does not demand
@@ -163,7 +163,7 @@ export default function AdminBlogsPage() {
                   key={tag}
                   type="button"
                   onClick={() => set({ tag })}
-                  className="rounded bg-teal-900/5 px-1.5 py-0.5 text-[11px] font-bold text-teal-900 hover:bg-teal-900/10"
+                  className="rounded bg-forest-100 px-1.5 py-0.5 text-[11px] font-bold text-forest-800 hover:bg-forest-200"
                 >
                   {tag}
                 </button>
@@ -257,7 +257,7 @@ export default function AdminBlogsPage() {
           <button
             type="button"
             onClick={() => set({ tag: undefined })}
-            className="text-sm font-bold text-teal-800 hover:underline"
+            className="text-sm font-bold text-forest-700 hover:underline"
           >
             Clear tag &ldquo;{get('tag')}&rdquo;
           </button>

@@ -9,13 +9,11 @@ import { useState } from 'react';
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
+import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
 
 type Decision = 'invite' | 'decline';
 
 type Pending = { inquiry: AdminInquiry; decision: Decision };
-
-const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
 
 /**
  * What each decision does, and whether it owes an explanation.
@@ -92,7 +90,9 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
 
   return (
     <span
-      className={`text-xs font-semibold ${inquiry.inviteLive ? 'text-teal-800' : 'text-amber-700'}`}
+      className={`text-xs font-semibold ${
+        inquiry.inviteLive ? 'text-forest-700' : 'text-amber-700'
+      }`}
     >
       {inquiry.inviteLive ? 'Link live' : 'Link expired'}
       {inquiry.inviteExpiresAt && (
@@ -112,17 +112,17 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
   return (
     <details className="mt-2">
       {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-teal-800 hover:underline">
+      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
         Read the enquiry
       </summary>
 
       <dl className="mt-2 space-y-2 text-xs text-slate-600">
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Licence claimed</dt>
+          <dt className={LABEL}>Licence claimed</dt>
           <dd>{inquiry.licenseNumber}</dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Where</dt>
+          <dt className={LABEL}>Where</dt>
           <dd>
             {inquiry.currentLocation}
             {inquiry.clinicLocation ? ` · practises in ${inquiry.clinicLocation}` : ''}
@@ -130,7 +130,7 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
         </div>
         {(inquiry.phone || inquiry.yearsExperience !== null) && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">Also given</dt>
+            <dt className={LABEL}>Also given</dt>
             <dd>
               {[
                 inquiry.phone,
@@ -142,22 +142,18 @@ function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
           </div>
         )}
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">
-            Why they want to join
-          </dt>
+          <dt className={LABEL}>Why they want to join</dt>
           <dd className="whitespace-pre-line leading-6">{inquiry.motivation}</dd>
         </div>
         {inquiry.inviteNote && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">Note you sent</dt>
+            <dt className={LABEL}>Note you sent</dt>
             <dd className="leading-6">{inquiry.inviteNote}</dd>
           </div>
         )}
         {inquiry.declineReason && (
           <div>
-            <dt className="font-bold uppercase tracking-wider text-slate-500">
-              Why it was rejected
-            </dt>
+            <dt className={LABEL}>Why it was rejected</dt>
             <dd className="leading-6">{inquiry.declineReason}</dd>
           </div>
         )}
@@ -254,7 +250,7 @@ export default function RequestTab() {
               key={decision}
               type="button"
               onClick={() => open({ inquiry: row, decision })}
-              className={`${ACTION} ${decision === 'invite' ? '' : 'text-rose-700'}`}
+              className={decision === 'invite' ? ACTION : ACTION_DANGER}
             >
               {/* A second invitation is a resend, and saying so is the difference
                   between "again?" and "the first one went astray". */}
@@ -270,7 +266,7 @@ export default function RequestTab() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">
+      <p className={LEDE}>
         Read what somebody wrote in with, then either email them the application link or turn the
         enquiry down. Nobody fills in the long form uninvited. Enquiries that give no licence
         number, or that say in as many words that their writer is not a registered vet, are turned
@@ -332,7 +328,10 @@ export default function RequestTab() {
       )}
 
       {invite.isSuccess && (
-        <div role="status" className="rounded-md bg-teal-50 px-3 py-2 text-sm text-slate-700">
+        <div
+          role="status"
+          className="rounded-md border border-forest-200 bg-forest-50 px-3 py-2 text-sm text-slate-700"
+        >
           <p className="font-semibold">
             {invite.data.delivered
               ? `Link emailed to ${invite.data.inquiry.email}.`
@@ -342,7 +341,7 @@ export default function RequestTab() {
             This is the only time the link is readable — it is kept as a hash. Send it on by hand if
             the email bounced.
           </p>
-          <code className="mt-1 block break-all text-xs font-semibold text-teal-900">
+          <code className="mt-1 block break-all text-xs font-semibold text-forest-800">
             {invite.data.link}
           </code>
         </div>

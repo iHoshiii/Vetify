@@ -17,13 +17,11 @@ import { InterviewDialog } from '../_components/interview-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
 import { RoleBadge } from '../_components/role-badge';
 import { StatusBadge } from '../_components/status-badge';
+import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
 
 type Decision = 'verify' | 'reject' | 'suspend';
 
 type Pending = { application: AdminProfessional; decision: Decision };
-
-const ACTION =
-  'rounded-md border border-teal-900/15 px-2 py-1 text-xs font-bold text-teal-900 hover:bg-teal-900/5';
 
 /**
  * Turning somebody down, or pulling a live listing, is the record they will ask
@@ -180,27 +178,25 @@ function Submission({ application }: { application: AdminProfessional }) {
   return (
     <details className="mt-2">
       {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-teal-800 hover:underline">
+      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
         Read the application
       </summary>
 
       <dl className="mt-2 space-y-2 text-xs text-slate-600">
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Licence</dt>
+          <dt className={LABEL}>Licence</dt>
           <dd>
             {application.licenseNumber} &middot; {application.licenseAuthority}
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Clinic</dt>
+          <dt className={LABEL}>Clinic</dt>
           <dd>
             {application.clinicName} &middot; {application.clinicAddress}
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">
-            Experience &amp; rate
-          </dt>
+          <dt className={LABEL}>Experience &amp; rate</dt>
           <dd className="space-y-1">
             <div>
               {application.yearsExperience} year{application.yearsExperience === 1 ? '' : 's'}{' '}
@@ -218,11 +214,11 @@ function Submission({ application }: { application: AdminProfessional }) {
           </dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Introduction</dt>
+          <dt className={LABEL}>Introduction</dt>
           <dd className="whitespace-pre-line leading-6">{application.bio}</dd>
         </div>
         <div>
-          <dt className="font-bold uppercase tracking-wider text-slate-500">Credentials</dt>
+          <dt className={LABEL}>Credentials</dt>
           <dd>
             <ul className="space-y-1">
               {application.credentialUrls.map((url) => (
@@ -233,7 +229,7 @@ function Submission({ application }: { application: AdminProfessional }) {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="break-all font-semibold text-teal-800 hover:underline"
+                    className="break-all font-semibold text-forest-700 hover:underline"
                   >
                     {url}
                   </a>
@@ -398,7 +394,7 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
                     key={decision}
                     type="button"
                     onClick={() => open({ application: row, decision })}
-                    className={`${ACTION} ${decision === 'verify' ? '' : 'text-rose-700'}`}
+                    className={decision === 'verify' ? ACTION : ACTION_DANGER}
                   >
                     {DECISION[decision].verb}
                   </button>
@@ -412,7 +408,7 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-600">{view.blurb}</p>
+      <p className={LEDE}>{view.blurb}</p>
 
       <ListToolbar>
         <SearchBox
