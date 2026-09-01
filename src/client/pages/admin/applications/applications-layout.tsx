@@ -1,9 +1,20 @@
-import { useMetricsBreakdown, useMetricsTimeseries } from '@/hooks/useAdminMetrics';
+import { useMetricsBreakdown } from '@/hooks/useAdminMetrics';
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { BreakdownChart } from '../_components/breakdown-chart';
-import { MetricChart } from '../_components/metric-chart';
 import { StatCard, StatCardSkeleton } from '../_components/stat-card';
+import {
+  FRAME,
+  HEADING,
+  LEDE,
+  TAB,
+  TAB_BADGE,
+  TAB_BADGE_OFF,
+  TAB_BADGE_ON,
+  TAB_ITEM,
+  TAB_OFF,
+  TAB_ON,
+  TAB_RAIL,
+} from '../_components/ui';
 
 /**
  * The phases, in the order somebody moves through them.
@@ -12,7 +23,10 @@ import { StatCard, StatCardSkeleton } from '../_components/stat-card';
  * keeps its own filters and page in the address bar. `waiting` names the figure that
  * belongs on the tab as a badge — only the two queues have one, because the tabs after
  * them are outcomes rather than work: nobody is waiting on the directory, on a refusal,
- * or on an archive.
+ * on an archive, or on a chart.
+ *
+ * Statistics sits last, after the pipeline it describes. It is the one tab that is not
+ * a list of people, which is why it is not in the run of five that are.
  */
 const TABS = [
   { to: '/admin/applications', label: 'Request', end: true, waiting: 'request' },
@@ -20,14 +34,8 @@ const TABS = [
   { to: '/admin/applications/accepted', label: 'Accepted', end: false, waiting: null },
   { to: '/admin/applications/rejected', label: 'Rejected', end: false, waiting: null },
   { to: '/admin/applications/completed', label: 'Completed', end: false, waiting: null },
+  { to: '/admin/applications/statistics', label: 'Statistics', end: false, waiting: null },
 ] as const;
-
-const TAB = 'rounded-md px-3 py-1.5 text-sm font-bold transition-colors';
-const TAB_ON = 'bg-teal-900 text-white';
-const TAB_OFF = 'text-slate-600 hover:bg-teal-900/5 hover:text-teal-900';
-
-/** The window the filed line covers, matching the other admin charts. */
-const WINDOW_DAYS = 30;
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong.';
@@ -37,25 +45,25 @@ function messageOf(error: unknown): string {
  * A licence application, from the first few lines somebody writes in with to a
  * listing in the directory.
  *
- * One section rather than five, because it is one journey: an enquiry earns an
+ * One section rather than six, because it is one journey: an enquiry earns an
  * emailed link, the link earns an application, and a verdict on that application
  * earns the role and the listing. Splitting the phases across the sidebar made an
  * admin navigate between several views of the same person.
  *
- * Two queues and three outcomes. The split is what an admin is being asked for: the
- * first two tabs owe somebody a decision, the last three are the record of decisions
- * already made — and Completed is both endings in one list, for looking something up
- * rather than acting on it.
+ * Two queues, three outcomes, and the shape of all of it. The split is what an admin is
+ * being asked for: the first two tabs owe somebody a decision, the next three are the
+ * record of decisions already made — Completed being both endings in one list, for
+ * looking something up rather than acting on it — and Statistics is the pipeline in
+ * aggregate rather than any row in it.
  *
- * The figures and both charts live here rather than on a tab. They describe the
- * pipeline as a whole — where the queue is deep, and whether anything is arriving at
- * all — and a reviewer reading the Request queue has the same use for them as one
- * reading Application.
+ * The three figures stay here, above the tabs, rather than moving to Statistics with
+ * the charts. They are the count of what is waiting, which is the one thing a reviewer
+ * wants in front of them on whichever queue they are working. A chart is something
+ * somebody opens a tab to go and read; a backlog is something they need told.
  */
 export default function AdminApplicationsLayout() {
   const enquiries = useMetricsBreakdown('inquiryStatus');
   const applications = useMetricsBreakdown('professionalStatus');
-  const filed = useMetricsTimeseries('applications', WINDOW_DAYS);
 
   /** One slice by name, or zero. An absent slice means nothing is in that status. */
   function counted(breakdown: typeof enquiries, status: string): number {
@@ -70,71 +78,92 @@ export default function AdminApplicationsLayout() {
 
   const badges: Record<string, number> = { request, review };
   const pending = enquiries.isPending || applications.isPending;
+  const failed = enquiries.isError || applications.isError;
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-black tracking-tight">Professional applications</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className={HEADING}>Professional applications</h2>
+        <p className={`mt-1 ${LEDE}`}>
           The two queues a vet passes through — the enquiry they write in with, and the application
           the emailed link opens — and where each one ended up.
         </p>
       </div>
 
-      <dl
-        className={`grid gap-4 sm:grid-cols-3 ${
-          enquiries.isFetching || applications.isFetching ? 'opacity-60' : ''
-        }`}
-      >
-        {pending ? (
-          <>
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-          </>
-        ) : (
-          <>
-            <StatCard
-              label="Awaiting a link"
-              value={request}
-              hint={`${counted(enquiries, 'invited')} invited, ${counted(
-                enquiries,
-                'declined'
-              )} declined`}
-            />
-            <StatCard
-              label="Awaiting a verdict"
-              value={review}
-              hint={`${counted(applications, 'interview')} at interview, ${counted(
-                applications,
-                'rejected'
-              )} turned down`}
-            />
-            <StatCard
-              label="In the directory"
-              value={listed}
-              hint={`${counted(applications, 'suspended')} suspended`}
-            />
-          </>
-        )}
-      </dl>
+      {failed ? (
+        // Said once rather than as three broken tiles. The figures come from one pair of
+        // reads, so they fail together, and the queues below are unaffected by it.
+        <p role="alert" className={`${FRAME} p-5 text-sm`}>
+          <span className="font-semibold text-slate-700">
+            {messageOf(enquiries.error ?? applications.error)}
+          </span>{' '}
+          <span className="text-slate-600">
+            The counts are unavailable. The queues below still read live.
+          </span>
+        </p>
+      ) : (
+        <dl
+          className={`grid gap-4 sm:grid-cols-3 ${
+            enquiries.isFetching || applications.isFetching ? 'opacity-60' : ''
+          }`}
+        >
+          {pending ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Awaiting a link"
+                value={request}
+                hint={`${counted(enquiries, 'invited')} invited, ${counted(
+                  enquiries,
+                  'declined'
+                )} rejected`}
+              />
+              <StatCard
+                label="Awaiting a verdict"
+                value={review}
+                hint={`${counted(applications, 'interview')} at interview, ${counted(
+                  applications,
+                  'rejected'
+                )} turned down`}
+              />
+              <StatCard
+                label="In the directory"
+                value={listed}
+                hint={`${counted(applications, 'suspended')} suspended`}
+              />
+            </>
+          )}
+        </dl>
+      )}
 
       <nav aria-label="Application phases">
-        <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+        <ul className={TAB_RAIL}>
           {TABS.map((tab) => (
-            <li key={tab.to} className="shrink-0">
+            <li key={tab.to} className={TAB_ITEM}>
               <NavLink
                 to={tab.to}
                 end={tab.end}
                 className={({ isActive }) => `${TAB} ${isActive ? TAB_ON : TAB_OFF}`}
               >
-                {tab.label}
-                {/* Absent rather than zero: "0" is a badge asking for attention it does
-                    not need. */}
-                {tab.waiting && badges[tab.waiting] > 0 && (
-                  <span className="ml-1.5 rounded-full bg-amber-200 px-1.5 py-0.5 text-[11px] font-black text-amber-900">
-                    {badges[tab.waiting]}
-                  </span>
+                {/* A render prop rather than plain children, so the badge can be told
+                    whether its own tab is the selected one — amber on a white rail, a
+                    light wash on the deep green of the active tab. */}
+                {({ isActive }) => (
+                  <>
+                    {tab.label}
+                    {/* Absent rather than zero: "0" is a badge asking for attention it
+                        does not need. */}
+                    {tab.waiting && (badges[tab.waiting] ?? 0) > 0 && (
+                      <span className={`${TAB_BADGE} ${isActive ? TAB_BADGE_ON : TAB_BADGE_OFF}`}>
+                        {badges[tab.waiting]}
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             </li>
@@ -143,26 +172,6 @@ export default function AdminApplicationsLayout() {
       </nav>
 
       <Outlet />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <BreakdownChart
-          label="Applications by status"
-          variant="bar"
-          slices={applications.data?.slices ?? []}
-          total={applications.data?.total ?? 0}
-          isPending={applications.isPending}
-          error={applications.isError ? messageOf(applications.error) : null}
-          onRetry={() => void applications.refetch()}
-        />
-        <MetricChart
-          label={`Applications filed, last ${WINDOW_DAYS} days`}
-          points={filed.data?.points ?? []}
-          isPending={filed.isPending}
-          isFetching={filed.isFetching}
-          error={filed.isError ? messageOf(filed.error) : null}
-          onRetry={() => void filed.refetch()}
-        />
-      </div>
     </div>
   );
 }

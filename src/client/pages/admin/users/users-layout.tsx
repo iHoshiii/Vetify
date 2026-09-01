@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { HEADING, LEDE, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_components/ui';
+
 /**
  * The two views of the same people.
  *
@@ -16,10 +18,6 @@ const TABS = [
   { to: '/admin/users/professionals', label: 'Professionals', end: false },
 ] as const;
 
-const TAB = 'rounded-md px-3 py-1.5 text-sm font-bold transition-colors';
-const TAB_ON = 'bg-teal-900 text-white';
-const TAB_OFF = 'text-slate-600 hover:bg-teal-900/5 hover:text-teal-900';
-
 /**
  * User management: every account, and the professionals among them.
  *
@@ -32,16 +30,16 @@ export default function AdminUsersLayout() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-black tracking-tight">User management</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className={HEADING}>User management</h2>
+        <p className={`mt-1 ${LEDE}`}>
           Roles and access for every account, and the professionals among them.
         </p>
       </div>
 
       <nav aria-label="User management views">
-        <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+        <ul className={TAB_RAIL}>
           {TABS.map((tab) => (
-            <li key={tab.to} className="shrink-0">
+            <li key={tab.to} className={TAB_ITEM}>
               <NavLink
                 to={tab.to}
                 end={tab.end}

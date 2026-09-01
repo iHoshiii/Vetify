@@ -8,6 +8,7 @@ import AdminLayout from '@/pages/admin/admin-layout';
 import AdminApplicationQueue from '@/pages/admin/applications/application-queue';
 import AdminApplicationsLayout from '@/pages/admin/applications/applications-layout';
 import AdminRequestTab from '@/pages/admin/applications/request-tab';
+import AdminApplicationStatistics from '@/pages/admin/applications/statistics-tab';
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
@@ -74,6 +75,8 @@ export default function App() {
           <Route path="accepted" element={<AdminApplicationQueue phase="accepted" />} />
           <Route path="rejected" element={<AdminApplicationQueue phase="rejected" />} />
           <Route path="completed" element={<AdminApplicationQueue phase="completed" />} />
+          {/* The one tab that is not a list of people: the pipeline in aggregate. */}
+          <Route path="statistics" element={<AdminApplicationStatistics />} />
           {/* What the two review tabs were called before the phases were named after
               the decision each one asks for. Bookmarked paths, so they redirect rather
               than 404. */}
