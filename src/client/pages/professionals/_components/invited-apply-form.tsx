@@ -41,10 +41,15 @@ function addressPayload(address: AddressValue) {
     province: address.province,
     postalCode: address.postalCode.trim() || undefined,
     fix: address.fix,
+    mapPin: address.mapPin,
   };
 }
 
-function reviewedAddress(location: string): AddressValue {
+function reviewedAddress(
+  kind: AddressValue['kind'],
+  location: string,
+  pin: { latitude: number; longitude: number } | null
+): AddressValue {
   const parts = location
     .split(',')
     .map((part) => part.trim())
@@ -52,7 +57,21 @@ function reviewedAddress(location: string): AddressValue {
   const city = parts.length > 1 ? parts[parts.length - 2] : location;
   const province = parts.length > 1 ? parts[parts.length - 1] : location;
   const line1 = parts.length > 2 ? parts.slice(0, -2).join(', ') : location;
-  return { kind: 'home', line1, city, province, postalCode: '', fix: null };
+  return { kind, line1, city, province, postalCode: '', fix: null, mapPin: pin };
+}
+
+// The clinic is only included when it has a name, because the apply schema refuses a
+// clinic address that cannot be named and an invisible refusal is a dead submit button.
+function reviewedAddresses(invite: InviteSummary): AddressValue[] {
+  const home = reviewedAddress('home', invite.currentLocation, invite.currentPin);
+  const clinic = invite.clinicLocation?.trim();
+  if (!clinic || !invite.clinicName?.trim()) return [home];
+  return [home, reviewedAddress('clinic', clinic, invite.clinicPin)];
+}
+
+// Deduplicated: a one-part location lands in line1, city and province all at once.
+function addressLine(address: AddressValue) {
+  return [...new Set([address.line1, address.city, address.province])].filter(Boolean).join(', ');
 }
 
 type Props = { token: string; invite: InviteSummary };
@@ -70,7 +89,7 @@ type Props = { token: string; invite: InviteSummary };
  * and the photographs against a face.
  */
 export default function InvitedApplyForm({ token, invite }: Props) {
-  const [addresses] = useState<AddressValue[]>([reviewedAddress(invite.currentLocation)]);
+  const [addresses] = useState<AddressValue[]>(() => reviewedAddresses(invite));
   const [portrait, setPortrait] = useState<Capture | null>(null);
   const [licenseFront, setLicenseFront] = useState<Capture | null>(null);
   const [licenseBack, setLicenseBack] = useState<Capture | null>(null);
@@ -223,17 +242,40 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         </div>
       </section>
 
-      <section className="hidden">
-        <div>
-          <h2 className="text-lg font-black tracking-tight">Where you are</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            One address is enough — your home or your clinic. Give both if you practise somewhere
-            other than where you live.
+      <section className="rounded-xl border border-teal-900/10 bg-white p-5 shadow-sm sm:p-6">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">
+          Reviewed locations
+        </p>
+        <h2 className="mt-2 text-lg font-black tracking-tight text-slate-950">Where you are</h2>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          These are the markers you dropped on your enquiry. Once you are verified they are what pet
+          owners are shown on the map. They cannot be changed here — write to
+          support.vetify@gmail.com if one of them is wrong.
+        </p>
+
+        <ul className="mt-3 space-y-2">
+          {addresses.map((address) => (
+            <li key={address.kind} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-black uppercase tracking-wider text-slate-500">
+                {address.kind === 'home' ? 'Home' : 'Clinic'}
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{addressLine(address)}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {address.mapPin
+                  ? `Pinned at ${address.mapPin.latitude.toFixed(
+                      5
+                    )}, ${address.mapPin.longitude.toFixed(5)}`
+                  : 'No marker was dropped for this one, so it will not appear on the map.'}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {errors.addresses && (
+          <p role="alert" className="mt-2 text-xs font-medium text-red-600">
+            {errors.addresses}
           </p>
-          {errors.addresses && (
-            <p className="mt-2 text-xs font-medium text-red-600">{errors.addresses}</p>
-          )}
-        </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
