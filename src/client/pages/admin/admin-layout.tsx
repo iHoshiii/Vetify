@@ -5,7 +5,7 @@ import { useAdminInquiries } from '@/hooks/useAdminInquiries';
 import { useAdminProfessionals } from '@/hooks/useAdminProfessionals';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
-import { GROUND } from './_components/ui';
+import { GROUND, badgeOf } from './_components/ui';
 
 /**
  * The sections, in the order somebody works them.
@@ -37,11 +37,6 @@ const BADGE =
   'inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums';
 const BADGE_ACTIVE = 'bg-white text-forest-800';
 const BADGE_IDLE = 'bg-forest-800 text-white';
-
-// Three digits would widen the badge enough to wrap the label beside it.
-function badgeOf(count: number): string {
-  return count > 99 ? '99+' : String(count);
-}
 
 /**
  * Chrome for every admin page: the top bar, the section list, and where the page

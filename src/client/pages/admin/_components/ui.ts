@@ -142,6 +142,11 @@ export const TAB_BADGE = 'ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] font-bol
 export const TAB_BADGE_ON = 'bg-white/20 text-white';
 export const TAB_BADGE_OFF = 'bg-amber-100 text-amber-900';
 
+// Three digits would widen the badge enough to wrap the label beside it.
+export function badgeOf(count: number): string {
+  return count > 99 ? '99+' : String(count);
+}
+
 /** The smaller strip a chart or a window control uses, sized to its content. */
 export const CHIP = 'rounded-md px-3 py-1.5 text-xs font-bold transition-colors';
 export const CHIP_ON = 'bg-forest-800 text-white';
