@@ -8,16 +8,16 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { AdminProfessional } from '@/services/admin.service';
 import type { ProfessionalStatus } from '@shared/schemas';
 import { format, parseISO } from 'date-fns';
-import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
+import { ApplicationDialog } from '../_components/application-dialog';
 import { InterviewDialog } from '../_components/interview-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
 import { RoleBadge } from '../_components/role-badge';
 import { StatusBadge } from '../_components/status-badge';
-import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
+import { ACTION, ACTION_DANGER } from '../_components/ui';
 
 type Decision = 'verify' | 'reject' | 'suspend';
 
@@ -173,76 +173,6 @@ function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong.';
 }
 
-/** The submission, folded away until a reviewer opens it. */
-function Submission({ application }: { application: AdminProfessional }) {
-  return (
-    <details className="mt-2">
-      {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
-        Read the application
-      </summary>
-
-      <dl className="mt-2 space-y-2 text-xs text-slate-600">
-        <div>
-          <dt className={LABEL}>Licence</dt>
-          <dd>
-            {application.licenseNumber} &middot; {application.licenseAuthority}
-          </dd>
-        </div>
-        <div>
-          <dt className={LABEL}>Clinic</dt>
-          <dd>
-            {application.clinicName} &middot; {application.clinicAddress}
-          </dd>
-        </div>
-        <div>
-          <dt className={LABEL}>Experience &amp; rate</dt>
-          <dd className="space-y-1">
-            <div>
-              {application.yearsExperience} year{application.yearsExperience === 1 ? '' : 's'}{' '}
-              &middot; ${application.hourlyRate}/hr &middot; {application.specialties.join(', ')}
-            </div>
-            {/* Set above what the experience on the licence earns. Not a block on
-                anything — the listing is live either way — just the one number on
-                this card a reviewer might want to ask about. */}
-            {application.flaggedForRateReview && (
-              <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
-                <AlertTriangle className="h-3 w-3" />
-                Above the rate their {application.yearsExperience} yrs allows
-              </span>
-            )}
-          </dd>
-        </div>
-        <div>
-          <dt className={LABEL}>Introduction</dt>
-          <dd className="whitespace-pre-line leading-6">{application.bio}</dd>
-        </div>
-        <div>
-          <dt className={LABEL}>Credentials</dt>
-          <dd>
-            <ul className="space-y-1">
-              {application.credentialUrls.map((url) => (
-                <li key={url}>
-                  {/* Opened in a new tab and marked noreferrer: these are links a
-                      stranger supplied, and the reviewer is signed in as an admin. */}
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all font-semibold text-forest-700 hover:underline"
-                  >
-                    {url}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </dd>
-        </div>
-      </dl>
-    </details>
-  );
-}
-
 /**
  * One phase of the application pipeline, drawn as a queue.
  *
@@ -264,6 +194,7 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
   const [booking, setBooking] = useState<AdminProfessional | null>(null);
+  const [viewing, setViewing] = useState<AdminProfessional | null>(null);
 
   const params = {
     page,
@@ -325,14 +256,11 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
             {row.applicant?.name ?? row.clinicName}
           </p>
           <p className="truncate text-xs text-slate-500">
-            {/* The account may be gone from under the application; the licence
-                number is the one identifier the submission itself carries. */}
             {row.applicant?.email ?? `Licence ${row.licenseNumber}`}
           </p>
           {row.rejectionReason && (
             <p className="mt-1 text-xs font-semibold text-rose-700">{row.rejectionReason}</p>
           )}
-          <Submission application={row} />
         </div>
       ),
     },
@@ -384,6 +312,13 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
             align: 'right' as const,
             cell: (row: AdminProfessional) => (
               <div className="flex flex-wrap justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setViewing(row)}
+                  className="rounded-md border border-forest-300 px-3 py-1.5 text-xs font-bold text-forest-700 hover:bg-forest-50"
+                >
+                  Read the application
+                </button>
                 {INTERVIEWABLE.includes(row.status) && (
                   <button type="button" onClick={() => openBooking(row)} className={ACTION}>
                     {/* A booking that already exists is being moved, not made. */}
@@ -409,8 +344,6 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
 
   return (
     <div className="space-y-6">
-      <p className={LEDE}>{view.blurb}</p>
-
       <ListToolbar>
         <SearchBox
           label="Search applications"
@@ -418,17 +351,15 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
           placeholder="Clinic, licence or name"
           onSearch={(q) => set({ q })}
         />
-        {/* No "any status" that reaches past the phase — that would make two tabs the
-            same screen twice. A phase spanning several statuses does get an
-            "everything here" option, because narrowing within a phase is the one thing
-            this filter is for. */}
-        <FilterSelect
-          label="Status"
-          value={get('status') ?? (view.allLabel === null ? view.opens[0] : undefined)}
-          options={view.statuses}
-          onChange={(status) => set({ status })}
-          allLabel={view.allLabel}
-        />
+        {phase === 'application' && (
+          <FilterSelect
+            label="Status"
+            value={get('status') ?? undefined}
+            options={view.statuses}
+            onChange={(status) => set({ status })}
+            allLabel={view.allLabel}
+          />
+        )}
       </ListToolbar>
 
       <DataTable<AdminProfessional>
@@ -447,6 +378,8 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
         onRetry={() => void list.refetch()}
         empty={view.empty}
       />
+
+      {viewing && <ApplicationDialog application={viewing} onClose={() => setViewing(null)} />}
 
       {pending && (
         <ConfirmDialog

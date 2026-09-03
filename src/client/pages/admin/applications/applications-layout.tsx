@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { HEADING, LEDE, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_components/ui';
+import { HEADING, TAB, TAB_ITEM, TAB_OFF, TAB_ON, TAB_RAIL } from '../_components/ui';
 
 /** The five phases of the application pipeline. Aggregate statistics live in the
  * admin sidebar as their own workspace. */
@@ -18,10 +18,6 @@ export default function AdminApplicationsLayout() {
     <div className="space-y-5">
       <div>
         <h2 className={HEADING}>Professional applications</h2>
-        <p className={`mt-1 ${LEDE}`}>
-          The two queues a vet passes through — the enquiry they write in with, and the application
-          the emailed link opens — and where each one ended up.
-        </p>
       </div>
 
       <nav aria-label="Application phases">

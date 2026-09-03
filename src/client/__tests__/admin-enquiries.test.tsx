@@ -96,7 +96,7 @@ beforeEach(() => {
 });
 
 describe('the enquiries tab', () => {
-  it('shows who wrote in and what they said, folded away', async () => {
+  it('shows who wrote in, and opens the enquiry itself in a panel', async () => {
     const user = userEvent.setup();
     renderTab();
 
@@ -105,10 +105,13 @@ describe('the enquiries tab', () => {
     expect(screen.getByText('Waiting on you')).toBeInTheDocument();
 
     // The motivation is the basis for the decision, so it is one click away rather
-    // than filling the row.
-    await user.click(screen.getByText('Read the enquiry'));
-    expect(screen.getByText(/Fifteen years of small animal practice/)).toBeInTheDocument();
-    expect(screen.getByText('VET 1234-PH')).toBeInTheDocument();
+    // than filling the row. Nothing of it is on the page until it is asked for.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Read the enquiry' }));
+
+    const panel = screen.getByRole('dialog');
+    expect(within(panel).getByText(/Fifteen years of small animal practice/)).toBeInTheDocument();
+    expect(within(panel).getByText('VET 1234-PH')).toBeInTheDocument();
   });
 
   it('asks before inviting, and does not demand a note', async () => {
@@ -240,7 +243,8 @@ describe('the enquiries tab', () => {
     expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
   });
 
-  it('tells an automatic refusal from a decision somebody made', () => {
+  it('tells an automatic refusal from a decision somebody made', async () => {
+    const user = userEvent.setup();
     list.data = page([
       inquiry({
         status: 'declined',
@@ -254,8 +258,15 @@ describe('the enquiries tab', () => {
 
     const table = screen.getByRole('table');
     expect(within(table).getByText('Rejected automatically')).toBeInTheDocument();
-    // The rule stays readable, because it is the first thing a reviewer checking up on
-    // the screen wants to see.
-    expect(within(table).getByText(/no licence number was given/)).toBeInTheDocument();
+    // The badge is all the row carries — which rule fired now lives in the panel,
+    // where the rest of the enquiry went. A reviewer checking up on the automatic
+    // screen has to open it to find out.
+    expect(within(table).queryByText(/no licence number was given/)).not.toBeInTheDocument();
+
+    await user.click(within(table).getByRole('button', { name: 'Read the enquiry' }));
+
+    expect(
+      within(screen.getByRole('dialog')).getByText('Automatic: no licence number was given')
+    ).toBeInTheDocument();
   });
 });
