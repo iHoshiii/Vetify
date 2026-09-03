@@ -4,6 +4,7 @@ import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import {
   findProfessionalsNear,
   insertProfessional,
+  publishPinnedAddresses,
   toNearbyProfessional,
   updateAddressMap,
   updateProfessionalProfile,
@@ -182,6 +183,23 @@ describe('findProfessionalsNear', () => {
     const found = await search();
 
     expect(found.map((row) => row._id.toString())).toEqual([here.id]);
+  });
+
+  it('finds a vet whose pins were published by the verification, not by hand', async () => {
+    const owner = await account();
+    const pin = north(4);
+    const application = await insertProfessional({
+      ...attrs(owner),
+      addresses: [{ ...address('clinic'), mapPin: pin }, address('home')],
+    });
+
+    // The whole chain a real applicant goes through: a marker dropped on the enquiry,
+    // carried onto the application, published by the approval and nothing else.
+    await publishPinnedAddresses(application._id);
+    const [found] = await search();
+
+    expect(found?._id.toString()).toBe(application._id.toString());
+    expectMetres(found.distanceMeters, 4_000);
   });
 
   it('ranks a vet who published both addresses by the nearer one', async () => {
