@@ -27,22 +27,15 @@ const TABS = [
 
 /** Shared shell for the application queues and their outcome views. */
 export default function AdminApplicationsLayout() {
-  // One row asked for per phase, because only the total is wanted. The statuses match
-  // each tab's own filter, so a count cannot describe a different list than the one it
-  // sits on, and Completed is the two outcomes added rather than a fourth request.
+  // Only the two tabs that are queues. Accepted, Rejected and Completed are records of
+  // what was already decided, and a count on those is a number nobody has to act on.
   const requests = useAdminInquiries({ status: 'pending', limit: 1 }).data?.total ?? 0;
   const filed =
     useAdminProfessionals({ status: ['pending', 'interview'], limit: 1 }).data?.total ?? 0;
-  const accepted =
-    useAdminProfessionals({ status: ['verified', 'suspended'], limit: 1 }).data?.total ?? 0;
-  const rejected = useAdminProfessionals({ status: ['rejected'], limit: 1 }).data?.total ?? 0;
 
   const COUNTS: Record<string, number> = {
     '/admin/applications': requests,
     '/admin/applications/application': filed,
-    '/admin/applications/accepted': accepted,
-    '/admin/applications/rejected': rejected,
-    '/admin/applications/completed': accepted + rejected,
   };
 
   return (
