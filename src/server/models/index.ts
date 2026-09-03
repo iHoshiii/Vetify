@@ -173,6 +173,7 @@ export {
   PROFESSIONAL_INQUIRY_OPEN_STATUSES,
   PROFESSIONAL_INQUIRY_STATUSES,
   countInquiriesByStatus,
+  countInquiriesPerDay,
   findProfessionalInquiries,
   findProfessionalInquiryById,
   findProfessionalInquiryByToken,

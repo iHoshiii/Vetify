@@ -13,6 +13,7 @@ import {
   countBlogsBetween,
   countBlogsByStatus,
   countInquiriesByStatus,
+  countInquiriesPerDay,
   countBlogsPerDay,
   countProfessionalsByStatus,
   countUsersBy,
@@ -368,21 +369,41 @@ export async function metricsProviderTimeseries(
       };
     }
 
-    // A phase is not a sign-in method: what was filed comes from the activity
-    // events, and the two verdicts from the audit log, because a decision is
+    // A phase is not a sign-in method, and the five phases are not read from one
+    // place: enquiries are counted from their own rows, an application filed from the
+    // activity events, and each verdict from the audit log, because a decision is
     // written down there and nowhere else.
     if (metric === 'applications') {
-      const [filed, approved, rejected] = await Promise.all([
+      const [requests, filed, accepted, rejected] = await Promise.all([
+        countInquiriesPerDay({ from }),
         countActivityPerDay({ type: SERIES_ACTIVITY.applications, from }),
         countAuditPerDay('professional.verified', from),
         countAuditPerDay('professional.rejected', from),
       ]);
 
-      return seriesOf([
-        { provider: 'pending', rows: filed },
-        { provider: 'approved', rows: approved },
+      const phases = seriesOf([
+        { provider: 'request', rows: requests },
+        { provider: 'application', rows: filed },
+        { provider: 'accepted', rows: accepted },
         { provider: 'rejected', rows: rejected },
       ]);
+      const named = phases.lines.filter((line) => line.provider !== 'total');
+      const total = phases.lines.filter((line) => line.provider === 'total');
+      const on = (provider: string, index: number) =>
+        named.find((line) => line.provider === provider)?.points[index]?.count ?? 0;
+
+      // Completed is the day's verdicts added, which is what the Completed queue holds:
+      // every application that reached an end. Left out of the total on purpose, so a
+      // decision is not counted once as its verdict and once again as an ending.
+      const completed = {
+        provider: 'completed',
+        points: (named[0]?.points ?? []).map((point, index) => ({
+          date: point.date,
+          count: on('accepted', index) + on('rejected', index),
+        })),
+      };
+
+      return { ...phases, lines: [...named, completed, ...total] };
     }
 
     const rows = await countActivityPerDayByProvider({ type: SERIES_ACTIVITY[metric], from });
