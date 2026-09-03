@@ -114,6 +114,17 @@ describe('the enquiries tab', () => {
     expect(within(panel).getByText('VET 1234-PH')).toBeInTheDocument();
   });
 
+  it('puts the queue back when the panel is closed', async () => {
+    const user = userEvent.setup();
+    renderTab();
+
+    await user.click(screen.getByRole('button', { name: 'Read the enquiry' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Invite' })).toBeInTheDocument();
+  });
+
   it('asks before inviting, and does not demand a note', async () => {
     const user = userEvent.setup();
     renderTab();

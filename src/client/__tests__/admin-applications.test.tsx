@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -180,5 +181,69 @@ describe('the completed archive', () => {
     expect(within(table).queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument();
     expect(within(table).queryByRole('button', { name: 'Interview' })).not.toBeInTheDocument();
     expect(screen.queryByText('Decision')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The submission used to be a `<details>` in the Applicant cell, so every row on
+ * the page carried a full application in the DOM whether anybody opened one or not.
+ * It is a dialog now, mounted only while it is being read.
+ */
+describe('reading the submission', () => {
+  it('keeps the submission out of the queue until it is asked for', async () => {
+    const user = userEvent.setup();
+    renderQueue('application');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fifteen years of small animal practice.')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Read the application' }));
+
+    const panel = screen.getByRole('dialog');
+    expect(panel).toHaveAccessibleName('Marites Reyes');
+    // The licence and the authority together, which is what makes it checkable.
+    expect(within(panel).getByText('VET 1234-PH · PRC')).toBeInTheDocument();
+    expect(within(panel).getByText('Fifteen years of small animal practice.')).toBeInTheDocument();
+  });
+
+  it('opens the row that was clicked, not the first in the queue', async () => {
+    const user = userEvent.setup();
+    list.data = page([
+      application(),
+      application({
+        id: 'a2',
+        licenseNumber: 'VET 9999-PH',
+        applicant: {
+          id: 'u2',
+          email: 'dodong@clinic.ph',
+          name: 'Dodong Cruz',
+          role: 'user',
+          status: 'active',
+        },
+      }),
+    ]);
+
+    renderQueue('application');
+
+    // One piece of state behind every row's button, so the wrong row is exactly the
+    // bug worth holding still.
+    await user.click(screen.getAllByRole('button', { name: 'Read the application' })[1]);
+
+    const panel = screen.getByRole('dialog');
+    expect(panel).toHaveAccessibleName('Dodong Cruz');
+    expect(within(panel).getByText('VET 9999-PH · PRC')).toBeInTheDocument();
+  });
+
+  it('leaves the queue as it was, and decides nothing, when the panel closes', async () => {
+    const user = userEvent.setup();
+    renderQueue('application');
+
+    await user.click(screen.getByRole('button', { name: 'Read the application' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // Reading an application is not a verdict on it.
+    expect(review.mutate).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeInTheDocument();
   });
 });
