@@ -1,7 +1,7 @@
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useHealth } from '@/hooks/useHealth';
 
-import { CARD, MUTED, PANEL_HEADING } from './_components/ui';
+import { CARD, PANEL_HEADING } from './_components/ui';
 
 const DB_TONE: Record<string, string> = {
   connected: 'bg-forest-100 text-forest-800',
@@ -51,8 +51,6 @@ export default function AdminDashboardPage() {
           </dd>
         </div>
       </dl>
-
-      <p className={`mt-3 ${MUTED}`}>Platform metrics are available in the Statistics section.</p>
     </section>
   );
 }

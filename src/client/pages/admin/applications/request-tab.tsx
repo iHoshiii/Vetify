@@ -8,8 +8,9 @@ import { useState } from 'react';
 
 import { ConfirmDialog, type ReasonMode } from '../_components/confirm-dialog';
 import { DataTable, type Column } from '../_components/data-table';
+import { EnquiryDialog } from '../_components/enquiry-dialog';
 import { FilterSelect, ListToolbar, SearchBox } from '../_components/list-toolbar';
-import { ACTION, ACTION_DANGER, LABEL, LEDE } from '../_components/ui';
+import { ACTION, ACTION_DANGER } from '../_components/ui';
 
 type Decision = 'invite' | 'decline';
 
@@ -107,61 +108,6 @@ function InviteState({ inquiry }: { inquiry: AdminInquiry }) {
   );
 }
 
-/** The enquiry itself, folded away until a reviewer opens it. */
-function Enquiry({ inquiry }: { inquiry: AdminInquiry }) {
-  return (
-    <details className="mt-2">
-      {/* A native disclosure, so it opens with the keyboard and needs no aria. */}
-      <summary className="cursor-pointer text-xs font-bold text-forest-700 hover:underline">
-        Read the enquiry
-      </summary>
-
-      <dl className="mt-2 space-y-2 text-xs text-slate-600">
-        <div>
-          <dt className={LABEL}>Licence claimed</dt>
-          <dd>{inquiry.licenseNumber}</dd>
-        </div>
-        <div>
-          <dt className={LABEL}>Where</dt>
-          <dd>
-            {inquiry.currentLocation}
-            {inquiry.clinicLocation ? ` · practises in ${inquiry.clinicLocation}` : ''}
-          </dd>
-        </div>
-        {(inquiry.phone || inquiry.yearsExperience !== null) && (
-          <div>
-            <dt className={LABEL}>Also given</dt>
-            <dd>
-              {[
-                inquiry.phone,
-                inquiry.yearsExperience !== null ? `${inquiry.yearsExperience} years` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </dd>
-          </div>
-        )}
-        <div>
-          <dt className={LABEL}>Why they want to join</dt>
-          <dd className="whitespace-pre-line leading-6">{inquiry.motivation}</dd>
-        </div>
-        {inquiry.inviteNote && (
-          <div>
-            <dt className={LABEL}>Note you sent</dt>
-            <dd className="leading-6">{inquiry.inviteNote}</dd>
-          </div>
-        )}
-        {inquiry.declineReason && (
-          <div>
-            <dt className={LABEL}>Why it was rejected</dt>
-            <dd className="leading-6">{inquiry.declineReason}</dd>
-          </div>
-        )}
-      </dl>
-    </details>
-  );
-}
-
 /**
  * The queue that comes before the queue.
  *
@@ -185,6 +131,7 @@ export default function RequestTab() {
 
   const { page, get, set } = useAdminListParams();
   const [pending, setPending] = useState<Pending | null>(null);
+  const [viewing, setViewing] = useState<AdminInquiry | null>(null);
 
   const params = {
     page,
@@ -231,7 +178,6 @@ export default function RequestTab() {
         <div className="min-w-0 max-w-md">
           <p className="truncate font-bold text-slate-950">{row.name}</p>
           <p className="truncate text-xs text-slate-500">{row.email}</p>
-          <Enquiry inquiry={row} />
         </div>
       ),
     },
@@ -246,6 +192,13 @@ export default function RequestTab() {
       align: 'right',
       cell: (row) => (
         <div className="flex flex-wrap justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={() => setViewing(row)}
+            className="rounded-md border border-forest-300 px-3 py-1.5 text-xs font-bold text-forest-700 hover:bg-forest-50"
+          >
+            Read the enquiry
+          </button>
           {OPEN_TO[row.status].map((decision) => (
             <button
               key={decision}
@@ -267,13 +220,6 @@ export default function RequestTab() {
 
   return (
     <div className="space-y-6">
-      <p className={LEDE}>
-        Read what somebody wrote in with, then either email them the application link or turn the
-        enquiry down. Nobody fills in the long form uninvited. Enquiries that give no licence
-        number, or that say in as many words that their writer is not a registered vet, are turned
-        away before they reach you and show here as rejected automatically.
-      </p>
-
       <ListToolbar>
         <SearchBox
           label="Search enquiries"
@@ -283,8 +229,8 @@ export default function RequestTab() {
         />
         <FilterSelect
           label="Status"
-          value={get('status') ?? 'pending'}
-          options={PROFESSIONAL_INQUIRY_STATUSES}
+          value={get('status')}
+          options={['pending', 'invited']}
           onChange={(status) => set({ status })}
           allLabel="Any status"
         />
@@ -306,6 +252,8 @@ export default function RequestTab() {
         onRetry={() => void list.refetch()}
         empty="No enquiries waiting."
       />
+
+      {viewing && <EnquiryDialog inquiry={viewing} onClose={() => setViewing(null)} />}
 
       {pending && (
         <ConfirmDialog

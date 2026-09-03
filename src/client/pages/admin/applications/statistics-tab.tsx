@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { MetricChart } from '../_components/metric-chart';
 import { ProviderMetricChart } from '../_components/provider-metric-chart';
 import { StatCard, StatCardSkeleton } from '../_components/stat-card';
-import { CHIP, CHIP_OFF, CHIP_ON, FRAME, LEDE, MUTED, PANEL_HEADING } from '../_components/ui';
+import { CHIP, CHIP_OFF, CHIP_ON, FRAME, PANEL_HEADING } from '../_components/ui';
 
 /**
  * A week, a month, a quarter.
@@ -76,11 +76,6 @@ export default function StatisticsTab() {
 
   return (
     <div className="space-y-6">
-      <p className={LEDE}>
-        How much the platform is taking in, and where it ends up. The chips pick what is being
-        counted; the window picks how far back the line runs.
-      </p>
-
       <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-600">
@@ -190,13 +185,6 @@ export default function StatisticsTab() {
             />
           </div>
         )}
-
-        <p className={`mt-2 ${MUTED}`}>
-          Signups, sign-ins and applications are counted from activity events, which are kept for 90
-          days — a line that stops at the left edge is that retention window, not a quiet fortnight.
-          Posts and account totals are counted from the records themselves, so they go back as far
-          as those do.
-        </p>
       </section>
     </div>
   );

@@ -1,5 +1,6 @@
 export {
   countInquiriesByStatus,
+  countInquiriesPerDay,
   findProfessionalInquiries,
   findProfessionalInquiryById,
   findProfessionalInquiryByToken,

@@ -150,9 +150,6 @@ export default function AdminAuditPage() {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-black tracking-tight">Audit log</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Append-only and kept indefinitely. Activity events age out after 90 days; these do not.
-        </p>
       </div>
 
       <ListToolbar>
