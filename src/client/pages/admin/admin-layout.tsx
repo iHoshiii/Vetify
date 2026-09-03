@@ -1,5 +1,7 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
+import { useMetricsOverview } from '@/hooks/useAdminMetrics';
+import type { MetricsOverview } from '@/services/admin.service';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { GROUND } from './_components/ui';
@@ -26,9 +28,25 @@ const SECTIONS = [
 ] as const;
 
 const LINK =
-  'block rounded-md px-3 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700';
+  'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700';
 const ACTIVE = 'bg-forest-800 text-white';
 const IDLE = 'text-slate-600 hover:bg-forest-100 hover:text-forest-800';
+
+const BADGE =
+  'inline-flex min-w-[1.5rem] shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums';
+const BADGE_ACTIVE = 'bg-white text-forest-800';
+const BADGE_IDLE = 'bg-forest-800 text-white';
+
+// The two sections somebody can be behind on, and the figure that says by how much.
+const QUEUES: Partial<Record<string, keyof MetricsOverview['totals']>> = {
+  '/admin/applications': 'pendingApplications',
+  '/admin/blogs': 'flaggedBlogs',
+};
+
+// Three digits would widen the badge enough to wrap the label beside it.
+function badgeOf(count: number): string {
+  return count > 99 ? '99+' : String(count);
+}
 
 /**
  * Chrome for every admin page: the top bar, the section list, and where the page
@@ -53,12 +71,16 @@ const IDLE = 'text-slate-600 hover:bg-forest-100 hover:text-forest-800';
  */
 export default function AdminLayout() {
   const location = useLocation();
+  // Same query key the Posts page reads, so the badge and its banner cannot disagree.
+  const totals = useMetricsOverview().data?.totals;
 
   return (
     <div className={`min-h-screen ${GROUND}`}>
       <ScrollToTop />
 
-      <div className="border-b border-forest-200 bg-white">
+      {/* Follows the page like the site header does. Solid rather than the site's
+          translucent scrolled state: tables would show through it. */}
+      <div className="sticky top-0 z-50 border-b border-forest-200 bg-white">
         <div className="flex items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           {/* To the console, not to the marketing site: leaving is the explicit
               link beside it rather than the thing you hit by aiming for home. */}
@@ -86,22 +108,42 @@ export default function AdminLayout() {
         <nav aria-label="Admin sections" className="lg:w-52 lg:shrink-0">
           {/* Scrolls sideways under lg, stacks above it. */}
           <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
-            {SECTIONS.map((section) => (
-              <li key={section.to} className="shrink-0 lg:shrink">
-                <NavLink
-                  to={section.to}
-                  end={'end' in section ? section.end : false}
-                  className={({ isActive }) => {
-                    const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
-                    const active =
-                      isActive && !(section.to === '/admin/applications' && statisticsIsOpen);
-                    return `${LINK} ${active ? ACTIVE : IDLE}`;
-                  }}
-                >
-                  {section.label}
-                </NavLink>
-              </li>
-            ))}
+            {SECTIONS.map((section) => {
+              const queue = QUEUES[section.to];
+              const waiting = queue ? totals?.[queue] ?? 0 : 0;
+              const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
+              const activeSection = section.to === '/admin/applications' ? !statisticsIsOpen : true;
+
+              return (
+                <li key={section.to} className="shrink-0 lg:shrink">
+                  <NavLink
+                    to={section.to}
+                    end={'end' in section ? section.end : false}
+                    className={({ isActive }) =>
+                      `${LINK} ${isActive && activeSection ? ACTIVE : IDLE}`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {section.label}
+                        {/* Absent at zero rather than a nought on every row: the badge is
+                            there to be noticed, and one that is always there is not. */}
+                        {waiting > 0 && (
+                          <span
+                            className={`${BADGE} ${
+                              isActive && activeSection ? BADGE_ACTIVE : BADGE_IDLE
+                            }`}
+                          >
+                            {badgeOf(waiting)}
+                            <span className="sr-only"> waiting</span>
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
