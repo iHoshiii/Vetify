@@ -91,6 +91,10 @@ export default function InquiryForm() {
       clinicName: values.clinicName,
       currentLocation: values.currentLocation,
       clinicLocation: values.clinicLocation,
+      // The coordinates behind those two lines. Sent, not just held for the marker:
+      // the application is built from these and the map is drawn from them.
+      currentPin: pins.current,
+      clinicPin: pins.clinic,
       motivation: values.motivation,
       phone: values.phone,
     };

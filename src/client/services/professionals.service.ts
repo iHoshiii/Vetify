@@ -142,7 +142,11 @@ export type InviteSummary = {
   licenseNumber: string;
   licenseAuthority?: string;
   currentLocation: string;
+  // What the application's addresses are pinned at. Null on an enquiry filed before
+  // the form started sending them.
+  currentPin: { latitude: number; longitude: number } | null;
   clinicLocation: string | null;
+  clinicPin: { latitude: number; longitude: number } | null;
   clinicName?: string | null;
   phone?: string | null;
   yearsExperience?: number;

@@ -872,6 +872,8 @@ export const professionalInquirySchema = z.object({
     .trim()
     .min(2, 'Where are you based?')
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line'),
+  // The pin the line above was read off, kept because the line cannot be mapped back.
+  currentPin: mapPinSchema.nullish(),
   licenseAuthority: professionalFields.licenseAuthority.default(
     'Professional Regulation Commission'
   ),
@@ -882,6 +884,7 @@ export const professionalInquirySchema = z.object({
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  clinicPin: mapPinSchema.nullish(),
   clinicName: professionalFields.clinicName,
   /**
    * "Why do you want to join our team?" — the whole basis for the invite decision,
