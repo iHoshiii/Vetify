@@ -1,7 +1,8 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import { useMetricsOverview } from '@/hooks/useAdminMetrics';
-import type { MetricsOverview } from '@/services/admin.service';
+import { useAdminBlogs } from '@/hooks/useAdminBlogs';
+import { useAdminInquiries } from '@/hooks/useAdminInquiries';
+import { useAdminProfessionals } from '@/hooks/useAdminProfessionals';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { GROUND } from './_components/ui';
@@ -37,12 +38,6 @@ const BADGE =
 const BADGE_ACTIVE = 'bg-white text-forest-800';
 const BADGE_IDLE = 'bg-forest-800 text-white';
 
-// The two sections somebody can be behind on, and the figure that says by how much.
-const QUEUES: Partial<Record<string, keyof MetricsOverview['totals']>> = {
-  '/admin/applications': 'pendingApplications',
-  '/admin/blogs': 'flaggedBlogs',
-};
-
 // Three digits would widen the badge enough to wrap the label beside it.
 function badgeOf(count: number): string {
   return count > 99 ? '99+' : String(count);
@@ -71,8 +66,19 @@ function badgeOf(count: number): string {
  */
 export default function AdminLayout() {
   const location = useLocation();
-  // Same query key the Posts page reads, so the badge and its banner cannot disagree.
-  const totals = useMetricsOverview().data?.totals;
+
+  // The same list queries the pages themselves read, asked for one row because only
+  // the total is wanted. Counting off the metrics aggregate instead left the badge a
+  // minute behind its own queue, and left the Request tab out of Applications
+  // altogether — that tab is a queue too, and the sidebar covers both.
+  const requests = useAdminInquiries({ status: 'pending', limit: 1 }).data?.total ?? 0;
+  const applications = useAdminProfessionals({ status: 'pending', limit: 1 }).data?.total ?? 0;
+  const held = useAdminBlogs({ status: 'flagged', limit: 1 }).data?.total ?? 0;
+
+  const WAITING: Record<string, number> = {
+    '/admin/applications': requests + applications,
+    '/admin/blogs': held,
+  };
 
   return (
     <div className={`min-h-screen ${GROUND}`}>
@@ -109,8 +115,7 @@ export default function AdminLayout() {
           {/* Scrolls sideways under lg, stacks above it. */}
           <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
             {SECTIONS.map((section) => {
-              const queue = QUEUES[section.to];
-              const waiting = queue ? totals?.[queue] ?? 0 : 0;
+              const waiting = WAITING[section.to] ?? 0;
               const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
               const activeSection = section.to === '/admin/applications' ? !statisticsIsOpen : true;
 
