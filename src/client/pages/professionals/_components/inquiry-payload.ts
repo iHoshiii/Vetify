@@ -42,7 +42,8 @@ export function inquiryPayload(values: InquiryValues, pins: Pins): ProfessionalI
     currentPin: pins.current,
     clinicPin: pins.clinic,
     motivation: values.motivation,
-    phone: values.phone,
+    // The form shows a fixed +63 and keeps only what follows it
+    phone: values.phone.trim() ? `+63 ${values.phone.trim()}` : '',
   };
 }
 

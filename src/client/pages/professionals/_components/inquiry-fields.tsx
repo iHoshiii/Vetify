@@ -4,6 +4,7 @@ import { PROFESSIONAL_MOTIVATION_MAX, PROFESSIONAL_MOTIVATION_MIN } from '@share
 import type { Errors, InquiryValues, Pins } from './inquiry-payload';
 import LocationPickerField, { type PickedAddress } from './location-picker-field';
 import NameFields from './name-fields';
+import PhoneField from './phone-field';
 import type { Point } from './pin-picker';
 
 const FIELD =
@@ -69,13 +70,7 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
           error={errors.clinicName}
           placeholder="Bayside Animal Clinic"
         />
-        <Input
-          label="Business contact number (optional)"
-          value={values.phone}
-          onChange={onChange('phone')}
-          error={errors.phone}
-          placeholder="+63 32 555 0101"
-        />
+        <PhoneField value={values.phone} onChange={onChange('phone')} error={errors.phone} />
         <p className="text-sm font-medium text-slate-600 sm:col-span-2">
           One address is needed to continue. Fill in both if both exist.
         </p>
