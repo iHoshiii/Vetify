@@ -19,7 +19,19 @@ export const VETIFY_PALETTE: MarkerPalette = {
 export const MARKER_SIZE: [number, number] = [36, 44];
 export const MARKER_ANCHOR: [number, number] = [18, 44];
 export const POPUP_ANCHOR: [number, number] = [0, -46];
-export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
+export type MarkerGlyph = 'clinic' | 'home';
+
+// What the pin is standing on: a cross for a clinic, a house for a home.
+const GLYPHS: Record<MarkerGlyph, string> = {
+  clinic:
+    '<rect x="16.5" y="10.4" width="3" height="9.2" rx="0.9"/><rect x="13.4" y="13.5" width="9.2" height="3" rx="0.9"/>',
+  home: '<path d="M18 9.6 L24.6 15.6 H22.2 V20.4 H13.8 V15.6 H11.4 Z"/><rect x="16.9" y="16.8" width="2.2" height="3.6" fill="white"/>',
+};
+
+export function markerHtml(
+  palette: MarkerPalette = OSM_PALETTE,
+  glyph: MarkerGlyph = 'clinic'
+): string {
   const [width, height] = MARKER_SIZE;
 
   return `
@@ -28,13 +40,7 @@ export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
           <path d="M18 2C10.268 2 4 8.268 4 16c0 9.941 14 26 14 26S32 25.941 32 16C32 8.268 25.732 2 18 2z"
             fill="${palette.fill}" stroke="${palette.stroke}" stroke-width="1.5"/>
           <circle cx="18" cy="15" r="9" fill="white" opacity="0.95"/>
-          <g fill="${palette.fill}">
-            <ellipse cx="18" cy="17" rx="3.5" ry="2.8"/>
-            <ellipse cx="13.5" cy="14.5" rx="2" ry="1.5"/>
-            <ellipse cx="22.5" cy="14.5" rx="2" ry="1.5"/>
-            <ellipse cx="15.5" cy="11.5" rx="1.8" ry="1.4"/>
-            <ellipse cx="20.5" cy="11.5" rx="1.8" ry="1.4"/>
-          </g>
+          <g fill="${palette.fill}">${GLYPHS[glyph]}</g>
         </svg>
       </div>
     `;
@@ -42,13 +48,14 @@ export function markerHtml(palette: MarkerPalette = OSM_PALETTE): string {
 
 export function createMarkerIcon(
   L: typeof import('leaflet'),
-  palette: MarkerPalette = OSM_PALETTE
+  palette: MarkerPalette = OSM_PALETTE,
+  glyph: MarkerGlyph = 'clinic'
 ) {
   return L.divIcon({
     className: '',
     iconSize: MARKER_SIZE,
     iconAnchor: MARKER_ANCHOR,
     popupAnchor: POPUP_ANCHOR,
-    html: markerHtml(palette),
+    html: markerHtml(palette, glyph),
   });
 }

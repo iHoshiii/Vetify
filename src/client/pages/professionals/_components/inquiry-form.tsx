@@ -205,6 +205,7 @@ export default function InquiryForm() {
         <div className="space-y-2">
           <LocationPickerField
             label="Where you are based"
+            kind="home"
             value={pins.current}
             address={values.currentLocation}
             onChange={setLocation('currentLocation', 'current')}
@@ -219,6 +220,7 @@ export default function InquiryForm() {
         <div className="space-y-2">
           <LocationPickerField
             label="Where you practise (optional)"
+            kind="clinic"
             value={pins.clinic}
             address={values.clinicLocation}
             onChange={setLocation('clinicLocation', 'clinic')}

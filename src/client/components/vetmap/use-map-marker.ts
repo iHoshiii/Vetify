@@ -42,8 +42,12 @@ export function useMapMarkers({
     const vetGroup = vetLayerRef.current;
     if (!ready || !L || !clinicGroup || !vetGroup) return;
 
-    const clinicIcon = createMarkerIcon(L, OSM_PALETTE);
-    const vetIcon = createMarkerIcon(L, VETIFY_PALETTE);
+    const clinicIcon = createMarkerIcon(L, OSM_PALETTE, 'clinic');
+    // One icon per address kind, so a vet's home pin does not claim to be a clinic.
+    const vetIcons = {
+      clinic: createMarkerIcon(L, VETIFY_PALETTE, 'clinic'),
+      home: createMarkerIcon(L, VETIFY_PALETTE, 'home'),
+    };
     clinicGroup.clearLayers();
     vetGroup.clearLayers();
 
@@ -62,7 +66,7 @@ export function useMapMarkers({
 
     vets.forEach((vet) => {
       const marker = L.marker([vet.latitude, vet.longitude], {
-        icon: vetIcon,
+        icon: vetIcons[vet.kind],
         zIndexOffset: 1000,
       });
 
