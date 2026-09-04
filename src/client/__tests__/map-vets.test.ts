@@ -218,6 +218,33 @@ describe('merging the two sources into one list', () => {
     expect(place.distanceMeters).toBe(872);
   });
 
+  it('gives a vet one row per published address, tagged by kind', () => {
+    // Both pinned, so the list says as much as the map does: two markers, two rows.
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [
+        ranked(120, {
+          addresses: [
+            address({ mapPin: { latitude: from.latitude, longitude: from.longitude } }),
+            address({
+              kind: 'home',
+              mapPin: { latitude: from.latitude + 900 / 111_195, longitude: from.longitude },
+            }),
+          ],
+        }),
+      ],
+      clinics: [],
+    });
+
+    expect(places.map((place) => place.source === 'vetify' && place.kind)).toEqual([
+      'clinic',
+      'home',
+    ]);
+    // The clinic pin is the nearer one, so it keeps $geoNear's number and the home is
+    // measured here — otherwise the second row would have no distance to print.
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([120, 900]);
+  });
+
   it('drops an OpenStreetMap clinic that is one of ours under another name', () => {
     // ~40 m from the published pin: the same door, mapped twice.
     const twin = north(40, 'Veterinary Office');

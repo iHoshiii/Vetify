@@ -1,6 +1,7 @@
-import { formatDistance } from '@/components/map-prof-vet';
+import { formatDistance, vetLabel, vetSubLabel } from '@/components/map-prof-vet';
 import type { NearbyProfessional } from '@/services/professionals.service';
-import { CalendarPlus, Stethoscope } from 'lucide-react';
+import type { ProfessionalAddressKind } from '@shared/schemas';
+import { CalendarPlus, Hospital, Stethoscope } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AVAILABILITY: Record<NearbyProfessional['availabilityStatus'], string> = {
@@ -15,17 +16,44 @@ const AVAILABILITY_TONE: Record<NearbyProfessional['availabilityStatus'], string
   unavailable: 'text-slate-500',
 };
 
-export function VetRow({ vet }: { vet: NearbyProfessional }) {
-  const name = vet.name ?? vet.clinicName ?? 'A verified vet';
-  const distance = formatDistance(vet.distanceMeters);
+// A home address is the vet themselves, so what it can offer is a call, not a visit.
+const BOOK_WORDS: Record<ProfessionalAddressKind, string> = {
+  home: 'Online Consultation',
+  clinic: 'Clinic visit',
+};
+
+export function VetRow({
+  vet,
+  kind,
+  distanceMeters,
+}: {
+  vet: NearbyProfessional;
+  kind: ProfessionalAddressKind;
+  distanceMeters: number;
+}) {
+  const person = vet.name ?? vet.clinicName ?? 'A verified vet';
+  const named = { kind, name: person, clinicName: vet.clinicName };
+  const heading = vetLabel(named);
+  const second = vetSubLabel(named);
+  const distance = formatDistance(distanceMeters);
+  const book = BOOK_WORDS[kind];
 
   return (
     <li>
-      <Link
-        to={`/professionals/${vet.id}`}
-        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
-      >
-        {vet.avatarUrl ? (
+      <div className="relative flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md">
+        {/* Covers the card so the whole row still opens the profile, without an anchor inside an anchor. */}
+        <Link
+          to={`/professionals/${vet.id}`}
+          aria-label={`${heading}, profile`}
+          className="absolute inset-0 rounded-2xl"
+        />
+
+        {/* A clinic row is a place, so it wears the clinic mark; a home row is the vet, so it wears their face. */}
+        {kind === 'clinic' ? (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 ring-2 ring-teal-100">
+            <Hospital className="h-5 w-5" />
+          </span>
+        ) : vet.avatarUrl ? (
           <img
             src={vet.avatarUrl}
             alt=""
@@ -38,33 +66,39 @@ export function VetRow({ vet }: { vet: NearbyProfessional }) {
         )}
 
         <span className="min-w-0 flex-1">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-sm font-bold text-slate-900">{name}</span>
-            <span className="shrink-0 text-xs font-black text-blue-700">{distance} away</span>
-          </span>
-          <span className="block truncate text-xs text-slate-500">
-            {vet.specialties.slice(0, 2).join(' · ') || 'General practice'}
-          </span>
+          <span className="block truncate text-sm font-bold text-slate-900">{heading}</span>
+          {second && (
+            <span className="block truncate text-xs font-semibold text-slate-600">{second}</span>
+          )}
           <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold">
             <span className={AVAILABILITY_TONE[vet.availabilityStatus]}>
               {AVAILABILITY[vet.availabilityStatus]}
             </span>
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-500">₱{vet.hourlyRate} an hour</span>
+            {/* The rate is the vet's own consulting fee, so it belongs on their row and not on a clinic's. */}
+            {kind === 'home' && (
+              <>
+                <span className="text-slate-300">·</span>
+                <span className="text-slate-500">₱{vet.hourlyRate} an hour</span>
+              </>
+            )}
           </span>
         </span>
-      </Link>
 
-      {vet.availabilityStatus === 'available' && (
-        <Link
-          to={`/book-appointment?professional=${vet.id}`}
-          aria-label={`Book an appointment with ${name}`}
-          className="mt-1.5 ml-14 inline-flex items-center gap-1.5 rounded-full bg-teal-800 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-teal-900"
-        >
-          <CalendarPlus className="h-3.5 w-3.5" aria-hidden />
-          Book an Appointment
-        </Link>
-      )}
+        <span className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className="text-xs font-black text-blue-700">{distance} away</span>
+
+          {vet.availabilityStatus === 'available' && (
+            <Link
+              to={`/book-appointment?professional=${vet.id}`}
+              aria-label={`${book} with ${person}`}
+              className="relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal-800 px-2.5 py-1.5 text-[11px] font-bold leading-none text-white transition-colors hover:bg-teal-900"
+            >
+              <CalendarPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {book}
+            </Link>
+          )}
+        </span>
+      </div>
     </li>
   );
 }
