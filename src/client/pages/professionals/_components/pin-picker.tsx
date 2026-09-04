@@ -136,6 +136,8 @@ export default function PinPicker({
         // Added by hand below without Leaflet's own name as a prefix, the same way the
         // public map does it — this is the same basemap, so it owes the same credit.
         attributionControl: false,
+        // Its corner is where the search box sits, and scroll, pinch and +/- still zoom
+        zoomControl: false,
       });
       L.control.attribution({ prefix: false }).addTo(instance);
 
