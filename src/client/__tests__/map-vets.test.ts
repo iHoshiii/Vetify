@@ -7,6 +7,8 @@ import {
   metersBetween,
   rankNearby,
   toMapVets,
+  vetLabel,
+  vetSubLabel,
   type MapVet,
   type OsmClinic,
 } from '../components/map-prof-vet';
@@ -322,5 +324,20 @@ describe('merging the two sources into one list', () => {
 
     expect(places).toHaveLength(MAP_NEAREST_LIMIT);
     expect(places.every((place) => place.source === 'vetify')).toBe(true);
+  });
+});
+
+describe('naming a pin after what it is', () => {
+  const reyes = { name: 'Marites Reyes', clinicName: 'Bayside Animal Clinic' };
+
+  it('names a home after the vet and a clinic after the clinic', () => {
+    expect(vetLabel({ ...reyes, kind: 'home' })).toBe('Marites Reyes');
+    expect(vetLabel({ ...reyes, kind: 'clinic' })).toBe('Bayside Animal Clinic');
+  });
+
+  it('adds the vet under the clinic name, and nothing under their own', () => {
+    expect(vetSubLabel({ ...reyes, kind: 'clinic' })).toBe('Marites Reyes');
+    expect(vetSubLabel({ ...reyes, kind: 'home' })).toBeNull();
+    expect(vetSubLabel({ ...reyes, clinicName: null, kind: 'clinic' })).toBeNull();
   });
 });

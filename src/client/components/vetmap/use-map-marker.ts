@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 import type { MapUserLocation } from '@/types/vetmap';
 import type { MapVet, OsmClinic } from '@/types/map-prof-vet';
+import { vetLabel } from '../map-prof-vet/vet-label';
 import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from '../marker-icon';
 import { clinicPopupHtml, escapeHtml, interceptLinks, vetPopupHtml } from './map-popup';
 
@@ -70,7 +71,7 @@ export function useMapMarkers({
         zIndexOffset: 1000,
       });
 
-      marker.bindTooltip(escapeHtml(vet.clinicName ?? vet.name), {
+      marker.bindTooltip(escapeHtml(vetLabel(vet)), {
         direction: 'top',
         offset: POPUP_ANCHOR,
         className: 'vet-label vetify-label',

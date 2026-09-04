@@ -1,4 +1,4 @@
-import { formatDistance, type MapVet } from '@/components/map-prof-vet';
+import { formatDistance, vetLabel, type MapVet } from '@/components/map-prof-vet';
 import type { MapUserLocation } from '@/components/vetmap';
 import { Suspense, lazy, useState } from 'react';
 
@@ -41,9 +41,7 @@ function FloatingVetCard({
         {emoji}
       </div>
       <div className="min-w-0">
-        <p className="max-w-[10rem] truncate text-xs font-bold text-slate-800">
-          {vet.clinicName ?? vet.name}
-        </p>
+        <p className="max-w-[10rem] truncate text-xs font-bold text-slate-800">{vetLabel(vet)}</p>
         <p className="text-[10px] font-semibold text-teal-600">
           {OPEN_WORDS[vet.availabilityStatus]}
           {distance && <span className="font-normal text-slate-400"> • {distance} away</span>}

@@ -1,5 +1,6 @@
 import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
 import { toMapVets } from '@/components/map-prof-vet/to-map-vets';
+import { vetLabel } from '@/components/map-prof-vet/vet-label';
 import { MapStyles } from '@/components/vetmap/map-styles';
 import {
   createMarkerIcon,
@@ -206,7 +207,7 @@ export default function PinPicker({
         L.marker([vet.latitude, vet.longitude], {
           icon: createMarkerIcon(L, VETIFY_PALETTE, vet.kind),
           opacity: 0.85,
-        }).bindTooltip(vet.clinicName ?? vet.name, { direction: 'top' })
+        }).bindTooltip(vetLabel(vet), { direction: 'top' })
       );
       const clinicMarkers = (clinics.data ?? []).map((clinic) =>
         L.marker([clinic.latitude, clinic.longitude], {
