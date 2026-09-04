@@ -1,49 +1,31 @@
-import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import ProfessionalMapLocationPage from '../pages/professionals/map-location-page';
 import type { OwnProfessional, ProfessionalAddressView } from '../services/professionals.service';
 
-/**
- * Two decisions per address, kept apart.
- *
- * The rules under test are the page's own: a switch that cannot be pressed until there is
- * a pin to publish, a marker seeded from the reading taken at the door so the vet confirms
- * rather than hunts, one card per address the vet actually has, and a payload naming the
- * one address that changed.
- *
- * The picker is stubbed down to a button that reports a coordinate. It is a Leaflet map,
- * tested against a stubbed Leaflet in `map-pin.test.tsx`; mounting two of the real thing
- * here would test the same wiring twice and, under Vitest 2, race the two dynamic imports
- * of Leaflet against each other.
- */
+// The page is a read-only report of what the application was approved with: the pins a
+// reviewer read, whether each one reached the public map, and the address to write to for a
+// correction. Nothing on it writes, so what is under test is what it says and what it omits.
 
-type Coordinate = { latitude: number; longitude: number };
-
-vi.mock('../pages/professionals/_components/pin-picker', () => ({
+// Leaflet is stubbed to a line of text. The real map is covered in `map-pin.test.tsx`, and
+// mounting it here would test the same wiring twice against a browser jsdom does not have.
+vi.mock('@/components/vetmap', () => ({
   default: ({
-    value,
-    onChange,
-    fallback,
+    center,
+    interactive,
+    vets,
   }: {
-    value: Coordinate | null;
-    onChange: (point: Coordinate) => void;
-    fallback: Coordinate | null;
+    center: [number, number];
+    interactive: boolean;
+    vets: unknown[];
   }) => (
-    <div>
-      <p>pin: {value ? `${value.latitude}, ${value.longitude}` : 'none'}</p>
-      <p>opens at {fallback ? `${fallback.latitude}, ${fallback.longitude}` : 'nowhere'}</p>
-      <button type="button" onClick={() => onChange({ latitude: 10.5, longitude: 123.5 })}>
-        drop a pin
-      </button>
+    <div data-testid="vetmap">
+      map at {center[0]}, {center[1]}, {interactive ? 'draggable' : 'still'}, {vets.length} marker
     </div>
   ),
 }));
-
-const update = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
-vi.mock('../hooks/useProfessionals', () => ({ useUpdateMapLocation: () => update }));
 
 /** Resolved by the layout's outlet context, which is not this page's business. */
 const outlet: { application: OwnProfessional } = { application: {} as OwnProfessional };
@@ -73,12 +55,18 @@ function addressView(overrides: Partial<ProfessionalAddressView> = {}): Professi
   };
 }
 
-/**
- * The page reads one field of an application. Spelling out the other thirty would say
- * nothing about what is being tested and would need editing every time the type grows.
- */
+// Enough of an application to draw a marker from. The other thirty fields say nothing about
+// what is being tested and would need editing every time the type grows.
 function renderPage(addresses: ProfessionalAddressView[]) {
-  outlet.application = { addresses } as OwnProfessional;
+  outlet.application = {
+    id: 'app-1',
+    fullName: 'Dr Ana Reyes',
+    clinicName: 'Mabini Veterinary',
+    specialties: ['surgery'],
+    hourlyRate: 900,
+    availabilityStatus: 'available',
+    addresses,
+  } as OwnProfessional;
 
   return render(
     <MemoryRouter>
@@ -87,48 +75,39 @@ function renderPage(addresses: ProfessionalAddressView[]) {
   );
 }
 
-beforeEach(() => {
-  update.mutate.mockReset();
-  update.isPending = false;
-});
-
-describe('the switch and the pin it waits for', () => {
-  it('cannot be pressed until there is something to publish', async () => {
-    renderPage([addressView()]);
-
-    expect(screen.getByRole('checkbox')).toBeDisabled();
-    expect(screen.getByText(/pin your location on the map first/i)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /drop a pin/i }));
-
-    expect(screen.getByRole('checkbox')).toBeEnabled();
-    expect(screen.getByText(/the pin appears on the public map/i)).toBeInTheDocument();
-  });
-
-  it('reopens on the pin the vet left, and calls it saved', () => {
+describe('what a vet reads off their own pins', () => {
+  it('names the coordinate that was published', async () => {
     renderPage([addressView({ mapPin: PIN, showOnMap: true })]);
 
-    expect(screen.getByText('pin: 10.3157, 123.8854')).toBeInTheDocument();
     expect(screen.getByText('On the map')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).toBeChecked();
-    // Nothing has changed, so there is nothing to send.
-    expect(screen.getByRole('button', { name: /^saved$/i })).toBeDisabled();
+    expect(screen.getByText(/pinned at 10\.31570, 123\.88540/i)).toBeInTheDocument();
+    await screen.findByTestId('vetmap');
   });
 
-  it('starts from the reading taken at the door without publishing it', () => {
+  it('draws that pin as a still, with the vet on it', async () => {
+    renderPage([addressView({ mapPin: PIN, showOnMap: true })]);
+
+    expect(await screen.findByTestId('vetmap')).toHaveTextContent(
+      'map at 10.3157, 123.8854, still, 1 marker'
+    );
+  });
+
+  it('says an address nobody pinned is not on the map, and draws nothing', () => {
+    renderPage([addressView()]);
+
+    expect(screen.getByText('Not on the map')).toBeInTheDocument();
+    expect(screen.getByText(/no marker was dropped for this address/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('vetmap')).toBeNull();
+  });
+
+  it('keeps the reading taken at the door to itself', () => {
     renderPage([addressView({ fix: FIX })]);
 
-    expect(screen.getByText('pin: 14.5995, 120.9842')).toBeInTheDocument();
     expect(screen.getByText('Not on the map')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
-    // A placement worth keeping, so the button offers to keep it — nothing is stored yet.
-    expect(screen.getByRole('button', { name: /save this address/i })).toBeEnabled();
-    expect(update.mutate).not.toHaveBeenCalled();
+    expect(screen.queryByText(/14\.5995/)).toBeNull();
   });
-});
 
-describe('one card per address', () => {
-  it('gives each address its own decision', () => {
+  it('reports each filed address on its own', async () => {
     renderPage([
       addressView({ mapPin: PIN, showOnMap: true }),
       addressView({ kind: 'home', line1: '7 Sampaguita Street' }),
@@ -138,70 +117,35 @@ describe('one card per address', () => {
     expect(screen.getByRole('heading', { name: /home address/i })).toBeInTheDocument();
     expect(screen.getByText('On the map')).toBeInTheDocument();
     expect(screen.getByText('Not on the map')).toBeInTheDocument();
-
-    const [clinic, home] = screen.getAllByRole('checkbox');
-    expect(clinic).toBeChecked();
-    expect(home).not.toBeChecked();
-    expect(home).toBeDisabled();
+    await screen.findByTestId('vetmap');
   });
 
-  it('opens a card with no reading of its own at another address of the same vet', () => {
-    renderPage([addressView(), addressView({ kind: 'home', line1: '7 Sampaguita', fix: FIX })]);
-
-    expect(screen.getByText('pin: none')).toBeInTheDocument();
-    expect(screen.getAllByText('opens at 14.5995, 120.9842')).toHaveLength(2);
-  });
-
-  it('says so plainly when there is no address to pin', () => {
+  it('says so plainly when the application has no address', () => {
     renderPage([]);
 
     expect(screen.getByText(/no addresses on your application/i)).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).toBeNull();
   });
 });
 
-describe('saving', () => {
-  it('names the one address that changed, and sends its pin with the decision', async () => {
-    renderPage([
-      addressView({ mapPin: PIN }),
-      addressView({ kind: 'home', line1: '7 Sampaguita Street' }),
-    ]);
+describe('there is nothing here to change it with', () => {
+  it('offers no switch, no picker and no save', async () => {
+    renderPage([addressView({ mapPin: PIN, showOnMap: true }), addressView({ kind: 'home' })]);
 
-    await userEvent.click(screen.getAllByRole('checkbox')[0]);
-    await userEvent.click(screen.getByRole('button', { name: /save this address/i }));
+    await screen.findByTestId('vetmap');
 
-    expect(update.mutate).toHaveBeenCalledTimes(1);
-    expect(update.mutate.mock.calls[0][0]).toEqual({
-      kind: 'clinic',
-      // The stored placement, without the `placedAt` the server keeps for itself.
-      pin: { latitude: 10.3157, longitude: 123.8854 },
-      showOnMap: true,
-    });
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('sends a pin placed here even when the switch stays off', async () => {
-    renderPage([addressView()]);
+  it('sends the vet to support instead', async () => {
+    renderPage([addressView({ mapPin: PIN, showOnMap: true })]);
 
-    await userEvent.click(screen.getByRole('button', { name: /drop a pin/i }));
-    await userEvent.click(screen.getByRole('button', { name: /save this address/i }));
-
-    expect(update.mutate.mock.calls[0][0]).toEqual({
-      kind: 'clinic',
-      pin: { latitude: 10.5, longitude: 123.5 },
-      showOnMap: false,
-    });
-  });
-
-  it('repeats what went wrong rather than looking saved', async () => {
-    renderPage([addressView({ fix: FIX })]);
-
-    await userEvent.click(screen.getByRole('button', { name: /save this address/i }));
-    const [, handlers] = update.mutate.mock.calls[0] as [
-      unknown,
-      { onError: (error: Error) => void }
-    ];
-    act(() => handlers.onError(new Error('The server said no.')));
-
-    expect(screen.getByText('The server said no.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /support\.vetify@gmail\.com/i })).toHaveAttribute(
+      'href',
+      'mailto:support.vetify@gmail.com'
+    );
+    expect(screen.getByText(/cannot be edited/i)).toBeInTheDocument();
+    await screen.findByTestId('vetmap');
   });
 });

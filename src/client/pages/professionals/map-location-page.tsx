@@ -1,97 +1,70 @@
-import { useUpdateMapLocation } from '@/hooks/useProfessionals';
-import type { ProfessionalAddressView } from '@/services/professionals.service';
-import { AlertTriangle, CheckCircle2, ExternalLink, Globe2, Info } from 'lucide-react';
-import { useState } from 'react';
+import type { OwnProfessional, ProfessionalAddressView } from '@/services/professionals.service';
+import type { MapVet } from '@/types/map-prof-vet';
+import { ExternalLink, Globe2, Info, Lock, Mail, MapPin } from 'lucide-react';
+import { Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 
-import PinPicker, { type Point } from './_components/pin-picker';
 import { useConsoleApplication } from './professional-layout';
 
-/**
- * Where a vet decides whether they are on the map, and exactly where.
- *
- * Two decisions per address, and they are separate on purpose: a vet may want their
- * clinic findable and their house not, and a single switch would make that impossible to
- * say. Both start off. Nothing about an address reaches the public map until somebody
- * here turns it on.
- *
- * A page rather than a row in the settings tray, which is about 22rem across and capped
- * at 70vh — enough for a rate and a schedule, not for a map you drag a pin around. The
- * tray links here instead, so there is one writer and not two that can disagree.
- */
+// Lazily, as everywhere else a map is mounted: Leaflet is large and this is not the page a vet opens daily.
+const VetMap = lazy(() => import('@/components/vetmap'));
+
+const SUPPORT_EMAIL = 'support.vetify@gmail.com';
 
 const KIND_COPY: Record<ProfessionalAddressView['kind'], { title: string; blurb: string }> = {
   clinic: {
     title: 'Clinic',
-    blurb: 'Where pet owners come to you. This is the one most vets want on the map.',
+    blurb: 'Where pet owners come to you, and the pin most of them will navigate to.',
   },
   home: {
     title: 'Home',
-    blurb:
-      'Only worth publishing if you consult from here. Your street address is already on your listing either way — this decides whether a pin joins it.',
+    blurb: 'On the map only if you dropped a marker here when you enquired.',
   },
 };
 
-/** The two fields the picker cares about, out of a fix or a stored pin. */
-function point(source: { latitude: number; longitude: number } | null): Point | null {
-  return source ? { latitude: source.latitude, longitude: source.longitude } : null;
+function addressLine(address: ProfessionalAddressView) {
+  return [address.line1, address.city, address.province, address.postalCode]
+    .filter(Boolean)
+    .join(', ');
+}
+
+// One marker, the vet's own, so the map is drawn from the application rather than from a directory lookup.
+function ownMarker(application: OwnProfessional, address: ProfessionalAddressView): MapVet[] {
+  if (!address.mapPin) return [];
+
+  return [
+    {
+      id: application.id,
+      key: `${application.id}:${address.kind}`,
+      kind: address.kind,
+      name: application.fullName,
+      clinicName: application.clinicName,
+      addressLine: addressLine(address),
+      latitude: address.mapPin.latitude,
+      longitude: address.mapPin.longitude,
+      specialties: application.specialties,
+      hourlyRate: application.hourlyRate,
+      availabilityStatus: application.availabilityStatus,
+    },
+  ];
 }
 
 function AddressMapCard({
+  application,
   address,
-  fallback,
 }: {
+  application: OwnProfessional;
   address: ProfessionalAddressView;
-  /** A reading from another address, for a card with nothing of its own to open on. */
-  fallback: Point | null;
 }) {
   const copy = KIND_COPY[address.kind];
-  const update = useUpdateMapLocation();
-
-  /**
-   * The marker starts where the vet left it, and failing that at the reading taken on
-   * the day this address was verified — a device fix from the doorstep, so it is usually
-   * right already and the vet confirms rather than hunts. That fix itself never leaves
-   * the server for anybody else; what gets published is whatever is saved from here.
-   */
-  const [pin, setPin] = useState<Point | null>(point(address.mapPin) ?? point(address.fix));
-  const [showOnMap, setShowOnMap] = useState(address.showOnMap);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  const dirty =
-    showOnMap !== address.showOnMap ||
-    pin?.latitude !== point(address.mapPin)?.latitude ||
-    pin?.longitude !== point(address.mapPin)?.longitude;
-
-  function save() {
-    setError(null);
-    setSaved(false);
-
-    update.mutate(
-      // `pin` absent leaves the stored placement alone. It is only ever absent here for
-      // an address with no pin and no fix, where there is nothing to send.
-      { kind: address.kind, ...(pin ? { pin } : {}), showOnMap },
-      {
-        onSuccess: () => {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 3000);
-        },
-        onError: (err) => setError(err.message || 'That did not save. Try again.'),
-      }
-    );
-  }
+  const pin = address.mapPin;
 
   return (
     <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-black tracking-tight text-slate-900">{copy.title} address</h2>
-          <p className="mt-0.5 text-sm font-semibold text-slate-700">
-            {[address.line1, address.city, address.province, address.postalCode]
-              .filter(Boolean)
-              .join(', ')}
-          </p>
+          <p className="mt-0.5 text-sm font-semibold text-slate-700">{addressLine(address)}</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">{copy.blurb}</p>
         </div>
 
@@ -104,49 +77,32 @@ function AddressMapCard({
         </span>
       </header>
 
-      <PinPicker value={pin} onChange={setPin} fallback={fallback} />
+      {pin ? (
+        <>
+          {/* Non-interactive: a picture of where the marker is, not somewhere to move it. */}
+          <div className="h-56 overflow-hidden rounded-xl border border-slate-200 sm:h-64">
+            <Suspense fallback={null}>
+              <VetMap
+                zoom={16}
+                center={[pin.latitude, pin.longitude]}
+                interactive={false}
+                showOverlay={false}
+                vets={ownMarker(application, address)}
+              />
+            </Suspense>
+          </div>
 
-      <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <input
-          type="checkbox"
-          checked={showOnMap}
-          disabled={!pin}
-          onChange={() => setShowOnMap((on) => !on)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-teal-800 focus:ring-teal-700 disabled:opacity-50"
-        />
-        <span className="min-w-0">
-          <span className="block text-sm font-bold text-slate-800">
-            Show this on the public map
-          </span>
-          <span className="block text-xs leading-relaxed text-slate-500">
-            {pin
-              ? 'The pin appears on the public map and on your profile, and you turn up when a pet owner searches near here. Turn it off and the pin comes straight back off — the placement is kept, so you will not have to drag it again.'
-              : 'Pin your location on the map first. A switch that silently does nothing is worse than one you cannot press yet.'}
-          </span>
-        </span>
-      </label>
-
-      {error && (
-        <p className="flex items-start gap-1.5 text-xs font-semibold text-rose-700">
-          <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
-          {error}
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            <MapPin className="h-4 w-4 shrink-0 text-teal-800" aria-hidden />
+            Pinned at {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
+          </p>
+        </>
+      ) : (
+        <p className="rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+          No marker was dropped for this address, so it is not on the public map. Write to us if it
+          should be.
         </p>
       )}
-      {saved && (
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Saved.
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={save}
-        disabled={update.isPending || !dirty}
-        className="w-full rounded-lg bg-teal-800 py-2.5 text-sm font-bold text-white transition-colors hover:bg-teal-900 disabled:opacity-50 sm:w-auto sm:px-6"
-      >
-        {update.isPending ? 'Saving…' : dirty ? 'Save this address' : 'Saved'}
-      </button>
     </section>
   );
 }
@@ -154,14 +110,6 @@ function AddressMapCard({
 export default function ProfessionalMapLocationPage() {
   const application = useConsoleApplication();
   const addresses = application.addresses ?? [];
-
-  /**
-   * The first reading of any address, for a card that has neither a pin nor a fix of its
-   * own: a vet's clinic and house are usually in the same town, so opening the map there
-   * beats opening it on the whole country. It only steers the view — nothing is saved
-   * until the vet places the marker themselves.
-   */
-  const anyFix = point(addresses.find((address) => address.fix)?.fix ?? null);
 
   return (
     <div className="space-y-5">
@@ -171,15 +119,15 @@ export default function ProfessionalMapLocationPage() {
           Map &amp; Location
         </h1>
         <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
-          Drop a pin where pet owners should actually walk up to, then decide whether it goes on the
-          map. Each address is its own decision, and both are off until you turn them on.
+          These are the markers you dropped when you enquired. Approving your application is what
+          put them on the public map, at the coordinates a reviewer read — so they are shown here
+          and cannot be edited.
         </p>
         <p className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-          <Info className="mt-px h-4 w-4 shrink-0 text-slate-400" />
+          <Info className="mt-px h-4 w-4 shrink-0 text-slate-400" aria-hidden />
           <span>
-            Publishing puts a pin on the public map and on your profile — that is all it adds. Your
-            address lines are already on your listing, and the location reading we took while
-            verifying you stays private whatever you choose here.
+            A pin is all publishing adds. Your address lines are already on your listing, and the
+            device reading taken while verifying you stays private.
           </span>
         </p>
         <Link
@@ -193,13 +141,32 @@ export default function ProfessionalMapLocationPage() {
 
       {addresses.length === 0 ? (
         <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-600 shadow-xs">
-          There are no addresses on your application, so there is nothing to pin yet.
+          There are no addresses on your application, so there is nothing on the map yet.
         </p>
       ) : (
         addresses.map((address) => (
-          <AddressMapCard key={address.kind} address={address} fallback={anyFix} />
+          <AddressMapCard key={address.kind} application={application} address={address} />
         ))
       )}
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <h2 className="flex items-center gap-2 text-sm font-black tracking-tight text-amber-900">
+          <Lock className="h-4 w-4 shrink-0" aria-hidden />
+          Moving a pin, or taking one off
+        </h2>
+        <p className="mt-1.5 text-xs leading-relaxed text-amber-900/90">
+          Everything you filed is checked as it was filed, locations included, so no part of it can
+          be changed from here. If you have moved, or a marker is in the wrong place, email us with
+          your licence number and we will correct it.
+        </p>
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 hover:underline"
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {SUPPORT_EMAIL}
+        </a>
+      </section>
     </div>
   );
 }

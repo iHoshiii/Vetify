@@ -444,15 +444,7 @@ export function BookingReminderSection({ isExpanded, onToggle }: SectionProps) {
   );
 }
 
-/**
- * Where the map decision is shown but not made.
- *
- * Read-only on purpose. The pin and the switches live on the console page, because a
- * switch here would be a second writer for the same field and the two could disagree
- * about which address is published. What a vet wants from the tray is the answer to
- * "am I on the map right now" — so that is what this row is, and the way to change it
- * is one link away.
- */
+// Read-only, like the console page it links to: a location is fixed once the application is approved, so all a vet wants here is the answer to "am I on the map right now".
 export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
   const application = useVerifiedApplication();
   if (!application) return null;
@@ -501,11 +493,11 @@ export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
       </div>
 
       <p className="text-[11px] leading-snug text-slate-500">
-        Pinning a location needs a map to drag, which does not fit in here.{' '}
+        These are the markers from your enquiry, published when you were approved.{' '}
         <Link to="/professionals/dashboard/location" className="font-bold text-teal-800 underline">
           Open Map &amp; Location
         </Link>{' '}
-        to place a pin or change what is published.
+        to see them on a map. Email support.vetify@gmail.com to have one corrected.
       </p>
     </TraySection>
   );
