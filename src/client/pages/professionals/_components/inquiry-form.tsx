@@ -91,6 +91,10 @@ export default function InquiryForm() {
       clinicName: values.clinicName,
       currentLocation: values.currentLocation,
       clinicLocation: values.clinicLocation,
+      // The coordinates behind those two lines. Sent, not just held for the marker:
+      // the application is built from these and the map is drawn from them.
+      currentPin: pins.current,
+      clinicPin: pins.clinic,
       motivation: values.motivation,
       phone: values.phone,
     };
@@ -201,6 +205,7 @@ export default function InquiryForm() {
         <div className="space-y-2">
           <LocationPickerField
             label="Where you are based"
+            kind="home"
             value={pins.current}
             address={values.currentLocation}
             onChange={setLocation('currentLocation', 'current')}
@@ -215,6 +220,7 @@ export default function InquiryForm() {
         <div className="space-y-2">
           <LocationPickerField
             label="Where you practise (optional)"
+            kind="clinic"
             value={pins.clinic}
             address={values.clinicLocation}
             onChange={setLocation('clinicLocation', 'clinic')}

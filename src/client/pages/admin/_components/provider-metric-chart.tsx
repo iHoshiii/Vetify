@@ -14,15 +14,20 @@ import {
 import { CHART_GRID, CHART_INK, CHART_TOOLTIP_BORDER } from './chart-theme';
 import { FRAME, MUTED, PANEL_HEADING } from './ui';
 
+// The application phases run yellow to blue in the order they happen, so the legend
+// reads as the pipeline rather than as five unrelated lines, and the two verdicts keep
+// the green and red they are named with everywhere else in the console.
 const COLORS: Record<string, string> = {
   facebook: '#2a78d6',
   tiktok: '#eda100',
   local: '#64748b',
   google: '#15803d',
   total: '#000000',
-  pending: '#eda100',
-  approved: '#15803d',
+  request: '#d9a406',
+  application: '#ea580c',
+  accepted: '#15803d',
   rejected: '#e34948',
+  completed: '#2a78d6',
   admin: '#2a78d6',
   professionals: '#15803d',
   public: '#64748b',
@@ -33,9 +38,11 @@ const LABELS: Record<string, string> = {
   local: 'Local',
   google: 'Google',
   total: 'Total',
-  pending: 'Pending',
-  approved: 'Approved',
+  request: 'Request',
+  application: 'Application',
+  accepted: 'Accepted',
   rejected: 'Rejected',
+  completed: 'Completed',
   admin: 'Admin',
   professionals: 'Professionals',
   public: 'Public users',

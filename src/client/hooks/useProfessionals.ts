@@ -10,7 +10,6 @@ import {
   listProfessionals,
   listProfessionalsNear,
   sendProfessionalInquiry,
-  updateOwnMapLocation,
   updateOwnProfessionalProfile,
   type InviteSummary,
   type NearbyParams,
@@ -24,7 +23,6 @@ import {
 import type {
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
-  ProfessionalMapUpdateInput,
   ProfessionalProfileUpdateInput,
 } from '@shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -138,26 +136,6 @@ export function useNearbyProfessionals(params: NearbyParams | null) {
     enabled: Boolean(params),
     staleTime: STALE_TIME,
     retry: retryUnlessMissing,
-  });
-}
-
-/**
- * Moves one address on or off the public map.
- *
- * Invalidates the nearest-vets queries as well as the directory, because that is the
- * list a pin appearing or disappearing actually changes — and the vet who just flipped
- * the switch is the one most likely to go and look.
- */
-export function useUpdateMapLocation() {
-  const queryClient = useQueryClient();
-
-  return useMutation<OwnProfessional, Error, ProfessionalMapUpdateInput>({
-    mutationFn: updateOwnMapLocation,
-    onSuccess: (updated) => {
-      queryClient.setQueryData(professionalKeys.mine(), updated);
-      queryClient.invalidateQueries({ queryKey: professionalKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: [...professionalKeys.all, 'near'] });
-    },
   });
 }
 

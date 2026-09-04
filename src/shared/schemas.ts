@@ -748,29 +748,6 @@ export type ProfessionalProfileUpdateInput = z.input<typeof professionalProfileU
 export type ProfessionalProfileUpdate = z.output<typeof professionalProfileUpdateSchema>;
 
 /**
- * One address's answer to "where exactly, and may we show it".
- *
- * Its own shape rather than a field on `professionalProfileUpdateSchema`, because it
- * writes one element of the addresses array rather than a value on the application:
- * the settings patch is a `$set` of whole fields, and this is a positional update
- * naming two sub-fields of the one address it matches. Folding it in would mean
- * bending the one function that owns that patch out of shape.
- *
- * `kind` says which address, so the two are independent — a vet may publish the
- * clinic and keep the house off the map, which is the point of them being separate.
- * `pin` absent leaves the placement alone and `null` clears it, the same distinction
- * the settings patch draws everywhere else.
- */
-export const professionalMapUpdateSchema = z.object({
-  kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
-  pin: mapPinSchema.nullish(),
-  showOnMap: z.boolean().optional(),
-});
-
-export type ProfessionalMapUpdateInput = z.input<typeof professionalMapUpdateSchema>;
-export type ProfessionalMapUpdate = z.output<typeof professionalMapUpdateSchema>;
-
-/**
  * What a pet owner's browser hands over to be ranked by.
  *
  * Coerced, because it arrives in a query string. No accuracy and no timestamp: the
@@ -872,6 +849,8 @@ export const professionalInquirySchema = z.object({
     .trim()
     .min(2, 'Where are you based?')
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line'),
+  // The pin the line above was read off, kept because the line cannot be mapped back.
+  currentPin: mapPinSchema.nullish(),
   licenseAuthority: professionalFields.licenseAuthority.default(
     'Professional Regulation Commission'
   ),
@@ -882,6 +861,7 @@ export const professionalInquirySchema = z.object({
     .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  clinicPin: mapPinSchema.nullish(),
   clinicName: professionalFields.clinicName,
   /**
    * "Why do you want to join our team?" — the whole basis for the invite decision,

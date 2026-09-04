@@ -3,6 +3,7 @@ import type { ObjectId } from 'mongodb';
 import {
   findProfessionalById,
   findUserById,
+  publishPinnedAddresses,
   recordAudit,
   updateProfessional,
   updateUser,
@@ -154,7 +155,7 @@ export async function reviewProfessional(
   const roleFrom = applicant?.role ?? 'user';
   const roleTo = roleAfter(decision, roleFrom);
 
-  const application = await updateProfessional(current._id, {
+  const decided = await updateProfessional(current._id, {
     status: decision,
     reviewedBy: reviewer._id,
     reviewedAt: new Date(),
@@ -163,7 +164,13 @@ export async function reviewProfessional(
     rejectionReason: decision === 'verified' ? null : stated,
   });
 
-  if (!application) return null;
+  if (!decided) return null;
+
+  // Approval is what puts a vet on the map, from the pins the application was filed
+  // with. A rejection or a suspension leaves the points where they are: every map
+  // query filters on 'verified', so the status alone takes the entry off the map.
+  const application =
+    decision === 'verified' ? (await publishPinnedAddresses(decided._id)) ?? decided : decided;
 
   // The account carries the name on the licence from here on.
   //

@@ -1,7 +1,13 @@
 import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
 import { toMapVets } from '@/components/map-prof-vet/to-map-vets';
+import { vetLabel } from '@/components/map-prof-vet/vet-label';
 import { MapStyles } from '@/components/vetmap/map-styles';
-import { createMarkerIcon, OSM_PALETTE, VETIFY_PALETTE } from '@/components/marker-icon';
+import {
+  createMarkerIcon,
+  OSM_PALETTE,
+  VETIFY_PALETTE,
+  type MarkerGlyph,
+} from '@/components/marker-icon';
 import { useOsmClinics } from '@/hooks/useOsmClinics';
 import { useProfessionals } from '@/hooks/useProfessionals';
 import { Crosshair, MapPin } from 'lucide-react';
@@ -42,6 +48,8 @@ type Props = {
    */
   fallback?: Point | null;
   className?: string;
+  // Which address is being pinned, so the pin carries a house or a cross to match.
+  kind?: MarkerGlyph;
   autoLocate?: boolean;
   hideReadout?: boolean;
   onReady?: () => void;
@@ -52,6 +60,7 @@ export default function PinPicker({
   onChange,
   fallback = null,
   className = '',
+  kind = 'clinic',
   autoLocate = false,
   hideReadout = false,
   onReady,
@@ -71,6 +80,7 @@ export default function PinPicker({
   /** Read through refs, so a new callback identity does not rebuild the map. */
   const change = useRef(onChange);
   const seed = useRef<Point | null>(value ?? fallback);
+  const glyph = useRef(kind);
   useEffect(() => {
     readyCallback.current = onReady;
   }, [onReady]);
@@ -140,7 +150,7 @@ export default function PinPicker({
       }).addTo(instance);
 
       const pin = L.marker([at.latitude, at.longitude], {
-        icon: createMarkerIcon(L, VETIFY_PALETTE),
+        icon: createMarkerIcon(L, VETIFY_PALETTE, glyph.current),
         draggable: true,
         keyboard: true,
       }).addTo(instance);
@@ -191,14 +201,13 @@ export default function PinPicker({
         ? leafletWithClusters.markerClusterGroup()
         : L.layerGroup();
       cluster.addTo(map.current);
-      const vetIcon = createMarkerIcon(L, VETIFY_PALETTE);
-      const clinicIcon = createMarkerIcon(L, OSM_PALETTE);
+      const clinicIcon = createMarkerIcon(L, OSM_PALETTE, 'clinic');
       const vets = toMapVets(directory.data?.items ?? []);
       const vetMarkers = vets.map((vet) =>
-        L.marker([vet.latitude, vet.longitude], { icon: vetIcon, opacity: 0.85 }).bindTooltip(
-          vet.clinicName ?? vet.name,
-          { direction: 'top' }
-        )
+        L.marker([vet.latitude, vet.longitude], {
+          icon: createMarkerIcon(L, VETIFY_PALETTE, vet.kind),
+          opacity: 0.85,
+        }).bindTooltip(vetLabel(vet), { direction: 'top' })
       );
       const clinicMarkers = (clinics.data ?? []).map((clinic) =>
         L.marker([clinic.latitude, clinic.longitude], {

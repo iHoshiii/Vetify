@@ -2,6 +2,7 @@ import { ADMIN_PAGE_SIZE } from '@shared/limits';
 import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
+import { dailyCountStages, type DailyCount } from '../daily-count';
 import { toObjectId } from '../object-id';
 import { escapeRegex } from '../text-search';
 import { professionalInquiryAttrsSchema, type ProfessionalInquiryAttrs } from './schema';
@@ -49,7 +50,9 @@ export async function insertProfessionalInquiry(
     licenseNumber: parsed.licenseNumber,
     licenseAuthority: parsed.licenseAuthority,
     currentLocation: parsed.currentLocation,
+    currentPin: parsed.currentPin ?? null,
     clinicLocation: parsed.clinicLocation ?? null,
+    clinicPin: parsed.clinicPin ?? null,
     clinicName: parsed.clinicName ?? null,
     motivation: parsed.motivation,
     phone: parsed.phone ?? null,
@@ -198,4 +201,19 @@ export async function countInquiriesByStatus(): Promise<Record<string, number>> 
     .toArray();
 
   return Object.fromEntries(rows.map((row) => [row._id, row.count]));
+}
+
+/**
+ * One row per day of enquiries filed, oldest first, since `from`.
+ *
+ * Counted from the enquiries themselves, not from activity events: nothing is
+ * recorded when one arrives, and these rows outlive the 90-day event window anyway.
+ */
+export function countInquiriesPerDay(input: { from: Date }): Promise<DailyCount[]> {
+  return professionalInquiriesCollection()
+    .aggregate<DailyCount>([
+      { $match: { createdAt: { $gte: input.from } } },
+      ...dailyCountStages('createdAt'),
+    ])
+    .toArray();
 }

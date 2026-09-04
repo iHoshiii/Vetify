@@ -9,7 +9,12 @@ export function PlacesList({ places, loading }: { places: NearbyPlace[]; loading
     <ul className="space-y-2">
       {places.map((place) =>
         place.source === 'vetify' ? (
-          <VetRow key={place.key} vet={place.vet} />
+          <VetRow
+            key={place.key}
+            vet={place.vet}
+            kind={place.kind}
+            distanceMeters={place.distanceMeters}
+          />
         ) : (
           <ClinicRow key={place.key} clinic={place.clinic} distanceMeters={place.distanceMeters} />
         )

@@ -14,12 +14,35 @@ export function rankNearby(input: {
   radiusKm: number;
   limit: number;
 }): NearbyPlace[] {
-  const ours: NearbyPlace[] = input.professionals.map((vet) => ({
-    source: 'vetify',
-    key: `vetify:${vet.id}`,
-    distanceMeters: vet.distanceMeters,
-    vet,
-  }));
+  const ours: NearbyPlace[] = input.professionals.flatMap((vet) => {
+    const pinned = vet.addresses.flatMap((address) =>
+      address.mapPin
+        ? [{ kind: address.kind, meters: metersBetween(input.from, address.mapPin) }]
+        : []
+    );
+    // One row per published address, the way the map draws one pin per published address.
+    if (pinned.length === 0) {
+      return [
+        {
+          source: 'vetify' as const,
+          key: `vetify:${vet.id}`,
+          distanceMeters: vet.distanceMeters,
+          kind: 'clinic' as const,
+          vet,
+        },
+      ];
+    }
+    // $geoNear measured the nearest of them, so that row prints the server's number
+    // and any second address is measured here rather than left blank.
+    const nearest = Math.min(...pinned.map((address) => address.meters));
+    return pinned.map((address) => ({
+      source: 'vetify' as const,
+      key: `vetify:${vet.id}:${address.kind}`,
+      distanceMeters: address.meters === nearest ? vet.distanceMeters : address.meters,
+      kind: address.kind,
+      vet,
+    }));
+  });
   const pins = [...input.pins, ...toMapVets(input.professionals)];
   const radiusMeters = input.radiusKm * 1000;
 

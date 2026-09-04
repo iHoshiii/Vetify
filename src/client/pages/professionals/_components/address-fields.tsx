@@ -18,10 +18,13 @@ export type AddressValue = {
   province: string;
   postalCode: string;
   fix: LocationFix | null;
+  // Where the marker was dropped at enquiry time. Published on verification, so this
+  // is the coordinate a pet owner ends up navigating to.
+  mapPin: { latitude: number; longitude: number } | null;
 };
 
 export function emptyAddress(kind: AddressValue['kind']): AddressValue {
-  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null };
+  return { kind, line1: '', city: '', province: '', postalCode: '', fix: null, mapPin: null };
 }
 
 /**

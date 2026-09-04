@@ -217,10 +217,6 @@ export default function AdminBlogsPage() {
     <div className="space-y-5">
       <div>
         <h2 className="text-lg font-black tracking-tight">Posts</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Held, drafted and taken-down posts are all here. The list is ordered worst verdict first,
-          so anything waiting on you is at the top.
-        </p>
       </div>
 
       {/* The only thing on this page with somebody waiting on it, so it says how

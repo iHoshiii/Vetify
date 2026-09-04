@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { NearbyPlace, OsmClinic } from '../components/map-prof-vet';
 import NearestVets, { type NearestVetsProps } from '../pages/map/_components/nearest-vet';
 import type { NearbyProfessional } from '../services/professionals.service';
+import type { ProfessionalAddressKind } from '@shared/schemas';
 
 /**
  * The panel that makes "Find a vet near you." mean it.
@@ -58,8 +59,14 @@ function clinic(overrides: Partial<OsmClinic> = {}): OsmClinic {
 }
 
 /** The two branches of the union, so a test can say what it means in one line. */
-function ours(vet: NearbyProfessional): NearbyPlace {
-  return { source: 'vetify', key: `vetify:${vet.id}`, distanceMeters: vet.distanceMeters, vet };
+function ours(vet: NearbyProfessional, kind: ProfessionalAddressKind = 'clinic'): NearbyPlace {
+  return {
+    source: 'vetify',
+    key: `vetify:${vet.id}:${kind}`,
+    distanceMeters: vet.distanceMeters,
+    kind,
+    vet,
+  };
 }
 
 function theirs(from: OsmClinic, distanceMeters: number): NearbyPlace {
@@ -144,15 +151,16 @@ describe('the ranked list', () => {
       ],
     });
 
-    // What a visitor reads is the same on every row; what a screen reader reads is not,
-    // which is the only reason either of these can be found by name at all.
-    expect(screen.getByText('Book an Appointment')).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Book an appointment with Marites Reyes' })
-    ).toHaveAttribute('href', '/book-appointment?professional=a1');
+    // What a visitor reads says which kind of appointment it is; what a screen reader
+    // reads adds the name, which is the only reason either can be found by name at all.
+    expect(screen.getByText('Clinic visit')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Clinic visit with Marites Reyes' })).toHaveAttribute(
+      'href',
+      '/book-appointment?professional=a1'
+    );
 
     // Booked up, so no button: the booking service would refuse this one with a 409.
-    expect(screen.queryByRole('link', { name: 'Book an appointment with Ramon Cruz' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Clinic visit with Ramon Cruz/ })).toBeNull();
     expect(screen.getByText('Booked up')).toBeInTheDocument();
   });
 });
