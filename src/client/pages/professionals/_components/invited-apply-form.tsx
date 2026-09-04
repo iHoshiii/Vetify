@@ -5,6 +5,7 @@ import type { InviteSummary } from '@/services/professionals.service';
 import { professionalApplySchema, type ProfessionalApplyInput } from '@shared/schemas';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 import type { AddressValue } from './address-fields';
 import PhotoCapture, { type Capture } from './photo-capture';
@@ -187,7 +188,17 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         <h2 className="mt-2 text-lg font-black tracking-tight text-slate-950">From your enquiry</h2>
         <p className="mt-1 text-xs leading-5 text-slate-500">
           These three are the ones a reviewer approved, so they are fixed here. The name has to
-          match the one on your PRC licence — if it does not, write to us rather than filing this.
+          match the one on your PRC licence. If one information is incorrect please{' '}
+          {/* A new tab, because leaving this page loses the photographs already taken */}
+          <Link
+            to="/contact"
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-teal-800 underline"
+          >
+            contact us
+          </Link>
+          .
         </p>
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
           <div>
