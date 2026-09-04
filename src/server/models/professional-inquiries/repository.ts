@@ -49,7 +49,7 @@ export async function insertProfessionalInquiry(
     openEmail: parsed.email,
     licenseNumber: parsed.licenseNumber,
     licenseAuthority: parsed.licenseAuthority,
-    currentLocation: parsed.currentLocation,
+    currentLocation: parsed.currentLocation ?? null,
     currentPin: parsed.currentPin ?? null,
     clinicLocation: parsed.clinicLocation ?? null,
     clinicPin: parsed.clinicPin ?? null,

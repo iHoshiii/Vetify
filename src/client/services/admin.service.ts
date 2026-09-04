@@ -369,7 +369,7 @@ export type AdminInquiry = {
   name: string;
   email: string;
   licenseNumber: string;
-  currentLocation: string;
+  currentLocation: string | null;
   clinicLocation: string | null;
   motivation: string;
   phone: string | null;

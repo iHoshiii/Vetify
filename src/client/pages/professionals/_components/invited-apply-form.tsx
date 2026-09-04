@@ -63,10 +63,15 @@ function reviewedAddress(
 // The clinic is only included when it has a name, because the apply schema refuses a
 // clinic address that cannot be named and an invisible refusal is a dead submit button.
 function reviewedAddresses(invite: InviteSummary): AddressValue[] {
-  const home = reviewedAddress('home', invite.currentLocation, invite.currentPin);
+  const home = invite.currentLocation?.trim();
   const clinic = invite.clinicLocation?.trim();
-  if (!clinic || !invite.clinicName?.trim()) return [home];
-  return [home, reviewedAddress('clinic', clinic, invite.clinicPin)];
+  const reviewed: AddressValue[] = [];
+  // Either one may be missing, because the enquiry only asked for one of the two
+  if (home) reviewed.push(reviewedAddress('home', home, invite.currentPin));
+  if (clinic && invite.clinicName?.trim()) {
+    reviewed.push(reviewedAddress('clinic', clinic, invite.clinicPin));
+  }
+  return reviewed;
 }
 
 // Deduplicated: a one-part location lands in line1, city and province all at once.
