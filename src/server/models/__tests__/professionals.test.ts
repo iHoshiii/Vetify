@@ -14,6 +14,7 @@ import {
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
+  publishPinnedAddresses,
   updateAddressMap,
   updateProfessional,
   type ProfessionalAttrs,
@@ -629,6 +630,81 @@ describe('updateAddressMap', () => {
     });
 
     expect(updated).toBeNull();
+  });
+});
+
+// One address pinned at enquiry time and one filed without a marker, which is what an
+// applicant who only dropped a pin on their clinic leaves behind.
+async function withOnePinnedAddress() {
+  const owner = await account();
+  return await insertProfessional(
+    attrs(owner, {
+      addresses: [
+        {
+          kind: 'clinic',
+          line1: '12 Mabini Street',
+          city: 'Cebu City',
+          province: 'Cebu',
+          postalCode: '6000',
+          fix: null,
+          mapPin: { latitude: 10.3157, longitude: 123.8854 },
+        },
+        {
+          kind: 'home',
+          line1: '44 Sampaguita Lane',
+          city: 'Mandaue',
+          province: 'Cebu',
+          postalCode: '6014',
+          fix: null,
+        },
+      ],
+    })
+  );
+}
+
+describe('publishPinnedAddresses', () => {
+  it('indexes every pinned address, longitude first', async () => {
+    const application = await withOnePinnedAddress();
+
+    const published = await publishPinnedAddresses(application._id);
+
+    // The pair is stored latitude-first and indexed longitude-first, and both numbers
+    // are plausible for the Philippines — so a swap moves the clinic into the Pacific
+    // without failing anywhere else.
+    expect(addressOf(published!, 'clinic')?.mapPoint).toEqual({
+      type: 'Point',
+      coordinates: [123.8854, 10.3157],
+    });
+  });
+
+  it('leaves an address with no pin without the key at all', async () => {
+    const application = await withOnePinnedAddress();
+
+    const published = await publishPinnedAddresses(application._id);
+    const home = addressOf(published!, 'home');
+
+    // Absent rather than null: an explicit null beside a real point in the same array
+    // is a shape the 2dsphere index cannot read, and it refuses every later write to
+    // the document. See `mapPoint` on ProfessionalAddress.
+    expect('mapPoint' in home!).toBe(false);
+    expect(home?.mapPin).toBeNull();
+  });
+
+  it('touches nothing but the points', async () => {
+    const application = await withOnePinnedAddress();
+
+    const published = await publishPinnedAddresses(application._id);
+    const clinic = addressOf(published!, 'clinic');
+
+    expect(clinic?.line1).toBe('12 Mabini Street');
+    expect(clinic?.city).toBe('Cebu City');
+    expect(clinic?.postalCode).toBe('6000');
+    expect(clinic?.mapPin).toMatchObject({ latitude: 10.3157, longitude: 123.8854 });
+    expect(published?.addresses).toHaveLength(2);
+  });
+
+  it('answers null for an application that is not there', async () => {
+    expect(await publishPinnedAddresses(new ObjectId())).toBeNull();
   });
 });
 

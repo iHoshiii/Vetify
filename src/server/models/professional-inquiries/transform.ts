@@ -69,6 +69,9 @@ export function toAdminInquiryPage(input: {
  * else on the enquiry — the motivation, the reviewer's note, the trail — is not
  * something a link holder needs, and the link is the only thing standing between
  * this and a stranger.
+ *
+ * The two pins ride along because the application is built from them rather than from
+ * the address lines, and they are the applicant's own coordinates either way.
  */
 export function toInviteSummary(inquiry: ProfessionalInquiryDocument): InviteSummary {
   return {
@@ -77,7 +80,9 @@ export function toInviteSummary(inquiry: ProfessionalInquiryDocument): InviteSum
     licenseNumber: inquiry.licenseNumber,
     licenseAuthority: inquiry.licenseAuthority ?? 'Professional Regulation Commission',
     currentLocation: inquiry.currentLocation,
+    currentPin: inquiry.currentPin ?? null,
     clinicLocation: inquiry.clinicLocation,
+    clinicPin: inquiry.clinicPin ?? null,
     clinicName: inquiry.clinicName ?? null,
     phone: inquiry.phone,
     yearsExperience: inquiry.yearsExperience ?? 0,

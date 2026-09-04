@@ -1,4 +1,10 @@
-import { formatDistance, type MapVet, type OsmClinic } from '../map-prof-vet';
+import {
+  formatDistance,
+  vetLabel,
+  vetSubLabel,
+  type MapVet,
+  type OsmClinic,
+} from '../map-prof-vet';
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -45,8 +51,9 @@ export function clinicPopupHtml(clinic: OsmClinic): string {
             </div>`;
 }
 export function vetPopupHtml(vet: MapVet): string {
-  const heading = escapeHtml(vet.clinicName ?? vet.name);
-  const subheading = vet.clinicName ? escapeHtml(vet.name) : null;
+  const heading = escapeHtml(vetLabel(vet));
+  const second = vetSubLabel(vet);
+  const subheading = second ? escapeHtml(second) : null;
 
   const rows = [
     subheading

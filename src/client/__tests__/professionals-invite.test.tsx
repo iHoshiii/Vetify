@@ -37,7 +37,9 @@ function invite(overrides: Partial<InviteSummary> = {}): InviteSummary {
     email: 'marites@clinic.ph',
     licenseNumber: 'VET 1234-PH',
     currentLocation: 'Cebu City, Cebu',
+    currentPin: null,
     clinicLocation: 'Mandaue, Cebu',
+    clinicPin: null,
     expiresAt: '2026-09-10T00:00:00.000Z',
     ...overrides,
   };

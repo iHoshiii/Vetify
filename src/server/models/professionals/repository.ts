@@ -608,6 +608,49 @@ export async function updateAddressMap(
   );
 }
 
+// Verification is what publishes a pin: each address filed with a marker gains the point derived from it. An address without one is left alone rather than nulled, which the 2dsphere index would refuse on the next write.
+export async function publishPinnedAddresses(
+  id: string | ObjectId
+): Promise<ProfessionalDocument | null> {
+  return await professionalsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    [
+      {
+        // A pipeline rather than `arrayFilters`, so one write covers however many
+        // addresses were filed without naming a kind it has to guess at.
+        $set: {
+          addresses: {
+            $map: {
+              input: '$addresses',
+              as: 'address',
+              in: {
+                $cond: [
+                  { $ifNull: ['$$address.mapPin', false] },
+                  {
+                    $mergeObjects: [
+                      '$$address',
+                      {
+                        // GeoJSON order, the reverse of how the pair is stored above it.
+                        mapPoint: {
+                          type: 'Point',
+                          coordinates: ['$$address.mapPin.longitude', '$$address.mapPin.latitude'],
+                        },
+                      },
+                    ],
+                  },
+                  '$$address',
+                ],
+              },
+            },
+          },
+          updatedAt: '$$NOW',
+        },
+      },
+    ],
+    { returnDocument: 'after' }
+  );
+}
+
 /**
  * Removes an application.
  *

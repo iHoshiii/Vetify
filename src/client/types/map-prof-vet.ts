@@ -32,5 +32,12 @@ export type OsmClinic = {
 
 /** A ranked nearby result, tagged by where it came from. */
 export type NearbyPlace =
-  | { source: 'vetify'; key: string; distanceMeters: number; vet: NearbyProfessional }
+  | {
+      source: 'vetify';
+      key: string;
+      distanceMeters: number;
+      // Which of the vet's addresses this row is, so it can name and offer the right thing.
+      kind: ProfessionalAddressKind;
+      vet: NearbyProfessional;
+    }
   | { source: 'osm'; key: string; distanceMeters: number; clinic: OsmClinic };

@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useState } from 'react';
 import PinPicker, { type Point } from './pin-picker';
+import type { MarkerGlyph } from '@/components/marker-icon';
 import { MapSkeleton } from '@/components/vetmap/map-skeleton';
 
 export type PickedAddress = {
@@ -15,11 +16,13 @@ export default function LocationPickerField({
   label,
   value,
   address = '',
+  kind = 'clinic',
   onChange,
 }: {
   label: string;
   value: Point | null;
   address?: string;
+  kind?: MarkerGlyph;
   onChange: (point: Point, address: PickedAddress) => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -90,6 +93,7 @@ export default function LocationPickerField({
             <div className={mapReady ? '' : 'opacity-0'}>
               <PinPicker
                 value={value}
+                kind={kind}
                 onChange={(point) => void pick(point)}
                 hideReadout
                 className="pt-2"

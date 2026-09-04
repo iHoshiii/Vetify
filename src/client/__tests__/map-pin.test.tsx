@@ -17,8 +17,7 @@ import PinPicker, { type Point } from '../pages/professionals/_components/pin-pi
  *
  * One picker per test, deliberately. `PinPicker` loads Leaflet with a dynamic import, and
  * under Vitest 2 two of those in flight at once race: one gets the factory mock and the
- * other silently gets the real module. The page that mounts a picker per address is tested
- * in `map-location.test.tsx`, where the picker itself is the stub and Leaflet never loads.
+ * other silently gets the real module.
  */
 
 const leaflet = vi.hoisted(() => {

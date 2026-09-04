@@ -12,6 +12,7 @@ export {
   isDuplicateApplication,
   isDuplicateLicense,
   professionalsCollection,
+  publishPinnedAddresses,
   updateAddressMap,
   updateProfessional,
   updateProfessionalProfile,

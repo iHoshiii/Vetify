@@ -8,10 +8,11 @@ export type MyLocation = {
   accuracyMeters: number;
 };
 
+// No cached fix: Update re-reads the device, and a stale position returns the same coordinates.
 const OPTIONS: PositionOptions = {
-  enableHighAccuracy: false,
-  timeout: 10_000,
-  maximumAge: 300_000,
+  enableHighAccuracy: true,
+  timeout: 15_000,
+  maximumAge: 0,
 };
 
 export function useMyLocation() {

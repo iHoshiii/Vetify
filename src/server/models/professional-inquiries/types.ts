@@ -17,6 +17,9 @@ export const PROFESSIONAL_INQUIRY_OPEN_STATUSES: ProfessionalInquiryStatus[] = [
   'invited',
 ];
 
+/** A dropped marker. The pair the map is drawn from, in reading order. */
+export type InquiryPin = { latitude: number; longitude: number };
+
 /** An enquiry as the database holds it. */
 export type ProfessionalInquiryDocument = {
   _id: ObjectId;
@@ -38,8 +41,12 @@ export type ProfessionalInquiryDocument = {
   licenseAuthority: string;
   /** Where the applicant is now — the city an interview would happen in. */
   currentLocation: string;
+  // The marker behind that line. Carried to the application and published on
+  // verification, which is the only way a vet reaches the map.
+  currentPin: InquiryPin | null;
   /** Where they practise, when that is somewhere else. */
   clinicLocation: string | null;
+  clinicPin: InquiryPin | null;
   clinicName: string | null;
   motivation: string;
   phone: string | null;
@@ -127,7 +134,9 @@ export type InviteSummary = {
   licenseNumber: string;
   licenseAuthority: string;
   currentLocation: string;
+  currentPin: InquiryPin | null;
   clinicLocation: string | null;
+  clinicPin: InquiryPin | null;
   clinicName: string | null;
   phone: string | null;
   yearsExperience: number;

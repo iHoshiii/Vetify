@@ -1,7 +1,12 @@
 import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-prof-vet';
 import { useOsmClinics } from '@/hooks/useOsmClinics';
-import { useNearbyProfessionals, useProfessionals } from '@/hooks/useProfessionals';
+import {
+  professionalKeys,
+  useNearbyProfessionals,
+  useProfessionals,
+} from '@/hooks/useProfessionals';
 import { MAP_NEAREST_LIMIT, PROFESSIONAL_NEAR_RADIUS_KM } from '@shared/limits';
+import { useQueryClient } from '@tanstack/react-query';
 import { Map as MapIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -14,6 +19,7 @@ const MAP_PIN_LIMIT = 20;
 export default function MapPage() {
   const [expanded, setExpanded] = useState(false);
   const { status, location, ask } = useMyLocation();
+  const queryClient = useQueryClient();
 
   const directory = useProfessionals({ limit: MAP_PIN_LIMIT });
   const nearby = useNearbyProfessionals(
@@ -42,6 +48,12 @@ export default function MapPage() {
     });
   }, [location, nearby.data, clinics.data, vets]);
 
+  // An unchanged fix keeps the same query key, so the cached answer has to be dropped by hand.
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: professionalKeys.all });
+    ask();
+  }
+
   return (
     <main className="min-h-[calc(100vh-80px)] bg-[#f6fbfb] text-slate-950 flex flex-col justify-center">
       {/* ── HERO + MAP ───────────────────────────────────────── */}
@@ -61,7 +73,7 @@ export default function MapPage() {
 
           <NearestVets
             status={status}
-            onAsk={ask}
+            onAsk={refresh}
             places={places}
             loading={(nearby.isPending && Boolean(location)) || clinics.isLoading}
             vetsFailed={nearby.isError}

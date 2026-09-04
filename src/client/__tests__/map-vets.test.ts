@@ -7,6 +7,8 @@ import {
   metersBetween,
   rankNearby,
   toMapVets,
+  vetLabel,
+  vetSubLabel,
   type MapVet,
   type OsmClinic,
 } from '../components/map-prof-vet';
@@ -216,6 +218,33 @@ describe('merging the two sources into one list', () => {
     expect(place.distanceMeters).toBe(872);
   });
 
+  it('gives a vet one row per published address, tagged by kind', () => {
+    // Both pinned, so the list says as much as the map does: two markers, two rows.
+    const places = rankNearby({
+      ...OPTIONS,
+      professionals: [
+        ranked(120, {
+          addresses: [
+            address({ mapPin: { latitude: from.latitude, longitude: from.longitude } }),
+            address({
+              kind: 'home',
+              mapPin: { latitude: from.latitude + 900 / 111_195, longitude: from.longitude },
+            }),
+          ],
+        }),
+      ],
+      clinics: [],
+    });
+
+    expect(places.map((place) => place.source === 'vetify' && place.kind)).toEqual([
+      'clinic',
+      'home',
+    ]);
+    // The clinic pin is the nearer one, so it keeps $geoNear's number and the home is
+    // measured here — otherwise the second row would have no distance to print.
+    expect(places.map((place) => Math.round(place.distanceMeters))).toEqual([120, 900]);
+  });
+
   it('drops an OpenStreetMap clinic that is one of ours under another name', () => {
     // ~40 m from the published pin: the same door, mapped twice.
     const twin = north(40, 'Veterinary Office');
@@ -322,5 +351,20 @@ describe('merging the two sources into one list', () => {
 
     expect(places).toHaveLength(MAP_NEAREST_LIMIT);
     expect(places.every((place) => place.source === 'vetify')).toBe(true);
+  });
+});
+
+describe('naming a pin after what it is', () => {
+  const reyes = { name: 'Marites Reyes', clinicName: 'Bayside Animal Clinic' };
+
+  it('names a home after the vet and a clinic after the clinic', () => {
+    expect(vetLabel({ ...reyes, kind: 'home' })).toBe('Marites Reyes');
+    expect(vetLabel({ ...reyes, kind: 'clinic' })).toBe('Bayside Animal Clinic');
+  });
+
+  it('adds the vet under the clinic name, and nothing under their own', () => {
+    expect(vetSubLabel({ ...reyes, kind: 'clinic' })).toBe('Marites Reyes');
+    expect(vetSubLabel({ ...reyes, kind: 'home' })).toBeNull();
+    expect(vetSubLabel({ ...reyes, clinicName: null, kind: 'clinic' })).toBeNull();
   });
 });

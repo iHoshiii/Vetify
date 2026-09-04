@@ -8,7 +8,6 @@ import type {
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalInviteRefusal,
-  ProfessionalMapUpdateInput,
   ProfessionalProfileUpdateInput,
   ProfessionalStatus,
   WeeklyScheduleItem,
@@ -142,7 +141,11 @@ export type InviteSummary = {
   licenseNumber: string;
   licenseAuthority?: string;
   currentLocation: string;
+  // What the application's addresses are pinned at. Null on an enquiry filed before
+  // the form started sending them.
+  currentPin: { latitude: number; longitude: number } | null;
   clinicLocation: string | null;
+  clinicPin: { latitude: number; longitude: number } | null;
   clinicName?: string | null;
   phone?: string | null;
   yearsExperience?: number;
@@ -297,23 +300,6 @@ export async function updateOwnProfessionalProfile(
   input: ProfessionalProfileUpdateInput
 ): Promise<OwnProfessional> {
   return apiFetch<OwnProfessional>('/professionals/me/profile', {
-    method: 'PATCH',
-    body: input,
-  });
-}
-
-/**
- * PATCH /api/v1/professionals/me/map-location — one address's place on the map.
- *
- * One address per call, named by `kind`, so publishing the clinic and keeping the house
- * off it is two calls that cannot interfere. A partial merge like its neighbour: leave
- * `pin` out to move the switch alone, leave `showOnMap` out to save a dragged marker
- * without deciding to publish it.
- */
-export async function updateOwnMapLocation(
-  input: ProfessionalMapUpdateInput
-): Promise<OwnProfessional> {
-  return apiFetch<OwnProfessional>('/professionals/me/map-location', {
     method: 'PATCH',
     body: input,
   });
