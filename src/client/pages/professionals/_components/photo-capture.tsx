@@ -157,7 +157,15 @@ export default function PhotoCapture({ label, hint, facing, value, onChange, err
   return (
     <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-black tracking-tight text-slate-950">{label}</h3>
+        <div className="flex items-baseline gap-1">
+          <h3 className="text-sm font-black tracking-tight text-slate-950">{label}</h3>
+          {/* Required, so the star stays beside the title until a photograph has been taken */}
+          {!value && (
+            <span aria-hidden className="text-sm font-bold text-red-500">
+              *
+            </span>
+          )}
+        </div>
         {value && (
           <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-teal-800">
             <CheckCircle2 className="h-3 w-3" aria-hidden />

@@ -3,7 +3,6 @@ import { useApplyThroughInvite } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { InviteSummary } from '@/services/professionals.service';
 import { professionalApplySchema, type ProfessionalApplyInput } from '@shared/schemas';
-import { CheckCircle2, Circle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -163,12 +162,14 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         (address.kind !== 'clinic' || Boolean(invite.clinicName?.trim()))
     );
 
-  const submissionRequirements = [
-    { label: 'Take a photo of your face', complete: Boolean(portrait) },
-    { label: 'Take a photo of the front of your licence', complete: Boolean(licenseFront) },
-    { label: 'Take a photo of the back of your licence', complete: Boolean(licenseBack) },
-    { label: 'Check the background-check consent box', complete: consent },
-  ];
+  // Named in page order, so what is left to do reads down the form
+  const outstanding = [
+    [Boolean(portrait), 'a photo of your face'],
+    [Boolean(licenseFront), 'the front of your licence'],
+    [Boolean(licenseBack), 'the back of your licence'],
+    [consent, 'the consent box'],
+  ] as const;
+  const missing = outstanding.filter(([done]) => !done).map(([, label]) => label);
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mt-10 space-y-6">
@@ -298,31 +299,12 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         <div>
           <h2 className="text-sm font-black tracking-tight text-slate-950">Before you submit</h2>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Complete each item below. The button will activate when the application is ready.
+            Anything still marked <span className="font-bold text-red-500">*</span> is outstanding.
+            The button activates when the application is ready.
           </p>
         </div>
 
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-          {submissionRequirements.map((requirement) => (
-            <li
-              key={requirement.label}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold ${
-                requirement.complete
-                  ? 'border-teal-200 bg-teal-50 text-teal-900'
-                  : 'border-rose-200 bg-rose-50 text-rose-700'
-              }`}
-            >
-              {requirement.complete ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-700" aria-hidden />
-              ) : (
-                <Circle className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
-              )}
-              {requirement.label}
-            </li>
-          ))}
-        </ul>
-
-        <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 text-sm text-slate-700">
+        <label className="mt-4 flex items-start gap-3 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={consent}
@@ -332,6 +314,11 @@ export default function InvitedApplyForm({ token, invite }: Props) {
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-800 focus:ring-teal-700"
           />
           <span>
+            {!consent && (
+              <span aria-hidden className="mr-1 font-bold text-red-500">
+                *
+              </span>
+            )}
             I consent to a professional background check, and confirm the licence photographed above
             is current and mine.
             {errors.backgroundCheckConsent && (
@@ -353,6 +340,9 @@ export default function InvitedApplyForm({ token, invite }: Props) {
         >
           {apply.isPending ? 'Submitting' : 'Submit application'}
         </Button>
+        {missing.length > 0 && (
+          <p className="text-xs text-slate-500">Still to do: {missing.join(', ')}.</p>
+        )}
         <p className="text-xs leading-5 text-slate-500">
           Once this is in, none of it can be edited from your dashboard — an application is checked
           as it was filed. After this comes the interview, and after that the decision.
