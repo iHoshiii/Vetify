@@ -96,7 +96,8 @@ function renderPage() {
 
 /** Fills the short form with something the shared schema accepts. */
 async function fillEnquiry(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Your name'), 'Marites Reyes');
+  await user.type(screen.getByLabelText('First name'), 'Marites');
+  await user.type(screen.getByLabelText('Last name'), 'Reyes');
   await user.type(screen.getByLabelText('Email address'), 'marites@clinic.ph');
   await user.type(screen.getByLabelText('License number'), 'VET 1234-PH');
   await user.type(screen.getByLabelText('Where you are based'), 'Cebu City, Cebu');
@@ -156,7 +157,7 @@ describe('the apply page', () => {
 
     expect(await screen.findByText('Under review')).toBeInTheDocument();
     expect(screen.getByText('VET 1234-PH')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Your name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('First name')).not.toBeInTheDocument();
   });
 
   it('says none of it can be edited here', async () => {
@@ -212,9 +213,10 @@ describe('the enquiry form', () => {
   it('refuses an answer too short for a reviewer to act on', async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByLabelText('Your name');
+    await screen.findByLabelText('First name');
 
-    await user.type(screen.getByLabelText('Your name'), 'Marites Reyes');
+    await user.type(screen.getByLabelText('First name'), 'Marites');
+    await user.type(screen.getByLabelText('Last name'), 'Reyes');
     await user.type(screen.getByLabelText('Email address'), 'marites@clinic.ph');
     await user.type(screen.getByLabelText('License number'), 'VET 1234-PH');
     await user.type(screen.getByLabelText('Where you are based'), 'Cebu City, Cebu');
@@ -232,13 +234,17 @@ describe('the enquiry form', () => {
     vi.mocked(sendProfessionalInquiry).mockResolvedValue({ received: true });
 
     renderPage();
-    await screen.findByLabelText('Your name');
+    await screen.findByLabelText('First name');
 
     await fillEnquiry(user);
+    await user.type(screen.getByLabelText('Middle name (optional)'), 'Santos');
+    await user.selectOptions(screen.getByLabelText('Suffix'), 'Jr.');
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
 
     await waitFor(() => expect(sendProfessionalInquiry).toHaveBeenCalledTimes(1));
     expect(vi.mocked(sendProfessionalInquiry).mock.calls[0][0]).toMatchObject({
+      // The four boxes reach the schema as the one name it knows
+      name: 'Marites Santos Reyes Jr.',
       email: 'marites@clinic.ph',
       currentLocation: 'Cebu City, Cebu',
     });
@@ -260,7 +266,7 @@ describe('the enquiry form', () => {
     );
 
     renderPage();
-    await screen.findByLabelText('Your name');
+    await screen.findByLabelText('First name');
 
     await fillEnquiry(user);
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
@@ -279,7 +285,7 @@ describe('the enquiry form', () => {
     );
 
     renderPage();
-    await screen.findByLabelText('Your name');
+    await screen.findByLabelText('First name');
 
     await fillEnquiry(user);
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));

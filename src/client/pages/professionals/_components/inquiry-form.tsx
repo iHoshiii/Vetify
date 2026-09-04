@@ -8,6 +8,7 @@ import { professionalInquirySchema, type ProfessionalInquiryInput } from '@share
 import { useState, type FormEvent } from 'react';
 
 import LocationPickerField, { type PickedAddress } from './location-picker-field';
+import NameFields, { composeName, EMPTY_NAME, nameErrors } from './name-fields';
 import type { Point } from './pin-picker';
 const FIELD =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2';
@@ -15,7 +16,7 @@ const FIELD =
 type Errors = Record<string, string | undefined>;
 
 const EMPTY = {
-  name: '',
+  ...EMPTY_NAME,
   email: '',
   licenseNumber: '',
   licenseAuthority: 'Professional Regulation Commission',
@@ -83,7 +84,7 @@ export default function InquiryForm() {
     setMessage('');
 
     const payload: ProfessionalInquiryInput = {
-      name: values.name,
+      name: composeName(values),
       email: values.email,
       licenseNumber: values.licenseNumber,
       licenseAuthority: values.licenseAuthority,
@@ -102,8 +103,13 @@ export default function InquiryForm() {
     // The same schema the route validates with, so the first pass costs no round
     // trip and cannot disagree with the second.
     const parsed = professionalInquirySchema.safeParse(payload);
-    if (!parsed.success) {
-      setErrors(firstErrors(parsed.error.flatten().fieldErrors));
+    // The schema only knows the one name it is sent, so the parts are checked here
+    const merged = {
+      ...(parsed.success ? {} : firstErrors(parsed.error.flatten().fieldErrors)),
+      ...nameErrors(values),
+    };
+    if (!parsed.success || Object.values(merged).some(Boolean)) {
+      setErrors(merged);
       setMessage('Please correct the highlighted fields.');
       return;
     }
@@ -146,14 +152,7 @@ export default function InquiryForm() {
       )}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Input
-          label="Your name"
-          value={values.name}
-          onChange={set('name')}
-          error={errors.name}
-          placeholder="Dr Marites Reyes"
-          required
-        />
+        <NameFields values={values} errors={errors} onChange={set} />
         <Input
           label="Email address"
           type="email"
