@@ -20,7 +20,7 @@ export const professionalInquiryAttrsSchema = z.object({
   email: z.string().trim().toLowerCase().min(1, 'Email is required'),
   licenseNumber: z.string().trim().min(1, 'License number is required'),
   licenseAuthority: z.string().trim().min(1).default('Professional Regulation Commission'),
-  currentLocation: z.string().trim().min(1, 'Current location is required'),
+  currentLocation: z.string().trim().min(1).nullish(),
   currentPin: pinSchema.nullish(),
   clinicLocation: z.string().trim().min(1).nullish(),
   clinicPin: pinSchema.nullish(),

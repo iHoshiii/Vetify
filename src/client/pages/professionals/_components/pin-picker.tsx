@@ -14,6 +14,7 @@ import { Crosshair, MapPin } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useLiveFix } from './address-fields';
+import PinSearch from './pin-search';
 
 /**
  * Dropping a pin on the exact spot, the way a delivery app asks for it.
@@ -135,6 +136,8 @@ export default function PinPicker({
         // Added by hand below without Leaflet's own name as a prefix, the same way the
         // public map does it — this is the same basemap, so it owes the same credit.
         attributionControl: false,
+        // Its corner is where the search box sits, and scroll, pinch and +/- still zoom
+        zoomControl: false,
       });
       L.control.attribution({ prefix: false }).addTo(instance);
 
@@ -255,6 +258,8 @@ export default function PinPicker({
 
       <div className="relative min-h-[28rem] w-full overflow-hidden rounded-xl border border-slate-200 sm:h-[68vh] sm:min-h-[32rem]">
         <div ref={hostRef} className="absolute inset-0" />
+
+        <PinSearch onPick={place} />
 
         <button
           type="button"

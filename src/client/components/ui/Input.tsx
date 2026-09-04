@@ -18,13 +18,24 @@ export default function Input({ label, error, className = '', id, type, ...props
    */
   const [revealed, setRevealed] = useState(false);
   const isPassword = type === 'password';
+  // A required box that has something in it has nothing left to ask for, so the star goes
+  const asking = Boolean(props.required) && !String(props.value ?? '').trim();
 
+  // The star sits beside the label rather than inside it: the input's own `required` is what
+  // a screen reader announces, and the label's text stays exactly what it says it is.
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && (
-        <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
-          {label}
-        </label>
+        <span className="flex items-center gap-1">
+          <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
+            {label}
+          </label>
+          {asking && (
+            <span aria-hidden className="text-sm font-bold text-red-500">
+              *
+            </span>
+          )}
+        </span>
       )}
       <div className="relative">
         <input

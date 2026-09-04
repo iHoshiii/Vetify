@@ -1,33 +1,33 @@
-import { Link } from 'react-router-dom';
-export default function HeroSection() {
+type Props = { onApply: () => void };
+
+export default function HeroSection({ onApply }: Props) {
   return (
-    <section className="relative overflow-hidden bg-slate-950 px-5 py-20 sm:px-8 sm:py-28">
+    <section className="relative flex flex-1 items-center overflow-hidden bg-[#0a0c14] px-5 py-16 sm:px-8">
+      {/* Two wide glows so the dark panel has depth without a gradient edge you can see */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full bg-teal-500/20 blur-[100px]"
+        className="pointer-events-none absolute -left-32 -top-40 h-[420px] w-[420px] rounded-full bg-[#16796f]/40 blur-[120px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-blue-500/20 blur-[100px]"
+        className="pointer-events-none absolute -bottom-48 -right-24 h-[420px] w-[420px] rounded-full bg-[#55B5C1]/20 blur-[130px]"
       />
       <div className="relative mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-teal-400">
-          For veterinary professionals
-        </span>
-        <h1 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+        <h1 className="mt-5 bg-gradient-to-br from-[#FAF9F6] via-[#FAF9F6] to-[#55B5C1] bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl lg:text-6xl">
           Join Vetify as a
           <br className="hidden sm:block" /> Trusted Professional
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-slate-400">
-          Partner with Vetify to connect with pet owners who need expert guidance — on your
-          schedule, on your terms.
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-[#FAF9F6]/65">
+          Partner with Vetify to connect with pet owners who need expert guidance, on your schedule
+          and on your terms.
         </p>
-        <Link
-          to="/professionals/apply"
-          className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-teal-600 px-8 text-sm font-bold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-700 hover:-translate-y-0.5"
+        <button
+          type="button"
+          onClick={onApply}
+          className="mt-9 inline-flex h-12 items-center justify-center rounded-xl bg-[#55B5C1] px-8 text-sm font-bold text-[#0a0c14] shadow-lg shadow-[#55B5C1]/20 transition-all hover:-translate-y-0.5 hover:bg-[#FAF9F6]"
         >
           Apply to join
-        </Link>
+        </button>
       </div>
     </section>
   );

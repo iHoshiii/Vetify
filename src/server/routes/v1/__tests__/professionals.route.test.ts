@@ -515,6 +515,33 @@ describe('POST /api/v1/professionals/inquiries', () => {
     expect(await professionalInquiriesCollection().countDocuments({ email: first.email })).toBe(2);
   });
 
+  it('takes an enquiry that gives the clinic address and no home one', async () => {
+    const sender = await account();
+    const form = inquiryForm({ currentLocation: '' });
+
+    const res = await enquire(sender.token, form);
+
+    expect(res.status).toBe(201);
+    // Nothing stands in for the address that was not given, so a reviewer sees which is which
+    expect(await professionalInquiriesCollection().findOne({ email: form.email })).toMatchObject({
+      currentLocation: null,
+      clinicLocation: 'Mandaue, Cebu',
+    });
+  });
+
+  it('refuses an enquiry that gives neither address', async () => {
+    const sender = await account();
+
+    const res = await enquire(
+      sender.token,
+      inquiryForm({ currentLocation: '', clinicLocation: '' })
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.issues.currentLocation).toBeTruthy();
+    expect(res.body.issues.clinicLocation).toBeTruthy();
+  });
+
   it('refuses an enquiry with nothing in the one box a reviewer reads', async () => {
     const sender = await account();
 
