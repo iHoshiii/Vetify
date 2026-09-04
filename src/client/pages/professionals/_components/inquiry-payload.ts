@@ -47,6 +47,27 @@ export function inquiryPayload(values: InquiryValues, pins: Pins): ProfessionalI
   };
 }
 
+// Form order, not the order the problems came back in, so the note reads down the page
+const FIELD_LABELS: [string, string][] = [
+  ['firstName', 'First name'],
+  ['lastName', 'Last name'],
+  ['name', 'Name'],
+  ['email', 'Email address'],
+  ['licenseNumber', 'License number'],
+  ['licenseAuthority', 'Issuing authority'],
+  ['yearsExperience', 'Years in practice'],
+  ['phone', 'Contact number'],
+  ['currentLocation', 'One address'],
+  ['clinicLocation', 'One address'],
+  ['motivation', 'Why you want to join'],
+];
+
+// Both address fields carry the same complaint, so the pair is named once
+export function missingLabels(problems: Errors): string[] {
+  const named = FIELD_LABELS.filter(([field]) => problems[field]).map(([, label]) => label);
+  return [...new Set(named)];
+}
+
 // What the send button reads, and what a submit writes under the boxes: the schema's own
 // rules, the name parts it only ever sees joined, and the years box it would read '' as nought.
 export function inquiryProblems(values: InquiryValues, pins: Pins): Errors {

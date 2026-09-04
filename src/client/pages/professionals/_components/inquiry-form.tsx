@@ -11,6 +11,7 @@ import {
   firstErrors,
   inquiryPayload,
   inquiryProblems,
+  missingLabels,
   type Errors,
   type Pins,
 } from './inquiry-payload';
@@ -121,7 +122,7 @@ export default function InquiryForm() {
           </Button>
           {incomplete && (
             <p className="text-xs text-slate-500">
-              Every box but the ones marked optional is needed before this can be sent.
+              Still to fill in: {missingLabels(problems).join(', ')}.
             </p>
           )}
         </div>

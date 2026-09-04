@@ -72,6 +72,11 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
         />
         <PhoneField value={values.phone} onChange={onChange('phone')} error={errors.phone} />
         <p className="text-sm font-medium text-slate-600 sm:col-span-2">
+          {!values.currentLocation && !values.clinicLocation && (
+            <span aria-hidden className="font-bold text-red-500">
+              *{' '}
+            </span>
+          )}
           One address is needed to continue. Fill in both if both exist.
         </p>
         <div className="space-y-2">
@@ -107,9 +112,16 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="motivation" className="text-sm font-medium text-slate-700">
-          Why do you want to join our team?
-        </label>
+        <span className="flex items-center gap-1">
+          <label htmlFor="motivation" className="text-sm font-medium text-slate-700">
+            Why do you want to join our team?
+          </label>
+          {!values.motivation.trim() && (
+            <span aria-hidden className="text-sm font-bold text-red-500">
+              *
+            </span>
+          )}
+        </span>
         <textarea
           id="motivation"
           rows={6}
