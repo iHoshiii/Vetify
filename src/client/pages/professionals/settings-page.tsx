@@ -22,16 +22,16 @@ export default function ProfessionalSettingsPage() {
   });
 
   return (
-    <div className="max-w-xl space-y-4">
+    <div className="max-w-3xl space-y-5">
       <div>
         <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm text-slate-500">
           What you can change yourself. Anything checked against your licence is a record here
           rather than a field.
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
         <RateExperienceSection {...row(0)} />
         <AvailabilitySection {...row(1)} />
         <BookingReminderSection {...row(2)} />
@@ -41,9 +41,9 @@ export default function ProfessionalSettingsPage() {
       <button
         type="button"
         onClick={() => setLoggingOut(true)}
-        className="flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-50"
+        className="flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-50"
       >
-        <LogOut size={16} />
+        <LogOut size={18} />
         Log Out
       </button>
 

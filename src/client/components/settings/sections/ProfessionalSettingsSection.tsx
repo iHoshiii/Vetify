@@ -13,19 +13,7 @@ import { AlertTriangle, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * The professional half of the settings tray.
- *
- * Three forms small enough to finish in the tray rather than a page — the rate, the
- * week, and how early the reminder lands — and one row that only reports, because
- * placing a map pin needs a map. Everything else a vet has on file was matched
- * against a licence register when they applied, so it is not editable here at any
- * width: the experience row says so and points at support, and the map row points at
- * the console page that owns it.
- *
- * All of them are deliberately terse. This panel is ~22rem across and capped at 70vh,
- * so a field gets a label and, at most, one line saying what the value has to be.
- */
+// The console settings rows: three forms a vet fills in, and one that only reports because placing a map pin needs a map
 
 const DAYS = [
   ['Monday', 'Mon'],
@@ -37,7 +25,6 @@ const DAYS = [
   ['Sunday', 'Sun'],
 ] as const;
 
-/** How an address reads in a one-line summary. */
 const MAP_KIND_LABEL: Record<'clinic' | 'home', string> = { clinic: 'Clinic', home: 'Home' };
 
 const STATUS_LABEL: Record<ProfessionalAvailabilityStatus, string> = {
@@ -53,9 +40,9 @@ const STATUS_ACTIVE: Record<ProfessionalAvailabilityStatus, string> = {
 };
 
 const FIELD =
-  'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-semibold text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700';
+  'w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700';
 
-const PILL = 'rounded-md px-2 py-1 text-[11px] font-bold transition-colors';
+const PILL = 'rounded-md px-3 py-1.5 text-xs font-bold transition-colors';
 const PILL_IDLE = 'bg-slate-100 text-slate-600 hover:bg-slate-200';
 
 interface SectionProps {
@@ -63,21 +50,13 @@ interface SectionProps {
   onToggle: () => void;
 }
 
-/** Every day of the week open 09:00–17:00, for a vet who has never set hours. */
+// Every day open 09:00-17:00, for a vet who has never set hours
 function defaultSchedule(): WeeklyScheduleItem[] {
   return DAYS.map(([day]) => ({ day, enabled: true, startTime: '09:00', endTime: '17:00' }));
 }
 
-/**
- * The accordion row every professional setting sits in — same shape as the rows in
- * the user tray, so the two trays read alike.
- *
- * The body is mounted only while open. The tray panel itself is in the DOM from
- * first paint even when hidden, so an editor mounted with it would have seeded its
- * state before the application query answered and then saved those blanks over
- * real values. Opening the row is what gives it something true to read.
- */
-function TraySection({
+// Mounted only while open, so an editor seeds its fields from the application at the moment somebody opens it rather than from whatever the query held on first paint
+function SettingRow({
   label,
   summary,
   isExpanded,
@@ -88,27 +67,24 @@ function TraySection({
     <div className="border-b border-slate-100 last:border-0">
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50"
       >
         <span className="min-w-0">
-          <span className="block text-sm font-bold text-slate-700">{label}</span>
-          <span className="block truncate text-xs text-slate-500">{summary}</span>
+          <span className="block text-base font-bold text-slate-800">{label}</span>
+          <span className="block truncate text-sm text-slate-500">{summary}</span>
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+          className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 ${
             isExpanded ? 'rotate-180' : ''
           }`}
         />
       </button>
-      {isExpanded && <div className="space-y-3 px-3 pb-3">{children}</div>}
+      {isExpanded && <div className="space-y-4 px-4 pb-4">{children}</div>}
     </div>
   );
 }
 
-/**
- * The submit button and the two things that can follow it, in one place rather
- * than copied into all three forms.
- */
+// The submit button and the two things that can follow it, rather than copied into all three forms
 function SaveRow({
   pending,
   error,
@@ -123,21 +99,21 @@ function SaveRow({
   return (
     <>
       {error && (
-        <p className="flex items-start gap-1.5 text-[11px] font-semibold text-rose-700">
-          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+        <p className="flex items-start gap-1.5 text-xs font-semibold text-rose-700">
+          <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
           {error}
         </p>
       )}
       {saved && (
-        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
           Saved.
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-teal-800 py-2 text-xs font-bold text-white transition-colors hover:bg-teal-900 disabled:opacity-50"
+        className="w-full rounded-lg bg-teal-800 py-2.5 text-sm font-bold text-white transition-colors hover:bg-teal-900 disabled:opacity-50"
       >
         {pending ? 'Saving…' : label}
       </button>
@@ -145,11 +121,7 @@ function SaveRow({
   );
 }
 
-/**
- * Shared plumbing for the three forms: the mutation, and the two bits of feedback
- * a save can produce. `save` takes just the keys that row owns — the endpoint
- * merges, so nothing else has to be resent.
- */
+// Shared plumbing for the three forms. save takes only the keys that row owns, because the endpoint merges
 function useSave() {
   const updateProfile = useUpdateProfessionalProfile();
   const [error, setError] = useState<string | null>(null);
@@ -174,11 +146,7 @@ function useSave() {
   };
 }
 
-/**
- * Guard shared by all three rows: the tray is mounted while hidden, so each has to
- * tolerate an application that has not arrived, and stay away entirely for anyone
- * whose licence is not verified yet.
- */
+// Guard shared by every row: nothing here is editable until a licence has been checked
 function useVerifiedApplication(): OwnProfessional | null {
   const { data: application } = useOwnApplication();
   if (!application || application.status !== 'verified') return null;
@@ -208,18 +176,17 @@ function RateForm({ application }: { application: OwnProfessional }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      {/* Declared on the application and checked against the licence, so it is a
-          record here rather than a field. */}
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-2">
-        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-          <Lock className="h-3 w-3 shrink-0 text-slate-400" />
+      {/* Checked against the licence when they applied, so it is a record here rather than a field */}
+      <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5">
+        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
+          <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
           Experience
         </span>
-        <span className="text-xs font-bold text-slate-900">
+        <span className="text-sm font-bold text-slate-900">
           {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}
         </span>
       </div>
-      <p className="text-[11px] leading-snug text-slate-500">
+      <p className="text-xs leading-snug text-slate-500">
         Your years of practice came from your application.{' '}
         <Link to="/contact" className="font-bold text-teal-800 underline">
           Ask an admin
@@ -228,7 +195,7 @@ function RateForm({ application }: { application: OwnProfessional }) {
       </p>
 
       <label className="block space-y-1">
-        <span className="text-xs font-bold text-slate-700">Consultation rate ($/hr)</span>
+        <span className="text-sm font-bold text-slate-700">Consultation rate ($/hr)</span>
         <input
           type="number"
           inputMode="decimal"
@@ -241,13 +208,13 @@ function RateForm({ application }: { application: OwnProfessional }) {
           required
         />
       </label>
-      <p className="text-[11px] leading-snug text-slate-500">
+      <p className="text-xs leading-snug text-slate-500">
         Recommended up to <strong className="text-teal-900">${ceiling}/hr</strong> at{' '}
         {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}.
       </p>
       {overCeiling && (
-        <p className="flex items-start gap-1.5 text-[11px] font-semibold leading-snug text-amber-800">
-          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-600" />
+        <p className="flex items-start gap-1.5 text-xs font-semibold leading-snug text-amber-800">
+          <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-600" />
           Above the recommendation — saving it flags your listing for review.
         </p>
       )}
@@ -279,7 +246,7 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="space-y-1.5">
-        <span className="text-xs font-bold text-slate-700">Status in the directory</span>
+        <span className="text-sm font-bold text-slate-700">Status in the directory</span>
         <div className="flex gap-1">
           {(Object.keys(STATUS_LABEL) as ProfessionalAvailabilityStatus[]).map((value) => (
             <button
@@ -295,9 +262,8 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-xs font-bold text-slate-700">Weekly hours</span>
-        {/* One row per day, every day switchable — a vet who consults on a Sunday
-            has to be able to say so. */}
+        <span className="text-sm font-bold text-slate-700">Weekly hours</span>
+        {/* Every day switchable, because a vet who consults on a Sunday has to be able to say so */}
         <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
           {DAYS.map(([day, short]) => {
             const item = schedule.find((one) => one.day === day);
@@ -306,19 +272,17 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
             return (
               <li
                 key={day}
-                className={`flex items-center gap-2 px-2 py-1.5 ${
-                  item.enabled ? '' : 'bg-slate-50'
-                }`}
+                className={`flex items-center gap-3 px-3 py-2 ${item.enabled ? '' : 'bg-slate-50'}`}
               >
-                <label className="flex w-16 shrink-0 items-center gap-1.5">
+                <label className="flex w-20 shrink-0 items-center gap-2">
                   <input
                     type="checkbox"
                     checked={item.enabled}
                     onChange={() => edit(day, { enabled: !item.enabled })}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-teal-800 focus:ring-teal-700"
+                    className="h-4 w-4 rounded border-slate-300 text-teal-800 focus:ring-teal-700"
                   />
                   <span
-                    className={`text-[11px] font-bold ${
+                    className={`text-xs font-bold ${
                       item.enabled ? 'text-slate-800' : 'text-slate-400'
                     }`}
                   >
@@ -332,18 +296,18 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
                       type="time"
                       value={item.startTime}
                       onChange={(event) => edit(day, { startTime: event.target.value })}
-                      className="min-w-0 flex-1 rounded border border-slate-300 px-1 py-0.5 text-[11px] font-semibold"
+                      className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
                     />
-                    <span className="text-[11px] text-slate-400">–</span>
+                    <span className="text-xs text-slate-400">–</span>
                     <input
                       type="time"
                       value={item.endTime}
                       onChange={(event) => edit(day, { endTime: event.target.value })}
-                      className="min-w-0 flex-1 rounded border border-slate-300 px-1 py-0.5 text-[11px] font-semibold"
+                      className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
                     />
                   </span>
                 ) : (
-                  <span className="flex-1 text-[11px] italic text-slate-400">Closed</span>
+                  <span className="flex-1 text-xs italic text-slate-400">Closed</span>
                 )}
               </li>
             );
@@ -369,7 +333,7 @@ function ReminderForm({ application }: { application: OwnProfessional }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <span className="block text-xs font-bold text-slate-700">
+      <span className="block text-sm font-bold text-slate-700">
         Remind me before an appointment
       </span>
       <div className="flex gap-1">
@@ -395,7 +359,7 @@ export function RateExperienceSection({ isExpanded, onToggle }: SectionProps) {
   if (!application) return null;
 
   return (
-    <TraySection
+    <SettingRow
       label="💵 Experience & Rate"
       summary={`$${application.hourlyRate}/hr · ${application.yearsExperience} yr${
         application.yearsExperience === 1 ? '' : 's'
@@ -404,7 +368,7 @@ export function RateExperienceSection({ isExpanded, onToggle }: SectionProps) {
       onToggle={onToggle}
     >
       <RateForm application={application} />
-    </TraySection>
+    </SettingRow>
   );
 }
 
@@ -415,7 +379,7 @@ export function AvailabilitySection({ isExpanded, onToggle }: SectionProps) {
   const open = application.weeklySchedule.filter((day) => day.enabled).length;
 
   return (
-    <TraySection
+    <SettingRow
       label="🗓️ Availability"
       summary={`${STATUS_LABEL[application.availabilityStatus]} · ${
         application.weeklySchedule.length === 0 ? 'no hours set' : `${open} of 7 days open`
@@ -424,7 +388,7 @@ export function AvailabilitySection({ isExpanded, onToggle }: SectionProps) {
       onToggle={onToggle}
     >
       <AvailabilityForm application={application} />
-    </TraySection>
+    </SettingRow>
   );
 }
 
@@ -433,14 +397,14 @@ export function BookingReminderSection({ isExpanded, onToggle }: SectionProps) {
   if (!application) return null;
 
   return (
-    <TraySection
+    <SettingRow
       label="🔔 Booking Reminder"
       summary={`${application.bookingNotificationMinutes} min before an appointment`}
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
       <ReminderForm application={application} />
-    </TraySection>
+    </SettingRow>
   );
 }
 
@@ -453,7 +417,7 @@ export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
   const shown = addresses.filter((address) => address.showOnMap);
 
   return (
-    <TraySection
+    <SettingRow
       label="📍 Map & Location"
       summary={
         shown.length === 0
@@ -463,25 +427,25 @@ export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {addresses.length === 0 ? (
-          <p className="text-[11px] leading-snug text-slate-500">
+          <p className="text-xs leading-snug text-slate-500">
             There are no addresses on your application to pin.
           </p>
         ) : (
           addresses.map((address) => (
             <div
               key={address.kind}
-              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-2.5 py-2"
+              className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5"
             >
               <span className="min-w-0">
-                <span className="block text-xs font-bold text-slate-700">
+                <span className="block text-sm font-bold text-slate-700">
                   {MAP_KIND_LABEL[address.kind]}
                 </span>
-                <span className="block truncate text-[11px] text-slate-500">{address.city}</span>
+                <span className="block truncate text-xs text-slate-500">{address.city}</span>
               </span>
               <span
-                className={`shrink-0 text-[11px] font-bold ${
+                className={`shrink-0 text-xs font-bold ${
                   address.showOnMap ? 'text-teal-800' : 'text-slate-400'
                 }`}
               >
@@ -492,13 +456,13 @@ export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
         )}
       </div>
 
-      <p className="text-[11px] leading-snug text-slate-500">
+      <p className="text-xs leading-snug text-slate-500">
         These are the markers from your enquiry, published when you were approved.{' '}
         <Link to="/professionals/dashboard/location" className="font-bold text-teal-800 underline">
           Open Map &amp; Location
         </Link>{' '}
         to see them on a map. Email support.vetify@gmail.com to have one corrected.
       </p>
-    </TraySection>
+    </SettingRow>
   );
 }
