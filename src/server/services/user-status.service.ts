@@ -14,6 +14,20 @@ export type StatusState = {
   statusUntil?: Date | null;
 };
 
+export type BlockedStatus = Exclude<UserStatus, 'active'>;
+
+// What somebody turned away at the door is told. Named rather than "not active", because
+// the two are not the same news: a suspension lifts itself and a ban does not, so which
+// one it is decides whether there is anything to wait for or anyone to write to.
+const BLOCKED_MESSAGE: Record<BlockedStatus, string> = {
+  suspended: `This account is suspended. A suspension runs ${USER_SUSPENSION_DAYS} days and then lifts on its own.`,
+  banned: 'This account is banned. Write to support if you believe that is a mistake.',
+};
+
+export function blockedMessage(status: BlockedStatus): string {
+  return BLOCKED_MESSAGE[status];
+}
+
 // When a suspension handed down now runs out.
 export function suspensionEnd(from: Date = new Date()): Date {
   return new Date(from.getTime() + SUSPENSION_MS);
