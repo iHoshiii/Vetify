@@ -52,6 +52,7 @@ import {
   readInvite,
   submitInquiry,
 } from '../../services/professional-inquiries.service';
+import { dropStaleRefusal, inquiryBlock } from '../../services/professional-retry.service';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { slotRangeBounds, slotsForRange } from '../../services/appointment-slots';
 import { actorOf, signedIn } from './caller';
@@ -222,9 +223,8 @@ router.patch(
  *
  * "One open enquiry per address" is left to the partial unique index rather than a
  * read-then-write, which two simultaneous submissions would walk straight through.
- * A declined or completed enquiry has its `openEmail` nulled, so writing in again
- * later is allowed — this only stops the same person filling the queue while their
- * first enquiry is still waiting.
+ * That covers the enquiry still in the queue; `inquiryBlock` covers the ones that
+ * have closed, where the cooling-off period is what decides.
  */
 router.post(
   '/inquiries',
@@ -233,7 +233,13 @@ router.post(
   inquiryLimiter,
   validate(professionalInquirySchema),
   async (req, res) => {
+    const actor = actorOf(req);
     const input = req.body as ProfessionalInquiry;
+
+    // Whether an earlier enquiry or application still stands in the way. Read before
+    // the insert because a closed row does not trip the index.
+    const block = await inquiryBlock({ user: actor._id, email: input.email });
+    if (block) return failReason(res, 409, block.message, block.code);
 
     try {
       // Screened on the way in, and an enquiry the screen refuses is stored as a
@@ -331,6 +337,11 @@ router.post(
     // application row and the three JPEGs live in different collections, and
     // `professionalAttrsSchema` has no field to put them in.
     const { portrait, licenseFront, licenseBack, ...attrs } = req.body as ProfessionalApply;
+
+    // A rejection older than the cooling-off period is cleared out of the way, which
+    // is the whole of "apply again after 30 days": the insert below is then an ordinary
+    // first application, and every refusal it can raise still means what it says.
+    await dropStaleRefusal(actor._id);
 
     let application;
     try {

@@ -149,6 +149,16 @@ export const PROFESSIONAL_INVITE_DAYS = 14;
  */
 export const PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR = 5;
 
+/**
+ * How long somebody waits before asking again.
+ *
+ * Counted from the enquiry they already sent, and from the day their application
+ * was turned down. It is not a punishment: a reviewer who has read a licence and
+ * said no is not going to read the same licence differently next week, and the
+ * queue is a person's afternoon.
+ */
+export const PROFESSIONAL_RETRY_DAYS = 30;
+
 /* ---- The photographs ---- */
 
 /**

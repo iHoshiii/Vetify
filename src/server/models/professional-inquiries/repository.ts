@@ -96,6 +96,23 @@ export async function findProfessionalInquiryByToken(
   return await professionalInquiriesCollection().findOne({ inviteTokenHash });
 }
 
+/**
+ * The last enquiry that address sent, whatever became of it.
+ *
+ * `openEmail` cannot answer this: it is nulled the moment an enquiry closes, which
+ * is exactly the enquiry the cooling-off rule is measured from. Sorted by `_id`
+ * rather than `createdAt` so two enquiries filed in the same second still come
+ * back in the order they were written.
+ */
+export async function findLatestInquiryByEmail(
+  email: string
+): Promise<ProfessionalInquiryDocument | null> {
+  return await professionalInquiriesCollection().findOne(
+    { email: email.trim().toLowerCase() },
+    { sort: { _id: -1 } }
+  );
+}
+
 export type FindInquiriesOptions = {
   /** Restricts the read to these statuses. Omitting it means every status. */
   statuses?: ProfessionalInquiryStatus[];

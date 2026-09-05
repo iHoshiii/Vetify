@@ -174,6 +174,7 @@ export {
   PROFESSIONAL_INQUIRY_STATUSES,
   countInquiriesByStatus,
   countInquiriesPerDay,
+  findLatestInquiryByEmail,
   findProfessionalInquiries,
   findProfessionalInquiryById,
   findProfessionalInquiryByToken,
