@@ -47,6 +47,9 @@ export function inquiryPayload(values: InquiryValues, pins: Pins): ProfessionalI
   };
 }
 
+// Where the two pickers sit in the form. The label depends on which rule is short
+const ADDRESS_PAIR = 'addressPair';
+
 // Form order, not the order the problems came back in, so the note reads down the page
 const FIELD_LABELS: [string, string][] = [
   ['firstName', 'First name'],
@@ -57,14 +60,26 @@ const FIELD_LABELS: [string, string][] = [
   ['licenseAuthority', 'Issuing authority'],
   ['yearsExperience', 'Years in practice'],
   ['phone', 'Contact number'],
-  ['currentLocation', 'One address'],
-  ['clinicLocation', 'One address'],
+  [ADDRESS_PAIR, ''],
   ['motivation', 'Why you want to join'],
 ];
 
-// Both address fields carry the same complaint, so the pair is named once
+// Neither address given is one complaint about the pair; a clinic named without a pin is
+// only the clinic's
+function addressLabel(problems: Errors): string | null {
+  if (problems.currentLocation && problems.clinicLocation) return 'One address';
+  if (problems.clinicLocation) return 'Your clinic on the map';
+  return problems.currentLocation ? 'Your home on the map' : null;
+}
+
 export function missingLabels(problems: Errors): string[] {
-  const named = FIELD_LABELS.filter(([field]) => problems[field]).map(([, label]) => label);
+  const named = FIELD_LABELS.flatMap(([field, label]) => {
+    if (field === ADDRESS_PAIR) {
+      const address = addressLabel(problems);
+      return address ? [address] : [];
+    }
+    return problems[field] ? [label] : [];
+  });
   return [...new Set(named)];
 }
 

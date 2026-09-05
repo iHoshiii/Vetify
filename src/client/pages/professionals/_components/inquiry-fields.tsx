@@ -24,6 +24,10 @@ type Props = {
 // Every box on the enquiry. The form around it keeps the state and does the sending
 export default function InquiryFields({ values, errors, onChange, pins, onLocation }: Props) {
   const motivationLeft = PROFESSIONAL_MOTIVATION_MIN - values.motivation.trim().length;
+  // Either line satisfies the pair, so the star clears as soon as one of them is in
+  const addressAsking = !values.currentLocation && !values.clinicLocation;
+  // A named clinic is somewhere owners get sent, so naming one leaves its pin outstanding
+  const clinicAsking = Boolean(values.clinicName.trim()) && !values.clinicLocation;
 
   return (
     <>
@@ -54,7 +58,7 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
           required
         />
         <Input
-          label="Years in practice"
+          label="Years of experience"
           type="number"
           min={0}
           max={70}
@@ -72,12 +76,12 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
         />
         <PhoneField value={values.phone} onChange={onChange('phone')} error={errors.phone} />
         <p className="text-sm font-medium text-slate-600 sm:col-span-2">
-          {!values.currentLocation && !values.clinicLocation && (
-            <span aria-hidden className="font-bold text-red-500">
-              *{' '}
+          One address is needed to continue. Fill in both if both exist.
+          {addressAsking && (
+            <span aria-hidden className="ml-1 font-bold text-red-500">
+              *
             </span>
           )}
-          One address is needed to continue. Fill in both if both exist.
         </p>
         <div className="space-y-2">
           <LocationPickerField
@@ -98,6 +102,7 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
           <LocationPickerField
             label="Location of your Clinic"
             kind="clinic"
+            asking={clinicAsking}
             value={pins.clinic}
             address={values.clinicLocation}
             onChange={onLocation('clinicLocation', 'clinic')}
@@ -112,16 +117,9 @@ export default function InquiryFields({ values, errors, onChange, pins, onLocati
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="flex items-center gap-1">
-          <label htmlFor="motivation" className="text-sm font-medium text-slate-700">
-            Why do you want to join our team?
-          </label>
-          {!values.motivation.trim() && (
-            <span aria-hidden className="text-sm font-bold text-red-500">
-              *
-            </span>
-          )}
-        </span>
+        <label htmlFor="motivation" className="text-sm font-medium text-slate-700">
+          Why do you want to join our team?
+        </label>
         <textarea
           id="motivation"
           rows={6}
