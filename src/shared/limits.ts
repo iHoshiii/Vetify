@@ -41,6 +41,15 @@ export const BLOG_PAGE_SIZE_MAX = 50;
 
 /** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
 export const BLOG_MAX_TAGS = 8;
+
+/**
+ * How long a suspension lasts before the account lets itself back in.
+ *
+ * A suspension is a fixed term and a ban is not, which is the whole difference
+ * between the two: nobody is scheduled to come back and reinstate anyone, so the
+ * term has to be part of the record.
+ */
+export const USER_SUSPENSION_DAYS = 30;
 /**
  * Directory page size, and the ceiling a caller may ask for. Same reasoning as
  * the blog pager: the client draws its pages from the response, and the server

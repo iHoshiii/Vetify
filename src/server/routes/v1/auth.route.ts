@@ -41,6 +41,7 @@ import {
   getProviderConfig,
   isOAuthProviderName,
 } from '../../services/oauth.service';
+import { currentStatus, type StatusState } from '../../services/user-status.service';
 import { fail, failReason, ok } from '../../utils/response';
 
 const router = Router();
@@ -50,10 +51,13 @@ const router = Router();
  * token is minted. Login and the OAuth callback both come through here — a block
  * that only cut existing sessions would let the same person sign straight back
  * in.
+ *
+ * Asks `currentStatus` rather than reading the field, because a suspension that has
+ * run its 30 days is no longer a block and this is where that is noticed.
  */
-function accountBlockReason(status: string | undefined): string | null {
-  if (!status || status === 'active') return null;
-  return status;
+async function accountBlockReason(account: StatusState): Promise<string | null> {
+  const status = await currentStatus(account);
+  return status === 'active' ? null : status;
 }
 
 function readRefreshCookie(req: Request): string | undefined {
@@ -105,7 +109,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
   // Checked after the password so a wrong guess cannot be used to probe which
   // addresses belong to suspended accounts.
-  const blocked = accountBlockReason(user.status);
+  const blocked = await accountBlockReason(user);
   if (blocked) {
     return failReason(res, 403, 'This account is not active.', `account-${blocked}`);
   }
@@ -140,7 +144,7 @@ router.post('/refresh', async (req, res) => {
   // Suspending or banning revokes the stored tokens, so this rarely fires. It
   // stays as the backstop for a token minted in the same moment the status
   // changed, and it clears the cookie so the client stops retrying.
-  const blocked = accountBlockReason(rt.owner.status);
+  const blocked = await accountBlockReason(rt.owner);
   if (blocked) {
     await revokeRefreshTokenByHash(tokenHash);
     res.clearCookie(env.REFRESH_COOKIE_NAME);
@@ -233,7 +237,7 @@ router.get('/:provider/callback', async (req, res) => {
 
     // Same block as the password path. Without it, "Continue with Google" is a
     // way around a ban.
-    if (accountBlockReason(user.status)) return redirectWithError(res, 'blocked');
+    if (await accountBlockReason(user)) return redirectWithError(res, 'blocked');
 
     const auth = await createAuthPayloadFor(user);
 

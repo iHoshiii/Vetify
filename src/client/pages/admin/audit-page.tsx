@@ -24,6 +24,7 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'professional.suspended': 'Suspended a listing',
   'user.role.changed': 'Changed a role',
   'user.status.changed': 'Changed account access',
+  'user.status.expired': 'Suspension ran out',
 };
 
 /** Rose for the ones that took something away. */
