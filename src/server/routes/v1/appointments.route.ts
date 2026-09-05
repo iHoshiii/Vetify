@@ -19,6 +19,7 @@ import {
   isDuplicateSlot,
   isValidObjectId,
   otherPartyId,
+  tallyAppointments,
   toAppointmentPage,
   toAppointmentView,
   type AppointmentDocument,
@@ -148,6 +149,7 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
       // the repository can type-check instead of one string it has to trust.
       ...(side === 'client' ? { client: viewer._id } : { professionalUser: viewer._id }),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.kind ? { kind: query.kind } : {}),
       page: query.page,
       limit: query.limit,
     });
@@ -181,6 +183,11 @@ router.get('/mine', validateQuery(appointmentListQuerySchema), list('client'));
  * needs no professional-role gate: an account that is not a vet simply has none.
  */
 router.get('/incoming', validateQuery(appointmentListQuerySchema), list('professionalUser'));
+
+// The figures the console's nav and tabs are labelled with, before any page of rows is asked for
+router.get('/incoming/counts', async (req, res) => {
+  ok(res, { counts: await tallyAppointments(actorOf(req)._id) });
+});
 
 /**
  * The vet's three answers differ only in their word and in what they owe, so they

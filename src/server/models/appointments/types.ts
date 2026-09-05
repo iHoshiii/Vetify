@@ -1,4 +1,5 @@
 import {
+  APPOINTMENT_KINDS,
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
   type AppointmentKind,
@@ -13,7 +14,7 @@ export const APPOINTMENTS_COLLECTION = 'appointments';
  * are: both consoles render these as chips and filters, so a second copy here
  * would let the server store a status neither screen can draw.
  */
-export { APPOINTMENT_LIVE_STATUSES, APPOINTMENT_STATUSES };
+export { APPOINTMENT_KINDS, APPOINTMENT_LIVE_STATUSES, APPOINTMENT_STATUSES };
 export type { AppointmentKind, AppointmentStatus };
 
 /** A booking as the database holds it. */
