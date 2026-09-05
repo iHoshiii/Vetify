@@ -30,7 +30,7 @@ import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
 import ProfessionalApplyPage from '@/pages/professionals/apply-page';
-import ProfessionalAppointmentsPage from '@/pages/professionals/appointments-page';
+import ProfessionalBookingsPage from '@/pages/professionals/bookings-page';
 import ProfessionalConversationsPage from '@/pages/professionals/conversations-page';
 import ProfessionalHistoryPage from '@/pages/professionals/history-page';
 import ProfessionalMapLocationPage from '@/pages/professionals/map-location-page';
@@ -197,7 +197,10 @@ export default function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<ProfessionalAppointmentsPage />} />
+        {/* A call and a clinic visit are answered differently, so each kind gets its own queue */}
+        <Route index element={<Navigate to="consultations" replace />} />
+        <Route path="consultations" element={<ProfessionalBookingsPage kind="virtual" />} />
+        <Route path="clinic-visits" element={<ProfessionalBookingsPage kind="onsite" />} />
         <Route path="conversations" element={<ProfessionalConversationsPage />} />
         <Route path="history" element={<ProfessionalHistoryPage />} />
         <Route path="location" element={<ProfessionalMapLocationPage />} />
