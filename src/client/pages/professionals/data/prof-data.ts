@@ -9,7 +9,7 @@ export const eligibility: EligibilityItem[] = [
   {
     icon: '📋',
     title: 'Proof of Credentials',
-    body: 'The application asks for a photograph of your PRC licence, front and back, taken at the time you fill it in — along with a photograph of you. Diplomas and specialist certificates are welcome but optional.',
+    body: 'The application asks for a photograph of your face and PRC licence, front and back to verify your identity and credentials.',
   },
   {
     icon: '🏥',

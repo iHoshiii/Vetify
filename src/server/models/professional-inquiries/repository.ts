@@ -49,7 +49,7 @@ export async function insertProfessionalInquiry(
     openEmail: parsed.email,
     licenseNumber: parsed.licenseNumber,
     licenseAuthority: parsed.licenseAuthority,
-    currentLocation: parsed.currentLocation,
+    currentLocation: parsed.currentLocation ?? null,
     currentPin: parsed.currentPin ?? null,
     clinicLocation: parsed.clinicLocation ?? null,
     clinicPin: parsed.clinicPin ?? null,
@@ -94,6 +94,23 @@ export async function findProfessionalInquiryByToken(
   inviteTokenHash: string
 ): Promise<ProfessionalInquiryDocument | null> {
   return await professionalInquiriesCollection().findOne({ inviteTokenHash });
+}
+
+/**
+ * The last enquiry that address sent, whatever became of it.
+ *
+ * `openEmail` cannot answer this: it is nulled the moment an enquiry closes, which
+ * is exactly the enquiry the cooling-off rule is measured from. Sorted by `_id`
+ * rather than `createdAt` so two enquiries filed in the same second still come
+ * back in the order they were written.
+ */
+export async function findLatestInquiryByEmail(
+  email: string
+): Promise<ProfessionalInquiryDocument | null> {
+  return await professionalInquiriesCollection().findOne(
+    { email: email.trim().toLowerCase() },
+    { sort: { _id: -1 } }
+  );
 }
 
 export type FindInquiriesOptions = {

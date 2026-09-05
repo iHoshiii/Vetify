@@ -3,6 +3,12 @@ import { useEffect, useId } from 'react';
 
 import { LABEL } from './ui';
 
+// An enquiry carries a home address, a clinic one or both, so the line is built from what is there
+function whereLine(inquiry: AdminInquiry): string {
+  const clinic = inquiry.clinicLocation ? `practises in ${inquiry.clinicLocation}` : '';
+  return [inquiry.currentLocation, clinic].filter(Boolean).join(' · ');
+}
+
 export function EnquiryDialog({
   inquiry,
   onClose,
@@ -59,10 +65,7 @@ export function EnquiryDialog({
           </div>
           <div>
             <dt className={LABEL}>Where</dt>
-            <dd className="mt-0.5">
-              {inquiry.currentLocation}
-              {inquiry.clinicLocation ? ` · practises in ${inquiry.clinicLocation}` : ''}
-            </dd>
+            <dd className="mt-0.5">{whereLine(inquiry)}</dd>
           </div>
           {inquiry.phone && (
             <div>

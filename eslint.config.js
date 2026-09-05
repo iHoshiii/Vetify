@@ -19,6 +19,12 @@ export default tseslint.config(
     },
   },
 
+  // Build scripts, run by node before the client is bundled
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+  },
+
   // TypeScript + React rules (client)
   {
     files: ['src/client/**/*.{ts,tsx}'],

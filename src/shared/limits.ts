@@ -41,6 +41,15 @@ export const BLOG_PAGE_SIZE_MAX = 50;
 
 /** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
 export const BLOG_MAX_TAGS = 8;
+
+/**
+ * How long a suspension lasts before the account lets itself back in.
+ *
+ * A suspension is a fixed term and a ban is not, which is the whole difference
+ * between the two: nobody is scheduled to come back and reinstate anyone, so the
+ * term has to be part of the record.
+ */
+export const USER_SUSPENSION_DAYS = 30;
 /**
  * Directory page size, and the ceiling a caller may ask for. Same reasoning as
  * the blog pager: the client draws its pages from the response, and the server
@@ -129,7 +138,7 @@ export const PROFESSIONAL_LOCATION_MAX = 160;
  * Long enough to survive a holiday, short enough that a forwarded or leaked link
  * is not a permanent way into somebody else's application.
  */
-export const PROFESSIONAL_INVITE_DAYS = 14;
+export const PROFESSIONAL_INVITE_DAYS = 30;
 
 /**
  * Enquiries per IP per hour on the public first form.
@@ -139,6 +148,16 @@ export const PROFESSIONAL_INVITE_DAYS = 14;
  * second enquiry within the hour is either a typo correction or a script.
  */
 export const PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR = 5;
+
+/**
+ * How long somebody waits before asking again.
+ *
+ * Counted from the enquiry they already sent, and from the day their application
+ * was turned down. It is not a punishment: a reviewer who has read a licence and
+ * said no is not going to read the same licence differently next week, and the
+ * queue is a person's afternoon.
+ */
+export const PROFESSIONAL_RETRY_DAYS = 30;
 
 /* ---- The photographs ---- */
 

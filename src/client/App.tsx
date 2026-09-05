@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
+import { RequireTermsAgreed } from '@/components/providers/RequireTermsAgreed';
 import { RequireRole } from '@/components/providers/RequireRole';
 import RootLayout from '@/layouts/RootLayout';
 import AboutPage from '@/pages/about/about-page';
@@ -170,7 +171,9 @@ export default function App() {
           path="professionals/apply"
           element={
             <RequireAuth>
-              <ProfessionalApplyPage />
+              <RequireTermsAgreed>
+                <ProfessionalApplyPage />
+              </RequireTermsAgreed>
             </RequireAuth>
           }
         />

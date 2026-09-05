@@ -147,6 +147,7 @@ export const AUDIT_ACTIONS = [
   'professional.verified',
   'user.role.changed',
   'user.status.changed',
+  'user.status.expired',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -826,6 +827,15 @@ export type ProfessionalInquiryStatus = (typeof PROFESSIONAL_INQUIRY_STATUSES)[n
 export const PROFESSIONAL_INVITE_REFUSALS = ['not-found', 'withdrawn', 'used', 'expired'] as const;
 export type ProfessionalInviteRefusal = (typeof PROFESSIONAL_INVITE_REFUSALS)[number];
 
+// An address line the enquiry may be sent without. Blank arrives as '' from the form, so it
+// is normalised to nothing here and the rule under the object counts what is really there.
+const optionalLocationLine = z
+  .string()
+  .trim()
+  .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line')
+  .optional()
+  .transform((line) => line || undefined);
+
 /**
  * The public first form.
  *
@@ -834,50 +844,65 @@ export type ProfessionalInviteRefusal = (typeof PROFESSIONAL_INVITE_REFUSALS)[nu
  * licence number is normalised the same way the application normalises it, so a
  * reviewer can search the two stages with one spelling.
  */
-export const professionalInquirySchema = z.object({
-  name: professionalNameField,
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
-  licenseNumber: professionalFields.licenseNumber,
-  /** Where the applicant is now — the city they would be interviewed in. */
-  currentLocation: z
-    .string()
-    .trim()
-    .min(2, 'Where are you based?')
-    .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line'),
-  // The pin the line above was read off, kept because the line cannot be mapped back.
-  currentPin: mapPinSchema.nullish(),
-  licenseAuthority: professionalFields.licenseAuthority.default(
-    'Professional Regulation Commission'
-  ),
-  /** Where they practise, when that is somewhere else. Often the same place. */
-  clinicLocation: z
-    .string()
-    .trim()
-    .max(PROFESSIONAL_LOCATION_MAX, 'That is too long for one line')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  clinicPin: mapPinSchema.nullish(),
-  clinicName: professionalFields.clinicName,
-  /**
-   * "Why do you want to join our team?" — the whole basis for the invite decision,
-   * which is why it has a floor. A reviewer cannot act on three words.
-   */
-  motivation: z
-    .string()
-    .trim()
-    .min(
-      PROFESSIONAL_MOTIVATION_MIN,
-      `Tell us in at least ${PROFESSIONAL_MOTIVATION_MIN} characters`
-    )
-    .max(PROFESSIONAL_MOTIVATION_MAX, 'That is longer than we need at this stage'),
-  phone: phoneField,
-  yearsExperience: professionalFields.yearsExperience.optional(),
-});
+export const professionalInquirySchema = z
+  .object({
+    name: professionalNameField,
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .min(1, 'Email is required')
+      .email('Please enter a valid email address'),
+    licenseNumber: professionalFields.licenseNumber,
+    /** Where the applicant is now — the city they would be interviewed in. */
+    currentLocation: optionalLocationLine,
+    // The pin the line above was read off, kept because the line cannot be mapped back.
+    currentPin: mapPinSchema.nullish(),
+    licenseAuthority: professionalFields.licenseAuthority.default(
+      'Professional Regulation Commission'
+    ),
+    /** Where they practise, when that is somewhere else. Often the same place. */
+    clinicLocation: optionalLocationLine,
+    clinicPin: mapPinSchema.nullish(),
+    // Blank means no clinic named, not a clinic called nothing, so it is normalised away too
+    clinicName: professionalFields.clinicName.or(z.literal('').transform(() => undefined)),
+    /**
+     * "Why do you want to join our team?" — the whole basis for the invite decision,
+     * which is why it has a floor. A reviewer cannot act on three words.
+     */
+    motivation: z
+      .string()
+      .trim()
+      .min(
+        PROFESSIONAL_MOTIVATION_MIN,
+        `Tell us in at least ${PROFESSIONAL_MOTIVATION_MIN} characters`
+      )
+      .max(PROFESSIONAL_MOTIVATION_MAX, 'That is longer than we need at this stage'),
+    phone: phoneField,
+    yearsExperience: professionalFields.yearsExperience.optional(),
+  })
+  // One address is enough to place an applicant, so the home and the clinic are each
+  // optional on their own and the pair is not: an enquiry with neither says nothing.
+  .superRefine((inquiry, ctx) => {
+    if (inquiry.currentLocation || inquiry.clinicLocation) return;
+    for (const field of ['currentLocation', 'clinicLocation'] as const) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [field],
+        message: 'Give at least one address: your home or your clinic.',
+      });
+    }
+  })
+  // A named clinic is a place pet owners will be sent to, so it has to be on the map. The
+  // pair rule above would let a clinic be named and never pinned.
+  .superRefine((inquiry, ctx) => {
+    if (!inquiry.clinicName || inquiry.clinicLocation) return;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['clinicLocation'],
+      message: 'Pin the clinic you named on the map.',
+    });
+  });
 
 /**
  * A reviewer inviting an enquiry through to the application.

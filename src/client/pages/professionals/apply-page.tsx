@@ -39,11 +39,11 @@ export default function ProfessionalApplyPage() {
         <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
           {application ? 'Your application' : 'Apply to join'}
         </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-          {application
-            ? 'Where your application stands, and what you told us.'
-            : 'Start with a few lines about yourself and the licence you hold. A reviewer reads every enquiry, and the ones that go through get an emailed link to the full application.'}
-        </p>
+        {application && (
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+            Where your application stands, and what you told us.
+          </p>
+        )}
 
         {query.isLoading ? (
           // Shaped like the form so the page does not jump when the answer lands.

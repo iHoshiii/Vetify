@@ -196,8 +196,17 @@ export default function ApplicationStatus({ application }: { application: OwnPro
       <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-5">
         <h3 className="text-sm font-bold text-slate-900">Something above is wrong?</h3>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          None of it can be edited here. It was checked as it was filed, so a change has to go
-          through us — write in and say what needs correcting.
+          None of it can be edited here. It was checked as it was filed. If any of it is wrong,{' '}
+          {/* A new tab, because leaving this page loses the photographs already taken */}
+          <Link
+            to="/contact"
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-teal-800 underline"
+          >
+            contact us
+          </Link>
+          .
         </p>
       </div>
 

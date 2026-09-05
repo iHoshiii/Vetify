@@ -39,8 +39,8 @@ export type ProfessionalInquiryDocument = {
   openEmail: string | null;
   licenseNumber: string;
   licenseAuthority: string;
-  /** Where the applicant is now — the city an interview would happen in. */
-  currentLocation: string;
+  /** Where the applicant is now, when they gave it. Null when only the clinic was pinned. */
+  currentLocation: string | null;
   // The marker behind that line. Carried to the application and published on
   // verification, which is the only way a vet reaches the map.
   currentPin: InquiryPin | null;
@@ -89,7 +89,7 @@ export type AdminInquiry = {
   email: string;
   licenseNumber: string;
   licenseAuthority: string;
-  currentLocation: string;
+  currentLocation: string | null;
   clinicLocation: string | null;
   clinicName: string | null;
   motivation: string;
@@ -133,7 +133,7 @@ export type InviteSummary = {
   email: string;
   licenseNumber: string;
   licenseAuthority: string;
-  currentLocation: string;
+  currentLocation: string | null;
   currentPin: InquiryPin | null;
   clinicLocation: string | null;
   clinicPin: InquiryPin | null;
@@ -155,6 +155,9 @@ export const PROFESSIONAL_INQUIRY_INDEXES: IndexDescription[] = [
   },
   // The queue: enquiries in a status, newest first.
   { key: { status: 1, createdAt: -1 } },
+  // Every enquiry that address ever sent, latest first. Read on submit to work out
+  // whether the cooling-off period has run, which `openEmail` cannot answer.
+  { key: { email: 1, _id: -1 } },
   // Looking an emailed link up by its hash. Unique, and partial for the same
   // reason as above: most rows have no token at all, and two nulls are not a
   // collision.

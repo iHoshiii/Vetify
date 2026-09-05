@@ -17,12 +17,15 @@ export default function LocationPickerField({
   value,
   address = '',
   kind = 'clinic',
+  asking = false,
   onChange,
 }: {
   label: string;
   value: Point | null;
   address?: string;
   kind?: MarkerGlyph;
+  // Whether this pin is still outstanding, which is what puts the star beside the label
+  asking?: boolean;
   onChange: (point: Point, address: PickedAddress) => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -61,7 +64,14 @@ export default function LocationPickerField({
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium text-slate-700">{label}</p>
+      <p className="mb-2 flex items-center gap-1 text-sm font-medium text-slate-700">
+        {label}
+        {asking && (
+          <span aria-hidden className="font-bold text-red-500">
+            *
+          </span>
+        )}
+      </p>
       {!choice && (
         <button
           type="button"
