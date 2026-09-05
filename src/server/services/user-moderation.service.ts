@@ -11,6 +11,7 @@ import {
   type UserStatus,
 } from '../models';
 import { AppError } from '../utils/AppError';
+import { suspensionEnd } from './user-status.service';
 
 export type ModerateUserInput<T> = {
   id: string | ObjectId;
@@ -106,6 +107,10 @@ export async function changeUserRole(
 /**
  * Suspends, bans, or reinstates an account.
  *
+ * A suspension is a ban with a date on it and a ban is a suspension without one,
+ * which is the only difference between them: `currentStatus` reinstates the account
+ * the first time it is asked about after that date.
+ *
  * Taking access away also closes the open sessions. `requireRole` catches the
  * status on the next request, but the refresh cookie outlives the access token by
  * a month — without revoking it the banned account just mints a new token and
@@ -146,6 +151,7 @@ export async function changeUserStatus(
     statusReason: to === 'active' ? null : reason,
     statusChangedBy: moderator._id,
     statusChangedAt: new Date(),
+    statusUntil: to === 'suspended' ? suspensionEnd() : null,
   });
   if (!user) return null;
 

@@ -123,7 +123,7 @@ export default function ProfessionalInvitePage() {
       <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Your application</h1>
       <p className="mt-4 leading-7 text-slate-600">
         This is the long form, and the only way to it is the link we sent to{' '}
-        <strong>{summary.email}</strong>. It is good until{' '}
+        <strong>{summary.email}</strong>. It is valid until{' '}
         {WHEN.format(new Date(summary.expiresAt))}.
       </p>
     </>
@@ -168,8 +168,8 @@ export default function ProfessionalInvitePage() {
           <h2 className="text-lg font-black tracking-tight">This link is for another address</h2>
           <p className="mt-2 leading-7 text-slate-700">
             You are signed in as <strong>{user.email}</strong>, and the invitation went to{' '}
-            <strong>{summary.email}</strong>. Sign in as that address to fill this in — the two have
-            to match, or the application would not be the one a reviewer approved.
+            <strong>{summary.email}</strong>. Sign in as that address to fill this in. The emails
+            have to match, or the application would not be the one a reviewer approved.
           </p>
         </div>
       </Frame>

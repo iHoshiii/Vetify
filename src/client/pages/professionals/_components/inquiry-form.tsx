@@ -81,14 +81,14 @@ export default function InquiryForm() {
   if (send.isSuccess) {
     return (
       <div className="mt-10 rounded-lg border border-teal-900/15 bg-teal-50/70 p-6">
-        <h2 className="text-lg font-black tracking-tight">Thank you — that is with us.</h2>
+        <h2 className="text-lg font-black tracking-tight">Thank you! Your request is with us.</h2>
         <p className="mt-2 leading-7 text-slate-700">
           A reviewer reads every enquiry. If yours goes through, you will get an email with a link
-          to the full application — the one that asks for your photographs, your licence card and
-          your address. Watch the inbox for <strong>{values.email.trim().toLowerCase()}</strong>.
+          to the full application. It asks for your photographs, your licence card and your address.
+          Watch the inbox for <strong>{values.email.trim().toLowerCase()}</strong>.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          Nothing else is needed from you in the meantime, and there is no queue position to check.
+          Nothing else is needed from you in the meantime. Please watch your email for updates.
         </p>
       </div>
     );

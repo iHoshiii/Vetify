@@ -155,6 +155,9 @@ export const PROFESSIONAL_INQUIRY_INDEXES: IndexDescription[] = [
   },
   // The queue: enquiries in a status, newest first.
   { key: { status: 1, createdAt: -1 } },
+  // Every enquiry that address ever sent, latest first. Read on submit to work out
+  // whether the cooling-off period has run, which `openEmail` cannot answer.
+  { key: { email: 1, _id: -1 } },
   // Looking an emailed link up by its hash. Unique, and partial for the same
   // reason as above: most rows have no token at all, and two nulls are not a
   // collision.

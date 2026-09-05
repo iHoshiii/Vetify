@@ -44,6 +44,7 @@ export async function insertUser(attrs: UserAttrs): Promise<User> {
     statusReason: null,
     statusChangedBy: null,
     statusChangedAt: null,
+    statusUntil: null,
     createdAt: now,
     updatedAt: now,
   };

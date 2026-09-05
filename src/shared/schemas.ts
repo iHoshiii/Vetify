@@ -147,6 +147,7 @@ export const AUDIT_ACTIONS = [
   'professional.verified',
   'user.role.changed',
   'user.status.changed',
+  'user.status.expired',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
@@ -891,6 +892,16 @@ export const professionalInquirySchema = z
         message: 'Give at least one address: your home or your clinic.',
       });
     }
+  })
+  // A named clinic is a place pet owners will be sent to, so it has to be on the map. The
+  // pair rule above would let a clinic be named and never pinned.
+  .superRefine((inquiry, ctx) => {
+    if (!inquiry.clinicName || inquiry.clinicLocation) return;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['clinicLocation'],
+      message: 'Pin the clinic you named on the map.',
+    });
   });
 
 /**

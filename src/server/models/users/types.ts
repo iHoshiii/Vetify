@@ -39,6 +39,9 @@ export type UserDocument = {
   statusReason: string | null;
   statusChangedBy: ObjectId | null;
   statusChangedAt: Date | null;
+  // When a suspension runs out. Null on a ban, which never does, and on an account
+  // in good standing.
+  statusUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -73,6 +76,7 @@ export type UserPatch = Partial<
     | 'statusReason'
     | 'statusChangedBy'
     | 'statusChangedAt'
+    | 'statusUntil'
   >
 >;
 
