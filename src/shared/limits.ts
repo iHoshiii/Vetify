@@ -138,7 +138,7 @@ export const PROFESSIONAL_LOCATION_MAX = 160;
  * Long enough to survive a holiday, short enough that a forwarded or leaked link
  * is not a permanent way into somebody else's application.
  */
-export const PROFESSIONAL_INVITE_DAYS = 14;
+export const PROFESSIONAL_INVITE_DAYS = 30;
 
 /**
  * Enquiries per IP per hour on the public first form.
