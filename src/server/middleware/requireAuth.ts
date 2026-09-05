@@ -1,7 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { findUserById, isValidObjectId, type User, type UserRole } from '../models';
-import { currentStatus } from '../services/user-status.service';
+import { blockedMessage, currentStatus } from '../services/user-status.service';
 import { failReason } from '../utils/response';
 
 declare module 'express-serve-static-core' {
@@ -73,7 +73,7 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
     // without an admin having to come back and undo it.
     const status = await currentStatus(user);
     if (status !== 'active') {
-      failReason(res, 403, 'This account is not active.', `account-${status}`);
+      failReason(res, 403, blockedMessage(status), `account-${status}`);
       return;
     }
 

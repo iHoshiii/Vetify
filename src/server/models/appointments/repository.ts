@@ -5,7 +5,14 @@ import { ObjectId, type Collection, type Filter } from 'mongodb';
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
 import { appointmentAttrsSchema, type AppointmentAttrs } from './schema';
-import { APPOINTMENTS_COLLECTION, type AppointmentDocument, type AppointmentStatus } from './types';
+import {
+  APPOINTMENT_KINDS,
+  APPOINTMENT_STATUSES,
+  APPOINTMENTS_COLLECTION,
+  type AppointmentDocument,
+  type AppointmentKind,
+  type AppointmentStatus,
+} from './types';
 
 const DUPLICATE_KEY = 11000;
 
@@ -94,7 +101,9 @@ export type FindAppointmentsOptions = {
   /** Whose list this is. Exactly one of the two, which is what makes it a list. */
   client?: string | ObjectId;
   professionalUser?: string | ObjectId;
-  status?: AppointmentStatus;
+  // One status, or the several a single tab stands for
+  status?: AppointmentStatus | readonly AppointmentStatus[];
+  kind?: AppointmentKind;
   page?: number;
   limit?: number;
 };
@@ -109,12 +118,20 @@ export type FindAppointmentsOptions = {
 export async function findAppointments(
   options: FindAppointmentsOptions
 ): Promise<{ items: AppointmentDocument[]; total: number }> {
-  const { client, professionalUser, status, page = 1, limit = APPOINTMENT_PAGE_SIZE } = options;
+  const {
+    client,
+    professionalUser,
+    status,
+    kind,
+    page = 1,
+    limit = APPOINTMENT_PAGE_SIZE,
+  } = options;
 
   const filter: Filter<AppointmentDocument> = {};
   if (client) filter.client = toObjectId(client);
   if (professionalUser) filter.professionalUser = toObjectId(professionalUser);
-  if (status) filter.status = status;
+  if (status) filter.status = Array.isArray(status) ? { $in: [...status] } : status;
+  if (kind) filter.kind = kind;
 
   const [items, total] = await Promise.all([
     appointmentsCollection()
@@ -127,6 +144,21 @@ export async function findAppointments(
   ]);
 
   return { items, total };
+}
+
+// Bookings counted by kind and then status, every cell present
+export type AppointmentTally = Record<AppointmentKind, Record<AppointmentStatus, number>>;
+
+// Zero-filled, so a console reading a cell gets a number rather than undefined
+function emptyTally(): AppointmentTally {
+  const statuses = () =>
+    Object.fromEntries(APPOINTMENT_STATUSES.map((status) => [status, 0])) as Record<
+      AppointmentStatus,
+      number
+    >;
+  return Object.fromEntries(
+    APPOINTMENT_KINDS.map((kind) => [kind, statuses()])
+  ) as AppointmentTally;
 }
 
 /**
@@ -158,6 +190,25 @@ export async function updateAppointment(
   );
 }
 
+// One aggregate for all ten figures the console draws, none of which may come from the page of rows on screen
+export async function tallyAppointments(
+  professionalUser: string | ObjectId
+): Promise<AppointmentTally> {
+  const rows = await appointmentsCollection()
+    .aggregate<{ _id: { kind: AppointmentKind; status: AppointmentStatus }; count: number }>([
+      { $match: { professionalUser: toObjectId(professionalUser) } },
+      { $group: { _id: { kind: '$kind', status: '$status' }, count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  const tally = emptyTally();
+  for (const row of rows) {
+    const kind = tally[row._id.kind];
+    if (kind && row._id.status in kind) kind[row._id.status] = row.count;
+  }
+
+  return tally;
+}
 /** How many bookings sit in each status, for whatever wants to count them. */
 export async function countAppointmentsByStatus(): Promise<Record<string, number>> {
   const rows = await appointmentsCollection()

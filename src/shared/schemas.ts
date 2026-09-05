@@ -1329,7 +1329,19 @@ export const appointmentListQuerySchema = z.object({
     .min(1)
     .max(APPOINTMENT_PAGE_SIZE_MAX, `Ask for at most ${APPOINTMENT_PAGE_SIZE_MAX} per page`)
     .default(APPOINTMENT_PAGE_SIZE),
-  status: z.enum(APPOINTMENT_STATUSES).optional(),
+  // A comma list rather than one status, because a tab can mean two of them: turned
+  // down and called off are the same news to the vet reading them.
+  status: z
+    .string()
+    .transform((raw) =>
+      raw
+        .split(',')
+        .map((one) => one.trim())
+        .filter(Boolean)
+    )
+    .pipe(z.array(z.enum(APPOINTMENT_STATUSES)).min(1).max(APPOINTMENT_STATUSES.length))
+    .optional(),
+  kind: z.enum(APPOINTMENT_KINDS).optional(),
 });
 
 export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>;

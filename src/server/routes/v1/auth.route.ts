@@ -41,7 +41,12 @@ import {
   getProviderConfig,
   isOAuthProviderName,
 } from '../../services/oauth.service';
-import { currentStatus, type StatusState } from '../../services/user-status.service';
+import {
+  blockedMessage,
+  currentStatus,
+  type BlockedStatus,
+  type StatusState,
+} from '../../services/user-status.service';
 import { fail, failReason, ok } from '../../utils/response';
 
 const router = Router();
@@ -55,7 +60,7 @@ const router = Router();
  * Asks `currentStatus` rather than reading the field, because a suspension that has
  * run its 30 days is no longer a block and this is where that is noticed.
  */
-async function accountBlockReason(account: StatusState): Promise<string | null> {
+async function accountBlockReason(account: StatusState): Promise<BlockedStatus | null> {
   const status = await currentStatus(account);
   return status === 'active' ? null : status;
 }
@@ -111,7 +116,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   // addresses belong to suspended accounts.
   const blocked = await accountBlockReason(user);
   if (blocked) {
-    return failReason(res, 403, 'This account is not active.', `account-${blocked}`);
+    return failReason(res, 403, blockedMessage(blocked), `account-${blocked}`);
   }
 
   const auth = await createAuthPayloadFor(user);
@@ -148,7 +153,7 @@ router.post('/refresh', async (req, res) => {
   if (blocked) {
     await revokeRefreshTokenByHash(tokenHash);
     res.clearCookie(env.REFRESH_COOKIE_NAME);
-    return failReason(res, 403, 'This account is not active.', `account-${blocked}`);
+    return failReason(res, 403, blockedMessage(blocked), `account-${blocked}`);
   }
 
   const publicUser = toPublicUser(rt.owner);

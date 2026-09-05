@@ -2,6 +2,7 @@ import { ApiError } from '@/services/api';
 import {
   cancelAppointment,
   decideAppointment,
+  getIncomingCounts,
   listIncomingAppointments,
   listMyAppointments,
   requestAppointment,
@@ -9,6 +10,7 @@ import {
   type AppointmentDecision,
   type AppointmentListParams,
   type AppointmentPage,
+  type AppointmentTally,
   type DecisionResult,
   type RequestResult,
 } from '@/services/appointments.service';
@@ -27,6 +29,7 @@ export const appointmentKeys = {
   mine: (params: AppointmentListParams) => [...appointmentKeys.all, 'mine', params] as const,
   incoming: (params: AppointmentListParams) =>
     [...appointmentKeys.all, 'incoming', params] as const,
+  counts: () => [...appointmentKeys.all, 'incoming', 'counts'] as const,
 };
 
 /**
@@ -67,6 +70,16 @@ export function useIncomingAppointments(params: AppointmentListParams = {}) {
     queryFn: ({ signal }) => listIncomingAppointments(params, signal),
     staleTime: STALE_TIME,
     placeholderData: (previous) => previous,
+    retry: retryUnlessRefused,
+  });
+}
+
+// Every figure the console's nav and tabs are labelled with, counted by the server rather than by the page of rows on screen
+export function useIncomingAppointmentCounts() {
+  return useQuery<AppointmentTally>({
+    queryKey: appointmentKeys.counts(),
+    queryFn: ({ signal }) => getIncomingCounts(signal),
+    staleTime: STALE_TIME,
     retry: retryUnlessRefused,
   });
 }

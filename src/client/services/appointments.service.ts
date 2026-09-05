@@ -61,13 +61,23 @@ export type RequestResult = {
 /** One decision, and how the other side was told. Null when nothing was owed. */
 export type DecisionResult = { appointment: Appointment; mail: MailOutcome | null };
 
-export type AppointmentListParams = { page?: number; limit?: number; status?: AppointmentStatus };
+export type AppointmentListParams = {
+  page?: number;
+  limit?: number;
+  // One status, or the several a single tab stands for
+  status?: AppointmentStatus | readonly AppointmentStatus[];
+  kind?: AppointmentKind;
+};
+
+// Bookings counted by kind and then status, every cell present
+export type AppointmentTally = Record<AppointmentKind, Record<AppointmentStatus, number>>;
 
 function queryOf(params: AppointmentListParams): string {
   const search = new URLSearchParams();
   if (params.page && params.page > 1) search.set('page', String(params.page));
   if (params.limit) search.set('limit', String(params.limit));
-  if (params.status) search.set('status', params.status);
+  if (params.status) search.set('status', [params.status].flat().join(','));
+  if (params.kind) search.set('kind', params.kind);
 
   const query = search.toString();
   return query ? `?${query}` : '';
@@ -95,6 +105,14 @@ export async function listIncomingAppointments(
   signal?: AbortSignal
 ) {
   return await apiFetch<AppointmentPage>(`/appointments/incoming${queryOf(params)}`, { signal });
+}
+
+// GET /api/v1/appointments/incoming/counts — every figure the console labels a tab with
+export async function getIncomingCounts(signal?: AbortSignal) {
+  const { counts } = await apiFetch<{ counts: AppointmentTally }>('/appointments/incoming/counts', {
+    signal,
+  });
+  return counts;
 }
 
 /** What the vet can do to a booking. Cancelling is separate: either side may do that. */
