@@ -7,7 +7,6 @@ import { AlertCircle, Award, Eye } from 'lucide-react';
 import { Link, NavLink, Outlet, useOutletContext } from 'react-router-dom';
 
 import ApplicationStatus from './_components/application-status';
-import { LockedApplicationDetails } from './_components/locked-application-details';
 
 /**
  * The views of a working day, in the order a vet opens them. Appointments is the index,
@@ -166,7 +165,6 @@ export default function ProfessionalLayout() {
           </p>
         </div>
         <ApplicationStatus application={application} />
-        <LockedApplicationDetails application={application} />
       </main>,
       exit
     );
