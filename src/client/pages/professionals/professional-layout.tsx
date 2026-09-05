@@ -134,8 +134,7 @@ export default function ProfessionalLayout() {
     );
   }
 
-  // Under review: the sections behind this would all be empty, and the settings
-  // tray edits a listing that is not live yet, so neither is drawn.
+  // Under review: every section behind this would be empty, so none of them is drawn
   if (application.status !== 'verified') {
     return shell(
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6">
