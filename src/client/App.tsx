@@ -37,6 +37,7 @@ import ProfessionalMapLocationPage from '@/pages/professionals/map-location-page
 import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalLayout from '@/pages/professionals/professional-layout';
 import ProfessionalProfilePage from '@/pages/professionals/profile-page';
+import ProfessionalSettingsPage from '@/pages/professionals/settings-page';
 import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
@@ -205,6 +206,7 @@ export default function App() {
         <Route path="history" element={<ProfessionalHistoryPage />} />
         <Route path="location" element={<ProfessionalMapLocationPage />} />
         <Route path="profile" element={<ProfessionalProfilePage />} />
+        <Route path="settings" element={<ProfessionalSettingsPage />} />
       </Route>
     </Routes>
   );

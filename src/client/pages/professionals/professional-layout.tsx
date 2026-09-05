@@ -1,4 +1,3 @@
-import FloatingSettings from '@/components/FloatingSettings';
 import { NavBrand } from '@/components/navbar/nav-brand';
 import ScrollToTop from '@/components/ScrollToTop';
 import { useOwnApplication } from '@/hooks/useProfessionals';
@@ -7,23 +6,7 @@ import { AlertCircle, Award, Eye } from 'lucide-react';
 import { Link, NavLink, Outlet, useOutletContext } from 'react-router-dom';
 
 import ApplicationStatus from './_components/application-status';
-
-/**
- * The views of a working day, in the order a vet opens them. Appointments is the index,
- * so `end` keeps it from staying lit on the pages below it. Map & Location sits last
- * because it is set once and then left alone, unlike the three above it.
- */
-const SECTIONS = [
-  { to: '/professionals/dashboard', label: 'Appointments', end: true },
-  { to: '/professionals/dashboard/conversations', label: 'Conversations' },
-  { to: '/professionals/dashboard/history', label: 'History & Logs' },
-  { to: '/professionals/dashboard/location', label: 'Map & Location' },
-] as const;
-
-const LINK =
-  'block rounded-md px-3 py-2 text-sm font-bold transition-colors hover:bg-teal-900/5 hover:text-teal-900';
-const ACTIVE = 'bg-teal-900 text-white hover:bg-teal-900 hover:text-white';
-const IDLE = 'text-slate-600';
+import ConsoleNav from './_components/console-nav';
 
 const BAR_LINK =
   'inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-teal-900/20 bg-white px-3 text-sm font-bold text-teal-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-700 hover:shadow-md sm:px-4';
@@ -171,32 +154,13 @@ export default function ProfessionalLayout() {
   }
 
   return shell(
-    <>
-      <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8">
-        <nav aria-label="Console sections" className="lg:w-48 lg:shrink-0">
-          {/* Scrolls sideways under lg, stacks above it. */}
-          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
-            {SECTIONS.map((section) => (
-              <li key={section.to} className="shrink-0 lg:shrink">
-                <NavLink
-                  to={section.to}
-                  end={'end' in section ? section.end : false}
-                  className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
-                >
-                  {section.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+    <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8">
+      <ConsoleNav />
 
-        <div className="mt-6 min-w-0 flex-1 lg:mt-0">
-          <Outlet context={{ application } satisfies ConsoleContext} />
-        </div>
-      </main>
-
-      <FloatingSettings variant="professional" />
-    </>,
+      <div className="mt-6 min-w-0 flex-1 lg:mt-0">
+        <Outlet context={{ application } satisfies ConsoleContext} />
+      </div>
+    </main>,
     <>
       <NavLink
         to="/professionals/dashboard/profile"
