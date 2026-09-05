@@ -67,7 +67,7 @@ function SettingRow({
     <div className="border-b border-slate-100 last:border-0">
       <button
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-slate-50"
+        className="flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-slate-50"
       >
         <span className="min-w-0">
           <span className="block text-base font-bold text-slate-800">{label}</span>
@@ -79,7 +79,7 @@ function SettingRow({
           }`}
         />
       </button>
-      {isExpanded && <div className="space-y-4 px-4 pb-4">{children}</div>}
+      {isExpanded && <div className="space-y-4 px-6 pb-5">{children}</div>}
     </div>
   );
 }
@@ -113,7 +113,7 @@ function SaveRow({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-teal-800 py-2.5 text-sm font-bold text-white transition-colors hover:bg-teal-900 disabled:opacity-50"
+        className="w-full rounded-lg bg-teal-800 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-teal-900 disabled:opacity-50 sm:w-auto"
       >
         {pending ? 'Saving…' : label}
       </button>
@@ -175,49 +175,55 @@ function RateForm({ application }: { application: OwnProfessional }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      {/* Checked against the licence when they applied, so it is a record here rather than a field */}
-      <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5">
-        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
-          <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          Experience
-        </span>
-        <span className="text-sm font-bold text-slate-900">
-          {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}
-        </span>
-      </div>
-      <p className="text-xs leading-snug text-slate-500">
-        Your years of practice came from your application.{' '}
-        <Link to="/contact" className="font-bold text-teal-800 underline">
-          Ask an admin
-        </Link>{' '}
-        to correct it.
-      </p>
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          {/* Checked against the licence when they applied, so it is a record here rather than a field */}
+          <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5">
+            <span className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
+              <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              Experience
+            </span>
+            <span className="text-sm font-bold text-slate-900">
+              {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}
+            </span>
+          </div>
+          <p className="text-xs leading-snug text-slate-500">
+            Your years of practice came from your application.{' '}
+            <Link to="/contact" className="font-bold text-teal-800 underline">
+              Ask an admin
+            </Link>{' '}
+            to correct it.
+          </p>
+        </div>
 
-      <label className="block space-y-1">
-        <span className="text-sm font-bold text-slate-700">Consultation rate ($/hr)</span>
-        <input
-          type="number"
-          inputMode="decimal"
-          min={PROFESSIONAL_MIN_RATE}
-          max={PROFESSIONAL_MAX_RATE_CAP}
-          step={5}
-          value={rate}
-          onChange={(event) => setRate(event.target.value)}
-          className={FIELD}
-          required
-        />
-      </label>
-      <p className="text-xs leading-snug text-slate-500">
-        Recommended up to <strong className="text-teal-900">${ceiling}/hr</strong> at{' '}
-        {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}.
-      </p>
-      {overCeiling && (
-        <p className="flex items-start gap-1.5 text-xs font-semibold leading-snug text-amber-800">
-          <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-600" />
-          Above the recommendation — saving it flags your listing for review.
-        </p>
-      )}
+        <div className="space-y-2">
+          <label className="block space-y-1">
+            <span className="text-sm font-bold text-slate-700">Consultation rate ($/hr)</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={PROFESSIONAL_MIN_RATE}
+              max={PROFESSIONAL_MAX_RATE_CAP}
+              step={5}
+              value={rate}
+              onChange={(event) => setRate(event.target.value)}
+              className={FIELD}
+              required
+            />
+          </label>
+          <p className="text-xs leading-snug text-slate-500">
+            Recommended up to <strong className="text-teal-900">${ceiling}/hr</strong> at{' '}
+            {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}.
+          </p>
+          {overCeiling && (
+            <p className="flex items-start gap-1.5 text-xs font-semibold leading-snug text-amber-800">
+              <AlertTriangle className="mt-px h-4 w-4 shrink-0 text-amber-600" />
+              Above the recommendation — saving it flags your listing for review.
+            </p>
+          )}
+        </div>
+      </div>
 
       <SaveRow pending={pending} error={error} saved={saved} label="Save rate" />
     </form>
@@ -244,10 +250,10 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
         <span className="text-sm font-bold text-slate-700">Status in the directory</span>
-        <div className="flex gap-1">
+        <div className="flex gap-1.5 sm:max-w-sm">
           {(Object.keys(STATUS_LABEL) as ProfessionalAvailabilityStatus[]).map((value) => (
             <button
               key={value}
@@ -264,7 +270,7 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
       <div className="space-y-1.5">
         <span className="text-sm font-bold text-slate-700">Weekly hours</span>
         {/* Every day switchable, because a vet who consults on a Sunday has to be able to say so */}
-        <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
+        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {DAYS.map(([day, short]) => {
             const item = schedule.find((one) => one.day === day);
             if (!item) return null;
@@ -272,7 +278,9 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
             return (
               <li
                 key={day}
-                className={`flex items-center gap-3 px-3 py-2 ${item.enabled ? '' : 'bg-slate-50'}`}
+                className={`flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 ${
+                  item.enabled ? '' : 'bg-slate-50'
+                }`}
               >
                 <label className="flex w-20 shrink-0 items-center gap-2">
                   <input
@@ -332,11 +340,11 @@ function ReminderForm({ application }: { application: OwnProfessional }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-4">
       <span className="block text-sm font-bold text-slate-700">
         Remind me before an appointment
       </span>
-      <div className="flex gap-1">
+      <div className="flex gap-1.5 sm:max-w-xs">
         {PROFESSIONAL_BOOKING_NOTIFICATION_TIMES.map((value) => (
           <button
             key={value}
@@ -427,7 +435,7 @@ export function MapVisibilitySection({ isExpanded, onToggle }: SectionProps) {
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
-      <div className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         {addresses.length === 0 ? (
           <p className="text-xs leading-snug text-slate-500">
             There are no addresses on your application to pin.

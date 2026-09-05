@@ -22,7 +22,7 @@ export default function ProfessionalSettingsPage() {
   });
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
       <div>
         <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
         <p className="text-sm text-slate-500">
@@ -31,7 +31,8 @@ export default function ProfessionalSettingsPage() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+      {/* Edge to edge, so an open row reads as part of the page rather than a panel dropped on it */}
+      <div className="-mx-6 border-t border-slate-100">
         <RateExperienceSection {...row(0)} />
         <AvailabilitySection {...row(1)} />
         <BookingReminderSection {...row(2)} />
