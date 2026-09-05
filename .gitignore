@@ -51,5 +51,8 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
+# Copied out of node_modules by scripts/copy-mediapipe.mjs
+/public/mediapipe/wasm/
+
 # Misc
 *.pem
