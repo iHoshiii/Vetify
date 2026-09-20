@@ -106,6 +106,14 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
         postalCode: '6000',
         mapPin: null,
       },
+      {
+        kind: 'home',
+        line1: '44 Sampaguita Lane',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        mapPin: null,
+      },
     ],
     businessPhone: null,
     specialties: ['dentistry'],
@@ -490,5 +498,59 @@ describe('the booking modal', () => {
 
     expect(screen.getByText('Tell them about the visit')).toBeInTheDocument();
     expect(screen.getByLabelText('Pet name (optional)')).toBeInTheDocument();
+  });
+});
+
+describe('the service step, gated to what the vet registered', () => {
+  const CLINIC = {
+    kind: 'clinic' as const,
+    line1: '12 Mabini Street',
+    city: 'Cebu City',
+    province: 'Cebu',
+    postalCode: '6000',
+    mapPin: null,
+  };
+  const HOME = { ...CLINIC, kind: 'home' as const, line1: '44 Sampaguita Lane' };
+
+  it('offers both services when the vet registered a clinic and a location', async () => {
+    const user = userEvent.setup();
+    list.data = {
+      items: [vet({ addresses: [CLINIC, HOME] })],
+      page: 1,
+      limit: 24,
+      total: 1,
+      pages: 1,
+    };
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+
+    expect(screen.getByRole('button', { name: /Clinic visit/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
+    expect(screen.queryByText(/only offers/)).not.toBeInTheDocument();
+  });
+
+  it('offers clinic visits only when the vet registered a clinic and no location', async () => {
+    const user = userEvent.setup();
+    list.data = { items: [vet({ addresses: [CLINIC] })], page: 1, limit: 24, total: 1, pages: 1 };
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+
+    expect(screen.getByRole('button', { name: /Clinic visit/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Online consultation/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/only offers clinic visits/)).toBeInTheDocument();
+  });
+
+  it('offers online consultations only when the vet registered a location and no clinic', async () => {
+    const user = userEvent.setup();
+    list.data = { items: [vet({ addresses: [HOME] })], page: 1, limit: 24, total: 1, pages: 1 };
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+
+    expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Clinic visit/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/only offers online consultations/)).toBeInTheDocument();
   });
 });

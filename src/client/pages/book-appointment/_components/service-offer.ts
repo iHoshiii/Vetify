@@ -1,9 +1,9 @@
 import type { PublicProfessional } from '@/services/professionals.service';
 import type { AppointmentKind } from '@shared/schemas';
 
-// Onsite needs somewhere to visit, so it is offered only by a vet with a clinic address.
-// Virtual needs nothing but a verified vet, and every vet in these lists is one.
+// A vet offers a kind by having registered the place it happens: a clinic address for
+// an onsite visit, a home location for an online consultation. Registering both offers both.
 export function offersKind(vet: PublicProfessional, kind: AppointmentKind): boolean {
-  if (kind === 'virtual') return true;
-  return vet.addresses.some((address) => address.kind === 'clinic');
+  const needed = kind === 'onsite' ? 'clinic' : 'home';
+  return vet.addresses.some((address) => address.kind === needed);
 }
