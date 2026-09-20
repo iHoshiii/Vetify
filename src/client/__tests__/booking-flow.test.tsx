@@ -1,17 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  BOOKING_CLINIC_RADIUS_KM,
-  BOOKING_NEAREST_LIMIT,
-  PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
-} from '@shared/limits';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BookAppointmentPage from '../pages/book-appointment/book-appointment-page';
 import { ApiError } from '../services/api';
-import type { NearbyProfessional, PublicProfessional } from '../services/professionals.service';
+import type { PublicProfessional } from '../services/professionals.service';
 
 /**
  * The reason box is filled with userEvent, which types a sentence one keystroke at a
@@ -48,29 +43,17 @@ const slots = {
 
 const mine = { data: undefined as unknown, isPending: false };
 
-const nearby = {
-  data: undefined as unknown,
-  isFetching: false,
-  isError: false,
-  error: null as unknown,
-};
-
-/** What the page asked the directory for, so the test can assert on the filter. */
+/** What step one asked the directory for, so the test can assert on the ranking. */
 let asked: Record<string, unknown> | undefined;
-
-/** And what it asked the nearest-vets endpoint, which is where the radius shows up. */
-let nearbyAsked: Record<string, unknown> | null;
 
 vi.mock('@/hooks/useProfessionals', () => ({
   useProfessionals: (params: Record<string, unknown>) => {
     asked = params;
     return list;
   },
+  // No `?professional=` in these tests, so the deeplink resolves to nothing.
+  useProfessional: () => ({ data: undefined }),
   useProfessionalSlots: () => slots,
-  useNearbyProfessionals: (params: Record<string, unknown> | null) => {
-    nearbyAsked = params;
-    return nearby;
-  },
 }));
 
 vi.mock('@/hooks/useAppointments', () => ({
@@ -120,6 +103,8 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
     bio: 'Small animal practice.',
     yearsExperience: 15,
     hourlyRate: 60,
+    ratingAverage: 4.6,
+    ratingCount: 12,
     availabilityStatus: 'available',
     weeklySchedule: [],
     workHistory: [],
@@ -127,22 +112,6 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
     ...overrides,
   };
 }
-
-/** A directory entry with a distance on it, as `GET /professionals/near` answers. */
-function near(overrides: Partial<NearbyProfessional> = {}): NearbyProfessional {
-  return { ...vet(), distanceMeters: 1_200, ...overrides };
-}
-
-/** jsdom has no geolocation, so the shortlist would read as unsupported without this. */
-const geolocation = {
-  getCurrentPosition: vi.fn((onOk: (position: unknown) => void) =>
-    onOk({ coords: { latitude: 14.6, longitude: 121.0, accuracy: 40 } })
-  ),
-};
-
-beforeAll(() => {
-  Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
-});
 
 /**
  * The grid the page draws is keyed on today in Manila, because that is the day the
@@ -167,29 +136,15 @@ function renderPage() {
   );
 }
 
-/** The names in the shortlist, in the order it drew them. */
-function shortlist(): string[] {
-  const panel = screen.getByRole('list', { name: 'Nearest vets to you' });
-
-  return Array.from(panel.querySelectorAll('h3')).map((heading) => heading.textContent ?? '');
-}
-
 beforeEach(() => {
   asked = undefined;
-  nearbyAsked = null;
-  geolocation.getCurrentPosition.mockClear();
   request.mutate.mockReset();
   request.isPending = false;
   request.isError = false;
   request.isSuccess = false;
   request.error = null;
   request.data = undefined;
-  list.data = { items: [vet()], page: 1, limit: 24, total: 1, pages: 1 };
-  // Empty by default, so the tests about the directory are not reading two lists.
-  nearby.data = { items: [], radiusKm: BOOKING_CLINIC_RADIUS_KM };
-  nearby.isFetching = false;
-  nearby.isError = false;
-  nearby.error = null;
+  list.data = { items: [vet()], page: 1, limit: 5, total: 1, pages: 1 };
   slots.data = {
     minutes: 30,
     days: [
@@ -214,26 +169,55 @@ describe('the booking flow', () => {
     expect(screen.queryByText('What kind of appointment?')).not.toBeInTheDocument();
   });
 
-  it('only ever asks the directory for vets who are taking bookings', () => {
+  it('ranks step one by review, and only among vets taking bookings', () => {
     renderPage();
 
-    // The requirement, expressed as the one filter this page never lets go of: a
-    // listing nobody can book is not a choice.
-    expect(asked).toMatchObject({ available: true });
+    // Rating rather than distance, so the shortlist shows the moment the page opens with
+    // no location prompt — and never a vet nobody can book.
+    expect(asked).toMatchObject({ available: true, sort: 'rating', limit: 5 });
   });
 
-  it('shows the vet with what a choice turns on', () => {
+  it('shows the vet with what a choice turns on, review included', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: 'Marites Reyes' })).toBeInTheDocument();
     expect(screen.getByText('12 Mabini Street, Cebu City, Cebu')).toBeInTheDocument();
     expect(screen.getByText('15 years')).toBeInTheDocument();
     expect(screen.getByText('₱60/hr')).toBeInTheDocument();
-    // The way out of the flow for somebody who wants to read the work history first.
+    // The score is the reason this vet is on the list, so it is on the card.
+    expect(screen.getByLabelText(/Rated 4.6 out of 5 from 12 reviews/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View profile' })).toHaveAttribute(
       'href',
       '/professionals/p1'
     );
+  });
+
+  it('offers the map as the way to every vet the shortlist leaves out', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: 'View map' })).toHaveAttribute('href', '/map');
+  });
+
+  it('shows no stars for a vet who has no reviews yet', () => {
+    list.data = {
+      items: [vet({ ratingAverage: 0, ratingCount: 0 })],
+      page: 1,
+      limit: 5,
+      total: 1,
+      pages: 1,
+    };
+
+    renderPage();
+
+    expect(screen.queryByLabelText(/Rated/)).not.toBeInTheDocument();
+  });
+
+  it('says why step one is empty rather than showing nothing', () => {
+    list.data = { items: [], page: 1, limit: 5, total: 0, pages: 1 };
+
+    renderPage();
+
+    expect(screen.getByText(/No reviewed vets yet/)).toBeInTheDocument();
   });
 
   it('will not let a taken slot be clicked', async () => {
@@ -333,114 +317,6 @@ describe('the booking flow', () => {
     expect(await screen.findByText('Somebody just took that time.')).toBeInTheDocument();
   });
 
-  it('keeps the results area clear when nothing matches the search', () => {
-    list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
-
-    renderPage();
-
-    expect(screen.queryByText(/No vet taking bookings matches that/)).not.toBeInTheDocument();
-  });
-
-  it('does not offer a specialty filter, because every listing here is a vet', () => {
-    renderPage();
-
-    expect(screen.queryByLabelText('Specialty')).not.toBeInTheDocument();
-    // The rate is in pesos, so the label says so rather than leaving it to be assumed.
-    expect(screen.getByLabelText('Max rate (/hr)')).toBeInTheDocument();
-  });
-
-  it('asks for no location until somebody offers one', () => {
-    renderPage();
-
-    // A shortlist of the vets nearest you is not worth a permission prompt nobody asked
-    // for, so the query stays disabled until the button is pressed.
-    expect(geolocation.getCurrentPosition).not.toHaveBeenCalled();
-    expect(nearbyAsked).toBeNull();
-  });
-
-  it('shortlists nearest-first across the country, since the vet comes before the service', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: 'Use my location' }));
-
-    // The service on offer is a fact about the vet, so it is not yet known here: with no
-    // drive to bound, the nearest is whoever is nearest — Mindanao included.
-    expect(nearbyAsked).toMatchObject({
-      latitude: 14.6,
-      longitude: 121.0,
-      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
-      available: true,
-    });
-  });
-
-  it('ranks the shortlist by the order the server answers in', async () => {
-    const user = userEvent.setup();
-    list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
-    nearby.data = {
-      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
-      items: [
-        near({ id: 'close', name: 'Ana Close', yearsExperience: 3, distanceMeters: 800 }),
-        near({ id: 'far', name: 'Ben Far', yearsExperience: 22, distanceMeters: 640_000 }),
-      ],
-    };
-
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: 'Use my location' }));
-
-    // The server already answers nearest-first, so the shortlist is the head of its list.
-    expect(shortlist()).toEqual(['Ana Close', 'Ben Far']);
-    // The distance is on the card, because it is the reason the order is what it is.
-    expect(screen.getByText('800 m away')).toBeInTheDocument();
-  });
-
-  it('shortlists five, however many came back', async () => {
-    const user = userEvent.setup();
-    list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
-    nearby.data = {
-      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
-      items: Array.from({ length: 9 }, (_, index) =>
-        near({ id: `n${index}`, name: `Vet ${index}`, distanceMeters: (index + 1) * 1_000 })
-      ),
-    };
-
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: 'Use my location' }));
-
-    // A list read top to bottom, not a directory page: the sixth is not what was asked.
-    expect(shortlist()).toHaveLength(BOOKING_NEAREST_LIMIT);
-    expect(shortlist()[0]).toBe('Vet 0');
-  });
-
-  it('says why the shortlist is empty rather than showing nothing', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: 'Use my location' }));
-
-    expect(screen.getByText(/No vet is taking bookings right now/)).toBeInTheDocument();
-  });
-
-  it('puts the search above the shortlist, so a name beats a location', () => {
-    renderPage();
-
-    // Somebody who arrived knowing the name should not scroll past five strangers.
-    const search = screen.getByLabelText('Search by name or location');
-    const shortlist = screen.getByText('Nearest vets to you');
-
-    expect(
-      search.compareDocumentPosition(shortlist) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-  });
-
-  it('provides a button for submitting the vet search', () => {
-    renderPage();
-
-    expect(screen.getByRole('button', { name: 'Search vets' })).toBeInTheDocument();
-  });
-
   it('opens appointments from the top-right button', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -517,7 +393,7 @@ describe('the service step, gated to what the vet registered', () => {
     list.data = {
       items: [vet({ addresses: [CLINIC, HOME] })],
       page: 1,
-      limit: 24,
+      limit: 5,
       total: 1,
       pages: 1,
     };
@@ -532,7 +408,7 @@ describe('the service step, gated to what the vet registered', () => {
 
   it('offers clinic visits only when the vet registered a clinic and no location', async () => {
     const user = userEvent.setup();
-    list.data = { items: [vet({ addresses: [CLINIC] })], page: 1, limit: 24, total: 1, pages: 1 };
+    list.data = { items: [vet({ addresses: [CLINIC] })], page: 1, limit: 5, total: 1, pages: 1 };
 
     renderPage();
     await user.click(screen.getByRole('button', { name: 'Choose' }));
@@ -544,7 +420,7 @@ describe('the service step, gated to what the vet registered', () => {
 
   it('offers online consultations only when the vet registered a location and no clinic', async () => {
     const user = userEvent.setup();
-    list.data = { items: [vet({ addresses: [HOME] })], page: 1, limit: 24, total: 1, pages: 1 };
+    list.data = { items: [vet({ addresses: [HOME] })], page: 1, limit: 5, total: 1, pages: 1 };
 
     renderPage();
     await user.click(screen.getByRole('button', { name: 'Choose' }));

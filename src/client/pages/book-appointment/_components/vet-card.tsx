@@ -2,6 +2,8 @@ import type { PublicProfessional } from '@/services/professionals.service';
 import { Briefcase, MapPin, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import StarRating from './star-rating';
+
 const ACTION =
   'inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-bold transition';
 const PICK = `${ACTION} bg-teal-800 text-white hover:bg-teal-900`;
@@ -70,6 +72,9 @@ export default function VetCard({
               {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
             </span>
             <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
+            {vet.ratingCount > 0 && (
+              <StarRating value={vet.ratingAverage} count={vet.ratingCount} />
+            )}
             {away && (
               <span className="inline-flex items-center gap-1.5 font-semibold text-teal-900">
                 <Navigation className="h-4 w-4 text-teal-700" aria-hidden />

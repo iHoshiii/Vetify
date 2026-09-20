@@ -38,6 +38,8 @@ function nearby(overrides: Partial<NearbyProfessional> = {}): NearbyProfessional
     bio: 'A bio.',
     yearsExperience: 15,
     hourlyRate: 425,
+    ratingAverage: 0,
+    ratingCount: 0,
     availabilityStatus: 'available',
     weeklySchedule: [],
     workHistory: [],
