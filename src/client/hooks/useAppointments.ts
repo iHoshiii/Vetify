@@ -41,6 +41,10 @@ export const appointmentKeys = {
  */
 const STALE_TIME = 30_000;
 
+// The vet console polls so a request that lands while it is open surfaces on its own.
+// Only while the tab is focused: a console in a background tab is nobody waiting on it.
+const POLL_INTERVAL = 30_000;
+
 /** A 4xx is an answer. Retrying one costs round trips and ends the same way. */
 function retryUnlessRefused(failureCount: number, error: unknown): boolean {
   if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false;
@@ -69,6 +73,8 @@ export function useIncomingAppointments(params: AppointmentListParams = {}) {
     queryKey: appointmentKeys.incoming(params),
     queryFn: ({ signal }) => listIncomingAppointments(params, signal),
     staleTime: STALE_TIME,
+    refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: false,
     placeholderData: (previous) => previous,
     retry: retryUnlessRefused,
   });
@@ -80,6 +86,8 @@ export function useIncomingAppointmentCounts() {
     queryKey: appointmentKeys.counts(),
     queryFn: ({ signal }) => getIncomingCounts(signal),
     staleTime: STALE_TIME,
+    refetchInterval: POLL_INTERVAL,
+    refetchIntervalInBackground: false,
     retry: retryUnlessRefused,
   });
 }
