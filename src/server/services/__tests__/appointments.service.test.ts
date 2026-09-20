@@ -67,8 +67,23 @@ async function account(name: string): Promise<User> {
   });
 }
 
+const CLINIC = {
+  kind: 'clinic' as const,
+  line1: '12 Mabini Street',
+  city: 'Cebu City',
+  province: 'Cebu',
+  postalCode: '6000',
+  fix: null,
+};
+const HOME = { ...CLINIC, kind: 'home' as const, line1: '44 Sampaguita Lane' };
+
 /** A verified vet who works the morning the slot above falls on. */
-async function vet(settings: { availabilityStatus?: 'available' | 'unavailable' | 'busy' } = {}) {
+async function vet(
+  settings: {
+    availabilityStatus?: 'available' | 'unavailable' | 'busy';
+    addresses?: Array<typeof CLINIC | typeof HOME>;
+  } = {}
+) {
   const user = await account('vet');
   seq += 1;
 
@@ -78,16 +93,7 @@ async function vet(settings: { availabilityStatus?: 'available' | 'unavailable' 
     licenseNumber: `PRC-${900000 + seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     clinicName: 'Bayside Animal Clinic',
-    addresses: [
-      {
-        kind: 'clinic',
-        line1: '12 Mabini Street',
-        city: 'Cebu City',
-        province: 'Cebu',
-        postalCode: '6000',
-        fix: null,
-      },
-    ],
+    addresses: settings.addresses ?? [CLINIC, HOME],
     bio: 'Small animal practice, fifteen years of it.',
     yearsExperience: 15,
     backgroundCheckConsent: true,
@@ -146,6 +152,16 @@ describe('requestAppointment', () => {
     const both = recentMail().map((message) => message.to);
     expect(both).toContain(vetUser.email);
     expect(both).toContain(client.email);
+  });
+
+  it('refuses a kind the vet did not register the place for', async () => {
+    const client = await account('owner');
+    // A clinic address, no home: this vet does onsite visits and no calls.
+    const { application } = await vet({ addresses: [CLINIC] });
+
+    await expect(
+      request({ client, professional: application!._id, kind: 'virtual' })
+    ).rejects.toThrow(/does not offer that kind/);
   });
 
   it('tells the vet what the decision turns on', async () => {

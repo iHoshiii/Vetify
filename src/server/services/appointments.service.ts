@@ -152,6 +152,13 @@ export async function requestAppointment(
     throw AppError.conflict('That vet is not taking bookings at the moment');
   }
 
+  // The kind has to be one this vet registered the place for: a clinic address for an
+  // onsite visit, a home location for a call. Mirrors offersKind on the client.
+  const placeFor = kind === 'onsite' ? 'clinic' : 'home';
+  if (!(application.addresses ?? []).some((address) => address.kind === placeFor)) {
+    throw AppError.badRequest('That vet does not offer that kind of appointment');
+  }
+
   // The grid is generated, so a `startsAt` that is not on it was invented by whatever
   // sent it. Checked against the same function that draws the grid, so the two cannot
   // disagree about what counts as a slot.
