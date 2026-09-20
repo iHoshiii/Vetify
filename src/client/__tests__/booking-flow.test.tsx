@@ -120,10 +120,11 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
  */
 const TODAY = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-/** 09:00, 10:00 and 11:00 Manila on that day, on an hourly grid. */
+/** 09:00 to 12:00 Manila on that day, on an hourly grid. */
 const FREE = `${TODAY}T01:00:00.000Z`;
 const NEXT = `${TODAY}T02:00:00.000Z`;
-const TAKEN = `${TODAY}T03:00:00.000Z`;
+const THIRD = `${TODAY}T03:00:00.000Z`;
+const TAKEN = `${TODAY}T04:00:00.000Z`;
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
@@ -154,6 +155,7 @@ beforeEach(() => {
         slots: [
           { at: FREE, taken: false },
           { at: NEXT, taken: false },
+          { at: THIRD, taken: false },
           { at: TAKEN, taken: true },
         ],
       },
@@ -276,7 +278,7 @@ describe('the booking flow', () => {
     );
   });
 
-  it('books two consecutive hours when the next slot is chosen too', async () => {
+  it('books as many consecutive hours as are chosen in a row', async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -284,9 +286,10 @@ describe('the booking flow', () => {
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const grid = screen.getAllByRole('button');
+    // Three free hours in a row, each tap adding the next: a three-hour visit, no cap at two.
     await user.click(grid.find((button) => button.textContent?.includes('09:00'))!);
-    // The hour after the start, so the pick runs 09:00–11:00 rather than resetting.
     await user.click(grid.find((button) => button.textContent?.includes('10:00'))!);
+    await user.click(grid.find((button) => button.textContent?.includes('11:00'))!);
     await user.click(screen.getByRole('button', { name: 'Choose time' }));
 
     await user.type(screen.getByLabelText('Species'), 'Dog');
@@ -294,7 +297,7 @@ describe('the booking flow', () => {
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
 
     expect(request.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ startsAt: FREE, slots: 2 }),
+      expect.objectContaining({ startsAt: FREE, slots: 3 }),
       expect.anything()
     );
   });

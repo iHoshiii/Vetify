@@ -5,6 +5,7 @@ import { nextSelection, spanLabel } from '../pages/book-appointment/_components/
 const AT_9 = '2026-09-03T01:00:00.000Z';
 const AT_10 = '2026-09-03T02:00:00.000Z';
 const AT_11 = '2026-09-03T03:00:00.000Z';
+const AT_12 = '2026-09-03T04:00:00.000Z';
 const free = (at: string) => ({ at, taken: false });
 
 describe('nextSelection', () => {
@@ -12,13 +13,12 @@ describe('nextSelection', () => {
     expect(nextSelection([], free(AT_9), 60)).toEqual([AT_9]);
   });
 
-  it('extends onto the very next hour, for a two-hour visit', () => {
+  it('extends onto the very next hour', () => {
     expect(nextSelection([AT_9], free(AT_10), 60)).toEqual([AT_9, AT_10]);
   });
 
-  it('will not run past two hours', () => {
-    // The third hour is not an extend: it starts a fresh one-hour pick.
-    expect(nextSelection([AT_9, AT_10], free(AT_11), 60)).toEqual([AT_11]);
+  it('keeps extending, so a run can be as long as the vet works', () => {
+    expect(nextSelection([AT_9, AT_10], free(AT_11), 60)).toEqual([AT_9, AT_10, AT_11]);
   });
 
   it('starts over on an hour that does not touch the pick', () => {
@@ -29,12 +29,17 @@ describe('nextSelection', () => {
     expect(nextSelection([AT_9], free(AT_9), 60)).toEqual([]);
   });
 
-  it('drops back to one hour when either end of a two-hour pick is tapped', () => {
-    expect(nextSelection([AT_9, AT_10], free(AT_10), 60)).toEqual([AT_9]);
+  it('shortens the run to end where a picked hour is tapped', () => {
+    // Tapping 10:00 in a 09:00–12:00 run drops it and everything after: back to one hour.
+    expect(nextSelection([AT_9, AT_10, AT_11], free(AT_10), 60)).toEqual([AT_9]);
+  });
+
+  it('drops just the last hour when the end of a run is tapped', () => {
+    expect(nextSelection([AT_9, AT_10, AT_11], free(AT_11), 60)).toEqual([AT_9, AT_10]);
   });
 
   it('ignores a taken hour', () => {
-    expect(nextSelection([AT_9], { at: AT_10, taken: true }, 60)).toEqual([AT_9]);
+    expect(nextSelection([AT_9], { at: AT_12, taken: true }, 60)).toEqual([AT_9]);
   });
 });
 

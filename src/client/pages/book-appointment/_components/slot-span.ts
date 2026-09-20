@@ -14,16 +14,18 @@ type Slot = { at: string; taken: boolean };
  */
 export function nextSelection(picked: string[], slot: Slot, minutes: number): string[] {
   if (slot.taken) return picked;
-  // Clicking the lone pick again clears it; clicking either end of a two-hour run drops
-  // back to the one hour it started as.
-  if (picked.length === 1 && picked[0] === slot.at) return [];
-  if (picked.includes(slot.at)) return [picked[0]];
+  // Tapping an hour already in the run shortens it to end there: that hour and every one
+  // after it let go, so tapping the only pick clears it and tapping the last drops one.
+  const at = picked.indexOf(slot.at);
+  if (at !== -1) return picked.slice(0, at);
 
   const last = picked.at(-1);
   const adjacent =
     last !== undefined &&
     new Date(slot.at).getTime() - new Date(last).getTime() === minutes * 60_000;
 
+  // The only extend on offer is the hour right after the run, and only up to a day.
+  // Anything else starts a fresh one-hour pick.
   if (adjacent && picked.length < APPOINTMENT_MAX_SLOTS) return [...picked, slot.at];
   return [slot.at];
 }

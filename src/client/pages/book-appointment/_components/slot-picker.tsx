@@ -19,8 +19,8 @@ const CHOOSE =
 
 /**
  * Step three: which slot, and for how long. A tap selects an hour rather than booking
- * it; a second tap on the next free hour makes it a two-hour visit, and "Choose time"
- * is what actually moves on — so a mis-tap is a re-tap, not a booking.
+ * it; tapping each next free hour adds it, so a run can be as long as the vet works
+ * that day, and "Choose time" is what actually moves on — a mis-tap is a re-tap.
  */
 export default function SlotPicker({
   professionalId,
@@ -57,7 +57,7 @@ export default function SlotPicker({
         <p className="text-sm font-bold uppercase tracking-wider text-slate-500">Pick a time</p>
         {grid.data && (
           <p className="text-xs text-slate-500">
-            {minutes} minutes each &middot; up to two in a row &middot; Philippine time
+            {minutes} minutes each &middot; add hours in a row &middot; Philippine time
           </p>
         )}
       </div>
