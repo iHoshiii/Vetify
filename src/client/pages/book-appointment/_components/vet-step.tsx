@@ -1,19 +1,15 @@
 import type { useMyLocation } from '@/hooks/use-my-location';
 import type { PublicProfessional } from '@/services/professionals.service';
-import type { AppointmentKind } from '@shared/schemas';
 import { Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import ErrorNote, { messageOf } from './error-note';
-import MismatchNote from './mismatch-note';
 import NearestVets from './nearest-vets';
-import { onlyOffersLabel } from './service-offer';
 import VetCard from './vet-card';
 import VetFilters, { type VetFilters as Filters } from './vet-filters';
 
-/** Step two: search first, then the location shortlist, then directory results. */
+/** Step one: choose the vet. Nearest first, the map as a way out, then the directory. */
 export default function VetStep({
-  kind,
   place,
   filters,
   onFilters,
@@ -23,10 +19,8 @@ export default function VetStep({
   error,
   onRetry,
   chosenId,
-  mismatched,
   onPick,
 }: {
-  kind: AppointmentKind;
   place: ReturnType<typeof useMyLocation>;
   filters: Filters;
   onFilters: (filters: Filters) => void;
@@ -36,13 +30,8 @@ export default function VetStep({
   error: unknown;
   onRetry: () => void;
   chosenId: string | null;
-  mismatched: PublicProfessional | null;
   onPick: (vet: PublicProfessional) => void;
 }) {
-  if (mismatched) {
-    return <MismatchNote vet={mismatched} offers={onlyOffersLabel(mismatched)} />;
-  }
-
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -56,7 +45,7 @@ export default function VetStep({
         </Link>
       </div>
       <div className="mt-4">
-        <NearestVets kind={kind} place={place} chosenId={chosenId} onPick={onPick} />
+        <NearestVets place={place} chosenId={chosenId} onPick={onPick} />
       </div>
       {isPending && <p className="mt-4 text-sm text-slate-600">Finding vets…</p>}
       {error != null && <ErrorNote className="mt-4" message={messageOf(error)} onRetry={onRetry} />}

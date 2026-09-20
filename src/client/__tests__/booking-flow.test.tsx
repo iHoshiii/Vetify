@@ -198,31 +198,24 @@ beforeEach(() => {
 });
 
 describe('the booking flow', () => {
-  it('asks for nothing until the kind of visit is chosen', () => {
+  it('asks for the vet before anything else', () => {
     renderPage();
 
-    expect(screen.getByText('What kind of appointment?')).toBeInTheDocument();
-    // Step two onwards is not rendered rather than disabled: the answer to step one
-    // changes who is worth showing.
-    expect(screen.queryByText('Who would you like to see?')).not.toBeInTheDocument();
+    expect(screen.getByText('Who would you like to see?')).toBeInTheDocument();
+    // The service on offer is a fact about the vet, so it cannot be asked before them.
+    expect(screen.queryByText('What kind of appointment?')).not.toBeInTheDocument();
   });
 
-  it('only ever asks the directory for vets who are taking bookings', async () => {
-    const user = userEvent.setup();
+  it('only ever asks the directory for vets who are taking bookings', () => {
     renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     // The requirement, expressed as the one filter this page never lets go of: a
     // listing nobody can book is not a choice.
     expect(asked).toMatchObject({ available: true });
   });
 
-  it('shows the vet with what a choice turns on', async () => {
-    const user = userEvent.setup();
+  it('shows the vet with what a choice turns on', () => {
     renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.getByRole('heading', { name: 'Marites Reyes' })).toBeInTheDocument();
     expect(screen.getByText('12 Mabini Street, Cebu City, Cebu')).toBeInTheDocument();
@@ -239,8 +232,8 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     // Disabled rather than hidden: a full day showing nothing would read as a day the
     // vet does not work, which is a different fact.
@@ -251,18 +244,18 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
-    expect(screen.queryByLabelText('Pet name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Pet name (optional)')).not.toBeInTheDocument();
   });
 
   it('sends the kind, the vet and the slot along with the pet', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Online consultation/ }));
     await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Online consultation/ }));
 
     const free = screen
       .getAllByRole('button')
@@ -314,8 +307,8 @@ describe('the booking flow', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
       .getAllByRole('button')
@@ -332,32 +325,24 @@ describe('the booking flow', () => {
     expect(await screen.findByText('Somebody just took that time.')).toBeInTheDocument();
   });
 
-  it('keeps the results area clear when nothing matches the search', async () => {
-    const user = userEvent.setup();
+  it('keeps the results area clear when nothing matches the search', () => {
     list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
 
     renderPage();
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.queryByText(/No vet taking bookings matches that/)).not.toBeInTheDocument();
   });
 
-  it('does not offer a specialty filter, because every listing here is a vet', async () => {
-    const user = userEvent.setup();
+  it('does not offer a specialty filter, because every listing here is a vet', () => {
     renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.queryByLabelText('Specialty')).not.toBeInTheDocument();
     // The rate is in pesos, so the label says so rather than leaving it to be assumed.
     expect(screen.getByLabelText('Max rate (/hr)')).toBeInTheDocument();
   });
 
-  it('asks for no location until somebody offers one', async () => {
-    const user = userEvent.setup();
+  it('asks for no location until somebody offers one', () => {
     renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     // A shortlist of the vets nearest you is not worth a permission prompt nobody asked
     // for, so the query stays disabled until the button is pressed.
@@ -365,34 +350,27 @@ describe('the booking flow', () => {
     expect(nearbyAsked).toBeNull();
   });
 
-  it('bounds the clinic shortlist to a drive and lets the online one go nationwide', async () => {
+  it('shortlists nearest-first across the country, since the vet comes before the service', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Use my location' }));
 
-    // A clinic visit is a drive somebody makes, so a clinic across the country is not an
-    // answer to it.
+    // The service on offer is a fact about the vet, so it is not yet known here: with no
+    // drive to bound, the nearest is whoever is nearest — Mindanao included.
     expect(nearbyAsked).toMatchObject({
       latitude: 14.6,
       longitude: 121.0,
-      radiusKm: BOOKING_CLINIC_RADIUS_KM,
+      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
       available: true,
     });
-
-    await user.click(screen.getByRole('tab', { name: /Visit type/ }));
-    await user.click(screen.getByRole('button', { name: /Online consultation/ }));
-
-    // A call has no distance, so the nearest is whoever is nearest — Mindanao included.
-    expect(nearbyAsked).toMatchObject({ radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM });
   });
 
-  it('ranks the clinic shortlist by distance and the online one by experience', async () => {
+  it('ranks the shortlist by the order the server answers in', async () => {
     const user = userEvent.setup();
     list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
     nearby.data = {
-      radiusKm: BOOKING_CLINIC_RADIUS_KM,
+      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
       items: [
         near({ id: 'close', name: 'Ana Close', yearsExperience: 3, distanceMeters: 800 }),
         near({ id: 'far', name: 'Ben Far', yearsExperience: 22, distanceMeters: 640_000 }),
@@ -401,26 +379,19 @@ describe('the booking flow', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Use my location' }));
 
+    // The server already answers nearest-first, so the shortlist is the head of its list.
     expect(shortlist()).toEqual(['Ana Close', 'Ben Far']);
     // The distance is on the card, because it is the reason the order is what it is.
     expect(screen.getByText('800 m away')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: /Visit type/ }));
-    await user.click(screen.getByRole('button', { name: /Online consultation/ }));
-
-    // Most experienced first for a consultation, with distance only breaking ties. The
-    // location survives the trip back to tab one, so it is not asked for twice.
-    expect(shortlist()).toEqual(['Ben Far', 'Ana Close']);
   });
 
   it('shortlists five, however many came back', async () => {
     const user = userEvent.setup();
     list.data = { items: [], page: 1, limit: 24, total: 0, pages: 1 };
     nearby.data = {
-      radiusKm: BOOKING_CLINIC_RADIUS_KM,
+      radiusKm: PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM,
       items: Array.from({ length: 9 }, (_, index) =>
         near({ id: `n${index}`, name: `Vet ${index}`, distanceMeters: (index + 1) * 1_000 })
       ),
@@ -428,7 +399,6 @@ describe('the booking flow', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Use my location' }));
 
     // A list read top to bottom, not a directory page: the sixth is not what was asked.
@@ -436,38 +406,29 @@ describe('the booking flow', () => {
     expect(shortlist()[0]).toBe('Vet 0');
   });
 
-  it('says why the clinic shortlist is empty rather than showing nothing', async () => {
+  it('says why the shortlist is empty rather than showing nothing', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Use my location' }));
 
-    expect(
-      screen.getByText(new RegExp(`No clinic within ${BOOKING_CLINIC_RADIUS_KM} km`))
-    ).toBeInTheDocument();
+    expect(screen.getByText(/No vet is taking bookings right now/)).toBeInTheDocument();
   });
 
-  it('puts the search above the shortlist, so a name beats a location', async () => {
-    const user = userEvent.setup();
+  it('puts the search above the shortlist, so a name beats a location', () => {
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
-
     // Somebody who arrived knowing the name should not scroll past five strangers.
-    const search = screen.getByLabelText('Search');
-    const shortlist = screen.getByText('Nearest clinics to you');
+    const search = screen.getByLabelText('Search by name or location');
+    const shortlist = screen.getByText('Nearest vets to you');
 
     expect(
       search.compareDocumentPosition(shortlist) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
-  it('provides a button for submitting the vet search', async () => {
-    const user = userEvent.setup();
+  it('provides a button for submitting the vet search', () => {
     renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.getByRole('button', { name: 'Search vets' })).toBeInTheDocument();
   });
@@ -476,57 +437,50 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(screen.queryByRole('heading', { name: 'Appointments' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your appointments' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Your appointments' }));
-    expect(screen.getByRole('heading', { name: 'Appointments' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your appointments' })).toBeInTheDocument();
   });
 });
 
-describe('the booking tabs', () => {
-  it('leaves the kind behind on its own tab once it is answered', async () => {
-    const user = userEvent.setup();
+describe('the booking modal', () => {
+  it('does not open the service step until a vet is chosen', () => {
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
-
-    // One question on screen at a time, so the answer given is on the tab instead.
+    // Choosing the vet is step one, so nothing past it is on screen to begin with.
     expect(screen.queryByText('What kind of appointment?')).not.toBeInTheDocument();
-    expect(screen.getByText('Who would you like to see?')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Visit type/ })).toHaveTextContent('Clinic visit');
   });
 
-  it('locks the tabs whose question cannot be asked yet', () => {
-    renderPage();
-
-    // Step three is a question about a vet nobody has chosen, so it is not offered.
-    expect(screen.getByRole('tab', { name: /Visit type/ })).toBeEnabled();
-    expect(screen.getByRole('tab', { name: /Vet/ })).toBeDisabled();
-    expect(screen.getByRole('tab', { name: /Time/ })).toBeDisabled();
-    expect(screen.getByRole('tab', { name: /Details/ })).toBeDisabled();
-  });
-
-  it('reopens an answered step from its tab without losing the answer', async () => {
+  it('trades the vet list for the service step once a vet is chosen', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
-    await user.click(screen.getByRole('tab', { name: /Visit type/ }));
-
-    // Going back is always allowed, and the choice already made is still pressed.
-    expect(screen.getByRole('button', { name: /Clinic visit/ })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    );
-  });
-
-  it('opens the times as soon as a vet is chosen, and the form once a time is', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
     await user.click(screen.getByRole('button', { name: 'Choose' }));
 
-    expect(screen.getByRole('tab', { name: /Vet/ })).toHaveTextContent('Marites Reyes');
+    // One question on screen at a time: the list gives way to what that choice unlocks.
+    expect(screen.queryByText('Who would you like to see?')).not.toBeInTheDocument();
+    expect(screen.getByText('What kind of appointment?')).toBeInTheDocument();
+  });
+
+  it('returns to the vet list from Close with the choice still made', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+
+    // Going back is always allowed, and the vet already picked is still marked chosen.
+    expect(screen.getByText('Who would you like to see?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chosen' })).toBeInTheDocument();
+  });
+
+  it('opens the times once a service is chosen, and the form once a time is', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
     expect(screen.getByText(/When suits you with Marites Reyes/)).toBeInTheDocument();
 
     const free = screen
@@ -535,6 +489,6 @@ describe('the booking tabs', () => {
     await user.click(free!);
 
     expect(screen.getByText('Tell them about the visit')).toBeInTheDocument();
-    expect(screen.getByLabelText('Pet name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Pet name (optional)')).toBeInTheDocument();
   });
 });

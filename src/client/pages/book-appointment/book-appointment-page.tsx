@@ -37,12 +37,23 @@ export default function BookAppointmentPage() {
         {flow.taken && <TakenNotice />}
 
         {at === 1 && (
-          <Step number={1} title="What kind of appointment?">
-            <KindStep value={kind} onPick={flow.chooseKind} />
+          <Step number={1} title="Who would you like to see?">
+            <VetStep
+              place={flow.place}
+              filters={flow.filters}
+              onFilters={flow.setFilters}
+              vets={flow.vets}
+              isPending={list.isPending}
+              isFetching={list.isFetching}
+              error={list.isError ? list.error : null}
+              onRetry={() => void list.refetch()}
+              chosenId={chosen?.id ?? null}
+              onPick={flow.pick}
+            />
           </Step>
         )}
 
-        {at > 1 && (
+        {at > 1 && chosen && (
           <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-sm sm:p-8">
             <div className="animate-slideLeft relative w-full max-w-3xl rounded-2xl bg-[#f6fbfb] p-5 shadow-2xl sm:p-8">
               <button
@@ -52,32 +63,19 @@ export default function BookAppointmentPage() {
               >
                 Close
               </button>
-              {at === 2 && kind && (
-                <Step number={2} title="Who would you like to see?">
-                  <VetStep
-                    kind={kind}
-                    place={flow.place}
-                    filters={flow.filters}
-                    onFilters={flow.setFilters}
-                    vets={flow.vets}
-                    isPending={list.isPending}
-                    isFetching={list.isFetching}
-                    error={list.isError ? list.error : null}
-                    onRetry={() => void list.refetch()}
-                    chosenId={chosen?.id ?? null}
-                    mismatched={flow.mismatched ? chosen : null}
-                    onPick={flow.pick}
-                  />
+              {at === 2 && (
+                <Step number={2} title="What kind of appointment?">
+                  <KindStep vet={chosen} value={kind} onPick={flow.chooseKind} />
                 </Step>
               )}
 
-              {at === 3 && chosen && (
+              {at === 3 && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
                   <SlotPicker professionalId={chosen.id} value={slot} onPick={flow.pickSlot} />
                 </Step>
               )}
 
-              {at === 4 && chosen && slot && (
+              {at === 4 && slot && (
                 <Step number={4} title="Tell them about the visit">
                   <BookingForm
                     isPending={request.isPending}

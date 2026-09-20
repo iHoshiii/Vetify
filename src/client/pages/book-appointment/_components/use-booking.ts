@@ -8,11 +8,10 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
-import { offersKind } from './service-offer';
 import type { Stage } from './step-tabs';
 import { NO_FILTERS, type VetFilters as Filters } from './vet-filters';
 
-/** How many directory rows one read of step two holds. */
+/** How many directory rows one read of the vet step holds. */
 const PAGE = 24;
 
 /** The whole flow: what has been answered, which tab that opens, and what to ask next. */
@@ -21,9 +20,9 @@ export function useBooking() {
   const [params] = useSearchParams();
 
   const [stage, setStage] = useState<Stage>(1);
+  const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [kind, setKind] = useState<AppointmentKind | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
   const [taken, setTaken] = useState<string | null>(null);
 
@@ -38,38 +37,31 @@ export function useBooking() {
 
   const request = useRequestAppointment();
 
-  // Held here rather than in the shortlist, so changing the visit type on tab one does
-  // not throw away a location somebody already agreed to share.
+  // Held here rather than in the step, so going back to change the vet does not throw
+  // away a location somebody already agreed to share.
   const place = useMyLocation();
 
-  // The directory, minus the vets who do not do the kind picked on tab one: onsite
-  // needs a clinic to visit, so a vet without one is not a choice here.
-  const all = list.data?.items ?? [];
-  const vets = kind ? all.filter((item) => offersKind(item, kind)) : all;
+  const vets = list.data?.items ?? [];
+  // A vet named in the URL is chosen for them, so arriving from a profile skips the list.
+  const chosen = vet ?? vets.find((item) => item.id === params.get('professional')) ?? null;
 
-  // A vet named in the URL is chosen for them, so arriving from a profile skips a step.
-  const linked = vet ?? all.find((item) => item.id === params.get('professional')) ?? null;
-  // But only if they do the chosen kind. If not, they are still "chosen" so the step can
-  // say why rather than dropping them and leaving the owner staring at a list.
-  const chosen = linked;
-  const mismatched = Boolean(linked && kind && !offersKind(linked, kind));
-
-  // The furthest tab the answers unlock, and the one actually open. A mismatched vet does
-  // not unlock the slot grid: there is nothing to book of the kind they were asked for.
-  const reached: Stage = !kind ? 1 : !chosen || mismatched ? 2 : !slot ? 3 : 4;
+  // The furthest tab the answers unlock, and the one actually open. The vet comes first:
+  // the service on offer is a fact about them, so it cannot be asked before they are.
+  const reached: Stage = !chosen ? 1 : !kind ? 2 : !slot ? 3 : 4;
   const at = (stage < reached ? stage : reached) as Stage;
-
-  function chooseKind(next: AppointmentKind): void {
-    setKind(next);
-    setStage(2);
-  }
 
   function pick(next: PublicProfessional): void {
     setVet(next);
-    // The old slot belonged to somebody else's diary.
+    // The old service and slot belonged to a different vet's diary.
+    setKind(null);
     setSlot(null);
     setTaken(null);
     request.reset();
+    setStage(2);
+  }
+
+  function chooseKind(next: AppointmentKind): void {
+    setKind(next);
     setStage(3);
   }
 
@@ -117,7 +109,6 @@ export function useBooking() {
     kind,
     filters,
     chosen,
-    mismatched,
     slot,
     taken,
     vets,
@@ -126,8 +117,8 @@ export function useBooking() {
     request,
     setStage,
     setFilters,
-    chooseKind,
     pick,
+    chooseKind,
     pickSlot,
     submit,
   };
