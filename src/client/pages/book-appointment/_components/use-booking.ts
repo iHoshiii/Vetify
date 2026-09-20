@@ -84,9 +84,11 @@ export function useBooking() {
         professionalId: chosen.id,
         kind,
         startsAt: slot,
-        petName: details.petName,
         petSpecies: details.petSpecies,
         reason: details.reason,
+        ...(details.petName ? { petName: details.petName } : {}),
+        ...(details.petBreed ? { petBreed: details.petBreed } : {}),
+        ...(details.petAge ? { petAge: details.petAge } : {}),
         ...(details.phone ? { phone: details.phone } : {}),
       },
       {

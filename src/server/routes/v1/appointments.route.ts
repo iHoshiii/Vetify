@@ -113,6 +113,8 @@ router.post('/', bookingLimiter, validate(appointmentRequestSchema), async (req,
       startsAt: new Date(body.startsAt),
       petName: body.petName,
       petSpecies: body.petSpecies,
+      petBreed: body.petBreed,
+      petAge: body.petAge,
       reason: body.reason,
       phone: body.phone ?? null,
     });

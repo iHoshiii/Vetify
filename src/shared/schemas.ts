@@ -1287,8 +1287,25 @@ export const appointmentRequestSchema = z.object({
   professionalId: objectIdSchema,
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
-  petName: z.string().trim().min(1, 'Whose visit is this?').max(60, 'That name is too long'),
+  petName: z
+    .string()
+    .trim()
+    .max(60, 'That name is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   petSpecies: z.string().trim().min(2, 'Dog, cat, something else?').max(40, 'That is too long'),
+  petBreed: z
+    .string()
+    .trim()
+    .max(60, 'That breed is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  petAge: z
+    .string()
+    .trim()
+    .max(40, 'That is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   reason: z
     .string()
     .trim()

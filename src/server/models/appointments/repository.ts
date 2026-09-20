@@ -49,8 +49,10 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     // Set on the way in and nulled when the booking lets go. This is the field the
     // unique index actually watches.
     holdsSlot: true,
-    petName: parsed.petName,
+    petName: parsed.petName ?? null,
     petSpecies: parsed.petSpecies,
+    petBreed: parsed.petBreed ?? null,
+    petAge: parsed.petAge ?? null,
     reason: parsed.reason,
     phone: parsed.phone ?? null,
     meetingUrl: null,

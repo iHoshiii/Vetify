@@ -57,8 +57,10 @@ export type AppointmentDocument = {
   holdsSlot: boolean | null;
   // What the owner wrote. There is no pet registry to point at yet, so the animal
   // is described here rather than referenced.
-  petName: string;
+  petName: string | null;
   petSpecies: string;
+  petBreed: string | null;
+  petAge: string | null;
   reason: string;
   /** A number for the vet to ring, when the owner gave one. */
   phone: string | null;
@@ -96,8 +98,10 @@ export type AppointmentView = {
   startsAt: string;
   endsAt: string;
   minutes: number;
-  petName: string;
+  petName: string | null;
   petSpecies: string;
+  petBreed: string | null;
+  petAge: string | null;
   reason: string;
   phone: string | null;
   meetingUrl: string | null;

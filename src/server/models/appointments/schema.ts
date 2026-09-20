@@ -26,8 +26,10 @@ export const appointmentAttrsSchema = z.object({
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.date(),
   minutes: z.number().int().positive(),
-  petName: z.string().trim().min(1, 'Whose visit is this?'),
+  petName: z.string().trim().min(1).nullish(),
   petSpecies: z.string().trim().min(1, 'What kind of animal?'),
+  petBreed: z.string().trim().min(1).nullish(),
+  petAge: z.string().trim().min(1).nullish(),
   reason: z.string().trim().min(1, 'Say what it is about'),
   phone: z.string().trim().min(1).nullish(),
 });

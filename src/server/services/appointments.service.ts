@@ -100,8 +100,10 @@ export type RequestAppointmentInput = {
   professionalId: string | ObjectId;
   kind: AppointmentKind;
   startsAt: Date;
-  petName: string;
+  petName?: string | null;
   petSpecies: string;
+  petBreed?: string | null;
+  petAge?: string | null;
   reason: string;
   phone?: string | null;
 };
@@ -131,7 +133,10 @@ export type RequestAppointmentResult = {
 export async function requestAppointment(
   input: RequestAppointmentInput
 ): Promise<RequestAppointmentResult | null> {
-  const { client, professionalId, kind, startsAt, petName, petSpecies, reason } = input;
+  const { client, professionalId, kind, startsAt, petSpecies, reason } = input;
+  // Null in the database, but the emails read better with a word than a blank.
+  const petName = input.petName?.trim() || null;
+  const petLabel = petName ?? 'your pet';
 
   const application = await findProfessionalById(professionalId);
   if (!application || application.status !== 'verified') return null;
@@ -171,6 +176,8 @@ export async function requestAppointment(
     minutes: APPOINTMENT_SLOT_MINUTES,
     petName,
     petSpecies,
+    petBreed: input.petBreed?.trim() || null,
+    petAge: input.petAge?.trim() || null,
     reason,
     phone: input.phone ?? null,
   });
@@ -185,7 +192,7 @@ export async function requestAppointment(
             name: vetName(application, vet),
             kind,
             startsAt,
-            petName,
+            petName: petLabel,
             petSpecies,
             reason,
             phone: appointment.phone,
@@ -202,7 +209,7 @@ export async function requestAppointment(
         name: client.name ?? '',
         kind,
         startsAt,
-        petName,
+        petName: petLabel,
         professionalName: vetName(application, vet),
       })
     ),
@@ -289,7 +296,7 @@ export async function decideAppointment(
     name: owner.name ?? '',
     kind: appointment.kind,
     startsAt: appointment.startsAt,
-    petName: appointment.petName,
+    petName: appointment.petName ?? 'your pet',
     professionalName: application ? vetName(application, professional) : professional.name ?? '',
   };
 
@@ -368,7 +375,7 @@ export async function cancelAppointment(
       name: other.name ?? '',
       kind: appointment.kind,
       startsAt: appointment.startsAt,
-      petName: appointment.petName,
+      petName: appointment.petName ?? 'your pet',
       cancelledByName: actor.name || actor.email,
       reason: stated,
       // Changes only the closing line: a vet is told their schedule is open again,
