@@ -1,4 +1,4 @@
-import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
+import { APPOINTMENT_MAX_SLOTS, APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
 import type { AppointmentKind } from '@shared/schemas';
 import type { ObjectId } from 'mongodb';
 
@@ -22,7 +22,7 @@ import {
   requestedToClientEmail,
   requestedToProfessionalEmail,
 } from './appointment-mail';
-import { isOfferedSlot } from './appointment-slots';
+import { isOfferedSpan, slotStarts } from './appointment-slots';
 import { deliverMail, type MailDelivery } from './mail.service';
 
 /**
@@ -100,6 +100,8 @@ export type RequestAppointmentInput = {
   professionalId: string | ObjectId;
   kind: AppointmentKind;
   startsAt: Date;
+  /** How many consecutive slots the visit runs. Defaults to one. */
+  slots?: number;
   petName?: string | null;
   petSpecies: string;
   petBreed?: string | null;
@@ -134,6 +136,9 @@ export async function requestAppointment(
   input: RequestAppointmentInput
 ): Promise<RequestAppointmentResult | null> {
   const { client, professionalId, kind, startsAt, petSpecies, reason } = input;
+  // Clamped rather than trusted: the body is validated to 1..MAX, but this service is
+  // also called by seeds and tests, and a span past the ceiling is not a booking.
+  const slots = Math.max(1, Math.min(input.slots ?? 1, APPOINTMENT_MAX_SLOTS));
   // Null in the database, but the emails read better with a word than a blank.
   const petName = input.petName?.trim() || null;
   const petLabel = petName ?? 'your pet';
@@ -160,12 +165,14 @@ export async function requestAppointment(
   }
 
   // The grid is generated, so a `startsAt` that is not on it was invented by whatever
-  // sent it. Checked against the same function that draws the grid, so the two cannot
+  // sent it — and a two-hour booking has to have both its hours on the grid, not just
+  // the first. Checked against the same function that draws it, so the two cannot
   // disagree about what counts as a slot.
-  const offered = isOfferedSlot({
+  const offered = isOfferedSpan({
     schedule: application.weeklySchedule ?? [],
     startsAt,
     minutes: APPOINTMENT_SLOT_MINUTES,
+    slots,
   });
 
   if (!offered) {
@@ -180,7 +187,9 @@ export async function requestAppointment(
     startsAt,
     // Copied onto the row, so a later change to the constant cannot rewrite the span
     // that was actually agreed.
-    minutes: APPOINTMENT_SLOT_MINUTES,
+    minutes: APPOINTMENT_SLOT_MINUTES * slots,
+    // One entry per hour the booking holds, which is what the unique index collides on.
+    heldSlots: slotStarts(startsAt, APPOINTMENT_SLOT_MINUTES, slots),
     petName,
     petSpecies,
     petBreed: input.petBreed?.trim() || null,
