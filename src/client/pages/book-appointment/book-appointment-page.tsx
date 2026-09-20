@@ -9,8 +9,8 @@ import KindStep from './_components/kind-step';
 import MyBookings from './_components/my-bookings';
 import SlotPicker from './_components/slot-picker';
 import Step from './_components/step';
+import TopVets from './_components/top-vets';
 import { useBooking } from './_components/use-booking';
-import VetStep from './_components/vet-step';
 
 /**
  * Booking a vet as four tabs rather than one long page: each answer decides the next
@@ -20,7 +20,7 @@ export default function BookAppointmentPage() {
   useDocumentTitle('Book an appointment', 'Find a verified vet and ask for a time that suits.');
 
   const flow = useBooking();
-  const { at, chosen, kind, list, request, slot } = flow;
+  const { at, chosen, kind, request, slot } = flow;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
 
   return (
@@ -38,18 +38,7 @@ export default function BookAppointmentPage() {
 
         {at === 1 && (
           <Step number={1} title="Who would you like to see?">
-            <VetStep
-              place={flow.place}
-              filters={flow.filters}
-              onFilters={flow.setFilters}
-              vets={flow.vets}
-              isPending={list.isPending}
-              isFetching={list.isFetching}
-              error={list.isError ? list.error : null}
-              onRetry={() => void list.refetch()}
-              chosenId={chosen?.id ?? null}
-              onPick={flow.pick}
-            />
+            <TopVets chosenId={chosen?.id ?? null} onPick={flow.pick} />
           </Step>
         )}
 
@@ -71,7 +60,7 @@ export default function BookAppointmentPage() {
 
               {at === 3 && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
-                  <SlotPicker professionalId={chosen.id} value={slot} onPick={flow.pickSlot} />
+                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseSlots} />
                 </Step>
               )}
 

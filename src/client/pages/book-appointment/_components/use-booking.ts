@@ -1,6 +1,5 @@
 import { useRequestAppointment } from '@/hooks/useAppointments';
-import { useMyLocation } from '@/hooks/use-my-location';
-import { useProfessionals } from '@/hooks/useProfessionals';
+import { useProfessional } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { PublicProfessional } from '@/services/professionals.service';
 import type { AppointmentKind } from '@shared/schemas';
@@ -9,41 +8,26 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
 import type { Stage } from './step-tabs';
-import { NO_FILTERS, type VetFilters as Filters } from './vet-filters';
-
-/** How many directory rows one read of the vet step holds. */
-const PAGE = 24;
 
 /** The whole flow: what has been answered, which tab that opens, and what to ask next. */
 export function useBooking() {
-  // The profile page links back here with a vet already chosen.
+  // The profile page and the map both link back here with a vet already chosen.
   const [params] = useSearchParams();
 
   const [stage, setStage] = useState<Stage>(1);
   const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [kind, setKind] = useState<AppointmentKind | null>(null);
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [slot, setSlot] = useState<string | null>(null);
+  // How many consecutive hours the chosen slot runs. One until "Choose time" says two.
+  const [slots, setSlots] = useState(1);
   const [taken, setTaken] = useState<string | null>(null);
-
-  // `available: true` never comes off: a listing nobody can book is not a choice.
-  const list = useProfessionals({
-    available: true,
-    limit: PAGE,
-    ...(filters.q ? { q: filters.q } : {}),
-    ...(filters.minExperience ? { minExperience: Number(filters.minExperience) } : {}),
-    ...(filters.maxRate ? { maxRate: Number(filters.maxRate) } : {}),
-  });
 
   const request = useRequestAppointment();
 
-  // Held here rather than in the step, so going back to change the vet does not throw
-  // away a location somebody already agreed to share.
-  const place = useMyLocation();
-
-  const vets = list.data?.items ?? [];
-  // A vet named in the URL is chosen for them, so arriving from a profile skips the list.
-  const chosen = vet ?? vets.find((item) => item.id === params.get('professional')) ?? null;
+  // A vet named in the URL is read on its own, so arriving from a profile or the map
+  // skips the shortlist and lands on the service question.
+  const preselect = useProfessional(params.get('professional') ?? undefined);
+  const chosen = vet ?? preselect.data ?? null;
 
   // The furthest tab the answers unlock, and the one actually open. The vet comes first:
   // the service on offer is a fact about them, so it cannot be asked before they are.
@@ -55,6 +39,7 @@ export function useBooking() {
     // The old service and slot belonged to a different vet's diary.
     setKind(null);
     setSlot(null);
+    setSlots(1);
     setTaken(null);
     request.reset();
     setStage(2);
@@ -65,8 +50,9 @@ export function useBooking() {
     setStage(3);
   }
 
-  function pickSlot(next: string): void {
-    setSlot(next);
+  function chooseSlots(startsAt: string, span: number): void {
+    setSlot(startsAt);
+    setSlots(span);
     setStage(4);
   }
 
@@ -74,6 +60,7 @@ export function useBooking() {
   function landOnSlots(held: string | null): void {
     setTaken(held);
     setSlot(null);
+    setSlots(1);
     setStage(3);
   }
 
@@ -86,6 +73,7 @@ export function useBooking() {
         professionalId: chosen.id,
         kind,
         startsAt: slot,
+        slots,
         petSpecies: details.petSpecies,
         reason: details.reason,
         ...(details.petName ? { petName: details.petName } : {}),
@@ -107,19 +95,14 @@ export function useBooking() {
     at,
     reached,
     kind,
-    filters,
     chosen,
     slot,
     taken,
-    vets,
-    list,
-    place,
     request,
     setStage,
-    setFilters,
     pick,
     chooseKind,
-    pickSlot,
+    chooseSlots,
     submit,
   };
 }

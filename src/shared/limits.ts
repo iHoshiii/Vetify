@@ -244,18 +244,6 @@ export const PROFESSIONAL_NEAR_RADIUS_KM = 20;
 export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 2_000;
 
 /**
- * The radius that covers the whole country, for a search where distance is a tiebreak
- * rather than a filter: an online consultation from Mindanao is a call either way.
- */
-export const PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM = 2_000;
-
-/** How far somebody drives to a clinic — wider than the map's 20 km, still a drive. */
-export const BOOKING_CLINIC_RADIUS_KM = 50;
-
-/** How many nearest vets step two shortlists before the full directory. */
-export const BOOKING_NEAREST_LIMIT = 5;
-
-/**
  * How many nearest vets an answer carries.
  *
  * A list somebody reads top to bottom rather than a directory page, and there is no
@@ -347,7 +335,18 @@ export const MODERATION_REASON_MAX = 500;
  * product, and making it configurable would mean a grid whose shape can change
  * under a client that has already drawn it.
  */
-export const APPOINTMENT_SLOT_MINUTES = 30;
+export const APPOINTMENT_SLOT_MINUTES = 60;
+
+/**
+ * How many consecutive slots one booking may span.
+ *
+ * A visit is one hour by default and may run as many hours in a row as the vet works
+ * that day. The real limit is the working window, not this number: the grid only
+ * extends a run onto the next hour when it is free and offered, so a booking cannot
+ * reach past closing. This is a safety ceiling on top of that — a full day of hourly
+ * slots — so a hand-posted span cannot ask the server to hold an absurd list of hours.
+ */
+export const APPOINTMENT_MAX_SLOTS = 24;
 
 /**
  * How far ahead the grid may be asked for.

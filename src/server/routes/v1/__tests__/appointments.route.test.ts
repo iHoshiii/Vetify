@@ -93,6 +93,14 @@ async function vet() {
         postalCode: '6000',
         fix: null,
       },
+      {
+        kind: 'home',
+        line1: '44 Sampaguita Lane',
+        city: 'Cebu City',
+        province: 'Cebu',
+        postalCode: '6000',
+        fix: null,
+      },
     ],
     bio: 'Small animal practice, fifteen years of it.',
     yearsExperience: 15,
@@ -246,7 +254,7 @@ describe('the two lists', () => {
     await book(owner.token, doctor.application._id.toString());
     await book(owner.token, doctor.application._id.toString(), {
       kind: 'virtual',
-      startsAt: slotAt(30),
+      startsAt: slotAt(60),
     });
 
     const res = await request(app)
@@ -261,7 +269,7 @@ describe('the two lists', () => {
     const owner = await account();
     const doctor = await vet();
     const kept = await book(owner.token, doctor.application._id.toString());
-    await book(owner.token, doctor.application._id.toString(), { startsAt: slotAt(30) });
+    await book(owner.token, doctor.application._id.toString(), { startsAt: slotAt(60) });
 
     await request(app)
       .patch(`/api/v1/appointments/${kept.body.appointment.id}/decline`)
@@ -282,7 +290,7 @@ describe('the two lists', () => {
     await book(owner.token, doctor.application._id.toString());
     const call = await book(owner.token, doctor.application._id.toString(), {
       kind: 'virtual',
-      startsAt: slotAt(30),
+      startsAt: slotAt(60),
     });
 
     await request(app)
@@ -425,8 +433,8 @@ describe('GET /api/v1/professionals/:id/slots', () => {
     expect(res.body.days).toHaveLength(1);
 
     const slots = res.body.days[0].slots as Array<{ at: string; taken: boolean }>;
-    // 09:00 to 11:00 in half hours.
-    expect(slots).toHaveLength(4);
+    // 09:00 to 11:00 in one-hour slots is two starts, 09:00 and 10:00.
+    expect(slots).toHaveLength(2);
     expect(slots.find((slot) => slot.at === SLOT.at)?.taken).toBe(true);
   });
 
