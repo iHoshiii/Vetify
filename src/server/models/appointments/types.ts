@@ -44,6 +44,16 @@ export type AppointmentDocument = {
    * slot length next year must not silently rewrite what was agreed.
    */
   minutes: number;
+  /**
+   * Every hour-start this booking occupies, the first equal to `startsAt`. A single
+   * slot is one entry; a two-hour session is two.
+   *
+   * Stored rather than derived because it is what the unique index watches: one live
+   * booking per vet per slot means the index has to see each held hour separately, and
+   * a multikey index over this array collides the moment two bookings share any one of
+   * them. `startsAt` alone could only ever guard the first.
+   */
+  heldSlots: Date[];
   status: AppointmentStatus;
   /**
    * Set while this booking holds its slot, and nulled the moment it lets go —
@@ -127,11 +137,13 @@ export type AppointmentPage = {
 export const APPOINTMENT_INDEXES: IndexDescription[] = [
   // Two people cannot hold the same slot. Not "unlikely" — impossible, in the
   // database, rather than by a read-then-write that two simultaneous clicks would
-  // walk straight through. Filtered on the presence of `holdsSlot` rather than on
-  // the status, because an index filter cannot ask "is the status one of these
-  // three"; see that field's own note.
+  // walk straight through. Multikey over `heldSlots` so a two-hour booking is guarded
+  // on both its hours, not just its start: two bookings collide the moment they share
+  // any one slot. Filtered on the presence of `holdsSlot` rather than on the status,
+  // because an index filter cannot ask "is the status one of these three"; see that
+  // field's own note.
   {
-    key: { professional: 1, startsAt: 1 },
+    key: { professional: 1, heldSlots: 1 },
     unique: true,
     partialFilterExpression: { holdsSlot: { $type: 'bool' } },
   },

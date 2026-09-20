@@ -18,6 +18,8 @@ export function useBooking() {
   const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [kind, setKind] = useState<AppointmentKind | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
+  // How many consecutive hours the chosen slot runs. One until "Choose time" says two.
+  const [slots, setSlots] = useState(1);
   const [taken, setTaken] = useState<string | null>(null);
 
   const request = useRequestAppointment();
@@ -37,6 +39,7 @@ export function useBooking() {
     // The old service and slot belonged to a different vet's diary.
     setKind(null);
     setSlot(null);
+    setSlots(1);
     setTaken(null);
     request.reset();
     setStage(2);
@@ -47,8 +50,9 @@ export function useBooking() {
     setStage(3);
   }
 
-  function pickSlot(next: string): void {
-    setSlot(next);
+  function chooseSlots(startsAt: string, span: number): void {
+    setSlot(startsAt);
+    setSlots(span);
     setStage(4);
   }
 
@@ -56,6 +60,7 @@ export function useBooking() {
   function landOnSlots(held: string | null): void {
     setTaken(held);
     setSlot(null);
+    setSlots(1);
     setStage(3);
   }
 
@@ -68,6 +73,7 @@ export function useBooking() {
         professionalId: chosen.id,
         kind,
         startsAt: slot,
+        slots,
         petSpecies: details.petSpecies,
         reason: details.reason,
         ...(details.petName ? { petName: details.petName } : {}),
@@ -96,7 +102,7 @@ export function useBooking() {
     setStage,
     pick,
     chooseKind,
-    pickSlot,
+    chooseSlots,
     submit,
   };
 }
