@@ -335,7 +335,17 @@ export const MODERATION_REASON_MAX = 500;
  * product, and making it configurable would mean a grid whose shape can change
  * under a client that has already drawn it.
  */
-export const APPOINTMENT_SLOT_MINUTES = 30;
+export const APPOINTMENT_SLOT_MINUTES = 60;
+
+/**
+ * How many consecutive slots one booking may span.
+ *
+ * A visit is one slot by default and at most two, so a longer consultation is booked
+ * as two adjacent hours rather than a free-form length. The ceiling is a product
+ * decision the same way the slot length is: the server refuses more, and the grid
+ * only offers a second hour when the one after it is free.
+ */
+export const APPOINTMENT_MAX_SLOTS = 2;
 
 /**
  * How far ahead the grid may be asked for.
