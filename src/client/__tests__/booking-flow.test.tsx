@@ -269,7 +269,7 @@ describe('the booking flow', () => {
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
 
-    await user.type(screen.getByLabelText('Pet name'), 'Milo');
+    await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
     await user.type(screen.getByLabelText('Species'), 'Dog');
     await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
@@ -322,7 +322,7 @@ describe('the booking flow', () => {
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
 
-    await user.type(screen.getByLabelText('Pet name'), 'Milo');
+    await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
     await user.type(screen.getByLabelText('Species'), 'Dog');
     await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
