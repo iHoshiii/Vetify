@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -428,5 +428,47 @@ describe('the service step, gated to what the vet registered', () => {
     expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Clinic visit/ })).not.toBeInTheDocument();
     expect(screen.getByText(/only offers online consultations/)).toBeInTheDocument();
+  });
+});
+
+describe('the view-all-vets popup', () => {
+  it('is closed until the button asks for it', () => {
+    renderPage();
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('lists every bookable vet A-Z, twenty a page', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+
+    // Bookable only, alphabetical, and a page of twenty — the whole directory on demand.
+    expect(asked).toMatchObject({ available: true, sort: 'name', page: 1, limit: 20 });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('searches by name or clinic from inside the popup', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    const dialog = within(screen.getByRole('dialog'));
+
+    expect(dialog.getByPlaceholderText('Search by name or clinic')).toBeInTheDocument();
+  });
+
+  it('picks a vet from the popup and closes it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    const dialog = within(screen.getByRole('dialog'));
+    await user.click(dialog.getByRole('button', { name: 'Choose' }));
+
+    // Choosing here is the same pick as the shortlist, so the popup closes onto the service step.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('What kind of appointment?')).toBeInTheDocument();
   });
 });

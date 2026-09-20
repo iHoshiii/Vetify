@@ -1,13 +1,15 @@
 import { useProfessionals } from '@/hooks/useProfessionals';
 import type { PublicProfessional } from '@/services/professionals.service';
-import { Map } from 'lucide-react';
+import { List, Map } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import AllVetsDialog from './all-vets-dialog';
 import ErrorNote, { messageOf } from './error-note';
 import VetCard from './vet-card';
 
 const NOTE = 'mt-3 text-sm leading-6 text-slate-600';
-const MAP =
+const CHIP =
   'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-900/15 bg-white px-3 text-xs font-bold text-slate-900 transition hover:border-slate-900/30';
 
 // The best-reviewed vets, ranked server-side and shown the moment the page opens.
@@ -25,6 +27,7 @@ export default function TopVets({
     limit: 5,
   });
   const items = data?.items ?? [];
+  const [allOpen, setAllOpen] = useState(false);
 
   return (
     <div className="rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm">
@@ -32,11 +35,27 @@ export default function TopVets({
         <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">
           Top-reviewed vets
         </h3>
-        <Link to="/map" className={MAP}>
-          <Map className="h-3.5 w-3.5 text-teal-700" aria-hidden />
-          View map
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setAllOpen(true)} className={CHIP}>
+            <List className="h-3.5 w-3.5 text-teal-700" aria-hidden />
+            View all vet prof
+          </button>
+          <Link to="/map" className={CHIP}>
+            <Map className="h-3.5 w-3.5 text-teal-700" aria-hidden />
+            View map
+          </Link>
+        </div>
       </div>
+
+      {/* Mounted only while open, so the full directory is fetched on demand, not on load. */}
+      {allOpen && (
+        <AllVetsDialog
+          open
+          chosenId={chosenId}
+          onCancel={() => setAllOpen(false)}
+          onPick={onPick}
+        />
+      )}
 
       {isPending && <p className={NOTE}>Finding the best-reviewed vets…</p>}
 
