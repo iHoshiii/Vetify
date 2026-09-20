@@ -36,8 +36,6 @@ export function toAppointmentView(input: {
     minutes: appointment.minutes,
     petName: appointment.petName,
     petSpecies: appointment.petSpecies,
-    petBreed: appointment.petBreed,
-    petAge: appointment.petAge,
     reason: appointment.reason,
     phone: appointment.phone,
     meetingUrl: appointment.meetingUrl,

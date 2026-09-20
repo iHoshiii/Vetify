@@ -178,8 +178,6 @@ export function toPublicProfessional(application: ProfessionalWithAccount): Publ
     bio: application.bio,
     yearsExperience: application.yearsExperience,
     hourlyRate: application.hourlyRate ?? 50,
-    ratingAverage: application.ratingAverage ?? 0,
-    ratingCount: application.ratingCount ?? 0,
     availabilityStatus: application.availabilityStatus ?? 'available',
     weeklySchedule: application.weeklySchedule ?? [],
     workHistory: application.workHistory ?? [],

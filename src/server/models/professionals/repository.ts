@@ -242,8 +242,6 @@ export type FindVerifiedOptions = {
   maxRate?: number;
   /** Only the vets currently taking work. */
   available?: boolean;
-  /** 'rating' ranks by review score and shows only reviewed vets; 'name' is A-Z; 'recent' is the default. */
-  sort?: 'recent' | 'rating' | 'name';
   page?: number;
   limit?: number;
 };
@@ -274,14 +272,11 @@ export async function findVerifiedProfessionals(
     minExperience,
     maxRate,
     available,
-    sort = 'recent',
     page = 1,
     limit = PROFESSIONAL_PAGE_SIZE,
   } = options;
 
   const match: Filter<ProfessionalDocument> = { status: 'verified' };
-  // Rating ranks only the reviewed, so an unrated vet is off the list rather than last on it.
-  if (sort === 'rating') match.ratingCount = { $gt: 0 };
   // Specialties are stored lowercase, so an equality match against an array
   // element is all this needs - no $elemMatch, no regex.
   if (specialty) match.specialties = specialty;
@@ -339,42 +334,30 @@ export async function findVerifiedProfessionals(
 
   if (clauses.length > 0) match.$and = clauses;
 
-  // Name sorts on the licence name, not account.name: $sort runs before the join.
-  const order: Sort =
-    sort === 'rating'
-      ? { ratingAverage: -1, ratingCount: -1, _id: -1 }
-      : sort === 'name'
-      ? { fullName: 1, _id: 1 }
-      : { reviewedAt: -1, _id: -1 };
-
   const [result] = await professionalsCollection()
-    .aggregate<{ items: ProfessionalWithAccount[]; total: Array<{ value: number }> }>(
-      [
-        { $match: match },
-        { $sort: order },
-        {
-          $lookup: {
-            from: USERS_COLLECTION,
-            localField: 'user',
-            foreignField: '_id',
-            as: 'account',
-            // Projected inside the join, so the password never leaves the database
-            // - let alone reaches a transform that might forget to drop it.
-            pipeline: [{ $project: { name: 1, avatarUrl: 1, status: 1 } }],
-          },
+    .aggregate<{ items: ProfessionalWithAccount[]; total: Array<{ value: number }> }>([
+      { $match: match },
+      { $sort: { reviewedAt: -1, _id: -1 } },
+      {
+        $lookup: {
+          from: USERS_COLLECTION,
+          localField: 'user',
+          foreignField: '_id',
+          as: 'account',
+          // Projected inside the join, so the password never leaves the database
+          // - let alone reaches a transform that might forget to drop it.
+          pipeline: [{ $project: { name: 1, avatarUrl: 1, status: 1 } }],
         },
-        { $unwind: '$account' },
-        { $match: { 'account.status': 'active' } },
-        {
-          $facet: {
-            items: [{ $skip: (page - 1) * limit }, { $limit: limit }],
-            total: [{ $count: 'value' }],
-          },
+      },
+      { $unwind: '$account' },
+      { $match: { 'account.status': 'active' } },
+      {
+        $facet: {
+          items: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+          total: [{ $count: 'value' }],
         },
-      ],
-      // A-Z that reads as a person would sort it: 'ab' before 'B', é beside e.
-      sort === 'name' ? { collation: { locale: 'en', strength: 1 } } : {}
-    )
+      },
+    ])
     .toArray();
 
   return { items: result?.items ?? [], total: result?.total[0]?.value ?? 0 };

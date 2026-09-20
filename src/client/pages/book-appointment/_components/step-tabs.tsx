@@ -4,8 +4,8 @@ export const STAGES: Stage[] = [1, 2, 3, 4];
 
 /** What each tab is called, short enough that four of them fit a phone. */
 const LABEL: Record<Stage, string> = {
-  1: 'Vet',
-  2: 'Service',
+  1: 'Visit type',
+  2: 'Vet',
   3: 'Time',
   4: 'Details',
 };

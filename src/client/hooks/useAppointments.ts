@@ -2,7 +2,6 @@ import { ApiError } from '@/services/api';
 import {
   cancelAppointment,
   decideAppointment,
-  getIncomingCounts,
   listIncomingAppointments,
   listMyAppointments,
   requestAppointment,
@@ -10,7 +9,6 @@ import {
   type AppointmentDecision,
   type AppointmentListParams,
   type AppointmentPage,
-  type AppointmentTally,
   type DecisionResult,
   type RequestResult,
 } from '@/services/appointments.service';
@@ -29,7 +27,6 @@ export const appointmentKeys = {
   mine: (params: AppointmentListParams) => [...appointmentKeys.all, 'mine', params] as const,
   incoming: (params: AppointmentListParams) =>
     [...appointmentKeys.all, 'incoming', params] as const,
-  counts: () => [...appointmentKeys.all, 'incoming', 'counts'] as const,
 };
 
 /**
@@ -40,10 +37,6 @@ export const appointmentKeys = {
  * point is what just happened.
  */
 const STALE_TIME = 30_000;
-
-// The vet console polls so a request that lands while it is open surfaces on its own.
-// Only while the tab is focused: a console in a background tab is nobody waiting on it.
-const POLL_INTERVAL = 30_000;
 
 /** A 4xx is an answer. Retrying one costs round trips and ends the same way. */
 function retryUnlessRefused(failureCount: number, error: unknown): boolean {
@@ -73,21 +66,7 @@ export function useIncomingAppointments(params: AppointmentListParams = {}) {
     queryKey: appointmentKeys.incoming(params),
     queryFn: ({ signal }) => listIncomingAppointments(params, signal),
     staleTime: STALE_TIME,
-    refetchInterval: POLL_INTERVAL,
-    refetchIntervalInBackground: false,
     placeholderData: (previous) => previous,
-    retry: retryUnlessRefused,
-  });
-}
-
-// Every figure the console's nav and tabs are labelled with, counted by the server rather than by the page of rows on screen
-export function useIncomingAppointmentCounts() {
-  return useQuery<AppointmentTally>({
-    queryKey: appointmentKeys.counts(),
-    queryFn: ({ signal }) => getIncomingCounts(signal),
-    staleTime: STALE_TIME,
-    refetchInterval: POLL_INTERVAL,
-    refetchIntervalInBackground: false,
     retry: retryUnlessRefused,
   });
 }

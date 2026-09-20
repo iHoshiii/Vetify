@@ -75,9 +75,6 @@ export const professionalAttrsSchema = z.object({
   bio: z.string().trim().default(''),
   yearsExperience: z.number().int().min(0).default(0),
   hourlyRate: z.number().min(0).default(50),
-  // No reviews collection yet, so these are seeded by hand and default to unrated.
-  ratingAverage: z.number().min(0).max(5).default(0),
-  ratingCount: z.number().int().min(0).default(0),
   availabilityStatus: z.enum(['available', 'unavailable', 'busy']).default('available'),
   weeklySchedule: z
     .array(

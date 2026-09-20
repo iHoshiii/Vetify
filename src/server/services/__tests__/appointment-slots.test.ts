@@ -2,13 +2,7 @@ import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { describe, expect, it } from 'vitest';
 
-import {
-  isOfferedSlot,
-  isOfferedSpan,
-  manilaDay,
-  slotStarts,
-  slotsForRange,
-} from '../appointment-slots';
+import { isOfferedSlot, manilaDay, slotsForRange } from '../appointment-slots';
 
 /** A Thursday, chosen so the weekday lookup has to actually work. */
 const THURSDAY = '2026-09-03';
@@ -43,10 +37,12 @@ function starts(input: {
 
 describe('slotsForRange', () => {
   it('cuts the working window into slots', () => {
-    // 09:00 to 11:00 in one-hour slots is two starts, the last of them 10:00.
+    // 09:00 to 11:00 in half hours is four starts, the last of them 10:30.
     expect(starts({}).map((slot) => slot.at)).toEqual([
       '2026-09-03T01:00:00.000Z',
+      '2026-09-03T01:30:00.000Z',
       '2026-09-03T02:00:00.000Z',
+      '2026-09-03T02:30:00.000Z',
     ]);
   });
 
@@ -57,12 +53,12 @@ describe('slotsForRange', () => {
   });
 
   it('will not offer a slot that runs past closing time', () => {
-    // 09:00-10:15 fits one full hour, not one and a quarter: a consultation offered
+    // 09:00-10:15 fits two half hours, not two and a half: a consultation offered
     // at 10:00 against a 10:15 close is one the vet finds out about on the day.
     const slots = starts({ schedule: schedule({ endTime: '10:15' }) });
 
-    expect(slots).toHaveLength(1);
-    expect(slots.at(-1)?.at).toBe('2026-09-03T01:00:00.000Z');
+    expect(slots).toHaveLength(2);
+    expect(slots.at(-1)?.at).toBe('2026-09-03T01:30:00.000Z');
   });
 
   it('offers nothing on a day the vet switched off', () => {
@@ -84,16 +80,18 @@ describe('slotsForRange', () => {
   });
 
   it('marks the slots somebody already holds', () => {
-    const slots = starts({ held: [new Date('2026-09-03T02:00:00.000Z')] });
+    const slots = starts({ held: [new Date('2026-09-03T01:30:00.000Z')] });
 
-    expect(slots.map((slot) => slot.taken)).toEqual([false, true]);
+    expect(slots.map((slot) => slot.taken)).toEqual([false, true, false, false]);
   });
 
   it('drops what is already past, so a stale request stops blocking on its own', () => {
-    // Standing at 09:30, the 09:00 slot is gone and only the 10:00 one is left.
-    const slots = starts({ now: new Date('2026-09-03T01:30:00.000Z') });
+    const slots = starts({ now: new Date('2026-09-03T02:00:00.000Z') });
 
-    expect(slots.map((slot) => slot.at)).toEqual(['2026-09-03T02:00:00.000Z']);
+    expect(slots.map((slot) => slot.at)).toEqual([
+      '2026-09-03T02:00:00.000Z',
+      '2026-09-03T02:30:00.000Z',
+    ]);
   });
 
   it('answers a day per day asked for, working or not', () => {
@@ -108,7 +106,7 @@ describe('slotsForRange', () => {
 
     expect(days.map((day) => day.date)).toEqual(['2026-09-03', '2026-09-04', '2026-09-05']);
     // Only the Thursday is worked, and the empty days say so rather than being absent.
-    expect(days.map((day) => day.slots.length)).toEqual([2, 0, 0]);
+    expect(days.map((day) => day.slots.length)).toEqual([4, 0, 0]);
   });
 
   it('bounds a range nobody could scroll', () => {
@@ -143,13 +141,13 @@ describe('isOfferedSlot', () => {
     });
 
   it('accepts a start the grid would have shown', () => {
-    expect(offered('2026-09-03T02:00:00.000Z')).toBe(true);
+    expect(offered('2026-09-03T01:30:00.000Z')).toBe(true);
   });
 
   it('refuses a time in the middle of a slot', () => {
     // The case this guard exists for: a client posting its own idea of a time
-    // rather than one of the ones offered. 09:30 is no longer a start on an hourly grid.
-    expect(offered('2026-09-03T01:30:00.000Z')).toBe(false);
+    // rather than one of the ones offered.
+    expect(offered('2026-09-03T01:17:00.000Z')).toBe(false);
   });
 
   it('refuses a start outside the working window', () => {
@@ -162,47 +160,5 @@ describe('isOfferedSlot', () => {
 
   it('refuses a start that has already passed', () => {
     expect(offered('2026-09-03T01:00:00.000Z', new Date('2026-09-03T01:30:00.000Z'))).toBe(false);
-  });
-});
-
-describe('slotStarts', () => {
-  it('lists the hour-starts a span covers, first at startsAt', () => {
-    const starts = slotStarts(new Date('2026-09-03T01:00:00.000Z'), APPOINTMENT_SLOT_MINUTES, 2);
-
-    expect(starts.map((at) => at.toISOString())).toEqual([
-      '2026-09-03T01:00:00.000Z',
-      '2026-09-03T02:00:00.000Z',
-    ]);
-  });
-
-  it('is just the start for a single slot', () => {
-    const starts = slotStarts(new Date('2026-09-03T01:00:00.000Z'), APPOINTMENT_SLOT_MINUTES, 1);
-
-    expect(starts.map((at) => at.toISOString())).toEqual(['2026-09-03T01:00:00.000Z']);
-  });
-});
-
-describe('isOfferedSpan', () => {
-  const span = (startsAt: string, slots: number) =>
-    isOfferedSpan({
-      schedule: schedule(),
-      startsAt: new Date(startsAt),
-      minutes: APPOINTMENT_SLOT_MINUTES,
-      slots,
-      now: LAST_YEAR,
-    });
-
-  it('accepts two hours that both fall in the working window', () => {
-    // 09:00 and 10:00 against a 09:00-11:00 day: both real, so the span is offered.
-    expect(span('2026-09-03T01:00:00.000Z', 2)).toBe(true);
-  });
-
-  it('refuses a two-hour span whose second hour runs past closing', () => {
-    // 10:00 is the last start of the day, so its second hour is a slot that never existed.
-    expect(span('2026-09-03T02:00:00.000Z', 2)).toBe(false);
-  });
-
-  it('accepts a single slot the same way isOfferedSlot does', () => {
-    expect(span('2026-09-03T02:00:00.000Z', 1)).toBe(true);
   });
 });

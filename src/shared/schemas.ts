@@ -5,7 +5,6 @@ import {
   APPOINTMENT_PAGE_SIZE_MAX,
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
-  APPOINTMENT_MAX_SLOTS,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -683,8 +682,6 @@ export const professionalListQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((value) => value === 'true')
     .optional(),
-  // 'rating' ranks by review score and lists only reviewed vets; 'name' is A-Z; 'recent' is the default.
-  sort: z.enum(['recent', 'rating', 'name']).default('recent'),
 });
 
 export const workHistoryItemSchema = z.object({
@@ -1290,28 +1287,8 @@ export const appointmentRequestSchema = z.object({
   professionalId: objectIdSchema,
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
-  // How many consecutive hours the visit runs. One by default, more for a longer session;
-  // the service checks every hour is offered and free, so this cannot be trusted to be.
-  slots: z.coerce.number().int().min(1).max(APPOINTMENT_MAX_SLOTS).default(1),
-  petName: z
-    .string()
-    .trim()
-    .max(60, 'That name is too long')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
+  petName: z.string().trim().min(1, 'Whose visit is this?').max(60, 'That name is too long'),
   petSpecies: z.string().trim().min(2, 'Dog, cat, something else?').max(40, 'That is too long'),
-  petBreed: z
-    .string()
-    .trim()
-    .max(60, 'That breed is too long')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  petAge: z
-    .string()
-    .trim()
-    .max(40, 'That is too long')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
   reason: z
     .string()
     .trim()
@@ -1352,19 +1329,7 @@ export const appointmentListQuerySchema = z.object({
     .min(1)
     .max(APPOINTMENT_PAGE_SIZE_MAX, `Ask for at most ${APPOINTMENT_PAGE_SIZE_MAX} per page`)
     .default(APPOINTMENT_PAGE_SIZE),
-  // A comma list rather than one status, because a tab can mean two of them: turned
-  // down and called off are the same news to the vet reading them.
-  status: z
-    .string()
-    .transform((raw) =>
-      raw
-        .split(',')
-        .map((one) => one.trim())
-        .filter(Boolean)
-    )
-    .pipe(z.array(z.enum(APPOINTMENT_STATUSES)).min(1).max(APPOINTMENT_STATUSES.length))
-    .optional(),
-  kind: z.enum(APPOINTMENT_KINDS).optional(),
+  status: z.enum(APPOINTMENT_STATUSES).optional(),
 });
 
 export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>;

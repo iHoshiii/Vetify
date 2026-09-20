@@ -1,5 +1,4 @@
 import {
-  APPOINTMENT_KINDS,
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
   type AppointmentKind,
@@ -14,7 +13,7 @@ export const APPOINTMENTS_COLLECTION = 'appointments';
  * are: both consoles render these as chips and filters, so a second copy here
  * would let the server store a status neither screen can draw.
  */
-export { APPOINTMENT_KINDS, APPOINTMENT_LIVE_STATUSES, APPOINTMENT_STATUSES };
+export { APPOINTMENT_LIVE_STATUSES, APPOINTMENT_STATUSES };
 export type { AppointmentKind, AppointmentStatus };
 
 /** A booking as the database holds it. */
@@ -44,16 +43,6 @@ export type AppointmentDocument = {
    * slot length next year must not silently rewrite what was agreed.
    */
   minutes: number;
-  /**
-   * Every hour-start this booking occupies, the first equal to `startsAt`. A single
-   * slot is one entry; a two-hour session is two.
-   *
-   * Stored rather than derived because it is what the unique index watches: one live
-   * booking per vet per slot means the index has to see each held hour separately, and
-   * a multikey index over this array collides the moment two bookings share any one of
-   * them. `startsAt` alone could only ever guard the first.
-   */
-  heldSlots: Date[];
   status: AppointmentStatus;
   /**
    * Set while this booking holds its slot, and nulled the moment it lets go —
@@ -67,10 +56,8 @@ export type AppointmentDocument = {
   holdsSlot: boolean | null;
   // What the owner wrote. There is no pet registry to point at yet, so the animal
   // is described here rather than referenced.
-  petName: string | null;
+  petName: string;
   petSpecies: string;
-  petBreed: string | null;
-  petAge: string | null;
   reason: string;
   /** A number for the vet to ring, when the owner gave one. */
   phone: string | null;
@@ -108,10 +95,8 @@ export type AppointmentView = {
   startsAt: string;
   endsAt: string;
   minutes: number;
-  petName: string | null;
+  petName: string;
   petSpecies: string;
-  petBreed: string | null;
-  petAge: string | null;
   reason: string;
   phone: string | null;
   meetingUrl: string | null;
@@ -137,13 +122,11 @@ export type AppointmentPage = {
 export const APPOINTMENT_INDEXES: IndexDescription[] = [
   // Two people cannot hold the same slot. Not "unlikely" — impossible, in the
   // database, rather than by a read-then-write that two simultaneous clicks would
-  // walk straight through. Multikey over `heldSlots` so a two-hour booking is guarded
-  // on both its hours, not just its start: two bookings collide the moment they share
-  // any one slot. Filtered on the presence of `holdsSlot` rather than on the status,
-  // because an index filter cannot ask "is the status one of these three"; see that
-  // field's own note.
+  // walk straight through. Filtered on the presence of `holdsSlot` rather than on
+  // the status, because an index filter cannot ask "is the status one of these
+  // three"; see that field's own note.
   {
-    key: { professional: 1, heldSlots: 1 },
+    key: { professional: 1, startsAt: 1 },
     unique: true,
     partialFilterExpression: { holdsSlot: { $type: 'bool' } },
   },

@@ -138,9 +138,6 @@ export type ProfessionalDocument = {
   bio: string;
   yearsExperience: number;
   hourlyRate?: number;
-  // Seeded by hand until reviews exist, so both are absent on rows written before them.
-  ratingAverage?: number;
-  ratingCount?: number;
   availabilityStatus?: ProfessionalAvailabilityStatus;
   weeklySchedule?: WeeklyScheduleItem[];
   avatarUrl?: string | null;
@@ -302,9 +299,6 @@ export type PublicProfessional = {
   bio: string;
   yearsExperience: number;
   hourlyRate: number;
-  // Always a number here: the transform fills an unrated vet with zeroes.
-  ratingAverage: number;
-  ratingCount: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
   workHistory: WorkHistoryItem[];

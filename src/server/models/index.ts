@@ -39,7 +39,6 @@ export {
   insertAppointment,
   isDuplicateSlot,
   otherPartyId,
-  tallyAppointments,
   toAppointmentPage,
   toAppointmentView,
   updateAppointment,
@@ -50,7 +49,6 @@ export {
   type AppointmentParty,
   type AppointmentPatch,
   type AppointmentStatus,
-  type AppointmentTally,
   type AppointmentView,
   type FindAppointmentsOptions,
 } from './appointments';

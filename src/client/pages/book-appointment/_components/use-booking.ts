@@ -1,5 +1,6 @@
 import { useRequestAppointment } from '@/hooks/useAppointments';
-import { useProfessional } from '@/hooks/useProfessionals';
+import { useMyLocation } from '@/hooks/use-my-location';
+import { useProfessionals } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { PublicProfessional } from '@/services/professionals.service';
 import type { AppointmentKind } from '@shared/schemas';
@@ -8,51 +9,62 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
 import type { Stage } from './step-tabs';
+import { NO_FILTERS, type VetFilters as Filters } from './vet-filters';
+
+/** How many directory rows one read of step two holds. */
+const PAGE = 24;
 
 /** The whole flow: what has been answered, which tab that opens, and what to ask next. */
 export function useBooking() {
-  // The profile page and the map both link back here with a vet already chosen.
+  // The profile page links back here with a vet already chosen.
   const [params] = useSearchParams();
 
   const [stage, setStage] = useState<Stage>(1);
-  const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [kind, setKind] = useState<AppointmentKind | null>(null);
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [slot, setSlot] = useState<string | null>(null);
-  // How many consecutive hours the chosen slot runs. One until "Choose time" says two.
-  const [slots, setSlots] = useState(1);
   const [taken, setTaken] = useState<string | null>(null);
+
+  // `available: true` never comes off: a listing nobody can book is not a choice.
+  const list = useProfessionals({
+    available: true,
+    limit: PAGE,
+    ...(filters.q ? { q: filters.q } : {}),
+    ...(filters.minExperience ? { minExperience: Number(filters.minExperience) } : {}),
+    ...(filters.maxRate ? { maxRate: Number(filters.maxRate) } : {}),
+  });
 
   const request = useRequestAppointment();
 
-  // A vet named in the URL is read on its own, so arriving from a profile or the map
-  // skips the shortlist and lands on the service question.
-  const preselect = useProfessional(params.get('professional') ?? undefined);
-  const chosen = vet ?? preselect.data ?? null;
+  // Held here rather than in the shortlist, so changing the visit type on tab one does
+  // not throw away a location somebody already agreed to share.
+  const place = useMyLocation();
 
-  // The furthest tab the answers unlock, and the one actually open. The vet comes first:
-  // the service on offer is a fact about them, so it cannot be asked before they are.
-  const reached: Stage = !chosen ? 1 : !kind ? 2 : !slot ? 3 : 4;
+  const vets = list.data?.items ?? [];
+  // A vet named in the URL is chosen for them, so arriving from a profile skips a step.
+  const chosen = vet ?? vets.find((item) => item.id === params.get('professional')) ?? null;
+
+  // The furthest tab the answers unlock, and the one actually open.
+  const reached: Stage = !kind ? 1 : !chosen ? 2 : !slot ? 3 : 4;
   const at = (stage < reached ? stage : reached) as Stage;
-
-  function pick(next: PublicProfessional): void {
-    setVet(next);
-    // The old service and slot belonged to a different vet's diary.
-    setKind(null);
-    setSlot(null);
-    setSlots(1);
-    setTaken(null);
-    request.reset();
-    setStage(2);
-  }
 
   function chooseKind(next: AppointmentKind): void {
     setKind(next);
+    setStage(2);
+  }
+
+  function pick(next: PublicProfessional): void {
+    setVet(next);
+    // The old slot belonged to somebody else's diary.
+    setSlot(null);
+    setTaken(null);
+    request.reset();
     setStage(3);
   }
 
-  function chooseSlots(startsAt: string, span: number): void {
-    setSlot(startsAt);
-    setSlots(span);
+  function pickSlot(next: string): void {
+    setSlot(next);
     setStage(4);
   }
 
@@ -60,7 +72,6 @@ export function useBooking() {
   function landOnSlots(held: string | null): void {
     setTaken(held);
     setSlot(null);
-    setSlots(1);
     setStage(3);
   }
 
@@ -73,12 +84,9 @@ export function useBooking() {
         professionalId: chosen.id,
         kind,
         startsAt: slot,
-        slots,
+        petName: details.petName,
         petSpecies: details.petSpecies,
         reason: details.reason,
-        ...(details.petName ? { petName: details.petName } : {}),
-        ...(details.petBreed ? { petBreed: details.petBreed } : {}),
-        ...(details.petAge ? { petAge: details.petAge } : {}),
         ...(details.phone ? { phone: details.phone } : {}),
       },
       {
@@ -95,14 +103,19 @@ export function useBooking() {
     at,
     reached,
     kind,
+    filters,
     chosen,
     slot,
     taken,
+    vets,
+    list,
+    place,
     request,
     setStage,
-    pick,
+    setFilters,
     chooseKind,
-    chooseSlots,
+    pick,
+    pickSlot,
     submit,
   };
 }

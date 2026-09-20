@@ -54,10 +54,6 @@ function soon() {
 
 const SLOT = soon();
 
-// Another slot in the same morning window, for a test that needs two bookings
-const slotAt = (minutes: number) =>
-  new Date(new Date(SLOT.at).getTime() + minutes * 60_000).toISOString();
-
 async function account() {
   seq += 1;
   const user = await insertUser({
@@ -88,14 +84,6 @@ async function vet() {
       {
         kind: 'clinic',
         line1: '12 Mabini Street',
-        city: 'Cebu City',
-        province: 'Cebu',
-        postalCode: '6000',
-        fix: null,
-      },
-      {
-        kind: 'home',
-        line1: '44 Sampaguita Lane',
         city: 'Cebu City',
         province: 'Cebu',
         postalCode: '6000',
@@ -247,66 +235,6 @@ describe('the two lists', () => {
     expect(res.body.items[0].with.email).toBe(owner.user.email);
   });
 
-  it('filters the incoming list by kind, because the console shows one queue at a time', async () => {
-    const owner = await account();
-    const doctor = await vet();
-
-    await book(owner.token, doctor.application._id.toString());
-    await book(owner.token, doctor.application._id.toString(), {
-      kind: 'virtual',
-      startsAt: slotAt(60),
-    });
-
-    const res = await request(app)
-      .get('/api/v1/appointments/incoming?kind=virtual')
-      .set('Authorization', `Bearer ${doctor.token}`);
-
-    expect(res.body.total).toBe(1);
-    expect(res.body.items[0].kind).toBe('virtual');
-  });
-
-  it('takes a comma list of statuses, because one tab can stand for two', async () => {
-    const owner = await account();
-    const doctor = await vet();
-    const kept = await book(owner.token, doctor.application._id.toString());
-    await book(owner.token, doctor.application._id.toString(), { startsAt: slotAt(60) });
-
-    await request(app)
-      .patch(`/api/v1/appointments/${kept.body.appointment.id}/decline`)
-      .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ reason: 'I am on leave that whole week.' });
-
-    const res = await request(app)
-      .get('/api/v1/appointments/incoming?status=declined,cancelled')
-      .set('Authorization', `Bearer ${doctor.token}`);
-
-    expect(res.body.total).toBe(1);
-    expect(res.body.items[0].status).toBe('declined');
-  });
-
-  it('counts every kind and status for the nav and the tabs', async () => {
-    const owner = await account();
-    const doctor = await vet();
-    await book(owner.token, doctor.application._id.toString());
-    const call = await book(owner.token, doctor.application._id.toString(), {
-      kind: 'virtual',
-      startsAt: slotAt(60),
-    });
-
-    await request(app)
-      .patch(`/api/v1/appointments/${call.body.appointment.id}/decline`)
-      .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ reason: 'I am on leave that whole week.' });
-
-    const res = await request(app)
-      .get('/api/v1/appointments/incoming/counts')
-      .set('Authorization', `Bearer ${doctor.token}`);
-
-    expect(res.body.counts.onsite.requested).toBe(1);
-    expect(res.body.counts.virtual.declined).toBe(1);
-    // Zero-filled, so a tab reads a number rather than nothing at all.
-    expect(res.body.counts.virtual.requested).toBe(0);
-  });
   it('leaves a non-vet account with an empty list rather than a refusal', async () => {
     const owner = await account();
 
@@ -433,8 +361,8 @@ describe('GET /api/v1/professionals/:id/slots', () => {
     expect(res.body.days).toHaveLength(1);
 
     const slots = res.body.days[0].slots as Array<{ at: string; taken: boolean }>;
-    // 09:00 to 11:00 in one-hour slots is two starts, 09:00 and 10:00.
-    expect(slots).toHaveLength(2);
+    // 09:00 to 11:00 in half hours.
+    expect(slots).toHaveLength(4);
     expect(slots.find((slot) => slot.at === SLOT.at)?.taken).toBe(true);
   });
 
