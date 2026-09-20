@@ -29,8 +29,10 @@ export type Appointment = {
   startsAt: string;
   endsAt: string;
   minutes: number;
-  petName: string;
+  petName: string | null;
   petSpecies: string;
+  petBreed: string | null;
+  petAge: string | null;
   reason: string;
   phone: string | null;
   meetingUrl: string | null;

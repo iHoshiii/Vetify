@@ -64,8 +64,14 @@ export default function BookingRow({
             Pet patient
           </span>
           <p className="font-bold text-slate-900">
-            {booking.petName} ({booking.petSpecies})
+            {booking.petName ? `${booking.petName} (${booking.petSpecies})` : booking.petSpecies}
           </p>
+          {/* Only the parts the owner filled, joined so an empty one leaves no stray dot */}
+          {(booking.petBreed || booking.petAge) && (
+            <p className="text-slate-500">
+              {[booking.petBreed, booking.petAge].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
       </div>
 

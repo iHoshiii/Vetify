@@ -111,6 +111,7 @@ router.get('/', validateQuery(professionalListQuerySchema), async (req, res) => 
     minExperience: query.minExperience,
     maxRate: query.maxRate,
     available: query.available,
+    sort: query.sort,
     page: query.page,
     limit: query.limit,
   });
