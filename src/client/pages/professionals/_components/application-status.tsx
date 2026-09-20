@@ -16,7 +16,7 @@ const STATES: Record<
     label: 'Under review',
     tone: 'bg-amber-50 text-amber-800 border-amber-200',
     heading: 'Your application is with a reviewer.',
-    body: 'We check the licence against the issuing authority before listing anyone. The next step is an interview, and you will get an email when it is booked.',
+    body: 'We check the licence against the issuing authority before listing anyone.',
   },
   interview: {
     label: 'Interview booked',
@@ -169,12 +169,6 @@ export default function ApplicationStatus({ application }: { application: OwnPro
           <AddressLine key={address.kind} address={address} />
         ))}
         <Detail label="Business number" value={application.businessPhone ?? 'Not given'} />
-        <Detail
-          label="Specialties"
-          value={
-            application.specialties.length ? application.specialties.join(', ') : 'None listed'
-          }
-        />
         <Detail label="Years in practice" value={String(application.yearsExperience)} />
         {filed && <Detail label="Applied" value={filed} />}
         {decided && <Detail label="Reviewed" value={decided} />}
