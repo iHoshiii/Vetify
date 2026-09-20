@@ -7,8 +7,10 @@ export {
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,
+  tallyAppointments,
   updateAppointment,
   type AppointmentPatch,
+  type AppointmentTally,
   type FindAppointmentsOptions,
 } from './repository';
 

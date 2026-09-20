@@ -196,3 +196,43 @@ export function isOfferedSlot(input: {
   const wanted = input.startsAt.toISOString();
   return Boolean(day?.slots.some((slot) => slot.at === wanted));
 }
+
+// The hour-starts a booking of `slots` consecutive slots covers, first one at startsAt.
+export function slotStarts(startsAt: Date, minutes: number, slots: number): Date[] {
+  return Array.from(
+    { length: slots },
+    (_, i) => new Date(startsAt.getTime() + i * minutes * MINUTE_MS)
+  );
+}
+
+/**
+ * Whether every slot of a multi-slot span is one the grid would offer.
+ *
+ * A two-hour booking is two adjacent slots, and both have to be real: the second
+ * cannot run past the vet's closing time or land on a slot the schedule never cut.
+ * Checked against the same grid a single slot is, so a span and a slot agree on what
+ * exists — an out-of-window second hour is refused here rather than found out on the day.
+ */
+export function isOfferedSpan(input: {
+  schedule: WeeklyScheduleItem[];
+  startsAt: Date;
+  minutes: number;
+  slots: number;
+  now?: Date;
+}): boolean {
+  const wanted = slotStarts(input.startsAt, input.minutes, input.slots).map((at) =>
+    at.toISOString()
+  );
+  const date = manilaDay(input.startsAt);
+  const [day] = slotsForRange({
+    schedule: input.schedule,
+    from: date,
+    to: date,
+    minutes: input.minutes,
+    held: [],
+    now: input.now,
+  });
+
+  const offered = new Set(day?.slots.map((slot) => slot.at) ?? []);
+  return wanted.every((at) => offered.has(at));
+}

@@ -67,8 +67,23 @@ async function account(name: string): Promise<User> {
   });
 }
 
+const CLINIC = {
+  kind: 'clinic' as const,
+  line1: '12 Mabini Street',
+  city: 'Cebu City',
+  province: 'Cebu',
+  postalCode: '6000',
+  fix: null,
+};
+const HOME = { ...CLINIC, kind: 'home' as const, line1: '44 Sampaguita Lane' };
+
 /** A verified vet who works the morning the slot above falls on. */
-async function vet(settings: { availabilityStatus?: 'available' | 'unavailable' | 'busy' } = {}) {
+async function vet(
+  settings: {
+    availabilityStatus?: 'available' | 'unavailable' | 'busy';
+    addresses?: Array<typeof CLINIC | typeof HOME>;
+  } = {}
+) {
   const user = await account('vet');
   seq += 1;
 
@@ -78,16 +93,7 @@ async function vet(settings: { availabilityStatus?: 'available' | 'unavailable' 
     licenseNumber: `PRC-${900000 + seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     clinicName: 'Bayside Animal Clinic',
-    addresses: [
-      {
-        kind: 'clinic',
-        line1: '12 Mabini Street',
-        city: 'Cebu City',
-        province: 'Cebu',
-        postalCode: '6000',
-        fix: null,
-      },
-    ],
+    addresses: settings.addresses ?? [CLINIC, HOME],
     bio: 'Small animal practice, fifteen years of it.',
     yearsExperience: 15,
     backgroundCheckConsent: true,
@@ -108,12 +114,14 @@ function request(input: {
   professional: ObjectId;
   at?: Date;
   kind?: 'onsite' | 'virtual';
+  slots?: number;
 }) {
   return requestAppointment({
     client: input.client,
     professionalId: input.professional,
     kind: input.kind ?? 'onsite',
     startsAt: input.at ?? SLOT.at,
+    slots: input.slots,
     petName: 'Milo',
     petSpecies: 'Dog',
     reason: 'A rash on his back leg that is not settling down.',
@@ -146,6 +154,16 @@ describe('requestAppointment', () => {
     const both = recentMail().map((message) => message.to);
     expect(both).toContain(vetUser.email);
     expect(both).toContain(client.email);
+  });
+
+  it('refuses a kind the vet did not register the place for', async () => {
+    const client = await account('owner');
+    // A clinic address, no home: this vet does onsite visits and no calls.
+    const { application } = await vet({ addresses: [CLINIC] });
+
+    await expect(
+      request({ client, professional: application!._id, kind: 'virtual' })
+    ).rejects.toThrow(/does not offer that kind/);
   });
 
   it('tells the vet what the decision turns on', async () => {
@@ -183,6 +201,60 @@ describe('requestAppointment', () => {
     const later = await request({ client: second, professional: application!._id, at: LATER });
 
     expect(later?.appointment.status).toBe('requested');
+  });
+
+  it('holds both hours of a two-hour booking', async () => {
+    const client = await account('owner');
+    const { application } = await vet();
+
+    const result = await request({ client, professional: application!._id, slots: 2 });
+
+    // Two slots means twice the minutes and two held hours, the second at LATER.
+    expect(result?.appointment.minutes).toBe(APPOINTMENT_SLOT_MINUTES * 2);
+    const held = await findHeldSlots({
+      professional: application!._id,
+      from: new Date(0),
+      to: new Date(8.64e15),
+    });
+    expect(held.map((at) => at.getTime()).sort()).toEqual(
+      [SLOT.at.getTime(), LATER.getTime()].sort()
+    );
+  });
+
+  it('refuses a one-hour booking on the second hour a two-hour one already holds', async () => {
+    const first = await account('owner');
+    const second = await account('owner');
+    const { application } = await vet();
+
+    await request({ client: first, professional: application!._id, slots: 2 });
+
+    // 10:00 is free to click, but the 09:00 two-hour booking is already sitting on it.
+    await expect(
+      request({ client: second, professional: application!._id, at: LATER })
+    ).rejects.toSatisfy(isDuplicateSlot);
+  });
+
+  it('refuses a two-hour booking whose second hour is already held', async () => {
+    const first = await account('owner');
+    const second = await account('owner');
+    const { application } = await vet();
+
+    await request({ client: first, professional: application!._id, at: LATER });
+
+    // 09:00 is free, but the span reaches into 10:00, which the first booking holds.
+    await expect(
+      request({ client: second, professional: application!._id, slots: 2 })
+    ).rejects.toSatisfy(isDuplicateSlot);
+  });
+
+  it('refuses a two-hour booking whose second hour runs past closing', async () => {
+    const client = await account('owner');
+    const { application } = await vet();
+
+    // 10:00 is the last slot of a 09:00-11:00 day, so a two-hour span from it overruns.
+    await expect(
+      request({ client, professional: application!._id, at: LATER, slots: 2 })
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('refuses a time the grid never offered', async () => {

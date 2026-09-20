@@ -14,6 +14,13 @@ vi.mock('@/lib/auth', () => ({
   logoutFromServer: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The tray reads the application to decide on the professional entry. This file is about
+// the session, so the answer is stubbed rather than served through a query client.
+vi.mock('@/hooks/useProfessionals', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useOwnApplication: () => ({ data: null }),
+}));
+
 /** Stands in for the login form, which does exactly this on success. */
 function LoginTrigger({ role = 'user' }: { role?: UserRole }) {
   const { setSession } = useAuth();
