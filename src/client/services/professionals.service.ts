@@ -37,6 +37,9 @@ export type PublicProfessional = {
   bio: string;
   yearsExperience: number;
   hourlyRate: number;
+  // 0 for a vet with no reviews yet. Booking's top-reviewed shortlist only shows the rated.
+  ratingAverage: number;
+  ratingCount: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
   workHistory: WorkHistoryItem[];
@@ -172,6 +175,8 @@ export type ProfessionalListParams = {
   maxRate?: number;
   /** Only the vets currently taking work. */
   available?: boolean;
+  /** 'rating' ranks by review score and returns only reviewed vets; 'recent' is the default. */
+  sort?: 'recent' | 'rating';
 };
 
 /** GET /api/v1/professionals — one page of the verified directory. */
@@ -189,6 +194,7 @@ export async function listProfessionals(
   if (params.minExperience) search.set('minExperience', String(params.minExperience));
   if (params.maxRate) search.set('maxRate', String(params.maxRate));
   if (params.available !== undefined) search.set('available', String(params.available));
+  if (params.sort) search.set('sort', params.sort);
 
   const query = search.toString();
   return apiFetch<ProfessionalPage>(`/professionals${query ? `?${query}` : ''}`, { signal });

@@ -682,6 +682,8 @@ export const professionalListQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((value) => value === 'true')
     .optional(),
+  // 'rating' ranks by review score and lists only reviewed vets; 'recent' is the default order.
+  sort: z.enum(['recent', 'rating']).default('recent'),
 });
 
 export const workHistoryItemSchema = z.object({

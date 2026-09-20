@@ -242,6 +242,8 @@ export type FindVerifiedOptions = {
   maxRate?: number;
   /** Only the vets currently taking work. */
   available?: boolean;
+  /** 'rating' ranks by review score and shows only reviewed vets; 'recent' is the default. */
+  sort?: 'recent' | 'rating';
   page?: number;
   limit?: number;
 };
@@ -272,11 +274,14 @@ export async function findVerifiedProfessionals(
     minExperience,
     maxRate,
     available,
+    sort = 'recent',
     page = 1,
     limit = PROFESSIONAL_PAGE_SIZE,
   } = options;
 
   const match: Filter<ProfessionalDocument> = { status: 'verified' };
+  // Rating ranks only the reviewed, so an unrated vet is off the list rather than last on it.
+  if (sort === 'rating') match.ratingCount = { $gt: 0 };
   // Specialties are stored lowercase, so an equality match against an array
   // element is all this needs - no $elemMatch, no regex.
   if (specialty) match.specialties = specialty;
@@ -337,7 +342,12 @@ export async function findVerifiedProfessionals(
   const [result] = await professionalsCollection()
     .aggregate<{ items: ProfessionalWithAccount[]; total: Array<{ value: number }> }>([
       { $match: match },
-      { $sort: { reviewedAt: -1, _id: -1 } },
+      {
+        $sort:
+          sort === 'rating'
+            ? { ratingAverage: -1, ratingCount: -1, _id: -1 }
+            : { reviewedAt: -1, _id: -1 },
+      },
       {
         $lookup: {
           from: USERS_COLLECTION,
