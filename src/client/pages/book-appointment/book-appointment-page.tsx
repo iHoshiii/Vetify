@@ -65,6 +65,7 @@ export default function BookAppointmentPage() {
                     error={list.isError ? list.error : null}
                     onRetry={() => void list.refetch()}
                     chosenId={chosen?.id ?? null}
+                    mismatched={flow.mismatched ? chosen : null}
                     onPick={flow.pick}
                   />
                 </Step>

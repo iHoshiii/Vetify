@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
+import { offersKind } from './service-offer';
 import type { Stage } from './step-tabs';
 import { NO_FILTERS, type VetFilters as Filters } from './vet-filters';
 
@@ -41,12 +42,21 @@ export function useBooking() {
   // not throw away a location somebody already agreed to share.
   const place = useMyLocation();
 
-  const vets = list.data?.items ?? [];
-  // A vet named in the URL is chosen for them, so arriving from a profile skips a step.
-  const chosen = vet ?? vets.find((item) => item.id === params.get('professional')) ?? null;
+  // The directory, minus the vets who do not do the kind picked on tab one: onsite
+  // needs a clinic to visit, so a vet without one is not a choice here.
+  const all = list.data?.items ?? [];
+  const vets = kind ? all.filter((item) => offersKind(item, kind)) : all;
 
-  // The furthest tab the answers unlock, and the one actually open.
-  const reached: Stage = !kind ? 1 : !chosen ? 2 : !slot ? 3 : 4;
+  // A vet named in the URL is chosen for them, so arriving from a profile skips a step.
+  const linked = vet ?? all.find((item) => item.id === params.get('professional')) ?? null;
+  // But only if they do the chosen kind. If not, they are still "chosen" so the step can
+  // say why rather than dropping them and leaving the owner staring at a list.
+  const chosen = linked;
+  const mismatched = Boolean(linked && kind && !offersKind(linked, kind));
+
+  // The furthest tab the answers unlock, and the one actually open. A mismatched vet does
+  // not unlock the slot grid: there is nothing to book of the kind they were asked for.
+  const reached: Stage = !kind ? 1 : !chosen || mismatched ? 2 : !slot ? 3 : 4;
   const at = (stage < reached ? stage : reached) as Stage;
 
   function chooseKind(next: AppointmentKind): void {
@@ -107,6 +117,7 @@ export function useBooking() {
     kind,
     filters,
     chosen,
+    mismatched,
     slot,
     taken,
     vets,

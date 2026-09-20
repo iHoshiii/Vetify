@@ -8,6 +8,8 @@ import {
 } from '@shared/limits';
 import type { AppointmentKind } from '@shared/schemas';
 
+import { offersKind } from './service-offer';
+
 /** A clinic visit is a drive, so it is bounded. A call is not, so it looks nationwide. */
 export function radiusFor(kind: AppointmentKind): number {
   return kind === 'onsite' ? BOOKING_CLINIC_RADIUS_KM : PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM;
@@ -39,7 +41,9 @@ export function useNearestVets(kind: AppointmentKind, location: MyLocation | nul
       : null
   );
 
-  const items = rank(kind, query.data?.items ?? []).slice(0, BOOKING_NEAREST_LIMIT);
+  // Onsite drops a vet whose only pin is a home: near is not the same as visitable.
+  const offered = (query.data?.items ?? []).filter((vet) => offersKind(vet, kind));
+  const items = rank(kind, offered).slice(0, BOOKING_NEAREST_LIMIT);
 
   return { items, isPending: query.isFetching, error: query.isError ? query.error : null };
 }
