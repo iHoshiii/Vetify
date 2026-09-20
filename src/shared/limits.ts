@@ -244,18 +244,6 @@ export const PROFESSIONAL_NEAR_RADIUS_KM = 20;
 export const PROFESSIONAL_NEAR_RADIUS_MAX_KM = 2_000;
 
 /**
- * The radius that covers the whole country, for a search where distance is a tiebreak
- * rather than a filter: an online consultation from Mindanao is a call either way.
- */
-export const PROFESSIONAL_NEAR_RADIUS_NATIONWIDE_KM = 2_000;
-
-/** How far somebody drives to a clinic — wider than the map's 20 km, still a drive. */
-export const BOOKING_CLINIC_RADIUS_KM = 50;
-
-/** How many nearest vets step two shortlists before the full directory. */
-export const BOOKING_NEAREST_LIMIT = 5;
-
-/**
  * How many nearest vets an answer carries.
  *
  * A list somebody reads top to bottom rather than a directory page, and there is no
