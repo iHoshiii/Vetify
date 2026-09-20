@@ -5,6 +5,7 @@ import {
   APPOINTMENT_PAGE_SIZE_MAX,
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
+  APPOINTMENT_MAX_SLOTS,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -682,8 +683,8 @@ export const professionalListQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((value) => value === 'true')
     .optional(),
-  // 'rating' ranks by review score and lists only reviewed vets; 'recent' is the default order.
-  sort: z.enum(['recent', 'rating']).default('recent'),
+  // 'rating' ranks by review score and lists only reviewed vets; 'name' is A-Z; 'recent' is the default.
+  sort: z.enum(['recent', 'rating', 'name']).default('recent'),
 });
 
 export const workHistoryItemSchema = z.object({
@@ -1289,6 +1290,9 @@ export const appointmentRequestSchema = z.object({
   professionalId: objectIdSchema,
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
+  // How many consecutive hours the visit runs. One by default, more for a longer session;
+  // the service checks every hour is offered and free, so this cannot be trusted to be.
+  slots: z.coerce.number().int().min(1).max(APPOINTMENT_MAX_SLOTS).default(1),
   petName: z
     .string()
     .trim()

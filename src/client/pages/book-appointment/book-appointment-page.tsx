@@ -60,7 +60,7 @@ export default function BookAppointmentPage() {
 
               {at === 3 && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
-                  <SlotPicker professionalId={chosen.id} value={slot} onPick={flow.pickSlot} />
+                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseSlots} />
                 </Step>
               )}
 

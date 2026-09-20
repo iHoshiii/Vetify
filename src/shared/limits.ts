@@ -335,7 +335,18 @@ export const MODERATION_REASON_MAX = 500;
  * product, and making it configurable would mean a grid whose shape can change
  * under a client that has already drawn it.
  */
-export const APPOINTMENT_SLOT_MINUTES = 30;
+export const APPOINTMENT_SLOT_MINUTES = 60;
+
+/**
+ * How many consecutive slots one booking may span.
+ *
+ * A visit is one hour by default and may run as many hours in a row as the vet works
+ * that day. The real limit is the working window, not this number: the grid only
+ * extends a run onto the next hour when it is free and offered, so a booking cannot
+ * reach past closing. This is a safety ceiling on top of that — a full day of hourly
+ * slots — so a hand-posted span cannot ask the server to hold an absurd list of hours.
+ */
+export const APPOINTMENT_MAX_SLOTS = 24;
 
 /**
  * How far ahead the grid may be asked for.

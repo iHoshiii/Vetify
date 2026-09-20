@@ -26,6 +26,9 @@ export const appointmentAttrsSchema = z.object({
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.date(),
   minutes: z.number().int().positive(),
+  // The hour-starts the booking holds, first equal to startsAt. Computed by the
+  // service from the span, so the unique index has one entry per slot to collide on.
+  heldSlots: z.array(z.date()).min(1),
   petName: z.string().trim().min(1).nullish(),
   petSpecies: z.string().trim().min(1, 'What kind of animal?'),
   petBreed: z.string().trim().min(1).nullish(),

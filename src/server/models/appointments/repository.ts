@@ -29,7 +29,7 @@ export function appointmentsCollection(): Collection<AppointmentDocument> {
  */
 export function isDuplicateSlot(err: unknown): boolean {
   const detail = err as { code?: number; keyPattern?: Record<string, unknown> } | null;
-  return detail?.code === DUPLICATE_KEY && detail.keyPattern?.startsAt !== undefined;
+  return detail?.code === DUPLICATE_KEY && detail.keyPattern?.heldSlots !== undefined;
 }
 
 /** Books a slot. Every booking starts as a request, holding the slot while it waits. */
@@ -45,6 +45,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     kind: parsed.kind,
     startsAt: parsed.startsAt,
     minutes: parsed.minutes,
+    heldSlots: parsed.heldSlots,
     status: 'requested',
     // Set on the way in and nulled when the booking lets go. This is the field the
     // unique index actually watches.
@@ -90,13 +91,17 @@ export async function findHeldSlots(input: {
       {
         professional: toObjectId(input.professional),
         holdsSlot: { $type: 'bool' },
-        startsAt: { $gte: input.from, $lt: input.to },
+        // Any held hour in the window, not the start: a two-hour booking that began
+        // the hour before the range still occupies a slot inside it.
+        heldSlots: { $elemMatch: { $gte: input.from, $lt: input.to } },
       },
-      { projection: { startsAt: 1 } }
+      { projection: { heldSlots: 1 } }
     )
     .toArray();
 
-  return rows.map((row) => row.startsAt);
+  // Flattened to the individual hours, so the grid marks the second hour of a
+  // two-hour booking taken as surely as the first.
+  return rows.flatMap((row) => row.heldSlots ?? []);
 }
 
 export type FindAppointmentsOptions = {

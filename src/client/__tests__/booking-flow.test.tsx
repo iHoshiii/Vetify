@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -120,9 +120,11 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
  */
 const TODAY = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-/** 09:00 and 09:30 Manila on that day. */
+/** 09:00 to 12:00 Manila on that day, on an hourly grid. */
 const FREE = `${TODAY}T01:00:00.000Z`;
-const TAKEN = `${TODAY}T01:30:00.000Z`;
+const NEXT = `${TODAY}T02:00:00.000Z`;
+const THIRD = `${TODAY}T03:00:00.000Z`;
+const TAKEN = `${TODAY}T04:00:00.000Z`;
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
@@ -146,12 +148,14 @@ beforeEach(() => {
   request.data = undefined;
   list.data = { items: [vet()], page: 1, limit: 5, total: 1, pages: 1 };
   slots.data = {
-    minutes: 30,
+    minutes: 60,
     days: [
       {
         date: TODAY,
         slots: [
           { at: FREE, taken: false },
+          { at: NEXT, taken: false },
+          { at: THIRD, taken: false },
           { at: TAKEN, taken: true },
         ],
       },
@@ -253,6 +257,7 @@ describe('the booking flow', () => {
       .getAllByRole('button')
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
+    await user.click(screen.getByRole('button', { name: 'Choose time' }));
 
     await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
     await user.type(screen.getByLabelText('Species'), 'Dog');
@@ -264,11 +269,55 @@ describe('the booking flow', () => {
         professionalId: 'p1',
         kind: 'virtual',
         startsAt: FREE,
+        // One hour by default: the second slot was never clicked.
+        slots: 1,
         petName: 'Milo',
         petSpecies: 'Dog',
       }),
       expect.anything()
     );
+  });
+
+  it('books as many consecutive hours as are chosen in a row', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    const grid = screen.getAllByRole('button');
+    // Three free hours in a row, each tap adding the next: a three-hour visit, no cap at two.
+    await user.click(grid.find((button) => button.textContent?.includes('09:00'))!);
+    await user.click(grid.find((button) => button.textContent?.includes('10:00'))!);
+    await user.click(grid.find((button) => button.textContent?.includes('11:00'))!);
+    await user.click(screen.getByRole('button', { name: 'Choose time' }));
+
+    await user.type(screen.getByLabelText('Species'), 'Dog');
+    await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
+    await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+
+    expect(request.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ startsAt: FREE, slots: 3 }),
+      expect.anything()
+    );
+  });
+
+  it('holds the details form back until the time is chosen', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    const free = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes('09:00'));
+    await user.click(free!);
+
+    // A tapped slot is a draft, not a booking: the form waits for "Choose time".
+    expect(screen.queryByLabelText('Pet name (optional)')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Choose time' }));
+    expect(screen.getByLabelText('Pet name (optional)')).toBeInTheDocument();
   });
 
   it('says the slot is held once the request is in', () => {
@@ -306,6 +355,7 @@ describe('the booking flow', () => {
       .getAllByRole('button')
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
+    await user.click(screen.getByRole('button', { name: 'Choose time' }));
 
     await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
     await user.type(screen.getByLabelText('Species'), 'Dog');
@@ -371,6 +421,7 @@ describe('the booking modal', () => {
       .getAllByRole('button')
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
+    await user.click(screen.getByRole('button', { name: 'Choose time' }));
 
     expect(screen.getByText('Tell them about the visit')).toBeInTheDocument();
     expect(screen.getByLabelText('Pet name (optional)')).toBeInTheDocument();
@@ -428,5 +479,47 @@ describe('the service step, gated to what the vet registered', () => {
     expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Clinic visit/ })).not.toBeInTheDocument();
     expect(screen.getByText(/only offers online consultations/)).toBeInTheDocument();
+  });
+});
+
+describe('the view-all-vets popup', () => {
+  it('is closed until the button asks for it', () => {
+    renderPage();
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('lists every bookable vet A-Z, twenty a page', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+
+    // Bookable only, alphabetical, and a page of twenty — the whole directory on demand.
+    expect(asked).toMatchObject({ available: true, sort: 'name', page: 1, limit: 20 });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('searches by name or clinic from inside the popup', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    const dialog = within(screen.getByRole('dialog'));
+
+    expect(dialog.getByPlaceholderText('Search by name or clinic')).toBeInTheDocument();
+  });
+
+  it('picks a vet from the popup and closes it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    const dialog = within(screen.getByRole('dialog'));
+    await user.click(dialog.getByRole('button', { name: 'Choose' }));
+
+    // Choosing here is the same pick as the shortlist, so the popup closes onto the service step.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('What kind of appointment?')).toBeInTheDocument();
   });
 });

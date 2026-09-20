@@ -175,8 +175,8 @@ export type ProfessionalListParams = {
   maxRate?: number;
   /** Only the vets currently taking work. */
   available?: boolean;
-  /** 'rating' ranks by review score and returns only reviewed vets; 'recent' is the default. */
-  sort?: 'recent' | 'rating';
+  /** 'rating' ranks by review score and returns only reviewed vets; 'name' is A-Z; 'recent' is the default. */
+  sort?: 'recent' | 'rating' | 'name';
 };
 
 /** GET /api/v1/professionals — one page of the verified directory. */
