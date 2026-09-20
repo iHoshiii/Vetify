@@ -1290,7 +1290,7 @@ export const appointmentRequestSchema = z.object({
   professionalId: objectIdSchema,
   kind: z.enum(APPOINTMENT_KINDS),
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
-  // How many consecutive slots the visit runs. One by default, two for a longer session;
+  // How many consecutive hours the visit runs. One by default, more for a longer session;
   // the service checks every hour is offered and free, so this cannot be trusted to be.
   slots: z.coerce.number().int().min(1).max(APPOINTMENT_MAX_SLOTS).default(1),
   petName: z

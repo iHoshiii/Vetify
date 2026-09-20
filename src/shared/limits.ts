@@ -340,12 +340,13 @@ export const APPOINTMENT_SLOT_MINUTES = 60;
 /**
  * How many consecutive slots one booking may span.
  *
- * A visit is one slot by default and at most two, so a longer consultation is booked
- * as two adjacent hours rather than a free-form length. The ceiling is a product
- * decision the same way the slot length is: the server refuses more, and the grid
- * only offers a second hour when the one after it is free.
+ * A visit is one hour by default and may run as many hours in a row as the vet works
+ * that day. The real limit is the working window, not this number: the grid only
+ * extends a run onto the next hour when it is free and offered, so a booking cannot
+ * reach past closing. This is a safety ceiling on top of that — a full day of hourly
+ * slots — so a hand-posted span cannot ask the server to hold an absurd list of hours.
  */
-export const APPOINTMENT_MAX_SLOTS = 2;
+export const APPOINTMENT_MAX_SLOTS = 24;
 
 /**
  * How far ahead the grid may be asked for.
