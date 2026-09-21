@@ -9,12 +9,23 @@ import type { Appointment } from '@/services/appointments.service';
 import type { AppointmentKind } from '@shared/schemas';
 import { useState } from 'react';
 
+import { ApiError } from '@/services/api';
+
 import { asks, type Action, type Ask } from './_components/booking-actions';
 import BookingAskBox from './_components/booking-ask-box';
 import BookingHeader, { BOOKING_COPY } from './_components/booking-header';
 import BookingRow from './_components/booking-row';
 import { BOOKING_TABS, type BookingTab } from './_components/booking-tabs';
 import { useConsoleApplication } from './professional-layout';
+
+// The first field message a 400 carries, so the vet reads "That is not a link" not "Invalid request payload."
+function reasonOf(error: Error | null): string | undefined {
+  if (error instanceof ApiError && error.issues) {
+    const first = Object.values(error.issues).find((list) => list?.length)?.[0];
+    if (first) return first;
+  }
+  return error?.message;
+}
 
 // One page for both kinds: the same rows and the same answers, filtered to the one the console section is about
 export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKind }) {
@@ -33,7 +44,7 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
   const cancel = useCancelAppointment();
 
   const busy = decide.isPending || cancel.isPending;
-  const failed = decide.error ?? cancel.error;
+  const failed = reasonOf(decide.error ?? cancel.error);
   const bookings = list.data?.items ?? [];
 
   function run(booking: Appointment, action: Action, typed: string): void {
@@ -87,7 +98,7 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
           ask={ask}
           text={text}
           onText={setText}
-          error={failed?.message}
+          error={failed}
           busy={busy}
           onSend={() => run(ask.booking, ask.action, text)}
           onDrop={() => setAsk(null)}
@@ -99,7 +110,7 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
           role="alert"
           className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800"
         >
-          {failed.message}
+          {failed}
         </p>
       )}
 

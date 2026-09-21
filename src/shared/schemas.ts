@@ -1340,8 +1340,9 @@ export const appointmentConfirmSchema = z.object({
   meetingUrl: z
     .string()
     .trim()
-    .url('That is not a link')
-    .max(500, 'That link is too long')
+    // A vet pasting meet.google.com/abc means https, so assume it rather than reject a bare host.
+    .transform((raw) => (raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw))
+    .pipe(z.string().url('That is not a link').max(500, 'That link is too long'))
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
