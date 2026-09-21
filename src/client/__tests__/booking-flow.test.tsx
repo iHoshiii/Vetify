@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import BookAppointmentPage from '../pages/book-appointment/book-appointment-page';
-import { ApiError } from '../services/api';
+import { PartialRequestError } from '../pages/book-appointment/_components/use-batch-request';
 import type { PublicProfessional } from '../services/professionals.service';
 
 /**
@@ -57,7 +57,6 @@ vi.mock('@/hooks/useProfessionals', () => ({
 }));
 
 vi.mock('@/hooks/useAppointments', () => ({
-  useRequestAppointment: () => request,
   useMyAppointments: () => mine,
   useCancelAppointment: () => ({
     mutate: vi.fn(),
@@ -67,6 +66,14 @@ vi.mock('@/hooks/useAppointments', () => ({
     error: null,
   }),
 }));
+
+// The flow batches one request per run through this hook; PartialRequestError is the real class so instanceof holds.
+vi.mock('../pages/book-appointment/_components/use-batch-request', async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import('../pages/book-appointment/_components/use-batch-request')
+  >();
+  return { ...actual, useBatchRequest: () => request };
+});
 
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({ user: { email: 'pat@example.com' }, isAuthenticated: true }),
@@ -233,7 +240,7 @@ describe('the booking flow', () => {
 
     // Disabled rather than hidden: a full day showing nothing would read as a day the
     // vet does not work, which is a different fact.
-    expect(screen.getByRole('button', { name: /already taken/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /taken/ })).toBeDisabled();
   });
 
   it('does not offer the details form until a slot is picked', async () => {
@@ -246,7 +253,7 @@ describe('the booking flow', () => {
     expect(screen.queryByLabelText('Pet name (optional)')).not.toBeInTheDocument();
   });
 
-  it('sends the kind, the vet and the slot along with the pet', async () => {
+  it('sends the kind, the vet and the hour along with the pet, once confirmed', async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -257,28 +264,32 @@ describe('the booking flow', () => {
       .getAllByRole('button')
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
-    await user.click(screen.getByRole('button', { name: 'Choose time' }));
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
 
     await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
-    await user.type(screen.getByLabelText('Species'), 'Dog');
-    await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
 
+    // Each run books on its own, so the batch is an array — one hour by default here.
     expect(request.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        professionalId: 'p1',
-        kind: 'virtual',
-        startsAt: FREE,
-        // One hour by default: the second slot was never clicked.
-        slots: 1,
-        petName: 'Milo',
-        petSpecies: 'Dog',
-      }),
+      [
+        expect.objectContaining({
+          professionalId: 'p1',
+          kind: 'virtual',
+          startsAt: FREE,
+          slots: 1,
+          petName: 'Milo',
+          petSpecies: 'Dog',
+          phone: '09171234567',
+        }),
+      ],
       expect.anything()
     );
   });
 
-  it('books as many consecutive hours as are chosen in a row', async () => {
+  it('groups hours picked in a row into one run', async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -286,18 +297,19 @@ describe('the booking flow', () => {
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const grid = screen.getAllByRole('button');
-    // Three free hours in a row, each tap adding the next: a three-hour visit, no cap at two.
+    // 09 and 10 sit together, so they group into one two-hour run rather than two bookings.
     await user.click(grid.find((button) => button.textContent?.includes('09:00'))!);
     await user.click(grid.find((button) => button.textContent?.includes('10:00'))!);
-    await user.click(grid.find((button) => button.textContent?.includes('11:00'))!);
-    await user.click(screen.getByRole('button', { name: 'Choose time' }));
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
 
-    await user.type(screen.getByLabelText('Species'), 'Dog');
-    await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
 
+    // Two adjacent hours are one two-hour run, sent as a single request in the batch.
     expect(request.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ startsAt: FREE, slots: 3 }),
+      [expect.objectContaining({ startsAt: FREE, slots: 2 })],
       expect.anything()
     );
   });
@@ -337,12 +349,12 @@ describe('the booking flow', () => {
     expect(screen.getByText(/held for you while they answer/)).toBeInTheDocument();
   });
 
-  it('says which slot went when somebody else got there first', async () => {
+  it('says a time went when somebody else got there first', async () => {
     const user = userEvent.setup();
-    // The mutation reports the race by calling onError with the reason the route sends.
+    // The batch reports the race by calling onError with the run that clashed.
     request.mutate.mockImplementation(
       (_input: unknown, handlers: { onError?: (error: unknown) => void }) => {
-        handlers.onError?.(new ApiError(409, 'Somebody just took that time.', 'slot-taken'));
+        handlers.onError?.(new PartialRequestError(0, FREE));
       }
     );
 
@@ -355,14 +367,15 @@ describe('the booking flow', () => {
       .getAllByRole('button')
       .find((button) => button.textContent?.includes('09:00'));
     await user.click(free!);
-    await user.click(screen.getByRole('button', { name: 'Choose time' }));
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
 
     await user.type(screen.getByLabelText('Pet name (optional)'), 'Milo');
-    await user.type(screen.getByLabelText('Species'), 'Dog');
-    await user.type(screen.getByLabelText('What is it about?'), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
 
-    // A race rather than a fault, so it reads as one — and the selection is dropped so
+    // A race rather than a fault, so it reads as one — and the picks are dropped so
     // the refreshed grid decides what is left.
     expect(await screen.findByText('Somebody just took that time.')).toBeInTheDocument();
   });
@@ -405,7 +418,7 @@ describe('the booking modal', () => {
 
     // Going back is always allowed, and the vet already picked is still marked chosen.
     expect(screen.getByText('Who would you like to see?')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Chosen' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Request' })).toBeInTheDocument();
   });
 
   it('opens the times once a service is chosen, and the form once a time is', async () => {

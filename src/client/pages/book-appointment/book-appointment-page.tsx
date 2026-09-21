@@ -20,7 +20,7 @@ export default function BookAppointmentPage() {
   useDocumentTitle('Book an appointment', 'Find a verified vet and ask for a time that suits.');
 
   const flow = useBooking();
-  const { at, chosen, kind, request, slot } = flow;
+  const { at, chosen, kind, request, runs } = flow;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
 
   return (
@@ -60,11 +60,11 @@ export default function BookAppointmentPage() {
 
               {at === 3 && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
-                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseSlots} />
+                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseRuns} />
                 </Step>
               )}
 
-              {at === 4 && slot && (
+              {at === 4 && runs.length > 0 && (
                 <Step number={4} title="Tell them about the visit">
                   <BookingForm
                     isPending={request.isPending}

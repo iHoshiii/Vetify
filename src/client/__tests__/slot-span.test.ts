@@ -1,58 +1,66 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextSelection, spanLabel } from '../pages/book-appointment/_components/slot-span';
+import {
+  runsOf,
+  slotRangeLabel,
+  toggleSlot,
+} from '../pages/book-appointment/_components/slot-span';
 
 const AT_9 = '2026-09-03T01:00:00.000Z';
 const AT_10 = '2026-09-03T02:00:00.000Z';
 const AT_11 = '2026-09-03T03:00:00.000Z';
-const AT_12 = '2026-09-03T04:00:00.000Z';
+const AT_13 = '2026-09-03T05:00:00.000Z';
 const free = (at: string) => ({ at, taken: false });
 
-describe('nextSelection', () => {
-  it('picks a free hour when nothing is picked yet', () => {
-    expect(nextSelection([], free(AT_9), 60)).toEqual([AT_9]);
+describe('toggleSlot', () => {
+  it('adds a free hour when it is not picked', () => {
+    expect(toggleSlot([], free(AT_9))).toEqual([AT_9]);
   });
 
-  it('extends onto the very next hour', () => {
-    expect(nextSelection([AT_9], free(AT_10), 60)).toEqual([AT_9, AT_10]);
+  it('removes an hour that is already picked, leaving the rest', () => {
+    expect(toggleSlot([AT_9, AT_10], free(AT_9))).toEqual([AT_10]);
   });
 
-  it('keeps extending, so a run can be as long as the vet works', () => {
-    expect(nextSelection([AT_9, AT_10], free(AT_11), 60)).toEqual([AT_9, AT_10, AT_11]);
+  it('keeps the picks sorted so a later hour lands in order', () => {
+    expect(toggleSlot([AT_11], free(AT_9))).toEqual([AT_9, AT_11]);
   });
 
-  it('starts over on an hour that does not touch the pick', () => {
-    expect(nextSelection([AT_9], free(AT_11), 60)).toEqual([AT_11]);
-  });
-
-  it('clears when the only picked hour is tapped again', () => {
-    expect(nextSelection([AT_9], free(AT_9), 60)).toEqual([]);
-  });
-
-  it('shortens the run to end where a picked hour is tapped', () => {
-    // Tapping 10:00 in a 09:00–12:00 run drops it and everything after: back to one hour.
-    expect(nextSelection([AT_9, AT_10, AT_11], free(AT_10), 60)).toEqual([AT_9]);
-  });
-
-  it('drops just the last hour when the end of a run is tapped', () => {
-    expect(nextSelection([AT_9, AT_10, AT_11], free(AT_11), 60)).toEqual([AT_9, AT_10]);
+  it('adds an hour that does not touch the rest — order does not matter', () => {
+    expect(toggleSlot([AT_9], free(AT_13))).toEqual([AT_9, AT_13]);
   });
 
   it('ignores a taken hour', () => {
-    expect(nextSelection([AT_9], { at: AT_12, taken: true }, 60)).toEqual([AT_9]);
+    expect(toggleSlot([AT_9], { at: AT_11, taken: true })).toEqual([AT_9]);
   });
 });
 
-describe('spanLabel', () => {
-  it('reads one picked hour as a single hour to its close', () => {
-    expect(spanLabel([AT_9], 60)).toMatch(/1 hour$/);
+describe('runsOf', () => {
+  it('groups hours in a row into one run', () => {
+    expect(runsOf([AT_9, AT_10, AT_11], 60)).toEqual([{ startsAt: AT_9, slots: 3 }]);
   });
 
-  it('reads two picked hours as two, spanning to the later close', () => {
-    expect(spanLabel([AT_9, AT_10], 60)).toMatch(/2 hours$/);
+  it('splits a gap into separate runs, each its own booking', () => {
+    // 09,10 sit together; 13 is two hours off, so it books on its own.
+    expect(runsOf([AT_9, AT_10, AT_13], 60)).toEqual([
+      { startsAt: AT_9, slots: 2 },
+      { startsAt: AT_13, slots: 1 },
+    ]);
+  });
+
+  it('reads unsorted picks the same as sorted ones', () => {
+    expect(runsOf([AT_13, AT_9, AT_10], 60)).toEqual([
+      { startsAt: AT_9, slots: 2 },
+      { startsAt: AT_13, slots: 1 },
+    ]);
   });
 
   it('is empty when nothing is picked', () => {
-    expect(spanLabel([], 60)).toBe('');
+    expect(runsOf([], 60)).toEqual([]);
+  });
+});
+
+describe('slotRangeLabel', () => {
+  it('reads an hour as the range it fills, to a minute before the next', () => {
+    expect(slotRangeLabel(AT_9, 60)).toBe('09:00–09:59');
   });
 });

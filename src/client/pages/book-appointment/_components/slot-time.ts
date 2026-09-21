@@ -30,3 +30,12 @@ export function timeOf(at: string): string {
     timeZone: 'Asia/Manila',
   });
 }
+
+// 24-hour "HH:mm" in Manila, so a slot reads as a compact "10:00–10:59" range on a button.
+export function clock24(at: string): string {
+  return new Date(at).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Manila',
+  });
+}
