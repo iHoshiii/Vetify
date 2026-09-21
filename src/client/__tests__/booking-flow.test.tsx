@@ -45,6 +45,8 @@ const mine = { data: undefined as unknown, isPending: false };
 
 /** What step one asked the directory for, so the test can assert on the ranking. */
 let asked: Record<string, unknown> | undefined;
+/** The day range the calendar last fetched, so a test can assert it pages by month. */
+let askedSlots: Record<string, unknown> | undefined;
 
 vi.mock('@/hooks/useProfessionals', () => ({
   useProfessionals: (params: Record<string, unknown>) => {
@@ -53,7 +55,10 @@ vi.mock('@/hooks/useProfessionals', () => ({
   },
   // No `?professional=` in these tests, so the deeplink resolves to nothing.
   useProfessional: () => ({ data: undefined }),
-  useProfessionalSlots: () => slots,
+  useProfessionalSlots: (params: Record<string, unknown>) => {
+    askedSlots = params;
+    return slots;
+  },
 }));
 
 vi.mock('@/hooks/useAppointments', () => ({
@@ -147,6 +152,7 @@ function renderPage() {
 
 beforeEach(() => {
   asked = undefined;
+  askedSlots = undefined;
   request.mutate.mockReset();
   request.isPending = false;
   request.isError = false;
@@ -317,6 +323,24 @@ describe('the booking flow', () => {
       [expect.objectContaining({ startsAt: FREE, slots: 2 })],
       expect.anything()
     );
+  });
+
+  it('pages the calendar to the next month, floored at this one', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    // This month is the earliest bookable one, so there is nowhere earlier to go.
+    expect(screen.getByRole('button', { name: /Prev/ })).toBeDisabled();
+
+    const [year, month] = TODAY.slice(0, 7).split('-').map(Number);
+    const next = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 7);
+    await user.click(screen.getByRole('button', { name: /Next/ }));
+
+    // Next fetches the whole of the following month, so any future day is reachable.
+    expect(askedSlots).toMatchObject({ from: `${next}-01` });
   });
 
   it('holds the details form back until the time is chosen', async () => {
