@@ -99,7 +99,7 @@ export default function VetCard({
 
         <div className="flex shrink-0 flex-col gap-2">
           <button type="button" onClick={() => onPick(vet)} className={PICK}>
-            {picked ? 'Chosen' : 'Choose'}
+            {picked ? 'Request' : 'Choose'}
           </button>
           <Link to={`/professionals/${vet.id}`} className={VISIT}>
             View profile
