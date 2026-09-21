@@ -11,10 +11,15 @@ import {
   BLOG_MAX_TAGS,
   BLOG_PAGE_SIZE,
   BLOG_PAGE_SIZE_MAX,
+  MESSAGE_MAX_LENGTH,
+  MESSAGE_PAGE_SIZE,
+  MESSAGE_PAGE_SIZE_MAX,
   METRIC_MAX_DAYS,
   METRIC_WINDOW_DAYS,
   MODERATION_REASON_MAX,
   MODERATION_REASON_MIN,
+  THREAD_PAGE_SIZE,
+  THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
   PROFESSIONAL_BIO_MAX,
   PROFESSIONAL_BIO_MIN,
@@ -1380,3 +1385,45 @@ export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentConfirm = z.output<typeof appointmentConfirmSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
+
+/* ---------------------------------------------------------------------------
+ * Messaging. One private thread per owner-and-vet pair, both accounts. Opening
+ * a thread and sending into it share this contract so the box that types and
+ * the route that stores cannot disagree about what a message is.
+ * -------------------------------------------------------------------------- */
+
+// A user opens a thread with a vet's listing; the server resolves the two accounts behind it.
+export const threadOpenSchema = z.object({ professionalId: objectIdSchema });
+
+export const messageSendSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, 'Type a message')
+    .max(MESSAGE_MAX_LENGTH, `Keep it under ${MESSAGE_MAX_LENGTH} characters`),
+});
+
+export const threadListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(THREAD_PAGE_SIZE_MAX, `Ask for at most ${THREAD_PAGE_SIZE_MAX} per page`)
+    .default(THREAD_PAGE_SIZE),
+});
+
+export const messageListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MESSAGE_PAGE_SIZE_MAX, `Ask for at most ${MESSAGE_PAGE_SIZE_MAX} per page`)
+    .default(MESSAGE_PAGE_SIZE),
+});
+
+export type ThreadOpenInput = z.input<typeof threadOpenSchema>;
+export type MessageSendInput = z.input<typeof messageSendSchema>;
+export type ThreadListQuery = z.output<typeof threadListQuerySchema>;
+export type MessageListQuery = z.output<typeof messageListQuerySchema>;
