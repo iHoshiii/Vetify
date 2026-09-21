@@ -84,6 +84,11 @@ vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({ user: { email: 'pat@example.com' }, isAuthenticated: true }),
 }));
 
+// VetCard's Chat button reads this; the booking flow under test never presses it.
+vi.mock('@/components/messaging/ChatProvider', () => ({
+  useChatPanel: () => ({ startWithVet: vi.fn() }),
+}));
+
 function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
   return {
     id: 'p1',
@@ -241,7 +246,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     // Disabled rather than hidden: a full day showing nothing would read as a day the
@@ -253,7 +258,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.queryByLabelText('Pet name (optional)')).not.toBeInTheDocument();
@@ -263,7 +268,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Online consultation/ }));
 
     const free = screen
@@ -303,7 +308,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const grid = screen.getAllByRole('button');
@@ -329,7 +334,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     // This month is the earliest bookable one, so there is nowhere earlier to go.
@@ -347,7 +352,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
@@ -365,7 +370,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
@@ -390,7 +395,7 @@ describe('the booking flow', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
@@ -428,7 +433,7 @@ describe('the booking flow', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
@@ -476,7 +481,7 @@ describe('the booking flow', () => {
 
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     const free = screen
@@ -519,7 +524,7 @@ describe('the booking modal', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
 
     // One question on screen at a time: the list gives way to what that choice unlocks.
     expect(screen.queryByText('Who would you like to see?')).not.toBeInTheDocument();
@@ -530,7 +535,7 @@ describe('the booking modal', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: 'Close' }));
 
     // Going back is always allowed, and the vet already picked is still marked chosen.
@@ -542,7 +547,7 @@ describe('the booking modal', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
     await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
 
     expect(screen.getByText(/When suits you with Marites Reyes/)).toBeInTheDocument();
@@ -580,7 +585,7 @@ describe('the service step, gated to what the vet registered', () => {
     };
 
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
 
     expect(screen.getByRole('button', { name: /Clinic visit/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
@@ -592,7 +597,7 @@ describe('the service step, gated to what the vet registered', () => {
     list.data = { items: [vet({ addresses: [CLINIC] })], page: 1, limit: 5, total: 1, pages: 1 };
 
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
 
     expect(screen.getByRole('button', { name: /Clinic visit/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Online consultation/ })).not.toBeInTheDocument();
@@ -604,7 +609,7 @@ describe('the service step, gated to what the vet registered', () => {
     list.data = { items: [vet({ addresses: [HOME] })], page: 1, limit: 5, total: 1, pages: 1 };
 
     renderPage();
-    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: 'Book' }));
 
     expect(screen.getByRole('button', { name: /Online consultation/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Clinic visit/ })).not.toBeInTheDocument();
@@ -646,7 +651,7 @@ describe('the view-all-vets popup', () => {
 
     await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
     const dialog = within(screen.getByRole('dialog'));
-    await user.click(dialog.getByRole('button', { name: 'Choose' }));
+    await user.click(dialog.getByRole('button', { name: 'Book' }));
 
     // Choosing here is the same pick as the shortlist, so the popup closes onto the service step.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

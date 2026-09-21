@@ -3,6 +3,7 @@ import { connectDb, disconnectDb } from './config/db';
 import { applyDnsServers } from './config/dns';
 import { env, isProduction } from './config/env';
 import { ensureIndexes } from './models';
+import { attachRealtime } from './realtime/socket';
 
 /**
  * Mongoose created indexes on its own the first time each model was used. The
@@ -37,10 +38,14 @@ async function main() {
     if (!dbUp) console.log('[server] running in degraded mode: no database');
   });
 
+  // Shares the HTTP server, so chat and live updates ride the same port and origin as the API.
+  const io = attachRealtime(server);
+
   // Drain in-flight requests before closing the DB, so no handler loses its
   // connection mid-write.
   const shutdown = async (signal: string) => {
     console.log(`\n[server] ${signal} received, shutting down`);
+    await io.close();
     server.close(async () => {
       await disconnectDb();
       process.exit(0);

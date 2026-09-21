@@ -1,6 +1,7 @@
 import {
   ANON_CHAT_PER_IP_PER_HOUR,
   APPOINTMENT_REQUESTS_PER_IP_PER_HOUR,
+  MESSAGE_SENDS_PER_IP_PER_MINUTE,
   PROFESSIONAL_INQUIRY_PER_IP_PER_HOUR,
 } from '@shared/limits';
 import cors from 'cors';
@@ -134,6 +135,19 @@ export const bookingLimiter = rateLimit({
   message: {
     error: 'Too many appointment requests from this network. Please try again later.',
     reason: 'booking-ip-limit',
+  },
+  skip: () => isTest,
+});
+
+// Sending a message is cheap, so this ceiling only catches a wedged client flooding a thread.
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: MESSAGE_SENDS_PER_IP_PER_MINUTE,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: 'Too many messages from this network. Please slow down.',
+    reason: 'message-ip-limit',
   },
   skip: () => isTest,
 });
