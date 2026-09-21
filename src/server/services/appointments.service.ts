@@ -14,6 +14,7 @@ import {
   type ProfessionalDocument,
   type User,
 } from '../models';
+import { emitToUser } from '../realtime/hub';
 import { AppError } from '../utils/AppError';
 import {
   cancelledEmail,
@@ -24,6 +25,16 @@ import {
 } from './appointment-mail';
 import { isOfferedSpan, slotStarts } from './appointment-slots';
 import { deliverMail, type MailDelivery } from './mail.service';
+
+// Tells both sides a booking moved, so each console refetches without waiting for its poll. A no-op until the socket server is up, so seeds and tests need none.
+function announceAppointment(appointment: AppointmentDocument): void {
+  emitToUser(appointment.client.toString(), 'appointment:changed', {
+    id: appointment._id.toString(),
+  });
+  emitToUser(appointment.professionalUser.toString(), 'appointment:changed', {
+    id: appointment._id.toString(),
+  });
+}
 
 /**
  * Booking a vet's time, and answering for it.
@@ -198,6 +209,8 @@ export async function requestAppointment(
     phone: input.phone ?? null,
   });
 
+  announceAppointment(appointment);
+
   const vet = await findUserById(application.user);
 
   const [toProfessional, toClient] = await Promise.all([
@@ -297,6 +310,8 @@ export async function decideAppointment(
 
   if (!appointment) return null;
 
+  announceAppointment(appointment);
+
   const [owner, application] = await Promise.all([
     findUserById(appointment.client),
     findProfessionalById(appointment.professional),
@@ -379,6 +394,8 @@ export async function cancelAppointment(
   });
 
   if (!appointment) return null;
+
+  announceAppointment(appointment);
 
   // The one who did not do it. Read off the row rather than from a flag the caller
   // passes, so there is no way to email the wrong side.

@@ -1,13 +1,13 @@
-import { useRequestAppointment } from '@/hooks/useAppointments';
 import { useProfessional } from '@/hooks/useProfessionals';
-import { ApiError } from '@/services/api';
 import type { PublicProfessional } from '@/services/professionals.service';
 import type { AppointmentKind } from '@shared/schemas';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
+import type { Run } from './slot-span';
 import type { Stage } from './step-tabs';
+import { PartialRequestError, useBatchRequest } from './use-batch-request';
 
 /** The whole flow: what has been answered, which tab that opens, and what to ask next. */
 export function useBooking() {
@@ -17,30 +17,27 @@ export function useBooking() {
   const [stage, setStage] = useState<Stage>(1);
   const [vet, setVet] = useState<PublicProfessional | null>(null);
   const [kind, setKind] = useState<AppointmentKind | null>(null);
-  const [slot, setSlot] = useState<string | null>(null);
-  // How many consecutive hours the chosen slot runs. One until "Choose time" says two.
-  const [slots, setSlots] = useState(1);
+  // The hours picked, split into runs. Each run books as its own appointment.
+  const [runs, setRuns] = useState<Run[]>([]);
   const [taken, setTaken] = useState<string | null>(null);
+  // The filled form held back for the confirm step, so nothing is sent until it is agreed.
+  const [pending, setPending] = useState<BookingDetails | null>(null);
 
-  const request = useRequestAppointment();
+  const request = useBatchRequest();
 
-  // A vet named in the URL is read on its own, so arriving from a profile or the map
-  // skips the shortlist and lands on the service question.
   const preselect = useProfessional(params.get('professional') ?? undefined);
   const chosen = vet ?? preselect.data ?? null;
 
-  // The furthest tab the answers unlock, and the one actually open. The vet comes first:
-  // the service on offer is a fact about them, so it cannot be asked before they are.
-  const reached: Stage = !chosen ? 1 : !kind ? 2 : !slot ? 3 : 4;
+  const reached: Stage = !chosen ? 1 : !kind ? 2 : runs.length === 0 ? 3 : 4;
   const at = (stage < reached ? stage : reached) as Stage;
 
   function pick(next: PublicProfessional): void {
     setVet(next);
-    // The old service and slot belonged to a different vet's diary.
+    // The old service and hours belonged to a different vet's diary.
     setKind(null);
-    setSlot(null);
-    setSlots(1);
+    setRuns([]);
     setTaken(null);
+    setPending(null);
     request.reset();
     setStage(2);
   }
@@ -50,42 +47,56 @@ export function useBooking() {
     setStage(3);
   }
 
-  function chooseSlots(startsAt: string, span: number): void {
-    setSlot(startsAt);
-    setSlots(span);
+  function chooseRuns(next: Run[]): void {
+    setRuns(next);
     setStage(4);
   }
 
-  /** Back to the grid either way: the slot is now held, or gone to somebody faster. */
-  function landOnSlots(held: string | null): void {
+  /** Back to the grid: the hours are now held, or one went to somebody faster. */
+  function landOnRuns(held: string | null): void {
     setTaken(held);
-    setSlot(null);
-    setSlots(1);
+    setRuns([]);
+    setPending(null);
     setStage(3);
   }
 
+  // A sent request closes the whole flow back to step one, where the toast is read.
+  function finish(): void {
+    setKind(null);
+    setRuns([]);
+    setPending(null);
+    setTaken(null);
+    setStage(1);
+  }
+
+  /** The form is filled; hold it and show the confirm dialog rather than sending. */
   function submit(details: BookingDetails): void {
-    if (!chosen || !kind || !slot) return;
+    if (!chosen || !kind || runs.length === 0) return;
+    setPending(details);
+  }
+
+  function confirm(): void {
+    if (!chosen || !kind || !pending || runs.length === 0) return;
 
     setTaken(null);
     request.mutate(
-      {
+      runs.map((run) => ({
         professionalId: chosen.id,
         kind,
-        startsAt: slot,
-        slots,
-        petSpecies: details.petSpecies,
-        reason: details.reason,
-        ...(details.petName ? { petName: details.petName } : {}),
-        ...(details.petBreed ? { petBreed: details.petBreed } : {}),
-        ...(details.petAge ? { petAge: details.petAge } : {}),
-        ...(details.phone ? { phone: details.phone } : {}),
-      },
+        startsAt: run.startsAt,
+        slots: run.slots,
+        petSpecies: pending.petSpecies,
+        reason: pending.reason,
+        phone: pending.phone,
+        ...(pending.petName ? { petName: pending.petName } : {}),
+        ...(pending.petBreed ? { petBreed: pending.petBreed } : {}),
+        ...(pending.petAge ? { petAge: pending.petAge } : {}),
+      })),
       {
-        onSuccess: () => landOnSlots(null),
-        // A 409 is a race: name the slot that went and let the refreshed grid decide.
+        onSuccess: finish,
+        // A partial 409 names the slot that went, so the refreshed grid lands on it.
         onError: (error) => {
-          if (error instanceof ApiError && error.reason === 'slot-taken') landOnSlots(slot);
+          if (error instanceof PartialRequestError) landOnRuns(error.takenAt);
         },
       }
     );
@@ -96,13 +107,16 @@ export function useBooking() {
     reached,
     kind,
     chosen,
-    slot,
+    runs,
     taken,
+    pending,
     request,
     setStage,
     pick,
     chooseKind,
-    chooseSlots,
+    chooseRuns,
     submit,
+    confirm,
+    cancelConfirm: () => setPending(null),
   };
 }

@@ -1,11 +1,12 @@
+import { useChatPanel } from '@/components/messaging/ChatProvider';
 import type { PublicProfessional } from '@/services/professionals.service';
-import { Briefcase, MapPin, Navigation } from 'lucide-react';
+import { Briefcase, MapPin, MessageCircle, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import StarRating from './star-rating';
 
 const ACTION =
-  'inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-bold transition';
+  'inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-bold transition';
 const PICK = `${ACTION} bg-teal-800 text-white hover:bg-teal-900`;
 const VISIT = `${ACTION} border border-slate-900/15 bg-white text-slate-900 hover:border-slate-900/30`;
 
@@ -41,6 +42,8 @@ export default function VetCard({
   picked: boolean;
   away?: string;
 }) {
+  const { startWithVet } = useChatPanel();
+
   return (
     <li
       className={`rounded-xl border bg-white p-5 shadow-sm transition ${
@@ -99,7 +102,11 @@ export default function VetCard({
 
         <div className="flex shrink-0 flex-col gap-2">
           <button type="button" onClick={() => onPick(vet)} className={PICK}>
-            {picked ? 'Chosen' : 'Choose'}
+            {picked ? 'Request' : 'Book'}
+          </button>
+          <button type="button" onClick={() => startWithVet(vet.id)} className={VISIT}>
+            <MessageCircle className="h-4 w-4" />
+            Chat
           </button>
           <Link to={`/professionals/${vet.id}`} className={VISIT}>
             View profile

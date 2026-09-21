@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
+import { ChatProvider } from './components/messaging/ChatProvider';
 import { AuthProvider } from './components/providers/AuthProvider';
 import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
+import RealtimeBridge from './components/providers/RealtimeBridge';
 import './globals.css';
 
 const container = document.getElementById('root');
@@ -20,7 +22,10 @@ createRoot(container).render(
     <BrowserRouter>
       <AuthProvider>
         <ReactQueryProvider>
-          <App />
+          <RealtimeBridge />
+          <ChatProvider>
+            <App />
+          </ChatProvider>
         </ReactQueryProvider>
       </AuthProvider>
     </BrowserRouter>

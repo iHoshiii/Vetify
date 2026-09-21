@@ -5,6 +5,12 @@ import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-e
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
 import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
+import {
+  MESSAGES_COLLECTION,
+  MESSAGE_INDEXES,
+  THREADS_COLLECTION,
+  THREAD_INDEXES,
+} from './messages';
 import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
@@ -54,6 +60,37 @@ export {
   type AppointmentView,
   type FindAppointmentsOptions,
 } from './appointments';
+
+export {
+  clearThreadUnread,
+  countUnreadThreads,
+  findMessages,
+  findThreadById,
+  findThreadByPair,
+  findThreads,
+  insertMessage,
+  insertThread,
+  isDuplicateThread,
+  MESSAGES_COLLECTION,
+  MESSAGE_INDEXES,
+  messagesCollection,
+  otherPartyOf,
+  THREADS_COLLECTION,
+  THREAD_INDEXES,
+  threadsCollection,
+  toMessagePage,
+  toMessageView,
+  toThreadPage,
+  toThreadView,
+  touchThreadOnSend,
+  type MessageDocument,
+  type MessagePage,
+  type MessageView,
+  type ThreadDocument,
+  type ThreadPage,
+  type ThreadParty,
+  type ThreadView,
+} from './messages';
 
 export {
   ACTIVITY_EVENTS_COLLECTION,
@@ -313,6 +350,8 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
+  { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
+  { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },

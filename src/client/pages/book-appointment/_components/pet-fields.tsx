@@ -1,3 +1,4 @@
+import RequiredMark from './required-mark';
 import { FIELD, LABEL } from './styles';
 
 export type PetValues = {
@@ -23,6 +24,7 @@ export default function PetFields({
       <div>
         <label htmlFor={ids.petSpecies} className={LABEL}>
           Species
+          <RequiredMark filled={Boolean(values.petSpecies.trim())} />
         </label>
         <input
           id={ids.petSpecies}

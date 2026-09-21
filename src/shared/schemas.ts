@@ -11,10 +11,15 @@ import {
   BLOG_MAX_TAGS,
   BLOG_PAGE_SIZE,
   BLOG_PAGE_SIZE_MAX,
+  MESSAGE_MAX_LENGTH,
+  MESSAGE_PAGE_SIZE,
+  MESSAGE_PAGE_SIZE_MAX,
   METRIC_MAX_DAYS,
   METRIC_WINDOW_DAYS,
   MODERATION_REASON_MAX,
   MODERATION_REASON_MIN,
+  THREAD_PAGE_SIZE,
+  THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
   PROFESSIONAL_BIO_MAX,
   PROFESSIONAL_BIO_MIN,
@@ -1320,7 +1325,13 @@ export const appointmentRequestSchema = z.object({
       `Say what it is about in at least ${APPOINTMENT_REASON_MIN} characters`
     )
     .max(APPOINTMENT_REASON_MAX, 'That is longer than we need here'),
-  phone: phoneField,
+  // Required here, unlike the professional forms: a booking is a specific time the vet may need to reach the owner about.
+  phone: z
+    .string()
+    .trim()
+    .min(1, 'A contact number is required')
+    .max(32, 'That number is too long')
+    .regex(/^[+(]?\d[\d\s()+-]{5,}$/, 'That does not look like a phone number'),
 });
 
 /**
@@ -1334,8 +1345,9 @@ export const appointmentConfirmSchema = z.object({
   meetingUrl: z
     .string()
     .trim()
-    .url('That is not a link')
-    .max(500, 'That link is too long')
+    // A vet pasting meet.google.com/abc means https, so assume it rather than reject a bare host.
+    .transform((raw) => (raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw))
+    .pipe(z.string().url('That is not a link').max(500, 'That link is too long'))
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
@@ -1373,3 +1385,45 @@ export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentConfirm = z.output<typeof appointmentConfirmSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
+
+/* ---------------------------------------------------------------------------
+ * Messaging. One private thread per owner-and-vet pair, both accounts. Opening
+ * a thread and sending into it share this contract so the box that types and
+ * the route that stores cannot disagree about what a message is.
+ * -------------------------------------------------------------------------- */
+
+// A user opens a thread with a vet's listing; the server resolves the two accounts behind it.
+export const threadOpenSchema = z.object({ professionalId: objectIdSchema });
+
+export const messageSendSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, 'Type a message')
+    .max(MESSAGE_MAX_LENGTH, `Keep it under ${MESSAGE_MAX_LENGTH} characters`),
+});
+
+export const threadListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(THREAD_PAGE_SIZE_MAX, `Ask for at most ${THREAD_PAGE_SIZE_MAX} per page`)
+    .default(THREAD_PAGE_SIZE),
+});
+
+export const messageListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MESSAGE_PAGE_SIZE_MAX, `Ask for at most ${MESSAGE_PAGE_SIZE_MAX} per page`)
+    .default(MESSAGE_PAGE_SIZE),
+});
+
+export type ThreadOpenInput = z.input<typeof threadOpenSchema>;
+export type MessageSendInput = z.input<typeof messageSendSchema>;
+export type ThreadListQuery = z.output<typeof threadListQuerySchema>;
+export type MessageListQuery = z.output<typeof messageListQuerySchema>;

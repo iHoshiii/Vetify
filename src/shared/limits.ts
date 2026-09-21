@@ -388,3 +388,17 @@ export const APPOINTMENT_REQUESTS_PER_IP_PER_HOUR = 8;
 
 export const APPOINTMENT_PAGE_SIZE = 20;
 export const APPOINTMENT_PAGE_SIZE_MAX = 50;
+
+// A single chat message. Long enough for a real question, short enough that the box is not a document.
+export const MESSAGE_MAX_LENGTH = 2000;
+
+// One page of a conversation. Threads load newest-last, older ones fetched as the reader scrolls up.
+export const MESSAGE_PAGE_SIZE = 30;
+export const MESSAGE_PAGE_SIZE_MAX = 60;
+
+// One page of the thread list, the same shape every other list here pages by.
+export const THREAD_PAGE_SIZE = 20;
+export const THREAD_PAGE_SIZE_MAX = 50;
+
+// How many messages one network may send in a minute, so a wedged client cannot flood a thread.
+export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 30;
