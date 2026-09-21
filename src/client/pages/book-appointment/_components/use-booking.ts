@@ -20,6 +20,8 @@ export function useBooking() {
   // The hours picked, split into runs. Each run books as its own appointment.
   const [runs, setRuns] = useState<Run[]>([]);
   const [taken, setTaken] = useState<string | null>(null);
+  // The filled form held back for the confirm step, so nothing is sent until it is agreed.
+  const [pending, setPending] = useState<BookingDetails | null>(null);
 
   const request = useBatchRequest();
 
@@ -35,6 +37,7 @@ export function useBooking() {
     setKind(null);
     setRuns([]);
     setTaken(null);
+    setPending(null);
     request.reset();
     setStage(2);
   }
@@ -53,11 +56,18 @@ export function useBooking() {
   function landOnRuns(held: string | null): void {
     setTaken(held);
     setRuns([]);
+    setPending(null);
     setStage(3);
   }
 
+  /** The form is filled; hold it and show the confirm dialog rather than sending. */
   function submit(details: BookingDetails): void {
     if (!chosen || !kind || runs.length === 0) return;
+    setPending(details);
+  }
+
+  function confirm(): void {
+    if (!chosen || !kind || !pending || runs.length === 0) return;
 
     setTaken(null);
     request.mutate(
@@ -66,12 +76,12 @@ export function useBooking() {
         kind,
         startsAt: run.startsAt,
         slots: run.slots,
-        petSpecies: details.petSpecies,
-        reason: details.reason,
-        phone: details.phone,
-        ...(details.petName ? { petName: details.petName } : {}),
-        ...(details.petBreed ? { petBreed: details.petBreed } : {}),
-        ...(details.petAge ? { petAge: details.petAge } : {}),
+        petSpecies: pending.petSpecies,
+        reason: pending.reason,
+        phone: pending.phone,
+        ...(pending.petName ? { petName: pending.petName } : {}),
+        ...(pending.petBreed ? { petBreed: pending.petBreed } : {}),
+        ...(pending.petAge ? { petAge: pending.petAge } : {}),
       })),
       {
         onSuccess: () => landOnRuns(null),
@@ -90,11 +100,14 @@ export function useBooking() {
     chosen,
     runs,
     taken,
+    pending,
     request,
     setStage,
     pick,
     chooseKind,
     chooseRuns,
     submit,
+    confirm,
+    cancelConfirm: () => setPending(null),
   };
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import BookingForm from './_components/booking-form';
 import BookingHeader from './_components/booking-header';
 import { AskedNotice, TakenNotice } from './_components/booking-notices';
+import ConfirmDialog from './_components/confirm-dialog';
 import { messageOf } from './_components/error-note';
 import KindStep from './_components/kind-step';
 import MyBookings from './_components/my-bookings';
@@ -20,7 +21,7 @@ export default function BookAppointmentPage() {
   useDocumentTitle('Book an appointment', 'Find a verified vet and ask for a time that suits.');
 
   const flow = useBooking();
-  const { at, chosen, kind, request, runs } = flow;
+  const { at, chosen, kind, request, runs, pending } = flow;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
 
   return (
@@ -76,6 +77,19 @@ export default function BookAppointmentPage() {
               )}
             </div>
           </div>
+        )}
+
+        {chosen && kind && pending && runs.length > 0 && (
+          <ConfirmDialog
+            open
+            vet={chosen}
+            kind={kind}
+            runs={runs}
+            details={pending}
+            isPending={request.isPending}
+            onConfirm={flow.confirm}
+            onCancel={flow.cancelConfirm}
+          />
         )}
       </div>
     </main>

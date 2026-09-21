@@ -272,6 +272,10 @@ describe('the booking flow', () => {
     await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
 
+    // The form does not send: it opens the confirm dialog, and the yes there is what sends.
+    expect(request.mutate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
+
     // Each run books on its own, so the batch is an array — one hour by default here.
     expect(request.mutate).toHaveBeenCalledWith(
       [
@@ -306,6 +310,7 @@ describe('the booking flow', () => {
     await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
     await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
 
     // Two adjacent hours are one two-hour run, sent as a single request in the batch.
     expect(request.mutate).toHaveBeenCalledWith(
@@ -330,6 +335,56 @@ describe('the booking flow', () => {
     expect(screen.queryByLabelText('Pet name (optional)')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Choose time' }));
     expect(screen.getByLabelText('Pet name (optional)')).toBeInTheDocument();
+  });
+
+  it('shows the rate and hours to confirm before it sends', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    const free = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes('09:00'));
+    await user.click(free!);
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
+
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
+    await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+
+    // The dialog reads back what is about to be asked for, with the price it costs.
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText(/₱60\/hour/)).toBeInTheDocument();
+    expect(dialog.getByText('Total')).toBeInTheDocument();
+    expect(dialog.getByText('09171234567')).toBeInTheDocument();
+  });
+
+  it('drops the request when the confirm dialog is dismissed', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    const free = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes('09:00'));
+    await user.click(free!);
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
+
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
+    await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+    await user.click(screen.getByRole('button', { name: 'Go back' }));
+
+    // Backing out sends nothing and returns to the form, the details still filled.
+    expect(request.mutate).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Species/)).toHaveValue('Dog');
   });
 
   it('says the slot is held once the request is in', () => {
@@ -374,6 +429,7 @@ describe('the booking flow', () => {
     await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
     await user.type(screen.getByLabelText(/Phone/), '09171234567');
     await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
 
     // A race rather than a fault, so it reads as one — and the picks are dropped so
     // the refreshed grid decides what is left.
