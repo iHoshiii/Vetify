@@ -21,6 +21,12 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      // ws:true upgrades the socket.io handshake, so real-time rides the same dev origin as /api.
+      '/socket.io': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   build: {
