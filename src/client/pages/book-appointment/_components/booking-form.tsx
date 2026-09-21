@@ -3,7 +3,11 @@ import { APPOINTMENT_REASON_MAX, APPOINTMENT_REASON_MIN } from '@shared/limits';
 import { useId, useState, type FormEvent } from 'react';
 
 import PetFields, { type PetValues } from './pet-fields';
+import RequiredMark from './required-mark';
 import { FIELD, LABEL } from './styles';
+
+// A first pass so a plainly-wrong number is caught before the request; the server validates in full.
+const PHONE_RE = /^[+(]?\d[\d\s()+-]{5,}$/;
 
 export type BookingDetails = PetValues & {
   reason: string;
@@ -50,7 +54,8 @@ export default function BookingForm({
   }
 
   const short = values.reason.trim().length < APPOINTMENT_REASON_MIN;
-  const incomplete = !values.petSpecies.trim() || short;
+  const badPhone = !PHONE_RE.test(values.phone.trim());
+  const incomplete = !values.petSpecies.trim() || short || badPhone;
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -59,6 +64,7 @@ export default function BookingForm({
       <div>
         <label htmlFor={ids.reason} className={LABEL}>
           What is it about?
+          <RequiredMark filled={!short} />
         </label>
         {/* A floor, because this is what the vet decides on and "sick" is not actionable. */}
         <textarea
@@ -80,13 +86,15 @@ export default function BookingForm({
 
       <div>
         <label htmlFor={ids.phone} className={LABEL}>
-          Phone (optional)
+          Phone
+          <RequiredMark filled={!badPhone} />
         </label>
         <input
           id={ids.phone}
           type="tel"
           value={values.phone}
           onChange={(event) => set('phone', event.target.value)}
+          required
           maxLength={32}
           placeholder="+63 32 555 0101"
           className={`${FIELD} mt-1`}

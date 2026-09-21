@@ -1320,7 +1320,13 @@ export const appointmentRequestSchema = z.object({
       `Say what it is about in at least ${APPOINTMENT_REASON_MIN} characters`
     )
     .max(APPOINTMENT_REASON_MAX, 'That is longer than we need here'),
-  phone: phoneField,
+  // Required here, unlike the professional forms: a booking is a specific time the vet may need to reach the owner about.
+  phone: z
+    .string()
+    .trim()
+    .min(1, 'A contact number is required')
+    .max(32, 'That number is too long')
+    .regex(/^[+(]?\d[\d\s()+-]{5,}$/, 'That does not look like a phone number'),
 });
 
 /**

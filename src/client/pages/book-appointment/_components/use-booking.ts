@@ -76,10 +76,10 @@ export function useBooking() {
         slots,
         petSpecies: details.petSpecies,
         reason: details.reason,
+        phone: details.phone,
         ...(details.petName ? { petName: details.petName } : {}),
         ...(details.petBreed ? { petBreed: details.petBreed } : {}),
         ...(details.petAge ? { petAge: details.petAge } : {}),
-        ...(details.phone ? { phone: details.phone } : {}),
       },
       {
         onSuccess: () => landOnSlots(null),
