@@ -60,6 +60,15 @@ export function useBooking() {
     setStage(3);
   }
 
+  // A sent request closes the whole flow back to step one, where the toast is read.
+  function finish(): void {
+    setKind(null);
+    setRuns([]);
+    setPending(null);
+    setTaken(null);
+    setStage(1);
+  }
+
   /** The form is filled; hold it and show the confirm dialog rather than sending. */
   function submit(details: BookingDetails): void {
     if (!chosen || !kind || runs.length === 0) return;
@@ -84,7 +93,7 @@ export function useBooking() {
         ...(pending.petAge ? { petAge: pending.petAge } : {}),
       })),
       {
-        onSuccess: () => landOnRuns(null),
+        onSuccess: finish,
         // A partial 409 names the slot that went, so the refreshed grid lands on it.
         onError: (error) => {
           if (error instanceof PartialRequestError) landOnRuns(error.takenAt);

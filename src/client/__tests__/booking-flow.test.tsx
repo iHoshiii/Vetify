@@ -411,6 +411,43 @@ describe('the booking flow', () => {
     expect(screen.getByLabelText(/Species/)).toHaveValue('Dog');
   });
 
+  it('pops a sent toast and closes the modal once the request goes through', async () => {
+    const user = userEvent.setup();
+    // A real send flips the mutation to success and fires onSuccess, as the hook would.
+    request.mutate.mockImplementation((_input: unknown, handlers: { onSuccess?: () => void }) => {
+      request.isSuccess = true;
+      request.data = {
+        appointment: { id: 'a1' },
+        mail: {
+          client: { delivered: true, deliveryError: null },
+          professional: { delivered: true, deliveryError: null },
+        },
+      };
+      handlers.onSuccess?.();
+    });
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Choose' }));
+    await user.click(screen.getByRole('button', { name: /Clinic visit/ }));
+
+    const free = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent?.includes('09:00'));
+    await user.click(free!);
+    await user.click(screen.getByRole('button', { name: /Choose time/ }));
+
+    await user.type(screen.getByLabelText(/Species/), 'Dog');
+    await user.type(screen.getByLabelText(/What is it about/), 'A rash on his back leg.');
+    await user.type(screen.getByLabelText(/Phone/), '09171234567');
+    await user.click(screen.getByRole('button', { name: 'Request this appointment' }));
+    await user.click(screen.getByRole('button', { name: /^Confirm/ }));
+
+    // The confirm dialog is gone and a toast names the vet it went to.
+    expect(await screen.findByText(/Request sent to Marites Reyes/)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('says the slot is held once the request is in', () => {
     request.isSuccess = true;
     request.data = {

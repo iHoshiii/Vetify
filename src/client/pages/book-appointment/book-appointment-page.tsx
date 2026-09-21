@@ -8,6 +8,7 @@ import ConfirmDialog from './_components/confirm-dialog';
 import { messageOf } from './_components/error-note';
 import KindStep from './_components/kind-step';
 import MyBookings from './_components/my-bookings';
+import SentToast from './_components/sent-toast';
 import SlotPicker from './_components/slot-picker';
 import Step from './_components/step';
 import TopVets from './_components/top-vets';
@@ -34,6 +35,12 @@ export default function BookAppointmentPage() {
 
         {appointmentsOpen && <MyBookings onClose={() => setAppointmentsOpen(false)} />}
 
+        {request.isSuccess && chosen && (
+          <SentToast
+            vetName={chosen.name ?? chosen.clinicName ?? 'your vet'}
+            onDismiss={request.reset}
+          />
+        )}
         {request.isSuccess && <AskedNotice mail={request.data.mail} />}
         {flow.taken && <TakenNotice />}
 
