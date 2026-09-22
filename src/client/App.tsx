@@ -26,6 +26,7 @@ import HelpPage from '@/pages/help/help-page';
 import HomePage from '@/pages/home-page';
 import LoginPage from '@/pages/login/login-page';
 import MapPage from '@/pages/map/map-page';
+import MessagesPage from '@/pages/messages/messages-page';
 import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
@@ -146,6 +147,14 @@ export default function App() {
           element={
             <RequireAuth>
               <MapPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="messages"
+          element={
+            <RequireAuth>
+              <MessagesPage />
             </RequireAuth>
           }
         />

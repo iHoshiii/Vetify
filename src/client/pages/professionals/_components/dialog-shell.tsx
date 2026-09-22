@@ -35,6 +35,16 @@ export default function DialogShell(props: Props) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onCancel]);
 
+  // The page behind must not scroll under the dialog, so its overflow is held shut while open
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (

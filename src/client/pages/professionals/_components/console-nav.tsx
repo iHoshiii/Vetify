@@ -1,14 +1,20 @@
 import { useIncomingAppointmentCounts } from '@/hooks/useAppointments';
+import { useUnreadCount } from '@/hooks/useMessages';
 import type { AppointmentKind } from '@shared/schemas';
 import { NavLink } from 'react-router-dom';
 
 const ROOT = '/professionals/dashboard';
 
-// The two booking sections carry a count; the rest are pages you open rather than queues you clear
-const SECTIONS: ReadonlyArray<{ to: string; label: string; kind?: AppointmentKind }> = [
+// A section flagged 'unread' shows the messaging badge; the two booking sections show their requested count; the rest are pages you open rather than queues you clear.
+const SECTIONS: ReadonlyArray<{
+  to: string;
+  label: string;
+  kind?: AppointmentKind;
+  unread?: boolean;
+}> = [
   { to: `${ROOT}/consultations`, label: 'Online Consultation', kind: 'virtual' },
   { to: `${ROOT}/clinic-visits`, label: 'Clinic Visit', kind: 'onsite' },
-  { to: `${ROOT}/conversations`, label: 'Conversations' },
+  { to: `${ROOT}/conversations`, label: 'Conversations', unread: true },
   { to: `${ROOT}/history`, label: 'History & Logs' },
   { to: `${ROOT}/settings`, label: 'Settings' },
 ];
@@ -21,13 +27,18 @@ const COUNT = 'rounded-full bg-amber-500 px-1.5 text-[10px] font-black text-whit
 
 export default function ConsoleNav() {
   const { data: counts } = useIncomingAppointmentCounts();
+  const { data: unread = 0 } = useUnreadCount(true, 'incoming');
 
   return (
     <nav aria-label="Console sections" className="lg:w-48 lg:shrink-0">
       {/* Scrolls sideways under lg, stacks above it. */}
       <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
         {SECTIONS.map((section) => {
-          const waiting = section.kind ? counts?.[section.kind].requested ?? 0 : 0;
+          const waiting = section.unread
+            ? unread
+            : section.kind
+            ? counts?.[section.kind].requested ?? 0
+            : 0;
 
           return (
             <li key={section.to} className="shrink-0 lg:shrink">

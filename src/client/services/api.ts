@@ -3,7 +3,9 @@ import { readAccessToken } from '@/lib/auth-storage';
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
 export type ApiErrorBody = {
-  error: string;
+  error?: string;
+  /** Some middleware uses the conventional `message` response field. */
+  message?: string;
   /** Machine-readable cause, so callers can branch without matching prose. */
   reason?: string;
   issues?: Record<string, string[] | undefined>;
@@ -54,7 +56,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     const err = (payload ?? {}) as ApiErrorBody;
     throw new ApiError(
       res.status,
-      err.error ?? `Request failed (${res.status})`,
+      err.error ?? err.message ?? `Request failed (${res.status})`,
       err.reason,
       err.issues
     );
@@ -86,7 +88,11 @@ export async function apiFetchBlob(path: string, options: RequestOptions = {}): 
 
   if (!res.ok) {
     const err = ((await res.json().catch(() => null)) ?? {}) as ApiErrorBody;
-    throw new ApiError(res.status, err.error ?? `Request failed (${res.status})`, err.reason);
+    throw new ApiError(
+      res.status,
+      err.error ?? err.message ?? `Request failed (${res.status})`,
+      err.reason
+    );
   }
 
   return await res.blob();

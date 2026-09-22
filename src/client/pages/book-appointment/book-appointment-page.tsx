@@ -4,9 +4,11 @@ import { useState } from 'react';
 import BookingForm from './_components/booking-form';
 import BookingHeader from './_components/booking-header';
 import { AskedNotice, TakenNotice } from './_components/booking-notices';
+import ConfirmDialog from './_components/confirm-dialog';
 import { messageOf } from './_components/error-note';
 import KindStep from './_components/kind-step';
 import MyBookings from './_components/my-bookings';
+import SentToast from './_components/sent-toast';
 import SlotPicker from './_components/slot-picker';
 import Step from './_components/step';
 import TopVets from './_components/top-vets';
@@ -20,7 +22,7 @@ export default function BookAppointmentPage() {
   useDocumentTitle('Book an appointment', 'Find a verified vet and ask for a time that suits.');
 
   const flow = useBooking();
-  const { at, chosen, kind, request, slot } = flow;
+  const { at, chosen, kind, request, runs, pending } = flow;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
 
   return (
@@ -33,6 +35,12 @@ export default function BookAppointmentPage() {
 
         {appointmentsOpen && <MyBookings onClose={() => setAppointmentsOpen(false)} />}
 
+        {request.isSuccess && chosen && (
+          <SentToast
+            vetName={chosen.name ?? chosen.clinicName ?? 'your vet'}
+            onDismiss={request.reset}
+          />
+        )}
         {request.isSuccess && <AskedNotice mail={request.data.mail} />}
         {flow.taken && <TakenNotice />}
 
@@ -60,11 +68,11 @@ export default function BookAppointmentPage() {
 
               {at === 3 && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
-                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseSlots} />
+                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseRuns} />
                 </Step>
               )}
 
-              {at === 4 && slot && (
+              {at === 4 && runs.length > 0 && (
                 <Step number={4} title="Tell them about the visit">
                   <BookingForm
                     isPending={request.isPending}
@@ -76,6 +84,19 @@ export default function BookAppointmentPage() {
               )}
             </div>
           </div>
+        )}
+
+        {chosen && kind && pending && runs.length > 0 && (
+          <ConfirmDialog
+            open
+            vet={chosen}
+            kind={kind}
+            runs={runs}
+            details={pending}
+            isPending={request.isPending}
+            onConfirm={flow.confirm}
+            onCancel={flow.cancelConfirm}
+          />
         )}
       </div>
     </main>

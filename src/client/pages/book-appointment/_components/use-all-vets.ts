@@ -2,7 +2,8 @@ import { useProfessionals } from '@/hooks/useProfessionals';
 import { useEffect, useState } from 'react';
 
 const PAGE_SIZE = 20;
-const DEBOUNCE_MS = 300;
+// A full second after the last keystroke, so a search fires once typing stops, not mid-word.
+const DEBOUNCE_MS = 1000;
 
 // Search hits the whole directory server-side, so a name on page 99 surfaces from page 1.
 export function useAllVets(open: boolean) {

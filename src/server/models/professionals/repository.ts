@@ -181,6 +181,17 @@ export async function findProfessionalByUser(
   return await professionalsCollection().findOne({ user: toObjectId(user) });
 }
 
+// The verified listings behind a set of accounts, so a thread can name a vet by their licence name, not their login.
+export async function findVerifiedProfessionalsByUserIds(
+  users: (string | ObjectId)[]
+): Promise<ProfessionalDocument[]> {
+  if (users.length === 0) return [];
+  const ids = users.map(toObjectId);
+  return await professionalsCollection()
+    .find({ user: { $in: ids }, status: 'verified' })
+    .toArray();
+}
+
 export type FindProfessionalsOptions = {
   /** Restricts the read to these statuses. Omitting it means every status. */
   statuses?: ProfessionalStatus[];
