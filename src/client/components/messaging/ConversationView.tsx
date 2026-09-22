@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useTyping } from '@/hooks/useTyping';
 import { useTypingEmitter } from '@/hooks/useTypingEmitter';
@@ -24,6 +25,7 @@ export default function ConversationView({
   thread: Thread;
   onBack?: () => void;
 }) {
+  const { user } = useAuth();
   const { data, isLoading } = useMessages(thread.id);
   const send = useSendMessage(thread.id);
   const onType = useTypingEmitter(thread.id);
@@ -46,6 +48,8 @@ export default function ConversationView({
   );
   const receipt = deliveryStatus(data?.otherReadAt ?? thread.otherReadAt, messages);
   const participantName = nameOf(thread);
+  const mineAvatar = { name: user?.name ?? 'You', avatarUrl: user?.avatarUrl };
+  const otherAvatar = { name: participantName, avatarUrl: thread.with?.avatarUrl };
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-white">
@@ -97,6 +101,8 @@ export default function ConversationView({
               key={message.id}
               message={message}
               receipt={index === lastMineIndex ? receipt : null}
+              mineAvatar={mineAvatar}
+              otherAvatar={otherAvatar}
             />
           ))
         )}

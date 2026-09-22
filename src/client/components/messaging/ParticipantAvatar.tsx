@@ -1,11 +1,18 @@
 type Props = {
   name: string;
   avatarUrl?: string | null;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
 };
 
+// Tailwind classes per size; xs is the inline bubble avatar, sm the list, md the header.
+const SIZES = {
+  xs: 'h-7 w-7 text-[10px]',
+  sm: 'h-9 w-9 text-xs',
+  md: 'h-10 w-10 text-sm',
+} as const;
+
 export default function ParticipantAvatar({ name, avatarUrl, size = 'sm' }: Props) {
-  const dimensions = size === 'md' ? 'h-10 w-10 text-sm' : 'h-9 w-9 text-xs';
+  const dimensions = SIZES[size];
 
   if (avatarUrl) {
     return (

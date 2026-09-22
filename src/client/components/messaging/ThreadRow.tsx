@@ -1,6 +1,6 @@
 import { useLongPress } from '@/hooks/useLongPress';
 import type { Thread } from '@/services/messages.service';
-import { BellOff, MoreVertical } from 'lucide-react';
+import { BellOff, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
 import ParticipantAvatar from './ParticipantAvatar';
@@ -68,9 +68,9 @@ export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: 
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
         aria-label="Conversation options"
-        className="absolute right-2 top-2 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 focus:opacity-100 group-hover:opacity-100"
+        className="absolute right-2 top-9 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 focus:opacity-100 group-hover:opacity-100"
       >
-        <MoreVertical className="h-4 w-4" />
+        <MoreHorizontal className="h-4 w-4" />
       </button>
 
       {menuOpen && <ThreadMenu thread={thread} variant="row" onDone={() => setMenuOpen(false)} />}

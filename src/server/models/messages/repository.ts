@@ -107,25 +107,41 @@ export async function touchThreadOnSend(input: {
   senderIsClient: boolean;
   at: Date;
 }): Promise<ThreadDocument | null> {
-  // A message resurfaces the thread for both sides: the sender re-engaging their own copy and the recipient's archived or deleted one, the way Messenger's does.
-  const recipientState = input.senderIsClient ? { professionalUnread: 1 } : { clientUnread: 1 };
-  const wake: Partial<Pick<ThreadDocument, 'clientState' | 'professionalState'>> = {
-    clientState: 'active',
-    professionalState: 'active',
+  // The recipient's side depends on who sent; the sender always re-engages their own copy.
+  const senderState = input.senderIsClient ? 'clientState' : 'professionalState';
+  const rcpState = input.senderIsClient ? 'professionalState' : 'clientState';
+  const rcpMuted = input.senderIsClient ? 'professionalMuted' : 'clientMuted';
+  const rcpUnread = input.senderIsClient ? 'professionalUnread' : 'clientUnread';
+
+  // A message wakes the recipient's thread back to All, except: spam never returns, and a muted+archived one stays archived.
+  const wokenRecipientState = {
+    $switch: {
+      branches: [
+        { case: { $eq: [`$${rcpState}`, 'spam'] }, then: 'spam' },
+        {
+          case: { $and: [{ $eq: [`$${rcpState}`, 'archived'] }, `$${rcpMuted}`] },
+          then: 'archived',
+        },
+      ],
+      default: 'active',
+    },
   };
 
   return await threadsCollection().findOneAndUpdate(
     { _id: toObjectId(input.thread) },
-    {
-      $set: {
-        lastBody: input.body,
-        lastSender: toObjectId(input.sender),
-        lastAt: input.at,
-        updatedAt: input.at,
-        ...wake,
+    [
+      {
+        $set: {
+          lastBody: input.body,
+          lastSender: toObjectId(input.sender),
+          lastAt: input.at,
+          updatedAt: input.at,
+          [senderState]: 'active',
+          [rcpState]: wokenRecipientState,
+          [rcpUnread]: { $add: [`$${rcpUnread}`, 1] },
+        },
       },
-      $inc: recipientState,
-    },
+    ],
     { returnDocument: 'after' }
   );
 }
