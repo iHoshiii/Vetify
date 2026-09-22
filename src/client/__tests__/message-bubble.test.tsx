@@ -39,6 +39,12 @@ describe('MessageBubble actions and timestamps', () => {
     expect(screen.queryByText(/Today at/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show message date and time' }));
     expect(screen.getByText(/Today at/)).toBeInTheDocument();
+    expect(screen.getByTestId('message-meta')).toHaveClass('absolute', 'whitespace-nowrap');
+  });
+
+  it('keeps the message options button visible for an actionable message', () => {
+    renderBubble();
+    expect(screen.getByRole('button', { name: 'Message options' })).not.toHaveClass('opacity-0');
   });
 
   it('edits an owned recent message', async () => {

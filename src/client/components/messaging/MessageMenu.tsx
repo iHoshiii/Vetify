@@ -18,7 +18,7 @@ export default function MessageMenu({
         aria-label="Message options"
         aria-expanded={open}
         onClick={onToggle}
-        className="absolute -left-8 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 opacity-0 hover:bg-slate-200 focus:opacity-100 group-hover:opacity-100"
+        className="absolute -left-9 top-1/2 -translate-y-1/2 rounded-lg bg-white/90 p-1 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

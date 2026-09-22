@@ -4,10 +4,10 @@ import { MESSAGE_ACTION_WINDOW_MS } from '@shared/limits';
 import { useEffect, useState } from 'react';
 
 import MessageEditor from './MessageEditor';
+import MessageMeta from './MessageMeta';
 import MessageMenu from './MessageMenu';
 import ParticipantAvatar from './ParticipantAvatar';
 import UnsendConfirm from './UnsendConfirm';
-import { fullTime, shortTime } from './message-time';
 
 type Avatar = { name: string; avatarUrl?: string | null };
 
@@ -45,7 +45,9 @@ export default function MessageBubble({
   const actionable = mine && !message.unsentAt && !message.id.startsWith('pending-') && windowOpen;
   const longPress = useLongPress(() => actionable && setMenuOpen(true));
   const who = mine ? mineAvatar : otherAvatar;
-  const timeVisible = showTime || expandedTime;
+  const edited = Boolean(message.editedAt && !message.unsentAt);
+  const metaLines = Number(showTime || expandedTime || edited) + Number(Boolean(receipt));
+  const metaSpace = metaLines > 1 ? 'mb-8' : metaLines === 1 ? 'mb-4' : '';
 
   useEffect(() => {
     if (!windowOpen) return;
@@ -80,7 +82,7 @@ export default function MessageBubble({
       className={`group relative flex items-end gap-2 ${mine ? 'flex-row-reverse' : 'flex-row'}`}
     >
       <ParticipantAvatar name={who.name} avatarUrl={who.avatarUrl} size="xs" />
-      <div className="relative max-w-[75%] lg:max-w-lg">
+      <div className={`relative max-w-[75%] lg:max-w-lg ${metaSpace}`}>
         {editing ? (
           <MessageEditor
             body={message.body}
@@ -110,17 +112,15 @@ export default function MessageBubble({
             {message.unsentAt ? 'Message was unsent' : message.body}
           </div>
         )}
-        {(timeVisible || (message.editedAt && !message.unsentAt)) && (
-          <p className={`mt-0.5 text-[10px] text-slate-400 ${mine ? 'text-right' : 'text-left'}`}>
-            {timeVisible &&
-              (expandedTime ? fullTime(message.createdAt) : shortTime(message.createdAt))}
-            {message.editedAt && !message.unsentAt ? `${timeVisible ? ' \u00b7 ' : ''}Edited` : ''}
-          </p>
-        )}
+        <MessageMeta
+          createdAt={message.createdAt}
+          expanded={expandedTime}
+          showTime={showTime}
+          edited={edited}
+          mine={mine}
+          receipt={receipt}
+        />
         {error && !confirming && <p className="mt-1 text-xs text-rose-600">{error}</p>}
-        {receipt && (
-          <p className="mt-0.5 text-right text-[10px] font-semibold text-teal-600">{receipt}</p>
-        )}
         {actionable && !editing && (
           <MessageMenu
             open={menuOpen}
