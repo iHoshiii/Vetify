@@ -131,6 +131,7 @@ router.get('/:id/messages', validateQuery(messageListQuerySchema), async (req, r
 
   const { items, total } = await findMessages({
     thread: thread._id,
+    viewer: viewer._id,
     after: thread.client.equals(viewer._id) ? thread.clientDeletedAt : thread.professionalDeletedAt,
     page: query.page,
     limit: query.limit,

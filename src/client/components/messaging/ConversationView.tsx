@@ -1,6 +1,6 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
-import { useEditMessage, useUnsendMessage } from '@/hooks/useMessageActions';
+import { useDeleteMessage, useEditMessage } from '@/hooks/useMessageActions';
 import { usePresence } from '@/hooks/usePresence';
 import { useTyping } from '@/hooks/useTyping';
 import { useTypingEmitter } from '@/hooks/useTypingEmitter';
@@ -32,7 +32,7 @@ export default function ConversationView({
   const { data, isLoading } = useMessages(thread.id);
   const send = useSendMessage(thread.id);
   const edit = useEditMessage(thread.id);
-  const unsend = useUnsendMessage(thread.id);
+  const deleteMessage = useDeleteMessage(thread.id);
   const onType = useTypingEmitter(thread.id);
   const otherTyping = useTyping(thread.id);
   const otherOnline = usePresence(thread.with?.id ?? null);
@@ -128,10 +128,10 @@ export default function ConversationView({
                 showTime={shouldShowMessageTime(messages, index)}
                 busy={
                   (edit.isPending && edit.variables?.messageId === message.id) ||
-                  (unsend.isPending && unsend.variables === message.id)
+                  (deleteMessage.isPending && deleteMessage.variables === message.id)
                 }
                 onEdit={(body) => edit.mutateAsync({ messageId: message.id, body })}
-                onUnsend={() => unsend.mutateAsync(message.id)}
+                onDelete={() => deleteMessage.mutateAsync(message.id)}
               />
             </Fragment>
           ))

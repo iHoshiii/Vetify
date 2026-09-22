@@ -69,6 +69,7 @@ export {
   findConversationPartnerIds,
   findMessageById,
   findMessages,
+  hideStoredMessage,
   findThreadById,
   findThreadByPair,
   findThreads,

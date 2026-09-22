@@ -4,7 +4,7 @@ import { Router, type RequestHandler } from 'express';
 import { messageLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import { findThreadById, isValidObjectId, toMessageView, type ThreadDocument } from '../../models';
-import { editOwnMessage, unsendOwnMessage } from '../../services/message-actions.service';
+import { deleteMessage, editOwnMessage } from '../../services/message-actions.service';
 import { ensureParty } from '../../services/messages.service';
 import { AppError } from '../../utils/AppError';
 import { ok } from '../../utils/response';
@@ -38,12 +38,15 @@ router.patch('/:messageId', messageLimiter, validate(messageEditSchema), async (
 
 router.delete('/:messageId', messageLimiter, async (req, res) => {
   const user = actorOf(req);
-  const message = await unsendOwnMessage({
+  const result = await deleteMessage({
     thread: await loadOwn(req),
     user,
     messageId: messageIdOf(req),
   });
-  ok(res, { message: toMessageView(message, user._id) });
+  ok(res, {
+    message: result.message ? toMessageView(result.message, user._id) : null,
+    removedForYou: result.removedForYou,
+  });
 });
 
 export default router;

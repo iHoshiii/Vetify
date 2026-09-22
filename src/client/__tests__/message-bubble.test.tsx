@@ -18,7 +18,7 @@ function recentMessage(overrides: Partial<Message> = {}): Message {
 
 function renderBubble(message = recentMessage(), showTime = false) {
   const onEdit = vi.fn().mockResolvedValue(undefined);
-  const onUnsend = vi.fn().mockResolvedValue(undefined);
+  const onDelete = vi.fn().mockResolvedValue(undefined);
   render(
     <MessageBubble
       message={message}
@@ -27,10 +27,10 @@ function renderBubble(message = recentMessage(), showTime = false) {
       showTime={showTime}
       busy={false}
       onEdit={onEdit}
-      onUnsend={onUnsend}
+      onDelete={onDelete}
     />
   );
-  return { onEdit, onUnsend };
+  return { onEdit, onDelete };
 }
 
 describe('MessageBubble actions and timestamps', () => {
@@ -57,11 +57,25 @@ describe('MessageBubble actions and timestamps', () => {
   });
 
   it('confirms before unsending', async () => {
-    const { onUnsend } = renderBubble();
+    const { onDelete } = renderBubble();
     fireEvent.click(screen.getByRole('button', { name: 'Message options' }));
     fireEvent.click(screen.getByRole('button', { name: 'Unsend' }));
     const dialog = screen.getByRole('alertdialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Unsend' }));
-    await waitFor(() => expect(onUnsend).toHaveBeenCalledOnce());
+    await waitFor(() => expect(onDelete).toHaveBeenCalledOnce());
+  });
+
+  it('offers remove for me on a received message', () => {
+    renderBubble(recentMessage({ fromYou: false }));
+    fireEvent.click(screen.getByRole('button', { name: 'Message options' }));
+    expect(screen.getByRole('button', { name: 'Remove for me' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+  });
+
+  it('allows old owned messages to be unsent but not edited', () => {
+    renderBubble(recentMessage({ createdAt: new Date(Date.now() - 16 * 60_000).toISOString() }));
+    fireEvent.click(screen.getByRole('button', { name: 'Message options' }));
+    expect(screen.getByRole('button', { name: 'Unsend' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
   });
 });

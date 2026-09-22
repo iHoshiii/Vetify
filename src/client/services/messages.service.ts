@@ -150,12 +150,11 @@ export async function editMessage(threadId: string, messageId: string, body: str
   return message;
 }
 
-export async function unsendMessage(threadId: string, messageId: string) {
-  const { message } = await apiFetch<{ message: Message }>(
+export async function deleteMessage(threadId: string, messageId: string) {
+  return await apiFetch<{ message: Message | null; removedForYou: boolean }>(
     `/messages/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
     { method: 'DELETE' }
   );
-  return message;
 }
 
 export async function sendTyping(threadId: string, typing: boolean) {

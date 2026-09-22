@@ -44,6 +44,7 @@ export type MessageDocument = {
   body: string;
   editedAt?: Date | null;
   unsentAt?: Date | null;
+  hiddenFor?: ObjectId[];
   createdAt: Date;
 };
 

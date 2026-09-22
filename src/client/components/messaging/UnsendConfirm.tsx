@@ -3,11 +3,13 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function UnsendConfirm({
+  removeForMe,
   busy,
   error,
   onCancel,
   onConfirm,
 }: {
+  removeForMe: boolean;
   busy: boolean;
   error: string | null;
   onCancel: () => void;
@@ -29,7 +31,7 @@ export default function UnsendConfirm({
       <div
         role="alertdialog"
         aria-modal="true"
-        aria-labelledby="unsend-title"
+        aria-labelledby="delete-message-title"
         className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -38,11 +40,13 @@ export default function UnsendConfirm({
             <AlertTriangle className="h-5 w-5" />
           </span>
           <div>
-            <p id="unsend-title" className="text-lg font-bold text-slate-900">
-              Unsend this message?
+            <p id="delete-message-title" className="text-lg font-bold text-slate-900">
+              {removeForMe ? 'Remove this message?' : 'Unsend this message?'}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
-              Its contents will be removed for both people. A message placeholder will remain.
+              {removeForMe
+                ? 'This message will only be removed from your side.'
+                : 'Its contents will be removed for both people. A message placeholder will remain.'}
             </p>
           </div>
         </div>
@@ -61,7 +65,7 @@ export default function UnsendConfirm({
             disabled={busy}
             className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
           >
-            {busy ? 'Unsending…' : 'Unsend'}
+            {busy ? 'Removing…' : removeForMe ? 'Remove for me' : 'Unsend'}
           </button>
         </div>
         {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}

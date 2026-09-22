@@ -42,6 +42,17 @@ export async function unsendStoredMessage(input: {
   );
 }
 
+export async function hideStoredMessage(input: {
+  message: MessageDocument;
+  viewer: ObjectId;
+}): Promise<boolean> {
+  const result = await messagesCollection().updateOne(
+    { _id: input.message._id, thread: input.message.thread },
+    { $addToSet: { hiddenFor: input.viewer } }
+  );
+  return result.matchedCount === 1;
+}
+
 export async function updateLatestMessagePreview(input: {
   thread: ThreadDocument;
   message: MessageDocument;

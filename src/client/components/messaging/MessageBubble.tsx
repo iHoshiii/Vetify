@@ -19,7 +19,7 @@ type Props = {
   showTime: boolean;
   busy: boolean;
   onEdit: (body: string) => Promise<unknown>;
-  onUnsend: () => Promise<unknown>;
+  onDelete: () => Promise<unknown>;
 };
 
 export default function MessageBubble({
@@ -30,7 +30,7 @@ export default function MessageBubble({
   showTime,
   busy,
   onEdit,
-  onUnsend,
+  onDelete,
 }: Props) {
   const [expandedTime, setExpandedTime] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -42,7 +42,9 @@ export default function MessageBubble({
     () => Date.now() - sentAt <= MESSAGE_ACTION_WINDOW_MS
   );
   const mine = message.fromYou;
-  const actionable = mine && !message.unsentAt && !message.id.startsWith('pending-') && windowOpen;
+  const actionable = !message.id.startsWith('pending-');
+  const canEdit = mine && !message.unsentAt && windowOpen;
+  const removeForMe = !mine || Boolean(message.unsentAt);
   const longPress = useLongPress(() => actionable && setMenuOpen(true));
   const who = mine ? mineAvatar : otherAvatar;
   const edited = Boolean(message.editedAt && !message.unsentAt);
@@ -67,13 +69,13 @@ export default function MessageBubble({
     }
   };
 
-  const unsend = async () => {
+  const deleteMessage = async () => {
     setError(null);
     try {
-      await onUnsend();
+      await onDelete();
       setConfirming(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to unsend message');
+      setError(cause instanceof Error ? cause.message : 'Unable to remove message');
     }
   };
 
@@ -124,13 +126,16 @@ export default function MessageBubble({
         {actionable && !editing && (
           <MessageMenu
             open={menuOpen}
+            mine={mine}
+            canEdit={canEdit}
+            removeForMe={removeForMe}
             onToggle={() => setMenuOpen((open) => !open)}
             onEdit={() => {
               setEditing(true);
               setMenuOpen(false);
               setError(null);
             }}
-            onUnsend={() => {
+            onDelete={() => {
               setConfirming(true);
               setMenuOpen(false);
               setError(null);
@@ -140,13 +145,14 @@ export default function MessageBubble({
       </div>
       {confirming && (
         <UnsendConfirm
+          removeForMe={removeForMe}
           busy={busy}
           error={error}
           onCancel={() => {
             setConfirming(false);
             setError(null);
           }}
-          onConfirm={() => void unsend()}
+          onConfirm={() => void deleteMessage()}
         />
       )}
     </div>

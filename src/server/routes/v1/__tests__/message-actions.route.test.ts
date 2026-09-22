@@ -112,7 +112,7 @@ describe('message edit and unsend', () => {
     expect(incoming.body.items[0].lastBody).toBe('Message was unsent');
   });
 
-  it('rejects another participant and messages older than the action window', async () => {
+  it('rejects editing by the recipient and editing after the action window', async () => {
     const { client, vet, threadId, messageId } = await conversation();
     const other = await request(app)
       .patch(`/api/v1/messages/${threadId}/messages/${messageId}`)
@@ -125,8 +125,41 @@ describe('message edit and unsend', () => {
       { $set: { createdAt: new Date(Date.now() - MESSAGE_ACTION_WINDOW_MS - 1) } }
     );
     const expired = await request(app)
+      .patch(`/api/v1/messages/${threadId}/messages/${messageId}`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ body: 'Too late' });
+    expect(expired.status).toBe(409);
+  });
+
+  it('allows an old owned message to be unsent', async () => {
+    const { client, threadId, messageId } = await conversation();
+    await messagesCollection().updateOne(
+      { _id: new ObjectId(messageId) },
+      { $set: { createdAt: new Date(Date.now() - MESSAGE_ACTION_WINDOW_MS - 1) } }
+    );
+    const removed = await request(app)
       .delete(`/api/v1/messages/${threadId}/messages/${messageId}`)
       .set('Authorization', `Bearer ${client.token}`);
-    expect(expired.status).toBe(409);
+    expect(removed.status).toBe(200);
+    expect(removed.body.message.unsentAt).toEqual(expect.any(String));
+  });
+
+  it('removes a received message only for the requesting participant', async () => {
+    const { client, vet, threadId, messageId } = await conversation();
+    const removed = await request(app)
+      .delete(`/api/v1/messages/${threadId}/messages/${messageId}`)
+      .set('Authorization', `Bearer ${vet.token}`);
+    expect(removed.body).toMatchObject({ message: null, removedForYou: true });
+
+    const [recipientView, senderView] = await Promise.all([
+      request(app)
+        .get(`/api/v1/messages/${threadId}/messages`)
+        .set('Authorization', `Bearer ${vet.token}`),
+      request(app)
+        .get(`/api/v1/messages/${threadId}/messages`)
+        .set('Authorization', `Bearer ${client.token}`),
+    ]);
+    expect(recipientView.body.items).toHaveLength(0);
+    expect(senderView.body.items).toHaveLength(1);
   });
 });
