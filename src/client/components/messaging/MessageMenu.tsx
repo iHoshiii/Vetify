@@ -21,7 +21,7 @@ export default function MessageMenu(props: Props) {
     const place = () => {
       const rect = buttonRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const width = 144;
+      const width = 160;
       const height = props.canEdit ? 82 : 42;
       const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left - width / 2));
       const above = rect.top - height - 6;
@@ -60,7 +60,7 @@ export default function MessageMenu(props: Props) {
       {props.open &&
         createPortal(
           <div
-            className="fixed z-[90] w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-xl"
+            className="fixed z-[90] w-40 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-xl"
             style={position}
           >
             {props.canEdit && (
@@ -75,7 +75,7 @@ export default function MessageMenu(props: Props) {
             <button
               type="button"
               onClick={props.onDelete}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-rose-600 hover:bg-rose-50"
+              className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-2 text-left text-rose-600 hover:bg-rose-50"
             >
               <Trash2 className="h-4 w-4" /> {props.removeForMe ? 'Remove for me' : 'Unsend'}
             </button>

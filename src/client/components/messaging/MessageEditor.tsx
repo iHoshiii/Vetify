@@ -1,6 +1,6 @@
 import { MESSAGE_MAX_LENGTH } from '@shared/limits';
 import { Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function MessageEditor({
   body,
@@ -14,10 +14,16 @@ export default function MessageEditor({
   onSave: (body: string) => void;
 }) {
   const [text, setText] = useState(body);
+  const editorRef = useRef<HTMLDivElement>(null);
   const trimmed = text.trim();
 
+  useEffect(() => editorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), []);
+
   return (
-    <div className="rounded-2xl rounded-br-sm bg-white p-2 shadow ring-1 ring-teal-300">
+    <div
+      ref={editorRef}
+      className="rounded-2xl rounded-br-sm bg-white p-2 shadow ring-1 ring-teal-300"
+    >
       <textarea
         autoFocus
         rows={2}

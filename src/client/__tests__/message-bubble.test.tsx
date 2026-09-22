@@ -3,6 +3,8 @@ import type { Message } from '@/services/messages.service';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+Element.prototype.scrollIntoView = vi.fn();
+
 function recentMessage(overrides: Partial<Message> = {}): Message {
   return {
     id: 'message-1',
@@ -55,6 +57,10 @@ describe('MessageBubble actions and timestamps', () => {
     const { onEdit } = renderBubble();
     fireEvent.click(screen.getByRole('button', { name: 'Message options' }));
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({
+      block: 'nearest',
+      behavior: 'smooth',
+    });
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Updated hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save edited message' }));
     await waitFor(() => expect(onEdit).toHaveBeenCalledWith('Updated hello'));
