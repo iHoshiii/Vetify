@@ -6,7 +6,13 @@ function timeOf(iso: string): string {
 }
 
 // One message, sided by who sent it: the viewer's own on the right in teal, the other side left in slate.
-export default function MessageBubble({ message }: { message: Message }) {
+export default function MessageBubble({
+  message,
+  receipt,
+}: {
+  message: Message;
+  receipt?: 'Delivered' | 'Seen' | null;
+}) {
   const mine = message.fromYou;
 
   return (
@@ -24,6 +30,9 @@ export default function MessageBubble({ message }: { message: Message }) {
         <p className={`mt-0.5 text-[10px] text-slate-400 ${mine ? 'text-right' : 'text-left'}`}>
           {timeOf(message.createdAt)}
         </p>
+        {receipt && (
+          <p className="mt-0.5 text-right text-[10px] font-semibold text-teal-600">{receipt}</p>
+        )}
       </div>
     </div>
   );
