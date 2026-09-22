@@ -49,9 +49,11 @@ export default function MessageMenu(props: Props) {
           event.stopPropagation();
           props.onToggle();
         }}
-        className={`absolute top-1/2 -translate-y-1/2 rounded-lg bg-white/90 p-1 text-slate-500 shadow-sm ring-1 ring-slate-200 hover:bg-slate-100 ${
-          props.mine ? '-left-9' : '-right-9'
-        }`}
+        className={`absolute top-1/2 -translate-y-1/2 rounded-lg bg-white/90 p-1 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 ${
+          props.open
+            ? 'pointer-events-auto opacity-100'
+            : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100'
+        } ${props.mine ? '-left-9' : '-right-9'}`}
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

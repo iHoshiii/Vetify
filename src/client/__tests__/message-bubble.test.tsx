@@ -42,9 +42,13 @@ describe('MessageBubble actions and timestamps', () => {
     expect(screen.getByTestId('message-meta')).toHaveClass('absolute', 'whitespace-nowrap');
   });
 
-  it('keeps the message options button visible for an actionable message', () => {
+  it('reveals the message options button on row hover or keyboard focus', () => {
     renderBubble();
-    expect(screen.getByRole('button', { name: 'Message options' })).not.toHaveClass('opacity-0');
+    expect(screen.getByRole('button', { name: 'Message options' })).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100',
+      'focus-visible:opacity-100'
+    );
   });
 
   it('edits an owned recent message', async () => {
