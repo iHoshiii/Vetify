@@ -47,6 +47,7 @@ import { created, fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 import { partiesOf } from './thread-parties';
 import messageActionsRoute from './message-actions.route';
+import { syncThreadPresence } from '../../realtime/presence';
 
 const router = Router();
 
@@ -104,6 +105,7 @@ router.post('/', validate(threadOpenSchema), async (req, res) => {
 
   const thread = await openThread({ user, professionalId: body.professionalId });
   if (!thread) return fail(res, 404, 'That professional is not in the directory');
+  syncThreadPresence(thread);
 
   const parties = await partiesOf([thread], user._id);
   created(res, {

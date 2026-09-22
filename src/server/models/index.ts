@@ -66,6 +66,7 @@ export {
   countUnreadThreads,
   decrementUnreadAfterUnsend,
   editStoredMessage,
+  findConversationPartnerIds,
   findMessageById,
   findMessages,
   findThreadById,

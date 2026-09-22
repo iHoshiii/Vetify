@@ -55,6 +55,25 @@ export async function findThreadById(id: string | ObjectId): Promise<ThreadDocum
   return await threadsCollection().findOne({ _id: toObjectId(id) });
 }
 
+export async function findConversationPartnerIds(user: string | ObjectId): Promise<string[]> {
+  const id = toObjectId(user);
+  const threads = await threadsCollection()
+    .find({ $or: [{ client: id }, { professionalUser: id }] })
+    .project<Pick<ThreadDocument, 'client' | 'professionalUser'>>({
+      client: 1,
+      professionalUser: 1,
+    })
+    .toArray();
+
+  return [
+    ...new Set(
+      threads.map((thread) =>
+        thread.client.equals(id) ? thread.professionalUser.toString() : thread.client.toString()
+      )
+    ),
+  ];
+}
+
 // The one thread for a pair, so a repeat open reuses it rather than racing the unique index.
 export async function findThreadByPair(input: {
   client: string | ObjectId;

@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useEditMessage, useUnsendMessage } from '@/hooks/useMessageActions';
+import { usePresence } from '@/hooks/usePresence';
 import { useTyping } from '@/hooks/useTyping';
 import { useTypingEmitter } from '@/hooks/useTypingEmitter';
 import type { Thread } from '@/services/messages.service';
@@ -34,6 +35,7 @@ export default function ConversationView({
   const unsend = useUnsendMessage(thread.id);
   const onType = useTypingEmitter(thread.id);
   const otherTyping = useTyping(thread.id);
+  const otherOnline = usePresence(thread.with?.id ?? null);
   const endRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [muted, setMuted] = useState(thread.muted);
@@ -69,8 +71,18 @@ export default function ConversationView({
             <ArrowLeft className="h-4 w-4" />
           </button>
         )}
-        <ParticipantAvatar name={participantName} avatarUrl={thread.with?.avatarUrl} size="md" />
-        <span className="truncate text-sm font-bold text-slate-900">{participantName}</span>
+        <ParticipantAvatar
+          name={participantName}
+          avatarUrl={thread.with?.avatarUrl}
+          size="md"
+          online={otherOnline}
+        />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-bold text-slate-900">{participantName}</span>
+          {otherOnline && (
+            <span className="block text-[11px] font-semibold text-emerald-600">Active now</span>
+          )}
+        </span>
         <div className="relative ml-auto">
           <button
             type="button"

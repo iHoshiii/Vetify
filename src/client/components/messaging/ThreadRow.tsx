@@ -1,4 +1,5 @@
 import { useLongPress } from '@/hooks/useLongPress';
+import { usePresence } from '@/hooks/usePresence';
 import type { Thread } from '@/services/messages.service';
 import { BellOff, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ function whenOf(iso: string | null): string {
 // One conversation in the list: opens on click, reveals a menu on hover (desktop) or long-press (mobile).
 export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const online = usePresence(thread.with?.id ?? null);
   const longPress = useLongPress(() => setMenuOpen(true));
 
   return (
@@ -36,7 +38,11 @@ export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: 
         onClick={onOpen}
         className="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50"
       >
-        <ParticipantAvatar name={labelOf(thread)} avatarUrl={thread.with?.avatarUrl} />
+        <ParticipantAvatar
+          name={labelOf(thread)}
+          avatarUrl={thread.with?.avatarUrl}
+          online={online}
+        />
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-bold text-slate-900">{labelOf(thread)}</span>
