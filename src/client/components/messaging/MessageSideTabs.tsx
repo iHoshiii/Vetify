@@ -1,8 +1,8 @@
 import type { ThreadSide } from '@/services/messages.service';
 
 const TABS: Array<{ side: ThreadSide; label: string }> = [
-  { side: 'mine', label: 'Messages' },
   { side: 'incoming', label: 'Inquiry' },
+  { side: 'mine', label: 'Messages' },
 ];
 
 export default function MessageSideTabs({

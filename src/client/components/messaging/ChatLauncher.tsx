@@ -2,6 +2,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useUnreadCount } from '@/hooks/useMessages';
 import { MessageCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import ChatPanel from './ChatPanel';
 import { useChatPanel } from './chat-context';
@@ -9,6 +10,7 @@ import { useChatPanel } from './chat-context';
 // The owner's messaging button, bottom-right, mirroring the settings tray bottom-left. Signed-in only, since a thread names two accounts.
 export default function ChatLauncher() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const { open, openPanel, closePanel } = useChatPanel();
   const { data: unread = 0 } = useUnreadCount(Boolean(user));
   const rootRef = useRef<HTMLDivElement>(null);
@@ -22,7 +24,7 @@ export default function ChatLauncher() {
     return () => document.removeEventListener('mousedown', handler);
   }, [closePanel]);
 
-  if (!user) return null;
+  if (!user || pathname === '/messages') return null;
 
   return (
     <div ref={rootRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
