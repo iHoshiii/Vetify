@@ -85,7 +85,7 @@ vi.mock('@/components/providers/AuthProvider', () => ({
 }));
 
 // VetCard's Chat button reads this; the booking flow under test never presses it.
-vi.mock('@/components/messaging/ChatProvider', () => ({
+vi.mock('@/components/messaging/chat-context', () => ({
   useChatPanel: () => ({ startWithVet: vi.fn() }),
 }));
 

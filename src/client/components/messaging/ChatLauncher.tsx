@@ -4,7 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 import ChatPanel from './ChatPanel';
-import { useChatPanel } from './ChatProvider';
+import { useChatPanel } from './chat-context';
 
 // The owner's messaging button, bottom-right, mirroring the settings tray bottom-left. Signed-in only, since a thread names two accounts.
 export default function ChatLauncher() {
