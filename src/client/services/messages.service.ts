@@ -1,4 +1,11 @@
+import type { ThreadState } from '@shared/schemas';
+
 import { apiFetch } from './api';
+
+export type { ThreadState };
+
+// Which shelves the panel can list, in tab order. Deleted rows never show, so they are omitted.
+export const THREAD_SHELVES = ['active', 'archived', 'spam'] as const;
 
 // The account on the other side of a thread.
 export type ThreadParty = {
@@ -17,6 +24,8 @@ export type Thread = {
   lastFromYou: boolean;
   lastAt: string | null;
   unread: number;
+  state: ThreadState;
+  otherReadAt: string | null;
   createdAt: string;
 };
 
@@ -38,6 +47,7 @@ export type ThreadPage = {
 
 export type MessagePage = {
   items: Message[];
+  otherReadAt?: string | null;
   page: number;
   limit: number;
   total: number;
@@ -46,12 +56,14 @@ export type MessagePage = {
 
 export type ThreadSide = 'mine' | 'incoming';
 
-export type PageParams = { page?: number; limit?: number };
+// A shelf other than active is asked for by name; active is the default the server assumes.
+export type PageParams = { page?: number; limit?: number; state?: ThreadState };
 
 function queryOf(params: PageParams): string {
   const search = new URLSearchParams();
   if (params.page && params.page > 1) search.set('page', String(params.page));
   if (params.limit) search.set('limit', String(params.limit));
+  if (params.state && params.state !== 'active') search.set('state', params.state);
 
   const query = search.toString();
   return query ? `?${query}` : '';
@@ -62,9 +74,18 @@ export async function listThreads(side: ThreadSide, params: PageParams = {}, sig
   return await apiFetch<ThreadPage>(`/messages/${side}${queryOf(params)}`, { signal });
 }
 
+// PATCH /api/v1/messages/:id/state — file the caller's own copy on a shelf.
+export async function setThreadState(threadId: string, state: ThreadState) {
+  return await apiFetch<{ state: ThreadState }>(`/messages/${encodeURIComponent(threadId)}/state`, {
+    method: 'PATCH',
+    body: { state },
+  });
+}
+
 // GET /api/v1/messages/unread — the caller's total unread, for the launcher badge.
-export async function getUnreadCount(signal?: AbortSignal) {
-  const { unread } = await apiFetch<{ unread: number }>('/messages/unread', { signal });
+export async function getUnreadCount(side?: ThreadSide, signal?: AbortSignal) {
+  const query = side ? `?side=${side}` : '';
+  const { unread } = await apiFetch<{ unread: number }>(`/messages/unread${query}`, { signal });
   return unread;
 }
 
