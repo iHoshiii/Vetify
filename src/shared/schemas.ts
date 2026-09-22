@@ -1413,6 +1413,12 @@ export const THREAD_LIST_STATES = ['active', 'archived', 'spam'] as const;
 export const threadStateUpdateSchema = z.object({ state: z.enum(THREAD_STATES) });
 export type ThreadStateUpdateInput = z.output<typeof threadStateUpdateSchema>;
 
+export const threadReadUpdateSchema = z.object({ unread: z.boolean() });
+export type ThreadReadUpdateInput = z.output<typeof threadReadUpdateSchema>;
+
+export const threadMuteUpdateSchema = z.object({ muted: z.boolean() });
+export type ThreadMuteUpdateInput = z.output<typeof threadMuteUpdateSchema>;
+
 export const threadListQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
   limit: z.coerce
