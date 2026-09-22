@@ -1,7 +1,7 @@
 import { messageEditSchema, type MessageEditInput } from '@shared/schemas';
 import { Router, type RequestHandler } from 'express';
 
-import { messageLimiter } from '../../middleware/security';
+import { messageActionLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import { findThreadById, isValidObjectId, toMessageView, type ThreadDocument } from '../../models';
 import { deleteMessage, editOwnMessage } from '../../services/message-actions.service';
@@ -25,7 +25,7 @@ function messageIdOf(req: Parameters<RequestHandler>[0]): string {
   return messageId;
 }
 
-router.patch('/:messageId', messageLimiter, validate(messageEditSchema), async (req, res) => {
+router.patch('/:messageId', messageActionLimiter, validate(messageEditSchema), async (req, res) => {
   const user = actorOf(req);
   const message = await editOwnMessage({
     thread: await loadOwn(req),
@@ -36,7 +36,7 @@ router.patch('/:messageId', messageLimiter, validate(messageEditSchema), async (
   ok(res, { message: toMessageView(message, user._id) });
 });
 
-router.delete('/:messageId', messageLimiter, async (req, res) => {
+router.delete('/:messageId', messageActionLimiter, async (req, res) => {
   const user = actorOf(req);
   const result = await deleteMessage({
     thread: await loadOwn(req),

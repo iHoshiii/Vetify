@@ -166,7 +166,8 @@ export function useSendMessage(threadId: string) {
       );
       moveCachedThread(queryClient, [...messageKeys.all, 'threads'], threadId, 'active');
     },
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: messageKeys.all }),
+    onSettled: () =>
+      void queryClient.invalidateQueries({ queryKey: [...messageKeys.all, 'threads'] }),
   });
 }
 

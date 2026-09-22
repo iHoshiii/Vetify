@@ -139,7 +139,7 @@ export default function ConversationView({
         <div ref={endRef} />
       </div>
 
-      <ConversationStatus typing={otherTyping} />
+      <ConversationStatus typing={otherTyping} error={send.error?.message} />
       <MessageComposer
         onSend={(body) => send.mutate(body)}
         onType={onType}

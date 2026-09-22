@@ -402,4 +402,4 @@ export const THREAD_PAGE_SIZE = 20;
 export const THREAD_PAGE_SIZE_MAX = 50;
 
 // How many messages one network may send in a minute, so a wedged client cannot flood a thread.
-export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 30;
+export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 100;
