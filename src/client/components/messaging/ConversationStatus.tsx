@@ -1,5 +1,7 @@
 import type { Message } from '@/services/messages.service';
 
+import ParticipantAvatar from './ParticipantAvatar';
+
 // A fetched outgoing message reached the server; it becomes seen once the far side catches up.
 export function deliveryStatus(
   otherReadAt: string | null,
@@ -17,9 +19,13 @@ export function deliveryStatus(
 export default function ConversationStatus({
   typing,
   error,
+  participant,
+  online,
 }: {
   typing: boolean;
   error?: string | null;
+  participant: { name: string; avatarUrl?: string | null };
+  online?: boolean;
 }) {
   if (!typing && !error) return null;
 
@@ -31,7 +37,18 @@ export default function ConversationStatus({
         </p>
       )}
       {typing && (
-        <div className="px-3 pb-2" role="status" aria-live="polite" aria-label="Typing">
+        <div
+          className="flex items-end gap-2 px-3 pb-2"
+          role="status"
+          aria-live="polite"
+          aria-label="Typing"
+        >
+          <ParticipantAvatar
+            name={participant.name}
+            avatarUrl={participant.avatarUrl}
+            size="xs"
+            online={online}
+          />
           <div className="inline-flex items-center gap-1 rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2">
             {[0, 150, 300].map((delay) => (
               <span
