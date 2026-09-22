@@ -3,7 +3,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { applySecurity, generalLimiter } from './middleware/security';
+import { applySecurity, generalLimiter, messageLimiter } from './middleware/security';
 import routes from './routes';
 
 /**
@@ -31,6 +31,7 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
+  app.use('/api/v1/messages/:id/messages', messageLimiter);
   app.use('/api', generalLimiter, routes);
 
   // Order matters: unmatched routes, then the terminal error handler.

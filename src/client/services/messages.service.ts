@@ -24,6 +24,7 @@ export type Thread = {
   lastFromYou: boolean;
   lastAt: string | null;
   unread: number;
+  muted: boolean;
   state: ThreadState;
   otherReadAt: string | null;
   createdAt: string;
@@ -34,6 +35,8 @@ export type Message = {
   threadId: string;
   body: string;
   fromYou: boolean;
+  editedAt: string | null;
+  unsentAt: string | null;
   createdAt: string;
 };
 
@@ -82,6 +85,26 @@ export async function setThreadState(threadId: string, state: ThreadState) {
   });
 }
 
+export async function setThreadRead(threadId: string, unread: boolean) {
+  return await apiFetch<{ unread: boolean }>(`/messages/${encodeURIComponent(threadId)}/read`, {
+    method: 'PATCH',
+    body: { unread },
+  });
+}
+
+export async function setThreadMuted(threadId: string, muted: boolean) {
+  return await apiFetch<{ muted: boolean }>(`/messages/${encodeURIComponent(threadId)}/mute`, {
+    method: 'PATCH',
+    body: { muted },
+  });
+}
+
+export async function reportThread(threadId: string) {
+  return await apiFetch<{ reported: true }>(`/messages/${encodeURIComponent(threadId)}/report`, {
+    method: 'POST',
+  });
+}
+
 // GET /api/v1/messages/unread — the caller's total unread, for the launcher badge.
 export async function getUnreadCount(side?: ThreadSide, signal?: AbortSignal) {
   const query = side ? `?side=${side}` : '';
@@ -117,4 +140,26 @@ export async function sendMessage(threadId: string, body: string) {
     { method: 'POST', body: { body } }
   );
   return message;
+}
+
+export async function editMessage(threadId: string, messageId: string, body: string) {
+  const { message } = await apiFetch<{ message: Message }>(
+    `/messages/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: 'PATCH', body: { body } }
+  );
+  return message;
+}
+
+export async function deleteMessage(threadId: string, messageId: string) {
+  return await apiFetch<{ message: Message | null; removedForYou: boolean }>(
+    `/messages/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: 'DELETE' }
+  );
+}
+
+export async function sendTyping(threadId: string, typing: boolean) {
+  return await apiFetch<{ delivered: true }>(`/messages/${encodeURIComponent(threadId)}/typing`, {
+    method: 'POST',
+    body: { typing },
+  });
 }

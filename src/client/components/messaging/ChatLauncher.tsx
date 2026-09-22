@@ -2,6 +2,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useUnreadCount } from '@/hooks/useMessages';
 import { MessageCircle } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import ChatPanel from './ChatPanel';
 import { useChatPanel } from './chat-context';
@@ -9,6 +10,7 @@ import { useChatPanel } from './chat-context';
 // The owner's messaging button, bottom-right, mirroring the settings tray bottom-left. Signed-in only, since a thread names two accounts.
 export default function ChatLauncher() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const { open, openPanel, closePanel } = useChatPanel();
   const { data: unread = 0 } = useUnreadCount(Boolean(user));
   const rootRef = useRef<HTMLDivElement>(null);
@@ -16,13 +18,18 @@ export default function ChatLauncher() {
   // Close on an outside click, the same gesture the settings tray uses.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) closePanel();
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      // Modals (delete confirm, vet picker) render outside this box; a click inside one must not close the panel.
+      if (target instanceof Element && target.closest('[role="dialog"],[role="alertdialog"]'))
+        return;
+      closePanel();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [closePanel]);
 
-  if (!user) return null;
+  if (!user || pathname === '/messages') return null;
 
   return (
     <div ref={rootRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">

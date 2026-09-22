@@ -1403,6 +1403,8 @@ export const messageSendSchema = z.object({
     .max(MESSAGE_MAX_LENGTH, `Keep it under ${MESSAGE_MAX_LENGTH} characters`),
 });
 
+export const messageEditSchema = messageSendSchema;
+
 // Where a thread sits in one viewer's list. 'deleted' is hidden and comes back on a new message, so it is never a list filter.
 export const THREAD_STATES = ['active', 'archived', 'spam', 'deleted'] as const;
 export type ThreadState = (typeof THREAD_STATES)[number];
@@ -1412,6 +1414,12 @@ export const THREAD_LIST_STATES = ['active', 'archived', 'spam'] as const;
 
 export const threadStateUpdateSchema = z.object({ state: z.enum(THREAD_STATES) });
 export type ThreadStateUpdateInput = z.output<typeof threadStateUpdateSchema>;
+
+export const threadReadUpdateSchema = z.object({ unread: z.boolean() });
+export type ThreadReadUpdateInput = z.output<typeof threadReadUpdateSchema>;
+
+export const threadMuteUpdateSchema = z.object({ muted: z.boolean() });
+export type ThreadMuteUpdateInput = z.output<typeof threadMuteUpdateSchema>;
 
 export const threadListQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
@@ -1437,5 +1445,6 @@ export const messageListQuerySchema = z.object({
 
 export type ThreadOpenInput = z.input<typeof threadOpenSchema>;
 export type MessageSendInput = z.input<typeof messageSendSchema>;
+export type MessageEditInput = z.input<typeof messageEditSchema>;
 export type ThreadListQuery = z.output<typeof threadListQuerySchema>;
 export type MessageListQuery = z.output<typeof messageListQuerySchema>;

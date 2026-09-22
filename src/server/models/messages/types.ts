@@ -16,10 +16,17 @@ export type ThreadDocument = {
   // A copy of the newest message for the list row, so it draws without reading the messages.
   lastBody: string | null;
   lastSender: ObjectId | null;
+  lastMessage?: ObjectId | null;
   lastAt: Date | null;
   // Unread counts, one per side, bumped on send and cleared when that side opens the thread.
   clientUnread: number;
   professionalUnread: number;
+  clientMuted?: boolean;
+  professionalMuted?: boolean;
+  clientReportedAt?: Date | null;
+  professionalReportedAt?: Date | null;
+  clientDeletedAt?: Date | null;
+  professionalDeletedAt?: Date | null;
   // Which shelf each side has filed the thread on. Private to that side, reset to active when the other writes in.
   clientState: ThreadState;
   professionalState: ThreadState;
@@ -35,6 +42,9 @@ export type MessageDocument = {
   thread: ObjectId;
   sender: ObjectId;
   body: string;
+  editedAt?: Date | null;
+  unsentAt?: Date | null;
+  hiddenFor?: ObjectId[];
   createdAt: Date;
 };
 
@@ -56,6 +66,7 @@ export type ThreadView = {
   lastFromYou: boolean;
   lastAt: string | null;
   unread: number;
+  muted: boolean;
   // The viewer's own shelf, so the panel can offer restore on an archived or spam row.
   state: ThreadState;
   // When the other side last read, so a "Seen" shows under the viewer's last message. Null if never.
@@ -69,6 +80,8 @@ export type MessageView = {
   body: string;
   // True when the viewer sent it, so the bubble sides correctly without exposing ids.
   fromYou: boolean;
+  editedAt: string | null;
+  unsentAt: string | null;
   createdAt: string;
 };
 

@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '@/services/api';
 
 import {
   logoutFromServer,
@@ -64,9 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((session) => {
         if (!cancelled) setSession(session);
       })
-      .catch(() => {
-        // Refresh cookie gone or revoked: the stored session is dead.
-        if (!cancelled) clear();
+      .catch((cause) => {
+        if (cancelled) return;
+        // Only an explicit authentication refusal proves the stored session is dead.
+        if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) clear();
+        else setStatus('authenticated');
       });
 
     return () => {

@@ -21,6 +21,7 @@ const thread: Thread = {
   lastFromYou: false,
   lastAt: null,
   unread: 0,
+  muted: false,
   state: 'active',
   otherReadAt: null,
   createdAt: new Date().toISOString(),
@@ -32,6 +33,9 @@ vi.mock('@/services/messages.service', () => ({
   listMessages: vi.fn(async () => ({ items: [], page: 1, limit: 30, total: 0, pages: 1 })),
   getUnreadCount: vi.fn(async () => 0),
   sendMessage: vi.fn(async () => ({ id: 'm1', createdAt: new Date().toISOString() })),
+  setThreadRead: vi.fn(async (_threadId: string, unread: boolean) => ({ unread })),
+  setThreadMuted: vi.fn(async (_threadId: string, muted: boolean) => ({ muted })),
+  reportThread: vi.fn(async () => ({ reported: true })),
   setThreadState: vi.fn(async () => ({ state: 'active' })),
 }));
 
@@ -106,6 +110,7 @@ describe("a normal user's thread list", () => {
     );
 
     await waitFor(() => expect(screen.getByText('Vetify Test Clinic')).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: 'Messages' })).toBeInTheDocument();
   });
 
   it('reports a failed load instead of showing an empty inbox', async () => {

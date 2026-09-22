@@ -16,9 +16,11 @@ function emptyOf(shelf: ThreadState): string {
 export default function ThreadList({
   side,
   onOpen,
+  onThreadMoved,
 }: {
   side: ThreadSide;
   onOpen: (thread: Thread) => void;
+  onThreadMoved?: (threadId: string) => void;
 }) {
   const [shelf, setShelf] = useState<ThreadState>('active');
   const { data, isLoading, error } = useThreads(side, { state: shelf });
@@ -37,7 +39,12 @@ export default function ThreadList({
       ) : (
         <ul className="divide-y divide-slate-100">
           {threads.map((thread) => (
-            <ThreadRow key={thread.id} thread={thread} onOpen={() => onOpen(thread)} />
+            <ThreadRow
+              key={thread.id}
+              thread={thread}
+              onOpen={() => onOpen(thread)}
+              onMoved={() => onThreadMoved?.(thread.id)}
+            />
           ))}
         </ul>
       )}

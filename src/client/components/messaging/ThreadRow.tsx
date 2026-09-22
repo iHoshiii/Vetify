@@ -1,8 +1,10 @@
 import { useLongPress } from '@/hooks/useLongPress';
+import { usePresence } from '@/hooks/usePresence';
 import type { Thread } from '@/services/messages.service';
-import { MoreVertical } from 'lucide-react';
+import { BellOff, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
+import ParticipantAvatar from './ParticipantAvatar';
 import ThreadMenu from './ThreadMenu';
 
 function labelOf(thread: Thread): string {
@@ -24,8 +26,17 @@ function whenOf(iso: string | null): string {
 }
 
 // One conversation in the list: opens on click, reveals a menu on hover (desktop) or long-press (mobile).
-export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: () => void }) {
+export default function ThreadRow({
+  thread,
+  onOpen,
+  onMoved,
+}: {
+  thread: Thread;
+  onOpen: () => void;
+  onMoved?: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const online = usePresence(thread.with?.id ?? null);
   const longPress = useLongPress(() => setMenuOpen(true));
 
   return (
@@ -35,23 +46,30 @@ export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: 
         onClick={onOpen}
         className="flex w-full items-start gap-3 px-3 py-3 text-left transition-colors hover:bg-slate-50"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-100 text-xs font-black text-teal-800">
-          {labelOf(thread).charAt(0).toUpperCase()}
-        </span>
+        <ParticipantAvatar
+          name={labelOf(thread)}
+          avatarUrl={thread.with?.avatarUrl}
+          online={online}
+        />
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
             <span className="truncate text-sm font-bold text-slate-900">{labelOf(thread)}</span>
-            <span className="shrink-0 text-[11px] text-slate-400">{whenOf(thread.lastAt)}</span>
+            <span className="flex shrink-0 items-center gap-1 text-[11px] text-slate-400">
+              {thread.muted && <BellOff className="h-3 w-3" aria-label="Muted" />}
+              {whenOf(thread.lastAt)}
+            </span>
           </span>
           <span className="mt-0.5 flex items-center justify-between gap-2">
             <span
               className={`truncate text-xs ${
-                thread.unread > 0 ? 'font-semibold text-slate-800' : 'text-slate-500'
+                thread.unread > 0 && !thread.muted
+                  ? 'font-semibold text-slate-800'
+                  : 'text-slate-500'
               }`}
             >
               {previewOf(thread)}
             </span>
-            {thread.unread > 0 && (
+            {thread.unread > 0 && !thread.muted && (
               <span className="shrink-0 rounded-full bg-teal-700 px-1.5 text-[10px] font-black text-white">
                 {thread.unread}
               </span>
@@ -64,13 +82,18 @@ export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: 
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
         aria-label="Conversation options"
-        className="absolute right-2 top-2 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 focus:opacity-100 group-hover:opacity-100"
+        className="absolute right-2 top-9 rounded-lg p-1 text-slate-400 opacity-0 transition hover:bg-slate-200 focus:opacity-100 group-hover:opacity-100"
       >
-        <MoreVertical className="h-4 w-4" />
+        <MoreHorizontal className="h-4 w-4" />
       </button>
 
       {menuOpen && (
-        <ThreadMenu threadId={thread.id} shelf={thread.state} onDone={() => setMenuOpen(false)} />
+        <ThreadMenu
+          thread={thread}
+          variant="row"
+          onDone={() => setMenuOpen(false)}
+          onCloseThread={onMoved}
+        />
       )}
     </li>
   );

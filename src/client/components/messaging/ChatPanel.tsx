@@ -1,7 +1,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import type { Thread, ThreadSide } from '@/services/messages.service';
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useChatPanel } from './chat-context';
 import ConversationView from './ConversationView';
@@ -15,6 +15,10 @@ export default function ChatPanel() {
   const { activeThread, starting, startError, openThread, closePanel } = useChatPanel();
   const [side, setSide] = useState<ThreadSide>('mine');
   const isProfessional = user?.role === 'professional';
+
+  useEffect(() => {
+    if (isProfessional) setSide('incoming');
+  }, [isProfessional]);
 
   if (activeThread) {
     return (
