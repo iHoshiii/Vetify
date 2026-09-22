@@ -1,6 +1,8 @@
 import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import type { ThreadState } from '@shared/schemas';
+
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 import { insertThread, threadsCollection, touchThreadOnSend } from '../repository';
 
@@ -12,7 +14,7 @@ const client = new ObjectId();
 const professionalUser = new ObjectId();
 
 // A thread whose professional side sits in a given state, optionally muted.
-async function seed(state: string, muted = false) {
+async function seed(state: ThreadState, muted = false) {
   const thread = await insertThread({
     professional: new ObjectId(),
     professionalUser,
@@ -30,6 +32,7 @@ async function sendFromClient(thread: ObjectId) {
   await touchThreadOnSend({
     thread,
     sender: client,
+    message: new ObjectId(),
     body: 'hello again',
     senderIsClient: true,
     at: new Date(),

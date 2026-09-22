@@ -133,6 +133,8 @@ export function useSendMessage(threadId: string) {
                   threadId,
                   body,
                   fromYou: true,
+                  editedAt: null,
+                  unsentAt: null,
                   createdAt: new Date().toISOString(),
                 },
               ],

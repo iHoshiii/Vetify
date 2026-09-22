@@ -16,6 +16,7 @@ export type ThreadDocument = {
   // A copy of the newest message for the list row, so it draws without reading the messages.
   lastBody: string | null;
   lastSender: ObjectId | null;
+  lastMessage?: ObjectId | null;
   lastAt: Date | null;
   // Unread counts, one per side, bumped on send and cleared when that side opens the thread.
   clientUnread: number;
@@ -41,6 +42,8 @@ export type MessageDocument = {
   thread: ObjectId;
   sender: ObjectId;
   body: string;
+  editedAt?: Date | null;
+  unsentAt?: Date | null;
   createdAt: Date;
 };
 
@@ -76,6 +79,8 @@ export type MessageView = {
   body: string;
   // True when the viewer sent it, so the bubble sides correctly without exposing ids.
   fromYou: boolean;
+  editedAt: string | null;
+  unsentAt: string | null;
   createdAt: string;
 };
 

@@ -26,7 +26,17 @@ vi.mock('@/services/messages.service', () => ({
 
 // One page of stale bubbles left in the cache before the caller deletes.
 const stalePage: MessagePage = {
-  items: [{ id: 'old', threadId: 't1', body: 'HELLO', fromYou: true, createdAt: thread.createdAt }],
+  items: [
+    {
+      id: 'old',
+      threadId: 't1',
+      body: 'HELLO',
+      fromYou: true,
+      editedAt: null,
+      unsentAt: null,
+      createdAt: thread.createdAt,
+    },
+  ],
   page: 1,
   limit: 30,
   total: 1,

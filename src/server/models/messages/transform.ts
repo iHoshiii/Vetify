@@ -72,6 +72,8 @@ export function toMessageView(message: MessageDocument, viewer: ObjectId): Messa
     threadId: message.thread.toString(),
     body: message.body,
     fromYou: message.sender.equals(viewer),
+    editedAt: message.editedAt?.toISOString() ?? null,
+    unsentAt: message.unsentAt?.toISOString() ?? null,
     createdAt: message.createdAt.toISOString(),
   };
 }

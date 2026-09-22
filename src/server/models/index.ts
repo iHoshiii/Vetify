@@ -64,6 +64,9 @@ export {
 export {
   clearThreadUnread,
   countUnreadThreads,
+  decrementUnreadAfterUnsend,
+  editStoredMessage,
+  findMessageById,
   findMessages,
   findThreadById,
   findThreadByPair,
@@ -87,6 +90,8 @@ export {
   toThreadPage,
   toThreadView,
   touchThreadOnSend,
+  unsendStoredMessage,
+  updateLatestMessagePreview,
   type MessageDocument,
   type MessagePage,
   type MessageView,

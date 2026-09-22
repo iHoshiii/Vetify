@@ -1,16 +1,18 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
+import { useEditMessage, useUnsendMessage } from '@/hooks/useMessageActions';
 import { useTyping } from '@/hooks/useTyping';
 import { useTypingEmitter } from '@/hooks/useTypingEmitter';
 import type { Thread } from '@/services/messages.service';
 import { ArrowLeft, MoreVertical } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 import ConversationStatus, { deliveryStatus } from './ConversationStatus';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 import ParticipantAvatar from './ParticipantAvatar';
 import ThreadMenu from './ThreadMenu';
+import { dateLabel, shouldShowMessageTime, spansMultipleDays, startsNewDay } from './message-time';
 
 // The other party's display name, falling back to their email, then a neutral label.
 function nameOf(thread: Thread): string {
@@ -28,6 +30,8 @@ export default function ConversationView({
   const { user } = useAuth();
   const { data, isLoading } = useMessages(thread.id);
   const send = useSendMessage(thread.id);
+  const edit = useEditMessage(thread.id);
+  const unsend = useUnsendMessage(thread.id);
   const onType = useTypingEmitter(thread.id);
   const otherTyping = useTyping(thread.id);
   const endRef = useRef<HTMLDivElement>(null);
@@ -42,8 +46,9 @@ export default function ConversationView({
   }, [data?.items.length, otherTyping]);
 
   const messages = data?.items ?? [];
+  const showDateSeparators = spansMultipleDays(messages);
   const lastMineIndex = messages.reduce(
-    (lastIndex, message, index) => (message.fromYou ? index : lastIndex),
+    (lastIndex, message, index) => (message.fromYou && !message.unsentAt ? index : lastIndex),
     -1
   );
   const receipt = deliveryStatus(data?.otherReadAt ?? thread.otherReadAt, messages);
@@ -97,13 +102,26 @@ export default function ConversationView({
           </p>
         ) : (
           messages.map((message, index) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              receipt={index === lastMineIndex ? receipt : null}
-              mineAvatar={mineAvatar}
-              otherAvatar={otherAvatar}
-            />
+            <Fragment key={message.id}>
+              {showDateSeparators && startsNewDay(messages, index) && (
+                <p className="py-1 text-center text-[11px] font-semibold text-slate-400">
+                  {dateLabel(message.createdAt)}
+                </p>
+              )}
+              <MessageBubble
+                message={message}
+                receipt={index === lastMineIndex ? receipt : null}
+                mineAvatar={mineAvatar}
+                otherAvatar={otherAvatar}
+                showTime={shouldShowMessageTime(messages, index)}
+                busy={
+                  (edit.isPending && edit.variables?.messageId === message.id) ||
+                  (unsend.isPending && unsend.variables === message.id)
+                }
+                onEdit={(body) => edit.mutateAsync({ messageId: message.id, body })}
+                onUnsend={() => unsend.mutateAsync(message.id)}
+              />
+            </Fragment>
           ))
         )}
         <div ref={endRef} />

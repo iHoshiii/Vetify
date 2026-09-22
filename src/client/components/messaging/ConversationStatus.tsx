@@ -5,7 +5,7 @@ export function deliveryStatus(
   otherReadAt: string | null,
   messages: Message[]
 ): 'Delivered' | 'Seen' | null {
-  const lastMine = [...messages].reverse().find((message) => message.fromYou);
+  const lastMine = [...messages].reverse().find((message) => message.fromYou && !message.unsentAt);
   if (!lastMine) return null;
   if (!otherReadAt) return 'Delivered';
 

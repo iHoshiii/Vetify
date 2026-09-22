@@ -46,6 +46,7 @@ import { AppError } from '../../utils/AppError';
 import { created, fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 import { partiesOf } from './thread-parties';
+import messageActionsRoute from './message-actions.route';
 
 const router = Router();
 
@@ -160,6 +161,8 @@ router.post('/:id/messages', messageLimiter, validate(messageSendSchema), async 
     message: { id: message._id.toString(), createdAt: message.createdAt.toISOString() },
   });
 });
+
+router.use('/:id/messages', messageActionsRoute);
 
 // POST /:id/typing — fallback when a browser cannot deliver outbound socket events.
 router.post('/:id/typing', messageLimiter, async (req, res) => {

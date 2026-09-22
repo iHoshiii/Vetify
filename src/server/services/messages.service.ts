@@ -91,6 +91,7 @@ export async function sendMessage(input: {
   await touchThreadOnSend({
     thread: thread._id,
     sender: sender._id,
+    message: message._id,
     body,
     senderIsClient,
     at: message.createdAt,

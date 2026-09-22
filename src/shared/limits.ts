@@ -391,6 +391,7 @@ export const APPOINTMENT_PAGE_SIZE_MAX = 50;
 
 // A single chat message. Long enough for a real question, short enough that the box is not a document.
 export const MESSAGE_MAX_LENGTH = 2000;
+export const MESSAGE_ACTION_WINDOW_MS = 15 * 60 * 1000;
 
 // One page of a conversation. Threads load newest-last, older ones fetched as the reader scrolls up.
 export const MESSAGE_PAGE_SIZE = 30;

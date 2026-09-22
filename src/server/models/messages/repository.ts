@@ -29,6 +29,7 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
     client: toObjectId(parsed.client),
     lastBody: null,
     lastSender: null,
+    lastMessage: null,
     lastAt: null,
     clientUnread: 0,
     professionalUnread: 0,
@@ -103,6 +104,7 @@ export async function findThreads(
 export async function touchThreadOnSend(input: {
   thread: string | ObjectId;
   sender: string | ObjectId;
+  message: string | ObjectId;
   body: string;
   senderIsClient: boolean;
   at: Date;
@@ -134,6 +136,7 @@ export async function touchThreadOnSend(input: {
         $set: {
           lastBody: input.body,
           lastSender: toObjectId(input.sender),
+          lastMessage: toObjectId(input.message),
           lastAt: input.at,
           updatedAt: input.at,
           [senderState]: 'active',
