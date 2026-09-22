@@ -2,12 +2,16 @@ import {
   messageListQuerySchema,
   messageSendSchema,
   threadListQuerySchema,
+  threadMuteUpdateSchema,
   threadOpenSchema,
+  threadReadUpdateSchema,
   threadStateUpdateSchema,
   type MessageListQuery,
   type MessageSendInput,
   type ThreadListQuery,
+  type ThreadMuteUpdateInput,
   type ThreadOpenInput,
+  type ThreadReadUpdateInput,
   type ThreadStateUpdateInput,
 } from '@shared/schemas';
 import { Router, type RequestHandler } from 'express';
@@ -29,9 +33,13 @@ import {
 } from '../../models';
 import {
   ensureParty,
+  notifyTyping,
   openThread,
   readThread,
+  reportConversation,
   sendMessage,
+  setThreadMute,
+  setThreadReadState,
   setThreadShelf,
 } from '../../services/messages.service';
 import { AppError } from '../../utils/AppError';
@@ -120,6 +128,7 @@ router.get('/:id/messages', validateQuery(messageListQuerySchema), async (req, r
 
   const { items, total } = await findMessages({
     thread: thread._id,
+    after: thread.client.equals(viewer._id) ? thread.clientDeletedAt : thread.professionalDeletedAt,
     page: query.page,
     limit: query.limit,
   });
@@ -152,6 +161,14 @@ router.post('/:id/messages', messageLimiter, validate(messageSendSchema), async 
   });
 });
 
+// POST /:id/typing — fallback when a browser cannot deliver outbound socket events.
+router.post('/:id/typing', messageLimiter, async (req, res) => {
+  const sender = actorOf(req);
+  const thread = await loadOwn(req);
+  notifyTyping(thread, sender, Boolean(req.body?.typing));
+  ok(res, { delivered: true });
+});
+
 // PATCH /:id/state — file the caller's own copy on a shelf: active, archived, spam, or deleted.
 router.patch('/:id/state', validate(threadStateUpdateSchema), async (req, res) => {
   const user = actorOf(req);
@@ -160,6 +177,32 @@ router.patch('/:id/state', validate(threadStateUpdateSchema), async (req, res) =
 
   await setThreadShelf({ thread, user, state: body.state });
   ok(res, { state: body.state });
+});
+
+router.patch('/:id/read', validate(threadReadUpdateSchema), async (req, res) => {
+  const user = actorOf(req);
+  const thread = await loadOwn(req);
+  const body = req.body as ThreadReadUpdateInput;
+
+  await setThreadReadState({ thread, user, unread: body.unread });
+  ok(res, { unread: body.unread });
+});
+
+router.patch('/:id/mute', validate(threadMuteUpdateSchema), async (req, res) => {
+  const user = actorOf(req);
+  const thread = await loadOwn(req);
+  const body = req.body as ThreadMuteUpdateInput;
+
+  await setThreadMute({ thread, user, muted: body.muted });
+  ok(res, { muted: body.muted });
+});
+
+router.post('/:id/report', async (req, res) => {
+  const user = actorOf(req);
+  const thread = await loadOwn(req);
+
+  await reportConversation({ thread, user });
+  ok(res, { reported: true });
 });
 
 export default router;
