@@ -1403,6 +1403,16 @@ export const messageSendSchema = z.object({
     .max(MESSAGE_MAX_LENGTH, `Keep it under ${MESSAGE_MAX_LENGTH} characters`),
 });
 
+// Where a thread sits in one viewer's list. 'deleted' is hidden and comes back on a new message, so it is never a list filter.
+export const THREAD_STATES = ['active', 'archived', 'spam', 'deleted'] as const;
+export type ThreadState = (typeof THREAD_STATES)[number];
+
+// The three a list can be filtered to; 'deleted' threads surface nowhere until they are written to again.
+export const THREAD_LIST_STATES = ['active', 'archived', 'spam'] as const;
+
+export const threadStateUpdateSchema = z.object({ state: z.enum(THREAD_STATES) });
+export type ThreadStateUpdateInput = z.output<typeof threadStateUpdateSchema>;
+
 export const threadListQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
   limit: z.coerce
@@ -1411,6 +1421,8 @@ export const threadListQuerySchema = z.object({
     .min(1)
     .max(THREAD_PAGE_SIZE_MAX, `Ask for at most ${THREAD_PAGE_SIZE_MAX} per page`)
     .default(THREAD_PAGE_SIZE),
+  // Which shelf of the caller's list to read. Defaults to the everyday one.
+  state: z.enum(THREAD_LIST_STATES).default('active'),
 });
 
 export const messageListQuerySchema = z.object({
