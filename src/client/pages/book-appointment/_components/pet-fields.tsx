@@ -68,10 +68,12 @@ export default function PetFields({
         </label>
         <input
           id={ids.petAge}
+          inputMode="numeric"
           value={values.petAge}
-          onChange={(event) => onChange('petAge', event.target.value)}
-          maxLength={40}
-          placeholder="2 years, 6 months…"
+          onChange={(event) =>
+            onChange('petAge', event.target.value.replace(/\D/g, '').slice(0, 3))
+          }
+          placeholder="3"
           className={`${FIELD} mt-1`}
         />
       </div>

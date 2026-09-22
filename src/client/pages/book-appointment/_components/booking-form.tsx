@@ -1,21 +1,22 @@
-import { useAuth } from '@/components/providers/AuthProvider';
 import { APPOINTMENT_REASON_MAX, APPOINTMENT_REASON_MIN } from '@shared/limits';
 import { useId, useState, type FormEvent } from 'react';
 
 import PetFields, { type PetValues } from './pet-fields';
+import PhoneField from './phone-field';
 import RequiredMark from './required-mark';
 import { FIELD, LABEL } from './styles';
 
-// A first pass so a plainly-wrong number is caught before the request; the server validates in full.
-const PHONE_RE = /^[+(]?\d[\d\s()+-]{5,}$/;
+// A soft check so a plainly-wrong address is caught before the request; the server validates in full.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export type BookingDetails = PetValues & {
   reason: string;
   phone: string;
+  clientEmail: string;
 };
 
-// Step four: the animal, and why. Species and the reason are the floor; the rest helps
-// the vet but a booking is not blocked on a name the owner has not settled on.
+// Step four: the animal, and why. Species, the reason and a phone are the floor; the
+// rest helps the vet but a booking is not blocked on a name the owner has not settled on.
 export default function BookingForm({
   isPending,
   error,
@@ -25,7 +26,6 @@ export default function BookingForm({
   error: string | null;
   onSubmit: (details: BookingDetails) => void;
 }) {
-  const { user } = useAuth();
   const ids = {
     petName: useId(),
     petSpecies: useId(),
@@ -33,6 +33,7 @@ export default function BookingForm({
     petAge: useId(),
     reason: useId(),
     phone: useId(),
+    clientEmail: useId(),
   };
 
   const [values, setValues] = useState<BookingDetails>({
@@ -42,6 +43,7 @@ export default function BookingForm({
     petAge: '',
     reason: '',
     phone: '',
+    clientEmail: '',
   });
 
   function set(field: keyof BookingDetails, value: string) {
@@ -54,8 +56,11 @@ export default function BookingForm({
   }
 
   const short = values.reason.trim().length < APPOINTMENT_REASON_MIN;
-  const badPhone = !PHONE_RE.test(values.phone.trim());
-  const incomplete = !values.petSpecies.trim() || short || badPhone;
+  const badPhone = !/^\+63\d{10}$/.test(values.phone);
+  // Empty is allowed; a filled one has to look like an address.
+  const badEmail =
+    values.clientEmail.trim().length > 0 && !EMAIL_RE.test(values.clientEmail.trim());
+  const incomplete = !values.petSpecies.trim() || short || badPhone || badEmail;
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -85,25 +90,27 @@ export default function BookingForm({
       </div>
 
       <div>
-        <label htmlFor={ids.phone} className={LABEL}>
-          Phone
-          <RequiredMark filled={!badPhone} />
+        <label htmlFor={ids.clientEmail} className={LABEL}>
+          Email (optional)
         </label>
         <input
-          id={ids.phone}
-          type="tel"
-          value={values.phone}
-          onChange={(event) => set('phone', event.target.value)}
-          required
-          maxLength={32}
-          placeholder="+63 32 555 0101"
+          id={ids.clientEmail}
+          type="email"
+          value={values.clientEmail}
+          onChange={(event) => set('clientEmail', event.target.value)}
+          maxLength={120}
+          placeholder="you@example.com"
           className={`${FIELD} mt-1`}
         />
+        {/* Left blank, no confirmation is sent — there is nowhere to send it. */}
         <p className="mt-1 text-xs text-slate-500">
-          Given to this vet only, so they can reach you about this booking. They already have{' '}
-          {user?.email ?? 'your email address'}.
+          {badEmail
+            ? 'That does not look like an email address.'
+            : 'Fill this in and we email you a copy once you book.'}
         </p>
       </div>
+
+      <PhoneField id={ids.phone} value={values.phone} onChange={(value) => set('phone', value)} />
 
       {error && (
         <p

@@ -91,6 +91,7 @@ export function useBooking() {
         ...(pending.petName ? { petName: pending.petName } : {}),
         ...(pending.petBreed ? { petBreed: pending.petBreed } : {}),
         ...(pending.petAge ? { petAge: pending.petAge } : {}),
+        ...(pending.clientEmail ? { clientEmail: pending.clientEmail } : {}),
       })),
       {
         onSuccess: finish,

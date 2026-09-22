@@ -1311,10 +1311,11 @@ export const appointmentRequestSchema = z.object({
     .max(60, 'That breed is too long')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // Digits only, no unit or letters
   petAge: z
     .string()
     .trim()
-    .max(40, 'That is too long')
+    .regex(/^\d{1,3}$/, 'Age must be a number')
     .optional()
     .or(z.literal('').transform(() => undefined)),
   reason: z
@@ -1325,13 +1326,19 @@ export const appointmentRequestSchema = z.object({
       `Say what it is about in at least ${APPOINTMENT_REASON_MIN} characters`
     )
     .max(APPOINTMENT_REASON_MAX, 'That is longer than we need here'),
-  // Required here, unlike the professional forms: a booking is a specific time the vet may need to reach the owner about.
+  // +63 then the 10-digit national number, 12 digits including the 63
   phone: z
     .string()
     .trim()
-    .min(1, 'A contact number is required')
-    .max(32, 'That number is too long')
-    .regex(/^[+(]?\d[\d\s()+-]{5,}$/, 'That does not look like a phone number'),
+    .regex(/^\+63\d{10}$/, 'Enter a valid +63 mobile number'),
+  // Optional: a copy of the request is emailed here only when given
+  clientEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Please enter a valid email address')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
 });
 
 /**

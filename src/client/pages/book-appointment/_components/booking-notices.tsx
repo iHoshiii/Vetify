@@ -8,9 +8,12 @@ export function AskedNotice({ mail }: { mail: RequestResult['mail'] }) {
         Asked. That time is held for you while they answer.
       </p>
       <p className="mt-1 text-sm text-emerald-900/80">
+        {/* A null error means no email was asked for, so say nothing about a copy. */}
         {mail.client.delivered
-          ? 'We have emailed you a copy.'
-          : `We could not email you a copy: ${mail.client.deliveryError}`}
+          ? 'We have emailed you a copy. '
+          : mail.client.deliveryError
+          ? `We could not email you a copy: ${mail.client.deliveryError} `
+          : ''}
         {mail.professional.delivered
           ? ''
           : ' The vet was not reachable by email either, so it may be worth ringing them.'}
