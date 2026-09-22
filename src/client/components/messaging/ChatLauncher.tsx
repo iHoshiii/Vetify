@@ -18,7 +18,12 @@ export default function ChatLauncher() {
   // Close on an outside click, the same gesture the settings tray uses.
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) closePanel();
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      // Modals (delete confirm, vet picker) render outside this box; a click inside one must not close the panel.
+      if (target instanceof Element && target.closest('[role="dialog"],[role="alertdialog"]'))
+        return;
+      closePanel();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
