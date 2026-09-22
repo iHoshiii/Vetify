@@ -5,6 +5,7 @@ export {
   deleteProfessional,
   findProfessionalById,
   findProfessionalByUser,
+  findVerifiedProfessionalsByUserIds,
   findProfessionals,
   findProfessionalsNear,
   findVerifiedProfessionals,
