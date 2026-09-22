@@ -1,5 +1,7 @@
 import { ObjectId, type IndexDescription } from 'mongodb';
 
+import type { ThreadState } from '@shared/schemas';
+
 export const THREADS_COLLECTION = 'threads';
 export const MESSAGES_COLLECTION = 'messages';
 
@@ -18,6 +20,12 @@ export type ThreadDocument = {
   // Unread counts, one per side, bumped on send and cleared when that side opens the thread.
   clientUnread: number;
   professionalUnread: number;
+  // Which shelf each side has filed the thread on. Private to that side, reset to active when the other writes in.
+  clientState: ThreadState;
+  professionalState: ThreadState;
+  // When each side last opened the thread, so the other can be shown a "Seen" under their last message.
+  clientReadAt: Date | null;
+  professionalReadAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -48,6 +56,10 @@ export type ThreadView = {
   lastFromYou: boolean;
   lastAt: string | null;
   unread: number;
+  // The viewer's own shelf, so the panel can offer restore on an archived or spam row.
+  state: ThreadState;
+  // When the other side last read, so a "Seen" shows under the viewer's last message. Null if never.
+  otherReadAt: string | null;
   createdAt: string;
 };
 
@@ -70,6 +82,8 @@ export type ThreadPage = {
 
 export type MessagePage = {
   items: MessageView[];
+  // Refreshed with the messages so an open conversation can update its receipt in real time.
+  otherReadAt: string | null;
   page: number;
   limit: number;
   total: number;

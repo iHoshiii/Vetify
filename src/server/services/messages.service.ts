@@ -5,11 +5,13 @@ import {
   insertMessage,
   insertThread,
   isDuplicateThread,
+  setThreadState,
   touchThreadOnSend,
   type MessageDocument,
   type ThreadDocument,
   type User,
 } from '../models';
+import type { ThreadState } from '@shared/schemas';
 import { AppError } from '../utils/AppError';
 import { emitToUser } from '../realtime/hub';
 
@@ -93,8 +95,24 @@ export async function sendMessage(input: {
   return message;
 }
 
-/** Marks the caller's side of a thread read. */
+/** Marks the caller's side read and tells both sides, so the other can show "Seen". */
 export async function readThread(thread: ThreadDocument, reader: User): Promise<void> {
   await clearThreadUnread({ thread: thread._id, forClient: thread.client.equals(reader._id) });
-  emitToUser(reader._id.toString(), 'thread:read', { threadId: thread._id.toString() });
+  const { client, professionalUser } = partiesOf(thread);
+  const payload = { threadId: thread._id.toString() };
+  emitToUser(client, 'thread:read', payload);
+  emitToUser(professionalUser, 'thread:read', payload);
+}
+
+/** Files the caller's own copy of a thread on a shelf. The other side's copy is untouched. */
+export async function setThreadShelf(input: {
+  thread: ThreadDocument;
+  user: User;
+  state: ThreadState;
+}): Promise<void> {
+  const forClient = input.thread.client.equals(input.user._id);
+  await setThreadState({ thread: input.thread._id, forClient, state: input.state });
+  emitToUser(input.user._id.toString(), 'thread:message', {
+    threadId: input.thread._id.toString(),
+  });
 }

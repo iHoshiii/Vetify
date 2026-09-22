@@ -4,7 +4,24 @@ import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 
 import { env } from '../config/env';
-import { setRealtime, userRoom } from './hub';
+import { findThreadById, isValidObjectId } from '../models';
+import { emitToUser, setRealtime, userRoom } from './hub';
+
+// Passes a live "typing" ping to the other party, but only from someone actually on the thread.
+async function relayTyping(userId: string, payload: unknown): Promise<void> {
+  const data = payload as { threadId?: unknown; typing?: unknown };
+  if (typeof data?.threadId !== 'string' || !isValidObjectId(data.threadId)) return;
+
+  const thread = await findThreadById(data.threadId);
+  if (!thread) return;
+
+  const client = thread.client.toString();
+  const professionalUser = thread.professionalUser.toString();
+  if (userId !== client && userId !== professionalUser) return;
+
+  const other = userId === client ? professionalUser : client;
+  emitToUser(other, 'thread:typing', { threadId: data.threadId, typing: Boolean(data.typing) });
+}
 
 // The access token, from the auth payload or the Authorization header, whichever the client sent.
 function tokenOf(handshake: {
@@ -46,6 +63,7 @@ export function attachRealtime(http: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = socket.data.userId as string;
     void socket.join(userRoom(userId));
+    socket.on('thread:typing', (payload) => void relayTyping(userId, payload));
   });
 
   setRealtime(io);

@@ -24,6 +24,8 @@ export function toThreadView(input: {
 }): ThreadView {
   const { thread, viewer, party } = input;
   const isClient = thread.client.equals(viewer);
+  // The other side's read stamp, so a "Seen" can sit under the viewer's own last message.
+  const otherReadAt = isClient ? thread.professionalReadAt : thread.clientReadAt;
 
   return {
     id: thread._id.toString(),
@@ -33,6 +35,8 @@ export function toThreadView(input: {
     lastFromYou: thread.lastSender?.equals(viewer) ?? false,
     lastAt: thread.lastAt?.toISOString() ?? null,
     unread: isClient ? thread.clientUnread : thread.professionalUnread,
+    state: isClient ? thread.clientState : thread.professionalState,
+    otherReadAt: otherReadAt?.toISOString() ?? null,
     createdAt: thread.createdAt.toISOString(),
   };
 }
@@ -72,14 +76,16 @@ export function toMessageView(message: MessageDocument, viewer: ObjectId): Messa
 export function toMessagePage(input: {
   items: MessageDocument[];
   viewer: ObjectId;
+  otherReadAt: Date | null;
   total: number;
   page: number;
   limit: number;
 }): MessagePage {
-  const { items, viewer, total, page, limit } = input;
+  const { items, viewer, otherReadAt, total, page, limit } = input;
 
   return {
     items: [...items].reverse().map((message) => toMessageView(message, viewer)),
+    otherReadAt: otherReadAt?.toISOString() ?? null,
     page,
     limit,
     total,

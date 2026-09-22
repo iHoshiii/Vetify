@@ -1,4 +1,4 @@
-import { useChatPanel } from '@/components/messaging/ChatProvider';
+import { useChatPanel } from '@/components/messaging/chat-context';
 import type { PublicProfessional } from '@/services/professionals.service';
 import { Briefcase, MapPin, MessageCircle, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';

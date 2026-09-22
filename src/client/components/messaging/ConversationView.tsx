@@ -1,8 +1,11 @@
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
+import { useTyping } from '@/hooks/useTyping';
+import { useTypingEmitter } from '@/hooks/useTypingEmitter';
 import type { Thread } from '@/services/messages.service';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
+import ConversationStatus, { deliveryStatus } from './ConversationStatus';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
 
@@ -21,14 +24,21 @@ export default function ConversationView({
 }) {
   const { data, isLoading } = useMessages(thread.id);
   const send = useSendMessage(thread.id);
+  const onType = useTypingEmitter(thread.id);
+  const otherTyping = useTyping(thread.id);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Stick to the newest message as it arrives, the way a chat is read.
+  // Stick to the newest message as it arrives, or as the other side starts typing.
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
-  }, [data?.items.length]);
+  }, [data?.items.length, otherTyping]);
 
   const messages = data?.items ?? [];
+  const lastMineIndex = messages.reduce(
+    (lastIndex, message, index) => (message.fromYou ? index : lastIndex),
+    -1
+  );
+  const receipt = deliveryStatus(data?.otherReadAt ?? thread.otherReadAt, messages);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -54,12 +64,23 @@ export default function ConversationView({
             No messages yet. Say hello to get started.
           </p>
         ) : (
-          messages.map((message) => <MessageBubble key={message.id} message={message} />)
+          messages.map((message, index) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              receipt={index === lastMineIndex ? receipt : null}
+            />
+          ))
         )}
         <div ref={endRef} />
       </div>
 
-      <MessageComposer onSend={(body) => send.mutate(body)} sending={send.isPending} />
+      <ConversationStatus typing={otherTyping} />
+      <MessageComposer
+        onSend={(body) => send.mutate(body)}
+        onType={onType}
+        sending={send.isPending}
+      />
     </div>
   );
 }

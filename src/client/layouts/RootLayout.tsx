@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 
 import FloatingSettings from '@/components/FloatingSettings';
-import ChatLauncher from '@/components/messaging/ChatLauncher';
 import RevealObserver from '@/components/RevealObserver';
 import ScrollToTop from '@/components/ScrollToTop';
 import SiteHeader from '@/components/navbar';
@@ -18,7 +17,6 @@ export default function RootLayout() {
       <RevealObserver />
       <SiteHeader />
       <FloatingSettings />
-      <ChatLauncher />
       <Outlet />
     </>
   );

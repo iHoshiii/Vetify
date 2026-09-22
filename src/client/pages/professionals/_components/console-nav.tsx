@@ -27,7 +27,7 @@ const COUNT = 'rounded-full bg-amber-500 px-1.5 text-[10px] font-black text-whit
 
 export default function ConsoleNav() {
   const { data: counts } = useIncomingAppointmentCounts();
-  const { data: unread = 0 } = useUnreadCount();
+  const { data: unread = 0 } = useUnreadCount(true, 'incoming');
 
   return (
     <nav aria-label="Console sections" className="lg:w-48 lg:shrink-0">

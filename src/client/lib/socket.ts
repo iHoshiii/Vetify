@@ -32,3 +32,8 @@ export function disconnectSocket(): void {
 export function getSocket(): Socket | null {
   return socket;
 }
+
+// Tells the other side of a thread whether the caller is typing. A no-op when the socket is down.
+export function emitTyping(threadId: string, typing: boolean): void {
+  socket?.emit('thread:typing', { threadId, typing });
+}

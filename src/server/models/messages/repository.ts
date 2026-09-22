@@ -1,4 +1,5 @@
 import { THREAD_PAGE_SIZE } from '@shared/limits';
+import type { ThreadState } from '@shared/schemas';
 import { ObjectId, type Collection, type Filter } from 'mongodb';
 
 import { getDb } from '../../config/db';
@@ -31,6 +32,10 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
     lastAt: null,
     clientUnread: 0,
     professionalUnread: 0,
+    clientState: 'active',
+    professionalState: 'active',
+    clientReadAt: null,
+    professionalReadAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -57,6 +62,8 @@ export async function findThreadByPair(input: {
 export type FindThreadsOptions = {
   client?: string | ObjectId;
   professionalUser?: string | ObjectId;
+  // Which shelf to read, matched against the caller's own state field. Omitted means every shelf.
+  state?: ThreadState;
   page?: number;
   limit?: number;
 };
@@ -65,11 +72,13 @@ export type FindThreadsOptions = {
 export async function findThreads(
   options: FindThreadsOptions
 ): Promise<{ items: ThreadDocument[]; total: number }> {
-  const { client, professionalUser, page = 1, limit = THREAD_PAGE_SIZE } = options;
+  const { client, professionalUser, state, page = 1, limit = THREAD_PAGE_SIZE } = options;
 
   const filter: Filter<ThreadDocument> = {};
   if (client) filter.client = toObjectId(client);
   if (professionalUser) filter.professionalUser = toObjectId(professionalUser);
+  // The state lives on the caller's own side of the row, so the filter follows the side being listed.
+  if (state) filter[client ? 'clientState' : 'professionalState'] = state;
 
   const [items, total] = await Promise.all([
     threadsCollection()
@@ -92,7 +101,10 @@ export async function touchThreadOnSend(input: {
   senderIsClient: boolean;
   at: Date;
 }): Promise<ThreadDocument | null> {
-  const bump = input.senderIsClient ? { professionalUnread: 1 } : { clientUnread: 1 };
+  // A message pulls the recipient's copy back to active, so an archived or deleted thread resurfaces the way Messenger's does.
+  const recipientState = input.senderIsClient ? { professionalUnread: 1 } : { clientUnread: 1 };
+  const wake: Partial<Pick<ThreadDocument, 'clientState' | 'professionalState'>> =
+    input.senderIsClient ? { professionalState: 'active' } : { clientState: 'active' };
 
   return await threadsCollection().findOneAndUpdate(
     { _id: toObjectId(input.thread) },
@@ -102,41 +114,10 @@ export async function touchThreadOnSend(input: {
         lastSender: toObjectId(input.sender),
         lastAt: input.at,
         updatedAt: input.at,
+        ...wake,
       },
-      $inc: bump,
+      $inc: recipientState,
     },
     { returnDocument: 'after' }
   );
-}
-
-// Clears one side's unread count when they open the thread.
-export async function clearThreadUnread(input: {
-  thread: string | ObjectId;
-  forClient: boolean;
-}): Promise<void> {
-  const field = input.forClient ? 'clientUnread' : 'professionalUnread';
-  await threadsCollection().updateOne(
-    { _id: toObjectId(input.thread) },
-    { $set: { [field]: 0, updatedAt: new Date() } }
-  );
-}
-
-// The caller's total unread across every thread, for the launcher badge.
-export async function countUnreadThreads(user: string | ObjectId): Promise<number> {
-  const id = toObjectId(user);
-  const rows = await threadsCollection()
-    .aggregate<{ total: number }>([
-      { $match: { $or: [{ client: id }, { professionalUser: id }] } },
-      {
-        $group: {
-          _id: null,
-          total: {
-            $sum: { $cond: [{ $eq: ['$client', id] }, '$clientUnread', '$professionalUnread'] },
-          },
-        },
-      },
-    ])
-    .toArray();
-
-  return rows[0]?.total ?? 0;
 }
