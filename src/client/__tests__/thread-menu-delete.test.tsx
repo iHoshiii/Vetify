@@ -35,11 +35,31 @@ afterEach(() => vi.clearAllMocks());
 
 describe('ThreadMenu delete', () => {
   it('moves a spam conversation back to Messages', async () => {
+    const onCloseThread = vi.fn();
     render(
-      wrap(<ThreadMenu thread={{ ...thread, state: 'spam' }} variant="row" onDone={vi.fn()} />)
+      wrap(
+        <ThreadMenu
+          thread={{ ...thread, state: 'spam' }}
+          variant="row"
+          onDone={vi.fn()}
+          onCloseThread={onCloseThread}
+        />
+      )
     );
     await userEvent.click(screen.getByRole('menuitem', { name: 'Move to Messages' }));
     await waitFor(() => expect(vi.mocked(svc.setThreadState)).toHaveBeenCalledWith('t1', 'active'));
+    expect(onCloseThread).not.toHaveBeenCalled();
+  });
+
+  it('closes an open conversation when it is archived from a row', async () => {
+    const onCloseThread = vi.fn();
+    render(
+      wrap(
+        <ThreadMenu thread={thread} variant="row" onDone={vi.fn()} onCloseThread={onCloseThread} />
+      )
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Archive' }));
+    await waitFor(() => expect(onCloseThread).toHaveBeenCalledOnce());
   });
 
   it('fires setThreadState(deleted) when the modal Delete is clicked', async () => {

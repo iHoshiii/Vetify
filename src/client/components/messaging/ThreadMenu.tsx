@@ -38,7 +38,7 @@ export default function ThreadMenu({
     try {
       await setState.mutateAsync({ threadId: thread.id, state });
       onDone();
-      if (variant === 'header') onCloseThread?.();
+      if (state !== 'active') onCloseThread?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update conversation');
     }

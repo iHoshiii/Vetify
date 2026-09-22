@@ -26,7 +26,15 @@ function whenOf(iso: string | null): string {
 }
 
 // One conversation in the list: opens on click, reveals a menu on hover (desktop) or long-press (mobile).
-export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: () => void }) {
+export default function ThreadRow({
+  thread,
+  onOpen,
+  onMoved,
+}: {
+  thread: Thread;
+  onOpen: () => void;
+  onMoved?: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const online = usePresence(thread.with?.id ?? null);
   const longPress = useLongPress(() => setMenuOpen(true));
@@ -79,7 +87,14 @@ export default function ThreadRow({ thread, onOpen }: { thread: Thread; onOpen: 
         <MoreHorizontal className="h-4 w-4" />
       </button>
 
-      {menuOpen && <ThreadMenu thread={thread} variant="row" onDone={() => setMenuOpen(false)} />}
+      {menuOpen && (
+        <ThreadMenu
+          thread={thread}
+          variant="row"
+          onDone={() => setMenuOpen(false)}
+          onCloseThread={onMoved}
+        />
+      )}
     </li>
   );
 }
