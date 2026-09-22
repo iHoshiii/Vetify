@@ -102,7 +102,11 @@ export function useOpenThread() {
 
   return useMutation<Thread, Error, string>({
     mutationFn: openThread,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: messageKeys.all }),
+    onSuccess: (thread) => {
+      // Reuse keeps the thread id, so drop any pre-delete page before the fresh fetch lands.
+      queryClient.removeQueries({ queryKey: [...messageKeys.all, 'thread', thread.id] });
+      void queryClient.invalidateQueries({ queryKey: messageKeys.all });
+    },
   });
 }
 
@@ -167,7 +171,13 @@ export function useSetThreadState() {
 
   return useMutation<{ state: ThreadState }, Error, { threadId: string; state: ThreadState }>({
     mutationFn: ({ threadId, state }) => setThreadState(threadId, state),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: messageKeys.all }),
+    onSuccess: (_result, { threadId, state }) => {
+      // Delete clears the caller's copy, so evict its cached messages instead of leaving them to flash back on reopen.
+      if (state === 'deleted') {
+        queryClient.removeQueries({ queryKey: [...messageKeys.all, 'thread', threadId] });
+      }
+      void queryClient.invalidateQueries({ queryKey: messageKeys.all });
+    },
   });
 }
 

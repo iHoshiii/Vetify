@@ -15,7 +15,8 @@ export default function DeleteConfirm({
     >
       <p className="text-sm font-bold text-slate-900">Delete this conversation?</p>
       <p className="mt-1 text-xs text-slate-500">
-        It clears the messages from your side. The other person keeps their copy.
+        This removes the messages from your side for good. They will not come back if you message
+        again. The other person keeps their copy.
       </p>
       <div className="mt-3 flex justify-end gap-2">
         <button
