@@ -15,8 +15,21 @@ export function deliveryStatus(
 }
 
 export default function ConversationStatus({ typing }: { typing: boolean }) {
-  if (typing) {
-    return <p className="px-3 pb-1 text-[11px] italic text-slate-400">typing…</p>;
-  }
-  return null;
+  if (!typing) return null;
+
+  return (
+    <div className="px-3 pb-2" role="status" aria-live="polite" aria-label="Typing">
+      <div className="inline-flex items-center gap-1 rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2">
+        {[0, 150, 300].map((delay) => (
+          <span
+            key={delay}
+            className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"
+            style={{ animationDelay: `${delay}ms`, animationDuration: '900ms' }}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+      <span className="sr-only">The other person is typing</span>
+    </div>
+  );
 }

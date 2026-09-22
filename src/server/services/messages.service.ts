@@ -5,6 +5,9 @@ import {
   insertMessage,
   insertThread,
   isDuplicateThread,
+  reportThread,
+  setThreadMuted,
+  setThreadUnread,
   setThreadState,
   touchThreadOnSend,
   type MessageDocument,
@@ -45,7 +48,14 @@ export async function openThread(input: {
     client: input.user._id,
     professionalUser: application.user,
   });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.clientState === 'deleted') {
+      await setThreadState({ thread: existing._id, forClient: true, state: 'active' });
+      existing.clientState = 'active';
+      existing.updatedAt = new Date();
+    }
+    return existing;
+  }
 
   try {
     return await insertThread({
@@ -97,11 +107,25 @@ export async function sendMessage(input: {
 
 /** Marks the caller's side read and tells both sides, so the other can show "Seen". */
 export async function readThread(thread: ThreadDocument, reader: User): Promise<void> {
-  await clearThreadUnread({ thread: thread._id, forClient: thread.client.equals(reader._id) });
+  const readerIsClient = thread.client.equals(reader._id);
+  const readAt = new Date();
+  await clearThreadUnread({ thread: thread._id, forClient: readerIsClient, at: readAt });
   const { client, professionalUser } = partiesOf(thread);
-  const payload = { threadId: thread._id.toString() };
-  emitToUser(client, 'thread:read', payload);
-  emitToUser(professionalUser, 'thread:read', payload);
+  const otherParty = readerIsClient ? professionalUser : client;
+  emitToUser(otherParty, 'thread:read', {
+    threadId: thread._id.toString(),
+    readAt: readAt.toISOString(),
+  });
+}
+
+/** Sends ephemeral typing state to the other participant without changing the thread. */
+export function notifyTyping(thread: ThreadDocument, sender: User, typing: boolean): void {
+  const senderIsClient = thread.client.equals(sender._id);
+  const { client, professionalUser } = partiesOf(thread);
+  emitToUser(senderIsClient ? professionalUser : client, 'thread:typing', {
+    threadId: thread._id.toString(),
+    typing,
+  });
 }
 
 /** Files the caller's own copy of a thread on a shelf. The other side's copy is untouched. */
@@ -115,4 +139,46 @@ export async function setThreadShelf(input: {
   emitToUser(input.user._id.toString(), 'thread:message', {
     threadId: input.thread._id.toString(),
   });
+}
+
+export async function setThreadMute(input: {
+  thread: ThreadDocument;
+  user: User;
+  muted: boolean;
+}): Promise<void> {
+  const forClient = input.thread.client.equals(input.user._id);
+  await setThreadMuted({ thread: input.thread._id, forClient, muted: input.muted });
+  emitToUser(input.user._id.toString(), 'thread:message', {
+    threadId: input.thread._id.toString(),
+  });
+}
+
+export async function setThreadReadState(input: {
+  thread: ThreadDocument;
+  user: User;
+  unread: boolean;
+}): Promise<void> {
+  const forClient = input.thread.client.equals(input.user._id);
+  if (input.unread) {
+    await setThreadUnread({ thread: input.thread._id, forClient, unread: true });
+  } else {
+    const readAt = new Date();
+    await clearThreadUnread({ thread: input.thread._id, forClient, at: readAt });
+    const { client, professionalUser } = partiesOf(input.thread);
+    emitToUser(forClient ? professionalUser : client, 'thread:read', {
+      threadId: input.thread._id.toString(),
+      readAt: readAt.toISOString(),
+    });
+  }
+  emitToUser(input.user._id.toString(), 'thread:message', {
+    threadId: input.thread._id.toString(),
+  });
+}
+
+export async function reportConversation(input: {
+  thread: ThreadDocument;
+  user: User;
+}): Promise<void> {
+  const forClient = input.thread.client.equals(input.user._id);
+  await reportThread({ thread: input.thread._id, forClient });
 }

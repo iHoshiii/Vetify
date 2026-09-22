@@ -30,7 +30,7 @@ export default function MessageComposer({
   };
 
   return (
-    <div className="flex items-end gap-2 border-t border-slate-200 bg-white px-3 py-2">
+    <div className="flex w-full items-end gap-2 border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
       <textarea
         rows={1}
         value={text}

@@ -1,5 +1,6 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
+import type { MessagePage, ThreadPage } from '@/services/messages.service';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -9,6 +10,7 @@ import { noteTyping } from './useTyping';
 
 // The lightweight events the server pushes. Each carries only an id, so the client refetches rather than trusting a payload.
 type ThreadEvent = { threadId: string };
+type ReadEvent = ThreadEvent & { readAt: string };
 
 // The one event that carries state rather than a bare id, since typing is too fleeting to refetch for.
 type TypingEvent = { threadId: string; typing: boolean };
@@ -39,8 +41,23 @@ export function useRealtime(): void {
       void queryClient.invalidateQueries({ queryKey: messageKeys.all });
     };
     // The far side read: the badge drops and the thread list's otherReadAt moves, so a "Seen" can appear.
-    const onRead = (_e: ThreadEvent) => {
-      void queryClient.invalidateQueries({ queryKey: messageKeys.all });
+    const onRead = (event: ReadEvent) => {
+      const threadQueryKey = [...messageKeys.all, 'thread', event.threadId] as const;
+      queryClient.setQueriesData<MessagePage>({ queryKey: threadQueryKey }, (page) =>
+        page ? { ...page, otherReadAt: event.readAt } : page
+      );
+      queryClient.setQueriesData<ThreadPage>(
+        { queryKey: [...messageKeys.all, 'threads'] },
+        (page) =>
+          page
+            ? {
+                ...page,
+                items: page.items.map((thread) =>
+                  thread.id === event.threadId ? { ...thread, otherReadAt: event.readAt } : thread
+                ),
+              }
+            : page
+      );
     };
     // A booking changing on the other console: refetch both lists and the tab counts.
     const onAppointment = () => {
