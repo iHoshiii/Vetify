@@ -26,9 +26,53 @@ export async function setThreadState(input: {
   state: ThreadState;
 }): Promise<void> {
   const field = input.forClient ? 'clientState' : 'professionalState';
+  const unreadField = input.forClient ? 'clientUnread' : 'professionalUnread';
+  const deletedAtField = input.forClient ? 'clientDeletedAt' : 'professionalDeletedAt';
+  const now = new Date();
   await threadsCollection().updateOne(
     { _id: toObjectId(input.thread) },
-    { $set: { [field]: input.state, updatedAt: new Date() } }
+    {
+      $set: {
+        [field]: input.state,
+        ...(input.state === 'deleted' ? { [deletedAtField]: now, [unreadField]: 0 } : {}),
+        updatedAt: now,
+      },
+    }
+  );
+}
+
+export async function setThreadMuted(input: {
+  thread: string | ObjectId;
+  forClient: boolean;
+  muted: boolean;
+}): Promise<void> {
+  const field = input.forClient ? 'clientMuted' : 'professionalMuted';
+  await threadsCollection().updateOne(
+    { _id: toObjectId(input.thread) },
+    { $set: { [field]: input.muted, updatedAt: new Date() } }
+  );
+}
+
+export async function setThreadUnread(input: {
+  thread: string | ObjectId;
+  forClient: boolean;
+  unread: boolean;
+}): Promise<void> {
+  const field = input.forClient ? 'clientUnread' : 'professionalUnread';
+  await threadsCollection().updateOne(
+    { _id: toObjectId(input.thread) },
+    { $set: { [field]: input.unread ? 1 : 0, updatedAt: new Date() } }
+  );
+}
+
+export async function reportThread(input: {
+  thread: string | ObjectId;
+  forClient: boolean;
+}): Promise<void> {
+  const field = input.forClient ? 'clientReportedAt' : 'professionalReportedAt';
+  await threadsCollection().updateOne(
+    { _id: toObjectId(input.thread) },
+    { $set: { [field]: new Date(), updatedAt: new Date() } }
   );
 }
 
@@ -51,7 +95,19 @@ export async function countUnreadThreads(
         $group: {
           _id: null,
           total: {
-            $sum: { $cond: [{ $eq: ['$client', id] }, '$clientUnread', '$professionalUnread'] },
+            $sum: {
+              $cond: [
+                { $eq: ['$client', id] },
+                { $cond: [{ $eq: ['$clientMuted', true] }, 0, { $ifNull: ['$clientUnread', 0] }] },
+                {
+                  $cond: [
+                    { $eq: ['$professionalMuted', true] },
+                    0,
+                    { $ifNull: ['$professionalUnread', 0] },
+                  ],
+                },
+              ],
+            },
           },
         },
       },

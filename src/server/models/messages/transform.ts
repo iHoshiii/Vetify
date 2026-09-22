@@ -24,6 +24,9 @@ export function toThreadView(input: {
 }): ThreadView {
   const { thread, viewer, party } = input;
   const isClient = thread.client.equals(viewer);
+  const deletedAt = isClient ? thread.clientDeletedAt : thread.professionalDeletedAt;
+  const hasVisibleLastMessage =
+    thread.lastAt !== null && (deletedAt == null || thread.lastAt > deletedAt);
   // The other side's read stamp, so a "Seen" can sit under the viewer's own last message.
   const otherReadAt = isClient ? thread.professionalReadAt : thread.clientReadAt;
 
@@ -31,10 +34,11 @@ export function toThreadView(input: {
     id: thread._id.toString(),
     professionalId: thread.professional.toString(),
     with: party,
-    lastBody: thread.lastBody,
-    lastFromYou: thread.lastSender?.equals(viewer) ?? false,
-    lastAt: thread.lastAt?.toISOString() ?? null,
+    lastBody: hasVisibleLastMessage ? thread.lastBody : null,
+    lastFromYou: hasVisibleLastMessage && (thread.lastSender?.equals(viewer) ?? false),
+    lastAt: hasVisibleLastMessage ? thread.lastAt?.toISOString() ?? null : null,
     unread: isClient ? thread.clientUnread : thread.professionalUnread,
+    muted: isClient ? thread.clientMuted ?? false : thread.professionalMuted ?? false,
     state: isClient ? thread.clientState : thread.professionalState,
     otherReadAt: otherReadAt?.toISOString() ?? null,
     createdAt: thread.createdAt.toISOString(),

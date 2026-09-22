@@ -29,11 +29,15 @@ export async function insertMessage(attrs: MessageAttrs): Promise<MessageDocumen
 // One page of a thread, newest first so the last page is the latest talk.
 export async function findMessages(input: {
   thread: string | ObjectId;
+  after?: Date | null;
   page?: number;
   limit?: number;
 }): Promise<{ items: MessageDocument[]; total: number }> {
-  const { thread, page = 1, limit = MESSAGE_PAGE_SIZE } = input;
-  const filter = { thread: toObjectId(thread) };
+  const { thread, after, page = 1, limit = MESSAGE_PAGE_SIZE } = input;
+  const filter = {
+    thread: toObjectId(thread),
+    ...(after ? { createdAt: { $gt: after } } : {}),
+  };
 
   const [items, total] = await Promise.all([
     messagesCollection()

@@ -32,6 +32,12 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
     lastAt: null,
     clientUnread: 0,
     professionalUnread: 0,
+    clientMuted: false,
+    professionalMuted: false,
+    clientReportedAt: null,
+    professionalReportedAt: null,
+    clientDeletedAt: null,
+    professionalDeletedAt: null,
     clientState: 'active',
     professionalState: 'active',
     clientReadAt: null,
@@ -101,10 +107,12 @@ export async function touchThreadOnSend(input: {
   senderIsClient: boolean;
   at: Date;
 }): Promise<ThreadDocument | null> {
-  // A message pulls the recipient's copy back to active, so an archived or deleted thread resurfaces the way Messenger's does.
+  // A message resurfaces the thread for both sides: the sender re-engaging their own copy and the recipient's archived or deleted one, the way Messenger's does.
   const recipientState = input.senderIsClient ? { professionalUnread: 1 } : { clientUnread: 1 };
-  const wake: Partial<Pick<ThreadDocument, 'clientState' | 'professionalState'>> =
-    input.senderIsClient ? { professionalState: 'active' } : { clientState: 'active' };
+  const wake: Partial<Pick<ThreadDocument, 'clientState' | 'professionalState'>> = {
+    clientState: 'active',
+    professionalState: 'active',
+  };
 
   return await threadsCollection().findOneAndUpdate(
     { _id: toObjectId(input.thread) },
