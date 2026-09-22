@@ -34,6 +34,14 @@ function wrap(children: ReactNode) {
 afterEach(() => vi.clearAllMocks());
 
 describe('ThreadMenu delete', () => {
+  it('moves a spam conversation back to Messages', async () => {
+    render(
+      wrap(<ThreadMenu thread={{ ...thread, state: 'spam' }} variant="row" onDone={vi.fn()} />)
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Move to Messages' }));
+    await waitFor(() => expect(vi.mocked(svc.setThreadState)).toHaveBeenCalledWith('t1', 'active'));
+  });
+
   it('fires setThreadState(deleted) when the modal Delete is clicked', async () => {
     const onDone = vi.fn();
     render(wrap(<ThreadMenu thread={thread} variant="row" onDone={onDone} />));

@@ -1,8 +1,8 @@
 import type { ThreadState } from '@/services/messages.service';
 
-// The three listable shelves and the label each shows. Active reads as "All" since it is the default inbox.
+// The three listable shelves and the label each shows.
 const SHELVES: Array<{ state: ThreadState; label: string }> = [
-  { state: 'active', label: 'All' },
+  { state: 'active', label: 'Messages' },
   { state: 'archived', label: 'Archived' },
   { state: 'spam', label: 'Spam' },
 ];

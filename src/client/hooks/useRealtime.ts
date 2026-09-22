@@ -41,8 +41,15 @@ export function useRealtime(): void {
     const socket = connectSocket(accessToken);
 
     // A new message, or the far side reading one: either way both the thread and the badge move.
-    const onMessage = (_e: ThreadEvent) => {
-      void queryClient.invalidateQueries({ queryKey: messageKeys.all });
+    const onMessage = (event: ThreadEvent) => {
+      void queryClient.invalidateQueries({
+        queryKey: [...messageKeys.all, 'threads'],
+        refetchType: 'all',
+      });
+      void queryClient.invalidateQueries({ queryKey: [...messageKeys.all, 'unread'] });
+      void queryClient.invalidateQueries({
+        queryKey: [...messageKeys.all, 'thread', event.threadId],
+      });
     };
     // The far side read: the badge drops and the thread list's otherReadAt moves, so a "Seen" can appear.
     const onRead = (event: ReadEvent) => {

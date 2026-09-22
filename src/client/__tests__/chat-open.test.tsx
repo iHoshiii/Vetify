@@ -110,6 +110,7 @@ describe("a normal user's thread list", () => {
     );
 
     await waitFor(() => expect(screen.getByText('Vetify Test Clinic')).toBeInTheDocument());
+    expect(screen.getByRole('tab', { name: 'Messages' })).toBeInTheDocument();
   });
 
   it('reports a failed load instead of showing an empty inbox', async () => {
