@@ -64,4 +64,18 @@ describe('apiFetch refresh-on-401', () => {
     await expect(apiFetch('/messages/mine')).rejects.toMatchObject({ status: 401 });
     expect(window.localStorage.getItem(KEY)).toBeNull();
   });
+
+  it('keeps the session when refresh is temporarily rate limited', async () => {
+    store('expired');
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(res(401, { error: 'expired' }))
+        .mockResolvedValueOnce(res(429, { error: 'Please wait a moment before sending again.' }))
+    );
+
+    await expect(apiFetch('/messages/mine')).rejects.toMatchObject({ status: 429 });
+    expect(window.localStorage.getItem(KEY)).not.toBeNull();
+  });
 });

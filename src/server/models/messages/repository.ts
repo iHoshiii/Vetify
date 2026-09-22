@@ -29,6 +29,7 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
     client: toObjectId(parsed.client),
     lastBody: null,
     lastSender: null,
+    lastMessage: null,
     lastAt: null,
     clientUnread: 0,
     professionalUnread: 0,
@@ -52,6 +53,25 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
 
 export async function findThreadById(id: string | ObjectId): Promise<ThreadDocument | null> {
   return await threadsCollection().findOne({ _id: toObjectId(id) });
+}
+
+export async function findConversationPartnerIds(user: string | ObjectId): Promise<string[]> {
+  const id = toObjectId(user);
+  const threads = await threadsCollection()
+    .find({ $or: [{ client: id }, { professionalUser: id }] })
+    .project<Pick<ThreadDocument, 'client' | 'professionalUser'>>({
+      client: 1,
+      professionalUser: 1,
+    })
+    .toArray();
+
+  return [
+    ...new Set(
+      threads.map((thread) =>
+        thread.client.equals(id) ? thread.professionalUser.toString() : thread.client.toString()
+      )
+    ),
+  ];
 }
 
 // The one thread for a pair, so a repeat open reuses it rather than racing the unique index.
@@ -103,6 +123,7 @@ export async function findThreads(
 export async function touchThreadOnSend(input: {
   thread: string | ObjectId;
   sender: string | ObjectId;
+  message: string | ObjectId;
   body: string;
   senderIsClient: boolean;
   at: Date;
@@ -134,6 +155,7 @@ export async function touchThreadOnSend(input: {
         $set: {
           lastBody: input.body,
           lastSender: toObjectId(input.sender),
+          lastMessage: toObjectId(input.message),
           lastAt: input.at,
           updatedAt: input.at,
           [senderState]: 'active',

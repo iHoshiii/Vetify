@@ -16,3 +16,7 @@ export function userRoom(userId: string): string {
 export function emitToUser(userId: string, event: string, payload: unknown): void {
   io?.to(userRoom(userId)).emit(event, payload);
 }
+
+export function isUserOnline(userId: string): boolean {
+  return (io?.sockets.adapter.rooms.get(userRoom(userId))?.size ?? 0) > 0;
+}

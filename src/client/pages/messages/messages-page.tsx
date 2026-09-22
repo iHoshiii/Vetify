@@ -33,7 +33,13 @@ export default function MessagesPage() {
           {isProfessional && <MessageSideTabs side={side} onChange={changeSide} />}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <ThreadList side={isProfessional ? side : 'mine'} onOpen={setActive} />
+          <ThreadList
+            side={isProfessional ? side : 'mine'}
+            onOpen={setActive}
+            onThreadMoved={(threadId) =>
+              setActive((current) => (current?.id === threadId ? null : current))
+            }
+          />
         </div>
       </section>
 

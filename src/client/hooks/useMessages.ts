@@ -18,6 +18,8 @@ import {
 } from '@/services/messages.service';
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 
+import { moveCachedThread, restoreThreadLists, snapshotThreadLists } from './message-thread-cache';
+
 // Same factory shape as the appointment keys, so a signal can drop one thread, one side, or the whole family.
 export const messageKeys = {
   all: ['messages'] as const,
@@ -133,6 +135,8 @@ export function useSendMessage(threadId: string) {
                   threadId,
                   body,
                   fromYou: true,
+                  editedAt: null,
+                  unsentAt: null,
                   createdAt: new Date().toISOString(),
                 },
               ],
@@ -160,8 +164,10 @@ export function useSendMessage(threadId: string) {
             }
           : page
       );
+      moveCachedThread(queryClient, [...messageKeys.all, 'threads'], threadId, 'active');
     },
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: messageKeys.all }),
+    onSettled: () =>
+      void queryClient.invalidateQueries({ queryKey: [...messageKeys.all, 'threads'] }),
   });
 }
 
@@ -169,15 +175,28 @@ export function useSendMessage(threadId: string) {
 export function useSetThreadState() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ state: ThreadState }, Error, { threadId: string; state: ThreadState }>({
+  return useMutation<
+    { state: ThreadState },
+    Error,
+    { threadId: string; state: ThreadState },
+    { snapshots: ReturnType<typeof snapshotThreadLists> }
+  >({
     mutationFn: ({ threadId, state }) => setThreadState(threadId, state),
+    onMutate: async ({ threadId, state }) => {
+      const listKey = [...messageKeys.all, 'threads'] as const;
+      await queryClient.cancelQueries({ queryKey: listKey });
+      const snapshots = snapshotThreadLists(queryClient, listKey);
+      moveCachedThread(queryClient, listKey, threadId, state);
+      return { snapshots };
+    },
+    onError: (_error, _variables, context) => restoreThreadLists(queryClient, context?.snapshots),
     onSuccess: (_result, { threadId, state }) => {
       // Delete clears the caller's copy, so evict its cached messages instead of leaving them to flash back on reopen.
       if (state === 'deleted') {
         queryClient.removeQueries({ queryKey: [...messageKeys.all, 'thread', threadId] });
       }
-      void queryClient.invalidateQueries({ queryKey: messageKeys.all });
     },
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: messageKeys.all }),
   });
 }
 

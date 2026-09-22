@@ -17,7 +17,7 @@ import {
 import { Router, type RequestHandler } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
-import { messageLimiter } from '../../middleware/security';
+import { messageActionLimiter } from '../../middleware/security';
 import { validate, validateQuery } from '../../middleware/validate';
 import {
   countUnreadThreads,
@@ -46,6 +46,8 @@ import { AppError } from '../../utils/AppError';
 import { created, fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 import { partiesOf } from './thread-parties';
+import messageActionsRoute from './message-actions.route';
+import { syncThreadPresence } from '../../realtime/presence';
 
 const router = Router();
 
@@ -103,6 +105,7 @@ router.post('/', validate(threadOpenSchema), async (req, res) => {
 
   const thread = await openThread({ user, professionalId: body.professionalId });
   if (!thread) return fail(res, 404, 'That professional is not in the directory');
+  syncThreadPresence(thread);
 
   const parties = await partiesOf([thread], user._id);
   created(res, {
@@ -128,6 +131,7 @@ router.get('/:id/messages', validateQuery(messageListQuerySchema), async (req, r
 
   const { items, total } = await findMessages({
     thread: thread._id,
+    viewer: viewer._id,
     after: thread.client.equals(viewer._id) ? thread.clientDeletedAt : thread.professionalDeletedAt,
     page: query.page,
     limit: query.limit,
@@ -150,7 +154,7 @@ router.get('/:id/messages', validateQuery(messageListQuerySchema), async (req, r
 });
 
 // POST /:id/messages — send into a thread the caller is part of.
-router.post('/:id/messages', messageLimiter, validate(messageSendSchema), async (req, res) => {
+router.post('/:id/messages', validate(messageSendSchema), async (req, res) => {
   const sender = actorOf(req);
   const thread = await loadOwn(req);
   const body = req.body as MessageSendInput;
@@ -161,8 +165,10 @@ router.post('/:id/messages', messageLimiter, validate(messageSendSchema), async 
   });
 });
 
+router.use('/:id/messages', messageActionsRoute);
+
 // POST /:id/typing — fallback when a browser cannot deliver outbound socket events.
-router.post('/:id/typing', messageLimiter, async (req, res) => {
+router.post('/:id/typing', messageActionLimiter, async (req, res) => {
   const sender = actorOf(req);
   const thread = await loadOwn(req);
   notifyTyping(thread, sender, Boolean(req.body?.typing));

@@ -35,6 +35,8 @@ export type Message = {
   threadId: string;
   body: string;
   fromYou: boolean;
+  editedAt: string | null;
+  unsentAt: string | null;
   createdAt: string;
 };
 
@@ -138,6 +140,21 @@ export async function sendMessage(threadId: string, body: string) {
     { method: 'POST', body: { body } }
   );
   return message;
+}
+
+export async function editMessage(threadId: string, messageId: string, body: string) {
+  const { message } = await apiFetch<{ message: Message }>(
+    `/messages/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: 'PATCH', body: { body } }
+  );
+  return message;
+}
+
+export async function deleteMessage(threadId: string, messageId: string) {
+  return await apiFetch<{ message: Message | null; removedForYou: boolean }>(
+    `/messages/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(messageId)}`,
+    { method: 'DELETE' }
+  );
 }
 
 export async function sendTyping(threadId: string, typing: boolean) {

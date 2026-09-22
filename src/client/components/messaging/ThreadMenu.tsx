@@ -5,7 +5,7 @@ import {
   useSetThreadState,
 } from '@/hooks/useMessages';
 import type { Thread, ThreadState } from '@/services/messages.service';
-import { Archive, Ban, BellOff, Flag, Mail, MailOpen, Trash2 } from 'lucide-react';
+import { Archive, Ban, BellOff, Flag, Inbox, Mail, MailOpen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import DeleteConfirm from './DeleteConfirm';
@@ -38,7 +38,7 @@ export default function ThreadMenu({
     try {
       await setState.mutateAsync({ threadId: thread.id, state });
       onDone();
-      if (variant === 'header') onCloseThread?.();
+      if (state !== 'active') onCloseThread?.();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to update conversation');
     }
@@ -105,24 +105,36 @@ export default function ThreadMenu({
         <BellOff className="h-4 w-4" />
         {thread.muted ? 'Unmute' : 'Mute'}
       </button>
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => void runState('archived')}
-        className={itemClass}
-      >
-        <Archive className="h-4 w-4" />
-        Archive
-      </button>
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => void runState('spam')}
-        className={itemClass}
-      >
-        <Ban className="h-4 w-4" />
-        {variant === 'header' ? 'Mark as Spam' : 'Mark as spam'}
-      </button>
+      {thread.state !== 'active' && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => void runState('active')}
+          className={itemClass}
+        >
+          <Inbox className="h-4 w-4" /> Move to Messages
+        </button>
+      )}
+      {thread.state !== 'archived' && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => void runState('archived')}
+          className={itemClass}
+        >
+          <Archive className="h-4 w-4" /> Archive
+        </button>
+      )}
+      {thread.state !== 'spam' && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => void runState('spam')}
+          className={itemClass}
+        >
+          <Ban className="h-4 w-4" /> {variant === 'header' ? 'Mark as Spam' : 'Mark as spam'}
+        </button>
+      )}
       <button
         type="button"
         role="menuitem"

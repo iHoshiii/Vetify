@@ -14,13 +14,23 @@ async function refreshAccessToken(): Promise<string | null> {
         credentials: 'include',
       });
       if (!res.ok) {
-        writeAuthState(null);
-        return null;
+        const err = ((await res.json().catch(() => null)) ?? {}) as ApiErrorBody;
+        if (res.status === 401 || res.status === 403) {
+          writeAuthState(null);
+          return null;
+        }
+        throw new ApiError(
+          res.status,
+          err.error ?? err.message ?? `Request failed (${res.status})`,
+          err.reason,
+          err.issues
+        );
       }
       const session = (await res.json()) as AuthSession;
       writeAuthState(session);
       return session.accessToken;
-    } catch {
+    } catch (cause) {
+      if (cause instanceof ApiError) throw cause;
       return null;
     } finally {
       refreshInFlight = null;
