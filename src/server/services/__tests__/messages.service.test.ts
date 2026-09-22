@@ -3,13 +3,19 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   countUnreadThreads,
   findThreadById,
+  findThreads,
   insertProfessional,
-  professionalsCollection,
   type ProfessionalAttrs,
 } from '../../models';
 import { insertUser, type User } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { ensureParty, openThread, readThread, sendMessage } from '../messages.service';
+import {
+  ensureParty,
+  openThread,
+  readThread,
+  sendMessage,
+  setThreadShelf,
+} from '../messages.service';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
@@ -123,5 +129,44 @@ describe('sendMessage and readThread', () => {
 
     await readThread(thread, vetUser);
     expect(await countUnreadThreads(vetUser._id)).toBe(0);
+  });
+
+  it('stamps the reader side so the other can be shown a Seen', async () => {
+    const client = await account();
+    const { user: vetUser, application } = await vet();
+    const thread = await openThread({ user: client, professionalId: application._id.toString() });
+    if (!thread) throw new Error('thread not opened');
+
+    await sendMessage({ thread, sender: client, body: 'Hello?' });
+    await readThread(thread, vetUser);
+
+    // The vet read, so their read stamp is set for the client to see.
+    const stamped = await findThreadById(thread._id);
+    expect(stamped?.professionalReadAt).toBeInstanceOf(Date);
+    expect(stamped?.clientReadAt).toBeNull();
+  });
+});
+
+describe('setThreadShelf', () => {
+  it('files the caller side without touching the other, and a new message wakes it', async () => {
+    const client = await account();
+    const { user: vetUser, application } = await vet();
+    const thread = await openThread({ user: client, professionalId: application._id.toString() });
+    if (!thread) throw new Error('thread not opened');
+
+    await setThreadShelf({ thread, user: client, state: 'archived' });
+
+    // The client filed it: gone from their active list, still on the vet's.
+    const clientActive = await findThreads({ client: client._id, state: 'active' });
+    expect(clientActive.total).toBe(0);
+    const clientArchived = await findThreads({ client: client._id, state: 'archived' });
+    expect(clientArchived.total).toBe(1);
+    const vetActive = await findThreads({ professionalUser: vetUser._id, state: 'active' });
+    expect(vetActive.total).toBe(1);
+
+    // The vet writing in resurfaces the client's copy the way Messenger does.
+    await sendMessage({ thread, sender: vetUser, body: 'Still there?' });
+    const wokenActive = await findThreads({ client: client._id, state: 'active' });
+    expect(wokenActive.total).toBe(1);
   });
 });

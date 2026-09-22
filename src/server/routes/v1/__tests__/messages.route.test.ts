@@ -69,6 +69,8 @@ describe('POST /api/v1/messages', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.thread.professionalId).toBe(doc.application._id.toString());
+    // The far side is named by the vet's licence name, not the raw account behind it.
+    expect(res.body.thread.with.name).toBe(doc.application.fullName);
   });
 
   it('401s an anonymous caller', async () => {
@@ -118,6 +120,16 @@ describe('a thread end to end', () => {
       .set('Authorization', `Bearer ${doc.token}`);
     expect(unread.body.unread).toBe(1);
 
+    const incomingUnread = await request(app)
+      .get('/api/v1/messages/unread?side=incoming')
+      .set('Authorization', `Bearer ${doc.token}`);
+    expect(incomingUnread.body.unread).toBe(1);
+
+    const personalUnread = await request(app)
+      .get('/api/v1/messages/unread?side=mine')
+      .set('Authorization', `Bearer ${doc.token}`);
+    expect(personalUnread.body.unread).toBe(0);
+
     // Reading the page clears the vet's unread and shows the message oldest-first.
     const page = await request(app)
       .get(`/api/v1/messages/${threadId}/messages`)
@@ -145,5 +157,49 @@ describe('a thread end to end', () => {
       .get(`/api/v1/messages/${opened.body.thread.id}/messages`)
       .set('Authorization', `Bearer ${outsider.token}`);
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/v1/messages/:id/state', () => {
+  it('files a thread on a shelf and drops it from the active list', async () => {
+    const client = await account();
+    const doc = await vet();
+
+    const opened = await request(app)
+      .post('/api/v1/messages')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ professionalId: doc.application._id.toString() });
+    const threadId = opened.body.thread.id;
+
+    const filed = await request(app)
+      .patch(`/api/v1/messages/${threadId}/state`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ state: 'archived' });
+    expect(filed.status).toBe(200);
+
+    const active = await request(app)
+      .get('/api/v1/messages/mine')
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(active.body.items).toHaveLength(0);
+
+    const archived = await request(app)
+      .get('/api/v1/messages/mine?state=archived')
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(archived.body.items).toHaveLength(1);
+  });
+
+  it('400s an unknown state', async () => {
+    const client = await account();
+    const doc = await vet();
+    const opened = await request(app)
+      .post('/api/v1/messages')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ professionalId: doc.application._id.toString() });
+
+    const res = await request(app)
+      .patch(`/api/v1/messages/${opened.body.thread.id}/state`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ state: 'burned' });
+    expect(res.status).toBe(400);
   });
 });
