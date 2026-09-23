@@ -42,7 +42,6 @@ function ownMarker(application: OwnProfessional, address: ProfessionalAddressVie
       addressLine: addressLine(address),
       latitude: address.mapPin.latitude,
       longitude: address.mapPin.longitude,
-      specialties: application.specialties,
       hourlyRate: application.hourlyRate,
       availabilityStatus: application.availabilityStatus,
     },

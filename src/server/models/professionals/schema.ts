@@ -68,11 +68,10 @@ export const professionalAttrsSchema = z.object({
   licenseNumber: z.string().trim().min(1, 'License number is required'),
   licenseAuthority: z.string().trim().min(1, 'License authority is required'),
   credentialUrls: z.array(z.string().trim().min(1)).nullish(),
-  specialties: z.array(z.string().trim().min(1)).nullish(),
   clinicName: z.string().trim().min(1).nullish(),
   addresses: z.array(addressSchema).min(1, 'At least one address is required'),
   businessPhone: z.string().trim().min(1).nullish(),
-  bio: z.string().trim().default(''),
+  bio: z.string().trim().min(1, 'A professional bio is required'),
   yearsExperience: z.number().int().min(0).default(0),
   hourlyRate: z.number().min(0).default(50),
   // No reviews collection yet, so these are seeded by hand and default to unrated.

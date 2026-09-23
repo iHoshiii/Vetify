@@ -45,7 +45,6 @@ function application(overrides: Partial<OwnProfessional> = {}): OwnProfessional 
     licenseNumber: 'VET 1234-PH',
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
-    specialties: ['dentistry'],
     clinicName: 'Bayside Animal Clinic',
     clinicAddress: '12 Mabini Street, Cebu City',
     addresses: [

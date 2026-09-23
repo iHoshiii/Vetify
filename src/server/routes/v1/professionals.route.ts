@@ -106,7 +106,6 @@ router.get('/', validateQuery(professionalListQuerySchema), async (req, res) => 
   const query = req.validatedQuery as ProfessionalListQuery;
 
   const { items, total } = await findVerifiedProfessionals({
-    specialty: query.specialty,
     q: query.q,
     minExperience: query.minExperience,
     maxRate: query.maxRate,

@@ -116,7 +116,6 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
       },
     ],
     businessPhone: null,
-    specialties: ['dentistry'],
     bio: 'Small animal practice.',
     yearsExperience: 15,
     hourlyRate: 60,

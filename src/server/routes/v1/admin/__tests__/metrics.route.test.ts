@@ -112,7 +112,6 @@ async function application(status: 'pending' | 'verified' | 'rejected' = 'pendin
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
-    specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
     addresses: [
       {

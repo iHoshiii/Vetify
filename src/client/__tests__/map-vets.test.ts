@@ -49,7 +49,6 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
     clinicAddress: '12 Mabini Street, Cebu City',
     addresses: [address()],
     businessPhone: null,
-    specialties: ['dentistry'],
     bio: 'A bio.',
     yearsExperience: 15,
     hourlyRate: 425,

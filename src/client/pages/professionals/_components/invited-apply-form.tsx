@@ -15,6 +15,7 @@ import {
   type Photos,
 } from './apply-payload';
 import ConfirmApplyDialog from './confirm-apply-dialog';
+import BioStep from './bio-step';
 import ConsentStep from './consent-step';
 import type { Capture } from './photo-capture';
 import PhotosStep from './photos-step';
@@ -35,8 +36,9 @@ const NO_PHOTOS: Photos = { portrait: null, licenseFront: null, licenseBack: nul
 // afterwards, because the licence has been checked against a register and the
 // photographs against a face.
 export default function InvitedApplyForm({ token, invite }: Props) {
-  const [addresses] = useState<AddressValue[]>(() => reviewedAddresses(invite));
+  const [addresses, setAddresses] = useState<AddressValue[]>(() => reviewedAddresses(invite));
   const [photos, setPhotos] = useState<Photos>(NO_PHOTOS);
+  const [bio, setBio] = useState('');
   const [consent, setConsent] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -47,6 +49,12 @@ export default function InvitedApplyForm({ token, invite }: Props) {
 
   function setPhoto(which: keyof Photos) {
     return (capture: Capture | null) => setPhotos((current) => ({ ...current, [which]: capture }));
+  }
+
+  function setAddress(next: AddressValue) {
+    setAddresses((current) =>
+      current.map((address) => (address.kind === next.kind ? next : address))
+    );
   }
 
   function application() {
@@ -62,6 +70,7 @@ export default function InvitedApplyForm({ token, invite }: Props) {
       portrait: photos.portrait ?? undefined,
       licenseFront: photos.licenseFront ?? undefined,
       licenseBack: photos.licenseBack ?? undefined,
+      bio,
       yearsExperience: invite.yearsExperience ?? 0,
       backgroundCheckConsent: consent,
     } as ProfessionalApplyInput;
@@ -114,14 +123,15 @@ export default function InvitedApplyForm({ token, invite }: Props) {
 
       <ReviewedDetails invite={invite} />
       <PhotosStep photos={photos} onChange={setPhoto} errors={errors} />
-      <ReviewedLocations addresses={addresses} error={errors.addresses} />
+      <ReviewedLocations addresses={addresses} onChange={setAddress} error={errors.addresses} />
+      <BioStep value={bio} onChange={setBio} error={errors.bio} />
       <ConsentStep
         consent={consent}
         onConsent={setConsent}
         error={errors.backgroundCheckConsent}
         pending={apply.isPending}
-        ready={readyToSubmit(invite, addresses, photos, consent)}
-        missing={stillToDo(photos, consent)}
+        ready={readyToSubmit(invite, addresses, photos, bio, consent)}
+        missing={stillToDo(addresses, photos, bio, consent)}
       />
 
       <ConfirmApplyDialog

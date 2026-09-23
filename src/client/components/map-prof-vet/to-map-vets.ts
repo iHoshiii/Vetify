@@ -19,7 +19,6 @@ export function toMapVets(
           addressLine: [address.line1, address.city, address.province].filter(Boolean).join(', '),
           latitude: address.mapPin.latitude,
           longitude: address.mapPin.longitude,
-          specialties: professional.specialties,
           hourlyRate: professional.hourlyRate,
           availabilityStatus: professional.availabilityStatus,
           ...(professional.distanceMeters === undefined

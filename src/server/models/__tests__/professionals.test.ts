@@ -95,7 +95,6 @@ describe('insertProfessional', () => {
     expect(application.reviewedBy).toBeNull();
     expect(application.reviewedAt).toBeNull();
     expect(application.rejectionReason).toBeNull();
-    expect(application.specialties).toEqual([]);
   });
 
   it('refuses an application that names no real applicant', async () => {
@@ -272,15 +271,6 @@ describe('the public directory', () => {
     expect(page.items.map((one) => one.clinicName)).toEqual(['Newer Clinic', 'Older Clinic']);
   });
 
-  it('filters by specialty', async () => {
-    await verified('2026-08-01T00:00:00.000Z', { specialties: ['surgery', 'dentistry'] });
-    await verified('2026-08-02T00:00:00.000Z', { specialties: ['dermatology'] });
-
-    const page = await findVerifiedProfessionals({ specialty: 'surgery' });
-    expect(page.total).toBe(1);
-    expect(page.items[0].specialties).toContain('surgery');
-  });
-
   it('pages the directory', async () => {
     for (let n = 0; n < 4; n++) {
       await verified(`2026-08-0${n + 1}T00:00:00.000Z`);
@@ -378,7 +368,6 @@ describe('countProfessionalsByStatus', () => {
 describe('public shapes', () => {
   it('keeps the verification material out of a directory entry', async () => {
     const { owner } = await verified('2026-08-01T00:00:00.000Z', {
-      specialties: ['surgery'],
       fullName: 'Marites Reyes DVM',
     });
     const [joined] = (await findVerifiedProfessionals()).items;
@@ -392,7 +381,6 @@ describe('public shapes', () => {
       name: 'Marites Reyes DVM',
       clinicName: 'Bayside Animal Clinic',
       clinicAddress: '12 Mabini Street, Cebu City, Cebu',
-      specialties: ['surgery'],
       verifiedAt: '2026-08-01T00:00:00.000Z',
     });
     expect(entry.name).not.toBe(owner.name);
@@ -716,7 +704,7 @@ describe('professional indexes', () => {
     expect(user?.unique).toBe(true);
   });
 
-  it('indexes the queue, the directory, the licence pair, and the specialty filter', async () => {
+  it('indexes the queue, the directory, and the licence pair', async () => {
     const names = (await professionalsCollection().indexes()).map((index) => index.name);
 
     expect(names).toEqual(
@@ -724,7 +712,6 @@ describe('professional indexes', () => {
         'status_1_createdAt_-1',
         'status_1_reviewedAt_-1',
         'licenseAuthority_1_licenseNumber_1',
-        'specialties_1',
         'addresses.mapPoint_2dsphere',
       ])
     );

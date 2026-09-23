@@ -13,7 +13,6 @@ export type MapVet = {
   addressLine: string;
   latitude: number;
   longitude: number;
-  specialties: string[];
   hourlyRate: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   distanceMeters?: number;

@@ -58,7 +58,6 @@ function form(overrides: Record<string, unknown> = {}) {
     licenseNumber: `vet-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
-    specialties: ['Dentistry', 'dentistry', 'Surgery'],
     clinicName: 'Bayside Animal Clinic',
     businessPhone: '+63 32 555 0101',
     addresses: [
@@ -164,7 +163,6 @@ async function seed(user: ObjectId, overrides: Partial<ProfessionalAttrs> = {}) 
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
-    specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
     addresses: [
       {
@@ -247,17 +245,6 @@ describe('GET /api/v1/professionals', () => {
     expect(res.body.items[0].credentialUrls).toBeUndefined();
     expect(res.body.items[0].name).toBeTruthy();
     expect(res.body).toMatchObject({ page: 1, total: 1, pages: 1 });
-  });
-
-  it('filters by specialty', async () => {
-    await listed({ specialties: ['dentistry'], clinicName: 'Teeth first' });
-    await listed({ specialties: ['surgery'], clinicName: 'Surgery only' });
-
-    const res = await request(app).get('/api/v1/professionals?specialty=Dentistry');
-
-    expect(res.status).toBe(200);
-    expect(res.body.items).toHaveLength(1);
-    expect(res.body.items[0].clinicName).toBe('Teeth first');
   });
 
   it('refuses an oversized page instead of quietly clamping it', async () => {
@@ -658,9 +645,6 @@ describe('POST /api/v1/professionals/invites/:token/apply', () => {
       userId: applicant.user._id.toString(),
       status: 'pending',
       licenseNumber: 'VET 9000-PH',
-      // Deduped and lowercased on the way in, so the directory filter has one
-      // spelling to match.
-      specialties: ['dentistry', 'surgery'],
     });
     // Three ids, no bytes: the row a reviewer lists stays small.
     expect(Object.keys(res.body.captures).sort()).toEqual([

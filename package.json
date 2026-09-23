@@ -16,6 +16,7 @@
     "start": "node dist/server/index.js",
     "seed:admin": "tsx src/server/scripts/seed-admin.ts",
     "backfill:roles": "tsx src/server/scripts/backfill-roles.ts",
+    "migrate:remove-professional-specialties": "tsx src/server/scripts/remove-professional-specialties.ts",
     "seed:blogs": "tsx src/server/scripts/seed-blogs.ts",
     "seed:accounts": "tsx src/server/scripts/seed-accounts.ts",
     "preview": "vite preview",

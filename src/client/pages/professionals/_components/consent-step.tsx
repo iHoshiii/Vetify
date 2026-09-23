@@ -21,7 +21,7 @@ const NOTE = (
 
 export default function ConsentStep({ consent, onConsent, error, pending, ready, missing }: Props) {
   return (
-    <ApplyStep step={4} title="Consent and submit" note={NOTE}>
+    <ApplyStep step={5} title="Consent and submit" note={NOTE}>
       <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
         <input
           type="checkbox"
