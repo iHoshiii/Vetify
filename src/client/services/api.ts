@@ -120,16 +120,24 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
  */
 export async function apiFetchBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
   const { body: _body, headers, ...rest } = options;
-  const token = readAccessToken();
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    credentials: 'include',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-  });
+  const send = (token: string | null) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      credentials: 'include',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+    });
+
+  let res = await send(readAccessToken());
+
+  // Match apiFetch: a lapsed token refreshes once off the cookie and replays, so bytes behind auth load like JSON.
+  if (res.status === 401 && !path.startsWith('/auth/')) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) res = await send(refreshed);
+  }
 
   if (!res.ok) {
     const err = ((await res.json().catch(() => null)) ?? {}) as ApiErrorBody;
