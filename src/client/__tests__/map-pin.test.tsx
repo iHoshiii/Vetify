@@ -1,4 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -75,6 +76,15 @@ const leaflet = vi.hoisted(() => {
     remove() {}
   }
 
+  class FakeLayerGroup {
+    addTo() {
+      return this;
+    }
+
+    addLayer() {}
+    remove() {}
+  }
+
   const state = {
     maps: [] as FakeMap[],
     markers: [] as FakeMarker[],
@@ -104,12 +114,20 @@ const leaflet = vi.hoisted(() => {
       return pin;
     },
     divIcon: (options: unknown) => options,
+    layerGroup: () => new FakeLayerGroup(),
   };
 
   return { state, L };
 });
 
 vi.mock('leaflet', () => ({ default: leaflet.L }));
+vi.mock('leaflet.markercluster', () => ({}));
+vi.mock('@/hooks/useProfessionals', () => ({
+  useProfessionals: () => ({ data: { items: [] }, isFetched: true }),
+}));
+vi.mock('@/hooks/useOsmClinics', () => ({
+  useOsmClinics: () => ({ data: [], isFetched: true }),
+}));
 
 beforeEach(() => {
   leaflet.state.maps.length = 0;
@@ -130,6 +148,11 @@ function Harness({
   return <PinPicker value={pin} onChange={setPin} fallback={fallback} />;
 }
 
+function renderPicker(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
+
 async function mounted() {
   await waitFor(() => expect(leaflet.state.markers).toHaveLength(1));
   return { map: leaflet.state.maps[0], marker: leaflet.state.markers[0] };
@@ -137,14 +160,14 @@ async function mounted() {
 
 describe('placing the pin', () => {
   it('says there is no pin yet before one is placed', async () => {
-    render(<Harness />);
+    renderPicker(<Harness />);
     await mounted();
 
     expect(screen.getByText(/no pin yet/i)).toBeInTheDocument();
   });
 
   it('draws the basemap the public map draws, and credits it', async () => {
-    render(<Harness />);
+    renderPicker(<Harness />);
     await mounted();
 
     // The point of sharing `basemapUrl`: the vet is dragging their pin across the very
@@ -158,7 +181,7 @@ describe('placing the pin', () => {
   });
 
   it('follows the marker the vet drags', async () => {
-    render(<Harness />);
+    renderPicker(<Harness />);
     const { marker } = await mounted();
 
     // Leaflet moves the marker itself while a finger is down; the component reads where
@@ -170,7 +193,7 @@ describe('placing the pin', () => {
   });
 
   it('moves the pin to a tapped spot too', async () => {
-    render(<Harness />);
+    renderPicker(<Harness />);
     const { map, marker } = await mounted();
 
     act(() => map.handlers.click({ latlng: { lat: 14.6, lng: 121.05 } }));
@@ -180,7 +203,7 @@ describe('placing the pin', () => {
   });
 
   it('leaves the view alone when the pin is dragged or tapped', async () => {
-    render(<Harness initial={{ latitude: 10.3157, longitude: 123.8854 }} />);
+    renderPicker(<Harness initial={{ latitude: 10.3157, longitude: 123.8854 }} />);
     const { map } = await mounted();
 
     act(() => map.handlers.click({ latlng: { lat: 14.6, lng: 121.05 } }));
@@ -193,7 +216,7 @@ describe('placing the pin', () => {
 
 describe('where the map opens', () => {
   it('opens on the pin the vet left, close enough to see a building', async () => {
-    render(<Harness initial={{ latitude: 10.3157, longitude: 123.8854 }} />);
+    renderPicker(<Harness initial={{ latitude: 10.3157, longitude: 123.8854 }} />);
     const { map, marker } = await mounted();
 
     expect(map.center).toEqual([10.3157, 123.8854]);
@@ -202,7 +225,7 @@ describe('where the map opens', () => {
   });
 
   it('falls back to the reading taken at the address, so the vet confirms rather than hunts', async () => {
-    render(<Harness fallback={{ latitude: 14.5995, longitude: 120.9842 }} />);
+    renderPicker(<Harness fallback={{ latitude: 14.5995, longitude: 120.9842 }} />);
     const { map } = await mounted();
 
     expect(map.center).toEqual([14.5995, 120.9842]);
@@ -212,7 +235,7 @@ describe('where the map opens', () => {
   });
 
   it('opens on the country when there is nothing to open on', async () => {
-    render(<Harness />);
+    renderPicker(<Harness />);
     const { map } = await mounted();
 
     expect(map.zoom).toBe(6);
@@ -231,7 +254,7 @@ describe('the device, for a vet standing at the door', () => {
     };
     Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
 
-    render(<Harness />);
+    renderPicker(<Harness />);
     const { map } = await mounted();
 
     await userEvent.click(screen.getByRole('button', { name: /use my current location/i }));
