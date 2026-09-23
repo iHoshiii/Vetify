@@ -1,4 +1,5 @@
 import type { DaySlots as Day } from '@/services/professionals.service';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import { runLabel, runsOf, slotRangeLabel, toggleSlot, type Run } from './slot-span';
 import { dayLabel } from './slot-time';
@@ -25,6 +26,7 @@ export default function DaySlots({
   onToggle: (next: string[]) => void;
   onChoose: (runs: Run[]) => void;
 }) {
+  useLocalePreferences();
   if (!day) return <p className="mt-3 text-sm text-slate-600">Pick a day to see its hours.</p>;
   const runs = runsOf(picked, minutes);
 

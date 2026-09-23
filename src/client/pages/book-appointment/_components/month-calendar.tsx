@@ -1,8 +1,8 @@
 import type { DaySlots } from '@/services/professionals.service';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import { addMonths, dayLabel, monthCells, monthKeyOf, monthLabel } from './slot-time';
 
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const NAV =
   'rounded-lg px-3 py-1.5 text-sm font-bold text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40';
 const CELL = 'flex aspect-square flex-col items-center justify-center rounded-lg text-sm font-bold';
@@ -26,6 +26,12 @@ export default function MonthCalendar({
   onMonth: (next: string) => void;
   onPick: (date: string) => void;
 }) {
+  const { locale } = useLocalePreferences();
+  const weekdays = Array.from({ length: 7 }, (_, index) =>
+    new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
+      .format(new Date(Date.UTC(2024, 0, 7 + index)))
+      .slice(0, 2)
+  );
   const freeBy = new Map(days.map((day) => [day.date, day.slots.filter((s) => !s.taken).length]));
 
   return (
@@ -46,7 +52,7 @@ export default function MonthCalendar({
       </div>
 
       <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400">
-        {WEEKDAYS.map((day) => (
+        {weekdays.map((day) => (
           <span key={day}>{day}</span>
         ))}
       </div>

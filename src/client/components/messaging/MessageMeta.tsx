@@ -1,4 +1,5 @@
 import { fullTime, shortTime } from './message-time';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 export default function MessageMeta({
   createdAt,
@@ -15,6 +16,7 @@ export default function MessageMeta({
   mine: boolean;
   receipt?: 'Delivered' | 'Seen' | null;
 }) {
+  useLocalePreferences();
   const timeVisible = showTime || expanded;
   if (!timeVisible && !edited && !receipt) return null;
 

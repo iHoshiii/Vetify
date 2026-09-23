@@ -4,6 +4,7 @@ import { useInvite, useOwnApplication } from '@/hooks/useProfessionals';
 import { ApiError } from '@/services/api';
 import type { ProfessionalInviteRefusal } from '@shared/schemas';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import ApplicationStatus from './_components/application-status';
 import InvitedApplyForm from './_components/invited-apply-form';
@@ -35,13 +36,6 @@ const REFUSALS: Record<ProfessionalInviteRefusal, { title: string; body: string 
   },
 };
 
-/** How the expiry date reads to somebody about to fill the form in. */
-const WHEN = new Intl.DateTimeFormat('en-PH', {
-  dateStyle: 'long',
-  timeStyle: 'short',
-  timeZone: 'Asia/Manila',
-});
-
 function Frame({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
@@ -59,6 +53,7 @@ function Frame({ children }: { children: React.ReactNode }) {
  * signing in comes back here rather than to the dashboard.
  */
 export default function ProfessionalInvitePage() {
+  const { locale, timeZone } = useLocalePreferences();
   useDocumentTitle('Your application', 'Complete your Vetify professional application.');
 
   const { token } = useParams<{ token: string }>();
@@ -124,7 +119,12 @@ export default function ProfessionalInvitePage() {
       <p className="mt-4 leading-7 text-slate-600">
         This is the long form, and the only way to it is the link we sent to{' '}
         <strong>{summary.email}</strong>. It is valid until{' '}
-        {WHEN.format(new Date(summary.expiresAt))}.
+        {new Intl.DateTimeFormat(locale, {
+          dateStyle: 'long',
+          timeStyle: 'short',
+          timeZone,
+        }).format(new Date(summary.expiresAt))}
+        .
       </p>
     </>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 interface LanguageModalProps {
   isOpen: boolean;
@@ -28,17 +29,16 @@ const timezones = [
 ];
 
 export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
-  const [selectedLang, setSelectedLang] = useState('en');
-  const [selectedTimezone, setSelectedTimezone] = useState('Asia/Manila');
+  const preferences = useLocalePreferences();
+  const [selectedLang, setSelectedLang] = useState(preferences.language);
+  const [selectedTimezone, setSelectedTimezone] = useState(preferences.timeZone);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      const savedLang = localStorage.getItem('vetify-lang');
-      const savedTz = localStorage.getItem('vetify-timezone');
-      if (savedLang) setSelectedLang(savedLang);
-      if (savedTz) setSelectedTimezone(savedTz);
+      setSelectedLang(preferences.language);
+      setSelectedTimezone(preferences.timeZone);
       setMounted(true);
     } else {
       document.body.style.overflow = 'unset';
@@ -46,13 +46,12 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, preferences.language, preferences.timeZone]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    localStorage.setItem('vetify-lang', selectedLang);
-    localStorage.setItem('vetify-timezone', selectedTimezone);
+    preferences.save(selectedLang, selectedTimezone);
     onClose();
   };
 

@@ -1,6 +1,7 @@
 import type { Appointment } from '@/services/appointments.service';
 import type { AppointmentStatus } from '@shared/schemas';
 import { Link } from 'react-router-dom';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 /** How each status reads, and how it looks. Past tense, because a status is a result. */
 const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
@@ -14,14 +15,14 @@ const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
 /** The statuses still ahead of the owner, and so the only ones worth cancelling. */
 const CANCELLABLE: AppointmentStatus[] = ['requested', 'confirmed'];
 
-function when(at: string): string {
-  return new Date(at).toLocaleString('en-PH', {
+function when(at: string, locale: string, timeZone: string): string {
+  return new Date(at).toLocaleString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Manila',
+    timeZone,
   });
 }
 
@@ -33,6 +34,7 @@ export default function BookingRow({
   booking: Appointment;
   onCancel: (id: string) => void;
 }) {
+  const { locale, timeZone } = useLocalePreferences();
   const status = STATUS[booking.status];
 
   return (
@@ -44,7 +46,7 @@ export default function BookingRow({
             <span className="font-normal text-slate-500"> &middot; {booking.petSpecies}</span>
           </p>
           <p className="mt-0.5 text-sm text-slate-600">
-            {when(booking.startsAt)} &middot;{' '}
+            {when(booking.startsAt, locale, timeZone)} &middot;{' '}
             {booking.kind === 'virtual' ? 'Online consultation' : 'Clinic visit'}
           </p>
           <p className="mt-0.5 text-sm text-slate-600">

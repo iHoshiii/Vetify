@@ -3,6 +3,10 @@ import { usePresence } from '@/hooks/usePresence';
 import type { Thread } from '@/services/messages.service';
 import { BellOff, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import {
+  currentLocalePreferences,
+  useLocalePreferences,
+} from '@/components/providers/LocaleProvider';
 
 import ParticipantAvatar from './ParticipantAvatar';
 import ThreadMenu from './ThreadMenu';
@@ -20,9 +24,10 @@ function whenOf(iso: string | null): string {
   if (!iso) return '';
   const date = new Date(iso);
   const sameDay = new Date().toDateString() === date.toDateString();
+  const { locale, timeZone } = currentLocalePreferences();
   return sameDay
-    ? date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    ? date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', timeZone })
+    : date.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone });
 }
 
 // One conversation in the list: opens on click, reveals a menu on hover (desktop) or long-press (mobile).
@@ -35,6 +40,7 @@ export default function ThreadRow({
   onOpen: () => void;
   onMoved?: () => void;
 }) {
+  useLocalePreferences();
   const [menuOpen, setMenuOpen] = useState(false);
   const online = usePresence(thread.with?.id ?? null);
   const longPress = useLongPress(() => setMenuOpen(true));

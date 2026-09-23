@@ -1,13 +1,17 @@
 import type { Message } from '@/services/messages.service';
+import { currentLocalePreferences } from '@/components/providers/LocaleProvider';
 
 const GROUP_WINDOW_MS = 15 * 60 * 1000;
 
 function sameLocalDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  const { timeZone } = currentLocalePreferences();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone,
+  });
+  return formatter.format(a) === formatter.format(b);
 }
 
 export function shouldShowMessageTime(messages: Message[], index: number): boolean {
@@ -27,7 +31,13 @@ export function dateLabel(iso: string): string {
   yesterday.setDate(today.getDate() - 1);
   if (sameLocalDay(date, today)) return 'Today';
   if (sameLocalDay(date, yesterday)) return 'Yesterday';
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  const { locale, timeZone } = currentLocalePreferences();
+  return date.toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone,
+  });
 }
 
 export function startsNewDay(messages: Message[], index: number): boolean {
@@ -47,7 +57,12 @@ export function spansMultipleDays(messages: Message[]): boolean {
 }
 
 export function shortTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const { locale, timeZone } = currentLocalePreferences();
+  return new Date(iso).toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  });
 }
 
 export function fullTime(iso: string): string {
