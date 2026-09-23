@@ -77,7 +77,7 @@ export function ApplicationDialog({
           <div>
             <dt className={LABEL}>Rate</dt>
             <dd className="mt-0.5 flex items-center gap-2">
-              ${application.hourlyRate}/hr &middot; {application.specialties.join(', ')}
+              ₱{application.hourlyRate}/hr &middot; {application.specialties.join(', ')}
               {application.flaggedForRateReview && (
                 <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
                   <AlertTriangle className="h-3 w-3" />
