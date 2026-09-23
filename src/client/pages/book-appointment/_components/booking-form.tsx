@@ -60,7 +60,7 @@ export default function BookingForm({
   // Empty is allowed; a filled one has to look like an address.
   const badEmail =
     values.clientEmail.trim().length > 0 && !EMAIL_RE.test(values.clientEmail.trim());
-  const incomplete = !values.petSpecies.trim() || short || badPhone || badEmail;
+  const incomplete = values.petSpecies.trim().length < 2 || short || badPhone || badEmail;
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">

@@ -46,7 +46,6 @@ function application(overrides: Partial<AdminProfessional> = {}): AdminProfessio
     licenseNumber: 'VET 1234-PH',
     licenseAuthority: 'PRC',
     credentialUrls: ['https://example.test/diploma.pdf'],
-    specialties: ['surgery'],
     clinicName: 'Mandaue Animal Clinic',
     clinicAddress: '9 Rizal Avenue, Cebu City',
     addresses: [],

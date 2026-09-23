@@ -19,12 +19,12 @@ export {
   type AuthUser,
 } from './auth-storage';
 
-export async function loginWithEmail(email: string, password: string) {
+export async function loginWithEmail(email: string, password: string, remember = false) {
   const payload = await apiFetch<AuthSession>('/auth/login', {
     method: 'POST',
     body: { email, password },
   });
-  writeAuthState(payload);
+  writeAuthState(payload, remember);
   return payload;
 }
 
@@ -56,7 +56,31 @@ export async function refreshSession(): Promise<AuthSession> {
 
 /** Server-side redirect start. A full navigation, not fetch — OAuth needs the
  * browser to leave the SPA so the provider can own the address bar. */
-export function startSocialLogin(provider: Exclude<AuthProviderName, 'local'>): void {
+const AUTH_RETURN_KEY = 'vetify.auth.returnTo';
+
+function safeInternalPath(path?: string | null): string | null {
+  if (!path || !path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) {
+    return null;
+  }
+  return path;
+}
+
+export function pendingAuthReturnTo(): string | null {
+  if (typeof window === 'undefined') return null;
+  return safeInternalPath(window.sessionStorage.getItem(AUTH_RETURN_KEY));
+}
+
+export function clearAuthReturnTo(): void {
+  if (typeof window !== 'undefined') window.sessionStorage.removeItem(AUTH_RETURN_KEY);
+}
+
+export function startSocialLogin(
+  provider: Exclude<AuthProviderName, 'local'>,
+  from?: string | null
+): void {
+  const returnTo = safeInternalPath(from);
+  if (returnTo) window.sessionStorage.setItem(AUTH_RETURN_KEY, returnTo);
+  else window.sessionStorage.removeItem(AUTH_RETURN_KEY);
   window.location.href = `/api/v1/auth/${provider}`;
 }
 
@@ -80,6 +104,7 @@ export async function logoutFromServer() {
  * decide what an admin may actually do; this only decides where they arrive.
  */
 export function landingFor(user: AuthUser, from?: string | null): string {
-  if (from) return from;
+  const returnTo = safeInternalPath(from);
+  if (returnTo) return returnTo;
   return user.role === 'admin' ? '/admin' : '/';
 }

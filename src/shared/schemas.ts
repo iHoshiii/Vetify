@@ -29,7 +29,6 @@ import {
   PROFESSIONAL_MAX_ADDRESSES,
   PROFESSIONAL_MAX_CREDENTIALS,
   PROFESSIONAL_MAX_RATE_CAP,
-  PROFESSIONAL_MAX_SPECIALTIES,
   PROFESSIONAL_MIN_RATE,
   PROFESSIONAL_MOTIVATION_MAX,
   PROFESSIONAL_MOTIVATION_MIN,
@@ -332,14 +331,6 @@ const professionalFields = {
     .array(z.string().trim().url('Each credential must be a valid URL'))
     .max(PROFESSIONAL_MAX_CREDENTIALS, `Up to ${PROFESSIONAL_MAX_CREDENTIALS} credential links`)
     .default([]),
-  specialties: z
-    .array(
-      z.string().trim().min(2, 'A specialty cannot be empty').max(40, 'That specialty is too long')
-    )
-    .max(PROFESSIONAL_MAX_SPECIALTIES, `Up to ${PROFESSIONAL_MAX_SPECIALTIES} specialties`)
-    // Lowercased and deduplicated for the reason blog tags are: the directory
-    // filters on this field, and 'Surgery' must not hide the surgeons.
-    .transform((specialties) => [...new Set(specialties.map((one) => one.toLowerCase()))]),
   /**
    * The practice name — owed only when the application carries a clinic address.
    *
@@ -515,29 +506,39 @@ export const liveLocationSchema = z.object({
   capturedAt: z.string().datetime({ message: 'A location fix has to say when it was taken' }),
 });
 
-const professionalAddressSchema = z.object({
-  kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
-  line1: z
-    .string()
-    .trim()
-    .min(6, 'Give the street and number')
-    .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
-  city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
-  province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
-  postalCode: z
-    .string()
-    .trim()
-    .max(12, 'That postal code is too long')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  /**
-   * Where the device said this was. Required on a home address and welcome on a
-   * clinic one: a clinic can be found by its name and its street, and a house
-   * on an unnamed road cannot.
-   */
-  fix: liveLocationSchema.nullish(),
-  mapPin: mapPinSchema.nullish(),
-});
+const professionalAddressSchema = z
+  .object({
+    kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
+    line1: z
+      .string()
+      .trim()
+      .min(6, 'Give the street and number')
+      .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
+    city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
+    province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
+    postalCode: z
+      .string()
+      .trim()
+      .max(12, 'That postal code is too long')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    /**
+     * Where the device said this was. Required on a home address and welcome on a
+     * clinic one: a clinic can be found by its name and its street, and a house
+     * on an unnamed road cannot.
+     */
+    fix: liveLocationSchema.nullish(),
+    mapPin: mapPinSchema.nullish(),
+  })
+  .superRefine((address, ctx) => {
+    if (address.kind === 'home' && !address.fix) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['fix'],
+        message: 'A home address needs a live location fix taken at the address.',
+      });
+    }
+  });
 
 const professionalAddressesField = z
   .array(professionalAddressSchema)
@@ -565,8 +566,6 @@ const professionalAddressesField = z
 export const professionalApplySchema = z
   .object({
     ...professionalFields,
-    specialties: professionalFields.specialties.default([]),
-    bio: professionalFields.bio.default(''),
     /** The name on the licence, checked against the PRC register. */
     fullName: professionalNameField,
     businessPhone: phoneField,
@@ -667,7 +666,6 @@ export const professionalListQuerySchema = z.object({
     .min(1)
     .max(PROFESSIONAL_PAGE_SIZE_MAX, `Ask for at most ${PROFESSIONAL_PAGE_SIZE_MAX} per page`)
     .default(PROFESSIONAL_PAGE_SIZE),
-  specialty: z.string().trim().toLowerCase().min(1).optional(),
   /**
    * One box over the things somebody searches by name: the vet, their clinic, and
    * anywhere in either address.
@@ -787,7 +785,7 @@ export type ProfessionalNearQuery = z.output<typeof professionalNearQuerySchema>
 
 /** Pre-parse: what the form holds, before trimming and normalising. */
 export type ProfessionalApplyInput = z.input<typeof professionalApplySchema>;
-/** Post-parse: what reaches the repository, licence and specialties normalised. */
+/** Post-parse: what reaches the repository, with its licence normalised. */
 export type ProfessionalApply = z.output<typeof professionalApplySchema>;
 export type ProfessionalReject = z.output<typeof professionalRejectSchema>;
 export type ProfessionalVerify = z.output<typeof professionalVerifySchema>;

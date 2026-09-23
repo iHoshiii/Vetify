@@ -66,14 +66,14 @@ describe('navbar auth reactivity', () => {
   });
 
   it('drops them the moment a session arrives, with no reload', () => {
-    renderHeader();
+    const { container } = renderHeader();
     fireEvent.click(screen.getByText('trigger login'));
 
     // The regression this pins: the header used to snapshot localStorage on
     // mount, so these stayed on screen until the page was reloaded.
     expect(screen.queryByText('Log in')).toBeNull();
     expect(screen.queryByText('Sign up')).toBeNull();
-    expect(screen.getAllByText('Find Vets').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('a[href="/map"]')).toHaveLength(2);
   });
 
   it('keeps the console out of the header, even for an admin', () => {

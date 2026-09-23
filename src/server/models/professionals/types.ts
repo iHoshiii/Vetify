@@ -118,7 +118,6 @@ export type ProfessionalDocument = {
   licenseAuthority: string;
   /** Extra links a reviewer may open: a diploma, a board certificate. */
   credentialUrls: string[];
-  specialties: string[];
   /** Null for a vet who practises out of their house and has no clinic to name. */
   clinicName: string | null;
   /**
@@ -251,7 +250,6 @@ export type OwnProfessional = {
   licenseNumber: string;
   licenseAuthority: string;
   credentialUrls: string[];
-  specialties: string[];
   clinicName: string | null;
   clinicAddress: string;
   addresses: ProfessionalAddressView[];
@@ -298,7 +296,6 @@ export type PublicProfessional = {
    */
   addresses: PublicAddress[];
   businessPhone: string | null;
-  specialties: string[];
   bio: string;
   yearsExperience: number;
   hourlyRate: number;

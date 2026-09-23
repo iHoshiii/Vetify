@@ -60,7 +60,6 @@ const APPLICATION: Omit<ProfessionalAttrs, 'user'> = {
   licenseNumber: 'PRC-SEED-0001',
   licenseAuthority: 'Professional Regulation Commission',
   credentialUrls: ['https://example.com/seed-licence.pdf'],
-  specialties: ['Small animal medicine', 'Dermatology'],
   clinicName: 'Seed Street Veterinary Clinic',
   businessPhone: '+63 2 8555 0101',
   addresses: [

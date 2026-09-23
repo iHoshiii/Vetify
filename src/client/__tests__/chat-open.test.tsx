@@ -52,7 +52,6 @@ const vet = {
   clinicName: 'Vetify Test Clinic',
   clinicAddress: 'Solano',
   addresses: [],
-  specialties: [],
   yearsExperience: 2,
   hourlyRate: 50,
   ratingAverage: 0,

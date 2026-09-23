@@ -40,7 +40,6 @@ export default function SiteHeader() {
       </div>
       <MobileMenu
         isOpen={menuOpen}
-        isAuthenticated={isAuthenticated}
         showAuthActions={showAuthActions}
         onClose={() => setMenuOpen(false)}
       />

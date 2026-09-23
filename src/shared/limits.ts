@@ -58,9 +58,6 @@ export const USER_SUSPENSION_DAYS = 30;
 export const PROFESSIONAL_PAGE_SIZE = 12;
 export const PROFESSIONAL_PAGE_SIZE_MAX = 50;
 
-/** Specialties one vet may claim. A profile that lists everything says nothing. */
-export const PROFESSIONAL_MAX_SPECIALTIES = 6;
-
 /**
  * Credential links one application may carry - licence, diploma, board
  * certifications. Enough for the eligibility list the site already publishes,

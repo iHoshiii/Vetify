@@ -29,7 +29,7 @@ const moreFeatures = [
     bg: 'from-indigo-500 to-indigo-700',
     shadow: 'shadow-indigo-500/30',
     hover: 'group-hover:text-indigo-600',
-    href: '/chat?anatomy=true',
+    href: '/anatomy',
   },
   {
     title: 'Join as a Professional',

@@ -62,7 +62,6 @@ function renderPage(addresses: ProfessionalAddressView[]) {
     id: 'app-1',
     fullName: 'Dr Ana Reyes',
     clinicName: 'Mabini Veterinary',
-    specialties: ['surgery'],
     hourlyRate: 900,
     availabilityStatus: 'available',
     addresses,

@@ -11,7 +11,6 @@ import {
   THREADS_COLLECTION,
   THREAD_INDEXES,
 } from './messages';
-import { PETS_COLLECTION, PET_INDEXES } from './pets/constants';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
@@ -37,7 +36,6 @@ export {
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
   APPOINTMENTS_COLLECTION,
-  countAppointmentsByStatus,
   findAppointmentById,
   findAppointments,
   findHeldSlots,
@@ -188,20 +186,6 @@ export {
 } from './blogs';
 
 export {
-  PETS_COLLECTION,
-  PET_AVATAR_DEFAULTS,
-  PET_INDEXES,
-  insertPet,
-  petAttrsSchema,
-  petsCollection,
-  toPublicPet,
-  type PetAttrs,
-  type PetAvatar,
-  type PetDocument,
-  type PublicPet,
-} from './pets';
-
-export {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
   PROFESSIONAL_PHOTO_KINDS,
@@ -303,7 +287,6 @@ export {
 export {
   REFRESH_TOKENS_COLLECTION,
   REFRESH_TOKEN_INDEXES,
-  findRefreshTokenByHash,
   findRefreshTokenWithOwner,
   hashToken,
   insertRefreshToken,
@@ -356,7 +339,6 @@ export {
 const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
   { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
-  { collection: PETS_COLLECTION, indexes: PET_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },

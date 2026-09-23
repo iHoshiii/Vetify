@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 const AVAILABILITY: Record<NearbyProfessional['availabilityStatus'], string> = {
   available: 'Taking bookings',
-  busy: 'Fully booked',
+  busy: 'Booked up',
   unavailable: 'Not taking bookings',
 };
 

@@ -1,6 +1,7 @@
 import type { Appointment } from '@/services/appointments.service';
 import type { AppointmentStatus } from '@shared/schemas';
 import { Clock } from 'lucide-react';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import type { Action } from './booking-actions';
 import BookingRowActions from './booking-row-actions';
@@ -14,14 +15,14 @@ const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
   completed: { label: 'Done', tone: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
-function when(at: string): string {
-  return new Date(at).toLocaleString('en-PH', {
+function when(at: string, locale: string, timeZone: string): string {
+  return new Date(at).toLocaleString(locale, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Manila',
+    timeZone,
   });
 }
 
@@ -41,6 +42,7 @@ export default function BookingRow({
   minutes: number;
   onAct: (booking: Appointment, action: Action) => void;
 }) {
+  const { locale, timeZone } = useLocalePreferences();
   const status = STATUS[booking.status];
 
   return (
@@ -52,7 +54,7 @@ export default function BookingRow({
         <span className="font-bold text-slate-900">{booking.with?.name ?? 'Account deleted'}</span>
         <span className="ml-auto flex items-center gap-1 font-bold text-teal-900">
           <Clock className="h-3.5 w-3.5 text-teal-700" />
-          {when(booking.startsAt)} · {minutes} min
+          {when(booking.startsAt, locale, timeZone)} · {minutes} min
         </span>
       </div>
 

@@ -6,6 +6,7 @@ import type {
 } from '@/services/professionals.service';
 import type { ProfessionalPhotoKind } from '@shared/limits';
 import { Link } from 'react-router-dom';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 /** What each outcome means, in the words the applicant needs. */
 const STATES: Record<
@@ -47,10 +48,17 @@ const STATES: Record<
 const DATE: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
 const DATE_TIME: Intl.DateTimeFormatOptions = { dateStyle: 'long', timeStyle: 'short' };
 
-function on(value: string | null, options: Intl.DateTimeFormatOptions = DATE): string | null {
+function on(
+  value: string | null,
+  locale: string,
+  timeZone: string,
+  options: Intl.DateTimeFormatOptions = DATE
+): string | null {
   if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toLocaleString(undefined, options);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleString(locale, { ...options, timeZone });
 }
 
 /** A row of the submitted-details list. */
@@ -127,10 +135,11 @@ function Photo({ kind, id }: { kind: ProfessionalPhotoKind; id: string }) {
  * Anything that needs changing goes through us.
  */
 export default function ApplicationStatus({ application }: { application: OwnProfessional }) {
+  const { locale, timeZone } = useLocalePreferences();
   const state = STATES[application.status];
-  const filed = on(application.createdAt);
-  const decided = on(application.reviewedAt);
-  const interview = on(application.interviewAt, DATE_TIME);
+  const filed = on(application.createdAt, locale, timeZone);
+  const decided = on(application.reviewedAt, locale, timeZone);
+  const interview = on(application.interviewAt, locale, timeZone, DATE_TIME);
   const photos = Object.entries(application.captures) as Array<[ProfessionalPhotoKind, string]>;
 
   return (
@@ -214,7 +223,7 @@ export default function ApplicationStatus({ application }: { application: OwnPro
           </Link>
         ) : (
           <Link
-            to="/professionals/apply"
+            to="/contact"
             className="inline-flex h-11 items-center rounded-xl border border-slate-900/15 bg-white px-6 text-sm font-bold text-slate-900 hover:border-slate-900/30"
           >
             Get in touch

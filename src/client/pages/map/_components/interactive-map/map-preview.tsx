@@ -62,10 +62,12 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
 
   return (
     <>
-      <div
+      <button
+        type="button"
+        aria-label="Explore the interactive vet map"
         onClick={onExpand}
         style={{ aspectRatio: '1 / 1' }}
-        className="relative w-full cursor-pointer rounded-[2.5rem] overflow-hidden border border-blue-900/10 bg-white shadow-2xl shadow-blue-900/8 transition-all duration-500 hover:shadow-[0_40px_80px_-20px_rgba(59,130,246,0.2)] hover:-translate-y-2 hover:border-blue-400/40 group"
+        className="group relative block w-full cursor-pointer overflow-hidden rounded-[2.5rem] border border-blue-900/10 bg-white text-left shadow-2xl shadow-blue-900/8 transition-all duration-500 hover:-translate-y-2 hover:border-blue-400/40 hover:shadow-[0_40px_80px_-20px_rgba(59,130,246,0.2)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
       >
         {/* Decorative gradient frame */}
         <div className="absolute inset-0 z-30 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
@@ -120,7 +122,7 @@ export default function MapPreview({ onExpand, vets, userLocation }: MapPreviewP
             />
           </Suspense>
         </div>
-      </div>
+      </button>
 
       {/* Caption below map */}
       <div className="flex items-center justify-between mt-4 px-1">

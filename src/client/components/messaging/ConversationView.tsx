@@ -1,4 +1,5 @@
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useDeleteMessage, useEditMessage } from '@/hooks/useMessageActions';
 import { usePresence } from '@/hooks/usePresence';
@@ -28,6 +29,7 @@ export default function ConversationView({
   thread: Thread;
   onBack?: () => void;
 }) {
+  useLocalePreferences();
   const { user } = useAuth();
   const { data, isLoading } = useMessages(thread.id);
   const send = useSendMessage(thread.id);

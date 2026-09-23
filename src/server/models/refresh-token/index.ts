@@ -1,5 +1,4 @@
 export {
-  findRefreshTokenByHash,
   findRefreshTokenWithOwner,
   insertRefreshToken,
   refreshTokensCollection,

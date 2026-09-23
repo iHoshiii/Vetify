@@ -5,7 +5,15 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'postcss.config.js', 'tailwind.config.*'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'public/mediapipe/**',
+      'postcss.config.js',
+      'tailwind.config.*',
+    ],
+  },
 
   // Base JS rules
   js.configs.recommended,

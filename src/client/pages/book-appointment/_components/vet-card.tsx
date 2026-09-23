@@ -85,19 +85,6 @@ export default function VetCard({
               </span>
             )}
           </div>
-
-          {vet.specialties.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {vet.specialties.map((specialty) => (
-                <li
-                  key={specialty}
-                  className="rounded-full bg-teal-900/5 px-2.5 py-0.5 text-xs font-semibold capitalize text-teal-900"
-                >
-                  {specialty}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">

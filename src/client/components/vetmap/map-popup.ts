@@ -60,11 +60,6 @@ export function vetPopupHtml(vet: MapVet): string {
       ? `<p style="margin:2px 0 0;color:#475569;font-size:12px;font-weight:600;">${subheading}</p>`
       : '',
     `<p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(vet.addressLine)}</p>`,
-    vet.specialties.length
-      ? `<p style="margin:6px 0 0;color:#0f766e;font-size:11px;font-weight:700;">${escapeHtml(
-          vet.specialties.slice(0, 3).join(' · ')
-        )}</p>`
-      : '',
     `<p style="margin:6px 0 0;color:#64748b;font-size:12px;">₱${vet.hourlyRate} an hour · ${
       AVAILABILITY_WORDS[vet.availabilityStatus] ?? 'Taking bookings'
     }</p>`,

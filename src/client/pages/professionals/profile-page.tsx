@@ -121,19 +121,6 @@ function PublicView({ application }: { application: OwnProfessional }) {
                 </span>
               )}
             </div>
-
-            {application.specialties.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {application.specialties.map((s) => (
-                  <span
-                    key={s}
-                    className="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold capitalize text-slate-700"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </Card>

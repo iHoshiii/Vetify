@@ -60,6 +60,7 @@ export default function MessageMenu(props: Props) {
       {props.open &&
         createPortal(
           <div
+            data-chat-overlay
             className="fixed z-[90] w-40 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-xl"
             style={position}
           >

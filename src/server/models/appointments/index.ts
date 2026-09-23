@@ -1,6 +1,5 @@
 export {
   appointmentsCollection,
-  countAppointmentsByStatus,
   findAppointmentById,
   findAppointments,
   findHeldSlots,
