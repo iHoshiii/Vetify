@@ -175,7 +175,7 @@ export default function PublicProfilePage() {
                     <Briefcase className="h-4 w-4 text-slate-400" aria-hidden />
                     {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
                   </span>
-                  <span className="font-semibold text-slate-900">${vet.hourlyRate}/hr</span>
+                  <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
                   {vet.businessPhone && (
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="h-4 w-4 text-slate-400" aria-hidden />
