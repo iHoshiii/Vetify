@@ -1,4 +1,4 @@
-import { useThreads } from '@/hooks/useMessages';
+import { useThreads, useUnreadCount } from '@/hooks/useMessages';
 import type { Thread, ThreadSide, ThreadState } from '@/services/messages.service';
 import { useState } from 'react';
 
@@ -24,11 +24,12 @@ export default function ThreadList({
 }) {
   const [shelf, setShelf] = useState<ThreadState>('active');
   const { data, isLoading, error } = useThreads(side, { state: shelf });
+  const { data: unread = 0 } = useUnreadCount(true, side);
   const threads = data?.items ?? [];
 
   return (
     <>
-      <ShelfTabs shelf={shelf} onChange={setShelf} />
+      <ShelfTabs shelf={shelf} onChange={setShelf} activeUnread={unread} />
       {isLoading && threads.length === 0 ? (
         <p className="py-8 text-center text-xs text-slate-400">Loading…</p>
       ) : error ? (

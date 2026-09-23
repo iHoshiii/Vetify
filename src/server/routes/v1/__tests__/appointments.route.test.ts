@@ -125,7 +125,8 @@ function body(overrides: Record<string, unknown> = {}) {
     petName: 'Milo',
     petSpecies: 'Dog',
     reason: 'A rash on his back leg that is not settling down.',
-    phone: '+63 32 555 0101',
+    phone: '+639325550101',
+    clientEmail: 'copy@example.com',
     ...overrides,
   };
 }
