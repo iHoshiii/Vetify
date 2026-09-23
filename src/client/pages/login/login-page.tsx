@@ -1,6 +1,7 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import LoginForm from './_components/login-form';
 import SocialLogins from './_components/social-login';
+import { pendingAuthReturnTo } from '@/lib/auth';
 
 /** Reason codes the OAuth callback sends back on failure. */
 const OAUTH_ERRORS: Record<string, string> = {
@@ -33,7 +34,7 @@ export default function LoginPage() {
       ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
-  const from = (location.state as { from?: string } | null)?.from;
+  const from = (location.state as { from?: string } | null)?.from ?? pendingAuthReturnTo();
   const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
   const gatedMessage = from
     ? gatedAction
@@ -62,16 +63,17 @@ export default function LoginPage() {
         ) : null}
 
         {/* Form Component */}
-        <LoginForm />
+        <LoginForm from={from} />
 
         {/* Social Buttons Component */}
-        <SocialLogins />
+        <SocialLogins from={from} />
 
         {/* Footer Link */}
         <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
           Don&apos;t have an account?{' '}
           <Link
             to="/signup"
+            state={from ? { from } : undefined}
             className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
           >
             Sign up

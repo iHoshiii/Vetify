@@ -1,7 +1,7 @@
 import Button from '@/components/ui/Button';
 import { startSocialLogin } from '@/lib/auth';
 
-export default function SocialLogins() {
+export default function SocialLogins({ from }: { from?: string | null }) {
   return (
     <>
       <div className="relative my-8 animate-fadeIn delay-400">
@@ -17,7 +17,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => startSocialLogin('google')}
+          onClick={() => startSocialLogin('google', from)}
         >
           <GoogleIcon />
           Google
@@ -25,7 +25,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => startSocialLogin('facebook')}
+          onClick={() => startSocialLogin('facebook', from)}
         >
           <FacebookIcon />
           Facebook
@@ -33,7 +33,7 @@ export default function SocialLogins() {
         <Button
           variant="secondary"
           className="w-full gap-2 col-span-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          onClick={() => startSocialLogin('tiktok')}
+          onClick={() => startSocialLogin('tiktok', from)}
         >
           <TikTokIcon />
           TikTok

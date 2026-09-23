@@ -150,6 +150,7 @@ export default function ProfessionalInvitePage() {
             </Link>
             <Link
               to="/signup"
+              state={{ from: `${location.pathname}${location.search}` }}
               className="rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-white"
             >
               Create an account

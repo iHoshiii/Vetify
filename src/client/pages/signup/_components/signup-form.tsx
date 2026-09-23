@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { signupWithEmail } from '@/lib/auth';
+import { clearAuthReturnTo, landingFor, signupWithEmail } from '@/lib/auth';
 import { signupSchema } from '@shared/schemas';
 
 import PasswordStrengthMeter, { NO_PASSWORD, evaluatePasswordStrength } from './password-strength';
 import type { PasswordStrength, SignupFormErrors } from '@/types/signup';
 
-export default function SignupForm() {
+export default function SignupForm({ from }: { from?: string | null }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,11 +46,13 @@ export default function SignupForm() {
     }
 
     try {
-      setSession(await signupWithEmail(parsed.data));
+      const session = await signupWithEmail(parsed.data);
+      setSession(session);
+      clearAuthReturnTo();
       setSuccess('Account created successfully. Redirecting you to the dashboard...');
       setPassword('');
       setConfirmPassword('');
-      window.setTimeout(() => navigate('/'), 600);
+      window.setTimeout(() => navigate(landingFor(session.user, from)), 600);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
