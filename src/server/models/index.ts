@@ -37,7 +37,6 @@ export {
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
   APPOINTMENTS_COLLECTION,
-  countAppointmentsByStatus,
   findAppointmentById,
   findAppointments,
   findHeldSlots,
@@ -303,7 +302,6 @@ export {
 export {
   REFRESH_TOKENS_COLLECTION,
   REFRESH_TOKEN_INDEXES,
-  findRefreshTokenByHash,
   findRefreshTokenWithOwner,
   hashToken,
   insertRefreshToken,

@@ -216,16 +216,6 @@ export async function tallyAppointments(
 
   return tally;
 }
-/** How many bookings sit in each status, for whatever wants to count them. */
-export async function countAppointmentsByStatus(): Promise<Record<string, number>> {
-  const rows = await appointmentsCollection()
-    .aggregate<{ _id: AppointmentStatus; count: number }>([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ])
-    .toArray();
-
-  return Object.fromEntries(rows.map((row) => [row._id, row.count]));
-}
 
 /** Whether a status is one that keeps its slot. Read off the shared list. */
 export function holdsSlotFor(status: AppointmentStatus): boolean {

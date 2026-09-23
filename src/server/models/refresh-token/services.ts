@@ -36,11 +36,6 @@ export async function insertRefreshToken(attrs: {
   return doc;
 }
 
-// find the refresh token document by the provided token hash and return it or null if not found
-export function findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenDocument | null> {
-  return refreshTokensCollection().findOne({ tokenHash });
-}
-
 // passes the token hash to the findRefreshTokenWithOwner
 export async function findRefreshTokenWithOwner(
   tokenHash: string
