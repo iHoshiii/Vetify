@@ -7,7 +7,7 @@ async function main(): Promise<void> {
   applyDnsServers(env.DNS_SERVERS);
 
   const connected = await connectDb();
-  if (!connected) throw new Error(`Could not reach Mongo at ${env.MONGODB_URI}`);
+  if (!connected) throw new Error('Could not reach MongoDB.');
 
   const professionals = getDb().collection(PROFESSIONALS_COLLECTION);
   const result = await professionals.updateMany(
@@ -29,8 +29,9 @@ async function main(): Promise<void> {
 }
 
 main()
-  .catch((err) => {
-    console.error(`[remove-specialties] ${(err as Error).message}`);
+  .catch(() => {
+    // Driver errors can contain the full connection URI, including credentials.
+    console.error('[remove-specialties] migration failed. Check database connectivity and retry.');
     process.exitCode = 1;
   })
   .finally(() => disconnectDb());
