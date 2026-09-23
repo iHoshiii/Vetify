@@ -6,8 +6,9 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
 import type { Run } from './slot-span';
-import type { Stage } from './step-tabs';
 import { PartialRequestError, useBatchRequest } from './use-batch-request';
+
+export type Stage = 1 | 2 | 3 | 4;
 
 /** The whole flow: what has been answered, which tab that opens, and what to ask next. */
 export function useBooking() {
