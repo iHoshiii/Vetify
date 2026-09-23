@@ -14,17 +14,6 @@ export default function Footer() {
               Your trusted pet health companion, bringing AI-powered guidance, expert veterinarians,
               and essential pet care tools all in one place.
             </p>
-            <div className="mt-6 flex gap-3">
-              {['T', 'I', 'F'].map((letter) => (
-                <a
-                  key={letter}
-                  href="#"
-                  className="badge-spin flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 font-bold text-slate-400 transition hover:bg-teal-700 hover:text-white"
-                >
-                  {letter}
-                </a>
-              ))}
-            </div>
           </div>
 
           <div>
