@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   countUnreadThreads,
+  findMessages,
   findThreadById,
   findThreads,
   insertProfessional,
@@ -168,5 +169,29 @@ describe('setThreadShelf', () => {
     await sendMessage({ thread, sender: vetUser, body: 'Still there?' });
     const wokenActive = await findThreads({ client: client._id, state: 'active' });
     expect(wokenActive.total).toBe(1);
+  });
+
+  it('clears the deleter history so a fresh start shows only new messages', async () => {
+    const client = await account();
+    const { application } = await vet();
+    const thread = await openThread({ user: client, professionalId: application._id.toString() });
+    if (!thread) throw new Error('thread not opened');
+
+    await sendMessage({ thread, sender: client, body: 'old message' });
+    await setThreadShelf({ thread, user: client, state: 'deleted' });
+
+    // Deleting stamps the caller's cut-off, so their past talk is hidden from here on.
+    const deleted = await findThreadById(thread._id);
+    expect(deleted?.clientDeletedAt).toBeInstanceOf(Date);
+    const empty = await findMessages({ thread: thread._id, after: deleted?.clientDeletedAt });
+    expect(empty.total).toBe(0);
+
+    // Sending again reopens the caller's copy, and only the new message shows.
+    const reopened = deleted ?? thread;
+    await sendMessage({ thread: reopened, sender: client, body: 'new message' });
+    const active = await findThreads({ client: client._id, state: 'active' });
+    expect(active.total).toBe(1);
+    const fresh = await findMessages({ thread: thread._id, after: deleted?.clientDeletedAt });
+    expect(fresh.items.map((m) => m.body)).toEqual(['new message']);
   });
 });

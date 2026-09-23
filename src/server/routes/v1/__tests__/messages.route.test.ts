@@ -3,7 +3,12 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../app';
-import { insertProfessional, insertUser, updateProfessional } from '../../../models';
+import {
+  findThreadById,
+  insertProfessional,
+  insertUser,
+  updateProfessional,
+} from '../../../models';
 import { signAccessToken } from '../../../services/auth.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
@@ -201,5 +206,114 @@ describe('PATCH /api/v1/messages/:id/state', () => {
       .set('Authorization', `Bearer ${client.token}`)
       .send({ state: 'burned' });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('conversation options', () => {
+  it('marks unread, mutes, and reports only the caller side', async () => {
+    const client = await account();
+    const doc = await vet();
+    const opened = await request(app)
+      .post('/api/v1/messages')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ professionalId: doc.application._id.toString() });
+    const threadId = opened.body.thread.id;
+
+    const marked = await request(app)
+      .patch(`/api/v1/messages/${threadId}/read`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ unread: true });
+    expect(marked.status).toBe(200);
+
+    const muted = await request(app)
+      .patch(`/api/v1/messages/${threadId}/mute`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ muted: true });
+    expect(muted.status).toBe(200);
+
+    const reported = await request(app)
+      .post(`/api/v1/messages/${threadId}/report`)
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(reported.status).toBe(200);
+
+    const mine = await request(app)
+      .get('/api/v1/messages/mine')
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(mine.body.items[0]).toMatchObject({ unread: 1, muted: true });
+
+    const unread = await request(app)
+      .get('/api/v1/messages/unread')
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(unread.body.unread).toBe(0);
+
+    const stored = await findThreadById(threadId);
+    expect(stored?.clientReportedAt).toBeInstanceOf(Date);
+    expect(stored?.professionalMuted).toBe(false);
+    expect(stored?.professionalReportedAt).toBeNull();
+
+    const read = await request(app)
+      .patch(`/api/v1/messages/${threadId}/read`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ unread: false });
+    expect(read.status).toBe(200);
+    expect((await findThreadById(threadId))?.clientReadAt).toBeInstanceOf(Date);
+
+    const unmuted = await request(app)
+      .patch(`/api/v1/messages/${threadId}/mute`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ muted: false });
+    expect(unmuted.status).toBe(200);
+    expect((await findThreadById(threadId))?.clientMuted).toBe(false);
+  });
+
+  it('starts with an empty history after the caller deletes and reopens a conversation', async () => {
+    const client = await account();
+    const doc = await vet();
+    const opened = await request(app)
+      .post('/api/v1/messages')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ professionalId: doc.application._id.toString() });
+    const threadId = opened.body.thread.id;
+
+    await request(app)
+      .post(`/api/v1/messages/${threadId}/messages`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ body: 'Old message' });
+
+    await request(app)
+      .patch(`/api/v1/messages/${threadId}/state`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ state: 'deleted' });
+
+    const reopened = await request(app)
+      .post('/api/v1/messages')
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ professionalId: doc.application._id.toString() });
+    expect(reopened.body.thread).toMatchObject({ id: threadId, lastBody: null, state: 'active' });
+
+    const empty = await request(app)
+      .get(`/api/v1/messages/${threadId}/messages`)
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(empty.body.items).toHaveLength(0);
+
+    await request(app)
+      .post(`/api/v1/messages/${threadId}/messages`)
+      .set('Authorization', `Bearer ${client.token}`)
+      .send({ body: 'Fresh message' });
+
+    const fresh = await request(app)
+      .get(`/api/v1/messages/${threadId}/messages`)
+      .set('Authorization', `Bearer ${client.token}`);
+    expect(fresh.body.items.map((message: { body: string }) => message.body)).toEqual([
+      'Fresh message',
+    ]);
+
+    const otherSide = await request(app)
+      .get(`/api/v1/messages/${threadId}/messages`)
+      .set('Authorization', `Bearer ${doc.token}`);
+    expect(otherSide.body.items.map((message: { body: string }) => message.body)).toEqual([
+      'Old message',
+      'Fresh message',
+    ]);
   });
 });

@@ -19,8 +19,6 @@ export const PROFESSIONAL_INDEXES: IndexDescription[] = [
   // sparse clause on a field that is always present only reads as if something
   // subtle were happening.
   { key: { licenseAuthority: 1, licenseNumber: 1 }, unique: true },
-  // Multikey, for the directory's specialty filter.
-  { key: { specialties: 1 } },
   // The public map, and the only index $geoNear can rank on.
   //
   // Only *published* pins are in here, because `mapPoint` exists only while an address

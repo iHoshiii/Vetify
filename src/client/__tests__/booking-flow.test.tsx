@@ -116,7 +116,6 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
       },
     ],
     businessPhone: null,
-    specialties: ['dentistry'],
     bio: 'Small animal practice.',
     yearsExperience: 15,
     hourlyRate: 60,
@@ -297,7 +296,7 @@ describe('the booking flow', () => {
           slots: 1,
           petName: 'Milo',
           petSpecies: 'Dog',
-          phone: '09171234567',
+          phone: '+639171234567',
         }),
       ],
       expect.anything()
@@ -388,7 +387,7 @@ describe('the booking flow', () => {
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText(/₱60\/hour/)).toBeInTheDocument();
     expect(dialog.getByText('Total')).toBeInTheDocument();
-    expect(dialog.getByText('09171234567')).toBeInTheDocument();
+    expect(dialog.getByText('+639171234567')).toBeInTheDocument();
   });
 
   it('drops the request when the confirm dialog is dismissed', async () => {

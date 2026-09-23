@@ -119,6 +119,8 @@ export type RequestAppointmentInput = {
   petAge?: string | null;
   reason: string;
   phone?: string | null;
+  // Where the owner's copy goes; nothing is sent when it is absent.
+  clientEmail?: string | null;
 };
 
 export type RequestAppointmentResult = {
@@ -213,6 +215,8 @@ export async function requestAppointment(
 
   const vet = await findUserById(application.user);
 
+  const clientEmail = input.clientEmail?.trim() || null;
+
   const [toProfessional, toClient] = await Promise.all([
     vet
       ? deliverMail(
@@ -232,16 +236,19 @@ export async function requestAppointment(
           delivered: false,
           deliveryError: 'That vet no longer has an account',
         }),
-    deliverMail(
-      requestedToClientEmail({
-        to: client.email,
-        name: client.name ?? '',
-        kind,
-        startsAt,
-        petName: petLabel,
-        professionalName: vetName(application, vet),
-      })
-    ),
+    // Only when an address was given; a null error marks "not requested", not a failure.
+    clientEmail
+      ? deliverMail(
+          requestedToClientEmail({
+            to: clientEmail,
+            name: client.name ?? '',
+            kind,
+            startsAt,
+            petName: petLabel,
+            professionalName: vetName(application, vet),
+          })
+        )
+      : Promise.resolve({ delivered: false, deliveryError: null }),
   ]);
 
   return { appointment, mail: { client: toClient, professional: toProfessional } };

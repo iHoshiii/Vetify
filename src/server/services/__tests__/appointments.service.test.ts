@@ -126,6 +126,7 @@ function request(input: {
     petSpecies: 'Dog',
     reason: 'A rash on his back leg that is not settling down.',
     phone: '+63 32 555 0101',
+    clientEmail: input.client.email,
   });
 }
 
@@ -154,6 +155,26 @@ describe('requestAppointment', () => {
     const both = recentMail().map((message) => message.to);
     expect(both).toContain(vetUser.email);
     expect(both).toContain(client.email);
+  });
+
+  it('sends the owner no copy when no email was given', async () => {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+
+    const result = await requestAppointment({
+      client,
+      professionalId: application!._id,
+      kind: 'onsite',
+      startsAt: SLOT.at,
+      petSpecies: 'Dog',
+      reason: 'A rash on his back leg that is not settling down.',
+      phone: '+639325550101',
+    });
+
+    // Skipped rather than failed: no address, so a null error stands for "not requested".
+    expect(result?.mail.client).toEqual({ delivered: false, deliveryError: null });
+    expect(recentMail().map((message) => message.to)).not.toContain(client.email);
+    expect(recentMail().map((message) => message.to)).toContain(vetUser.email);
   });
 
   it('refuses a kind the vet did not register the place for', async () => {

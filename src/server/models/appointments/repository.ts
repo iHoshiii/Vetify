@@ -116,11 +116,12 @@ export type FindAppointmentsOptions = {
 };
 
 /**
- * One page of somebody's bookings, soonest-first among the ones still ahead.
+ * One page of somebody's bookings: upcoming first, nearest to now at the very top.
  *
- * Sorted descending on `startsAt`, which puts the next appointment at the top of a
- * console that is mostly read for "what is coming". A past booking is still in the
- * list, because "what happened last month" is the other reason to open it.
+ * The console is mostly read for "what is coming", so the next appointment leads and
+ * the rest of the upcoming ones follow soonest-first. Past bookings come after, most
+ * recent first, because "what happened last month" is the other reason to open it.
+ * `_past` splits the two groups and `_absDiff` orders each by proximity to now.
  */
 export async function findAppointments(
   options: FindAppointmentsOptions
@@ -140,12 +141,23 @@ export async function findAppointments(
   if (status) filter.status = Array.isArray(status) ? { $in: [...status] } : status;
   if (kind) filter.kind = kind;
 
+  const now = new Date();
+
   const [items, total] = await Promise.all([
     appointmentsCollection()
-      .find(filter)
-      .sort({ startsAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .aggregate<AppointmentDocument>([
+        { $match: filter },
+        {
+          $addFields: {
+            _past: { $cond: [{ $lt: ['$startsAt', now] }, 1, 0] },
+            _absDiff: { $abs: { $subtract: ['$startsAt', now] } },
+          },
+        },
+        { $sort: { _past: 1, _absDiff: 1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        { $project: { _past: 0, _absDiff: 0 } },
+      ])
       .toArray(),
     appointmentsCollection().countDocuments(filter),
   ]);
@@ -215,16 +227,6 @@ export async function tallyAppointments(
   }
 
   return tally;
-}
-/** How many bookings sit in each status, for whatever wants to count them. */
-export async function countAppointmentsByStatus(): Promise<Record<string, number>> {
-  const rows = await appointmentsCollection()
-    .aggregate<{ _id: AppointmentStatus; count: number }>([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ])
-    .toArray();
-
-  return Object.fromEntries(rows.map((row) => [row._id, row.count]));
 }
 
 /** Whether a status is one that keeps its slot. Read off the shared list. */

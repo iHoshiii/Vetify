@@ -33,7 +33,6 @@ export type PublicProfessional = {
    */
   addresses: PublicAddress[];
   businessPhone: string | null;
-  specialties: string[];
   bio: string;
   yearsExperience: number;
   hourlyRate: number;
@@ -107,7 +106,6 @@ export type OwnProfessional = {
   licenseNumber: string;
   licenseAuthority: string;
   credentialUrls: string[];
-  specialties: string[];
   clinicName: string | null;
   clinicAddress: string;
   addresses: ProfessionalAddressView[];
@@ -168,7 +166,6 @@ export type ProfessionalPage = {
 export type ProfessionalListParams = {
   page?: number;
   limit?: number;
-  specialty?: string;
   /** Name, clinic, or anywhere in either address. */
   q?: string;
   minExperience?: number;
@@ -187,7 +184,6 @@ export async function listProfessionals(
   const search = new URLSearchParams();
   if (params.page && params.page > 1) search.set('page', String(params.page));
   if (params.limit) search.set('limit', String(params.limit));
-  if (params.specialty) search.set('specialty', params.specialty);
   if (params.q) search.set('q', params.q);
   // Sent as strings the schema coerces back. `available` is spelled out rather than
   // dropped when false, because 'false' is a real answer the server can read.

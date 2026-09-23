@@ -58,9 +58,6 @@ export const USER_SUSPENSION_DAYS = 30;
 export const PROFESSIONAL_PAGE_SIZE = 12;
 export const PROFESSIONAL_PAGE_SIZE_MAX = 50;
 
-/** Specialties one vet may claim. A profile that lists everything says nothing. */
-export const PROFESSIONAL_MAX_SPECIALTIES = 6;
-
 /**
  * Credential links one application may carry - licence, diploma, board
  * certifications. Enough for the eligibility list the site already publishes,
@@ -391,6 +388,7 @@ export const APPOINTMENT_PAGE_SIZE_MAX = 50;
 
 // A single chat message. Long enough for a real question, short enough that the box is not a document.
 export const MESSAGE_MAX_LENGTH = 2000;
+export const MESSAGE_ACTION_WINDOW_MS = 15 * 60 * 1000;
 
 // One page of a conversation. Threads load newest-last, older ones fetched as the reader scrolls up.
 export const MESSAGE_PAGE_SIZE = 30;
@@ -401,4 +399,4 @@ export const THREAD_PAGE_SIZE = 20;
 export const THREAD_PAGE_SIZE_MAX = 50;
 
 // How many messages one network may send in a minute, so a wedged client cannot flood a thread.
-export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 30;
+export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 100;

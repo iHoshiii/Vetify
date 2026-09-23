@@ -24,13 +24,14 @@ export default function PetFields({
       <div>
         <label htmlFor={ids.petSpecies} className={LABEL}>
           Species
-          <RequiredMark filled={Boolean(values.petSpecies.trim())} />
+          <RequiredMark filled={values.petSpecies.trim().length >= 2} />
         </label>
         <input
           id={ids.petSpecies}
           value={values.petSpecies}
           onChange={(event) => onChange('petSpecies', event.target.value)}
           required
+          minLength={2}
           maxLength={40}
           placeholder="Dog, cat, rabbit…"
           className={`${FIELD} mt-1`}
@@ -68,10 +69,12 @@ export default function PetFields({
         </label>
         <input
           id={ids.petAge}
+          inputMode="numeric"
           value={values.petAge}
-          onChange={(event) => onChange('petAge', event.target.value)}
-          maxLength={40}
-          placeholder="2 years, 6 months…"
+          onChange={(event) =>
+            onChange('petAge', event.target.value.replace(/\D/g, '').slice(0, 3))
+          }
+          placeholder="3"
           className={`${FIELD} mt-1`}
         />
       </div>

@@ -1,4 +1,9 @@
 import type { InviteSummary } from '@/services/professionals.service';
+import {
+  PROFESSIONAL_BIO_MAX,
+  PROFESSIONAL_BIO_MIN,
+  PROFESSIONAL_LOCATION_MAX_ACCURACY_M,
+} from '@shared/limits';
 
 import type { AddressValue } from './address-fields';
 import type { Capture } from './photo-capture';
@@ -75,11 +80,21 @@ export type Photos = {
 };
 
 // Named in page order, so what is left to do reads down the form
-export function stillToDo(photos: Photos, consent: boolean): string[] {
+export function stillToDo(
+  addresses: AddressValue[],
+  photos: Photos,
+  bio: string,
+  consent: boolean
+): string[] {
   return [
+    [
+      addresses.every((address) => address.kind !== 'home' || Boolean(address.fix)),
+      'a live location fix for your home address',
+    ],
     [Boolean(photos.portrait), 'a photo of your face'],
     [Boolean(photos.licenseFront), 'the front of your licence'],
     [Boolean(photos.licenseBack), 'the back of your licence'],
+    [bio.trim().length >= PROFESSIONAL_BIO_MIN, 'your professional bio'],
     [consent, 'the consent box'],
   ]
     .filter(([done]) => !done)
@@ -91,12 +106,14 @@ export function readyToSubmit(
   invite: InviteSummary,
   addresses: AddressValue[],
   photos: Photos,
+  bio: string,
   consent: boolean
 ): boolean {
   const years = invite.yearsExperience ?? 0;
   return (
     consent &&
-    !stillToDo(photos, consent).length &&
+    !stillToDo(addresses, photos, bio, consent).length &&
+    bio.trim().length <= PROFESSIONAL_BIO_MAX &&
     Number.isInteger(years) &&
     years >= 0 &&
     years <= 70 &&
@@ -106,6 +123,9 @@ export function readyToSubmit(
         address.line1.trim().length >= 6 &&
         address.city.trim().length >= 2 &&
         address.province.trim().length >= 2 &&
+        (address.kind !== 'home' ||
+          (Boolean(address.fix) &&
+            address.fix!.accuracyMeters <= PROFESSIONAL_LOCATION_MAX_ACCURACY_M)) &&
         (address.kind !== 'clinic' || Boolean(invite.clinicName?.trim()))
     )
   );

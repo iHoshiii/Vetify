@@ -24,7 +24,6 @@ function application(overrides: Partial<AdminProfessional> = {}): AdminProfessio
     licenseNumber: 'VET 1234-PH',
     licenseAuthority: 'PRC',
     credentialUrls: ['https://example.test/diploma.pdf'],
-    specialties: ['surgery'],
     clinicName: 'Mandaue Animal Clinic',
     clinicAddress: '9 Rizal Avenue, Cebu City',
     addresses: [],
@@ -107,7 +106,7 @@ describe('ApplicationDialog', () => {
       screen.getByText('Mandaue Animal Clinic \u00b7 9 Rizal Avenue, Cebu City')
     ).toBeInTheDocument();
     expect(screen.getByText('15 years')).toBeInTheDocument();
-    expect(screen.getByText('$60/hr \u00b7 surgery')).toBeInTheDocument();
+    expect(screen.getByText('₱60/hr')).toBeInTheDocument();
     expect(screen.getByText('Fifteen years of small animal practice.')).toBeInTheDocument();
   });
 

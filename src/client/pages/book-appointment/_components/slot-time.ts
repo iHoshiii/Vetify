@@ -1,4 +1,5 @@
 import { MANILA_UTC_OFFSET_HOURS } from '@shared/limits';
+import { currentLocalePreferences } from '@/components/providers/LocaleProvider';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -16,27 +17,30 @@ export function addDays(date: string, days: number): string {
 /** A `YYYY-MM-DD` read as a Manila date, for labelling only. */
 export function dayLabel(date: string, options: Intl.DateTimeFormatOptions): string {
   const [year, month, day] = date.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-PH', {
-    ...options,
-    timeZone: 'UTC',
-  });
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
+    currentLocalePreferences().locale,
+    { ...options, timeZone: 'UTC' }
+  );
 }
 
 /** The clock time of a slot, in the zone the vet set their hours in. */
 export function timeOf(at: string): string {
-  return new Date(at).toLocaleTimeString('en-PH', {
+  const { locale, timeZone } = currentLocalePreferences();
+  return new Date(at).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Manila',
+    timeZone,
   });
 }
 
 // 24-hour "HH:mm" in Manila, so a slot reads as a compact "10:00–10:59" range on a button.
 export function clock24(at: string): string {
-  return new Date(at).toLocaleTimeString('en-GB', {
+  const { locale, timeZone } = currentLocalePreferences();
+  return new Date(at).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Manila',
+    timeZone,
+    hour12: false,
   });
 }
 

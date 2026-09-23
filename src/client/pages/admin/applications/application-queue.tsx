@@ -351,10 +351,11 @@ export default function ApplicationQueue({ phase }: { phase: Phase }) {
           placeholder="Clinic, licence or name"
           onSearch={(q) => set({ q })}
         />
-        {phase === 'application' && (
+        {/* Any deciding tab that spans more than one status, so a suspended vet is reachable to reinstate. */}
+        {view.decides && view.statuses.length > 1 && (
           <FilterSelect
             label="Status"
-            value={get('status') ?? undefined}
+            value={get('status') ?? (view.allLabel === null ? view.opens[0] : undefined)}
             options={view.statuses}
             onChange={(status) => set({ status })}
             allLabel={view.allLabel}

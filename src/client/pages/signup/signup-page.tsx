@@ -1,10 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
-import { startSocialLogin } from '@/lib/auth';
+import { pendingAuthReturnTo, startSocialLogin } from '@/lib/auth';
 import SignupForm from './_components/signup-form';
 import SocialLogin from './_components/social-login';
 
 export default function SignupPage() {
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? pendingAuthReturnTo();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
@@ -13,7 +16,7 @@ export default function SignupPage() {
           <p className="mt-2 text-sm text-slate-600">Join Vetify to care for your pet</p>
         </div>
 
-        <SignupForm />
+        <SignupForm from={from} />
 
         <div className="relative my-8 animate-fadeIn delay-400">
           <div className="absolute inset-0 flex items-center">
@@ -24,12 +27,13 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <SocialLogin onLogin={startSocialLogin} />
+        <SocialLogin onLogin={(provider) => startSocialLogin(provider, from)} />
 
         <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
           Already have an account?{' '}
           <Link
             to="/login"
+            state={from ? { from } : undefined}
             className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
           >
             Log in

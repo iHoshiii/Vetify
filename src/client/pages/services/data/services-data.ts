@@ -34,7 +34,7 @@ export const services: ServiceItem[] = [
   {
     title: 'Find Nearby Vets',
     description:
-      'When you need a professional right away, our map shows you verified, highly-rated clinics near you. You can check their specialties and get directions instantly.',
+      'When you need a professional right away, our map shows you verified, highly-rated clinics near you. You can review each vet and get directions instantly.',
     icon: '📍',
     bg: 'from-orange-400 to-orange-600',
     shadow: 'shadow-orange-500/30',

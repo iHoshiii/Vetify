@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -53,7 +52,6 @@ function application(overrides: Partial<OwnProfessional> = {}): OwnProfessional 
     licenseNumber: 'VET 1234-PH',
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: [],
-    specialties: ['dentistry'],
     clinicName: 'Bayside Animal Clinic',
     clinicAddress: '12 Mabini Street, Cebu City',
     addresses: [],
@@ -195,27 +193,14 @@ describe('the invited application page', () => {
   });
 
   it('will not submit without the photographs, and does not spend a round trip finding out', async () => {
-    const user = userEvent.setup();
     vi.mocked(getInvite).mockResolvedValue(invite());
 
     renderPage();
     await screen.findByText('From your enquiry');
 
-    // Everything the browser itself insists on, so the only things left missing are
-    // the three photographs and the location fix — the two the schema decides.
-    await user.type(screen.getByLabelText('Years in practice'), '15');
-    await user.type(
-      screen.getByLabelText('How you introduce yourself to pet owners'),
-      'Small animal practice for fifteen years, mostly dentistry and soft tissue surgery work.'
-    );
-    await user.type(screen.getByLabelText('Street and number'), '12 Mabini Street');
-    await user.type(screen.getByLabelText('City or municipality'), 'Cebu City');
-    await user.type(screen.getByLabelText('Province'), 'Cebu');
-    await user.click(screen.getByRole('checkbox'));
-
-    await user.click(screen.getByRole('button', { name: 'Submit application' }));
-
-    expect(await screen.findByText('Please correct the highlighted fields.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit application' })).toBeDisabled();
+    expect(screen.getByText(/a photo of your face/)).toBeInTheDocument();
+    expect(screen.getByText(/a live location fix for your home address/)).toBeInTheDocument();
     expect(applyThroughInvite).not.toHaveBeenCalled();
   });
 });

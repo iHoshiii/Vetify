@@ -227,12 +227,13 @@ export default function RequestTab() {
           placeholder="Name, email or licence"
           onSearch={(q) => set({ q })}
         />
+        {/* All four statuses, so declined and completed enquiries are reachable; defaults to pending. */}
         <FilterSelect
           label="Status"
-          value={get('status')}
-          options={['pending', 'invited']}
+          value={get('status') ?? 'pending'}
+          options={PROFESSIONAL_INQUIRY_STATUSES}
           onChange={(status) => set({ status })}
-          allLabel="Any status"
+          allLabel={null}
         />
       </ListToolbar>
 

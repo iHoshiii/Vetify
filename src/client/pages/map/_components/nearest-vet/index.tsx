@@ -49,7 +49,7 @@ export default function NearestVets({
             ) : (
               <Crosshair className="h-3.5 w-3.5" />
             )}
-            {status === 'ready' ? 'Update' : asking ? 'Locating…' : 'Scan my location'}
+            {status === 'ready' ? 'Update' : asking ? 'Locating…' : 'Use my location'}
           </button>
         )}
       </div>
@@ -71,7 +71,7 @@ export default function NearestVets({
             <span>
               {vetsFailed
                 ? 'Vetify’s own vets could not be loaded just now, so this list is only the clinics from the Map.'
-                : 'Map could not be reached, so this list is only Vetify’s own verified vets.'}
+                : 'OpenStreetMap could not be reached, so this list is only Vetify’s own verified vets.'}
             </span>
           </p>
         )}

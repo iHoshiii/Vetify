@@ -5,6 +5,7 @@ const FORMAT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year
  * formatting. Renders nothing for a draft, which has no date to show yet.
  */
 export function PublishedDate({ value, className }: { value: string | null; className?: string }) {
+  const { locale, timeZone } = useLocalePreferences();
   if (!value) return null;
 
   const date = new Date(value);
@@ -12,7 +13,8 @@ export function PublishedDate({ value, className }: { value: string | null; clas
 
   return (
     <time dateTime={value} className={className}>
-      {date.toLocaleDateString(undefined, FORMAT)}
+      {date.toLocaleDateString(locale, { ...FORMAT, timeZone })}
     </time>
   );
 }
+import { useLocalePreferences } from '@/components/providers/LocaleProvider';

@@ -53,7 +53,6 @@ async function filed(user: ObjectId, overrides: Partial<ProfessionalAttrs> = {})
     licenseNumber: `SEED-${seq}`,
     licenseAuthority: 'Professional Regulation Commission',
     credentialUrls: ['https://example.com/licence.pdf'],
-    specialties: ['surgery'],
     clinicName: 'Seed Veterinary',
     addresses: [
       {

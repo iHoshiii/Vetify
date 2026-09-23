@@ -37,7 +37,10 @@ export const generalLimiter = rateLimit({
   limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  skip: () => isTest,
+  skip: (req) =>
+    isTest ||
+    (req.method === 'POST' &&
+      /^\/api\/v1\/messages\/[^/]+\/messages(?:\?|$)/.test(req.originalUrl)),
 });
 
 /** Gemini calls cost money and have upstream quotas, so they get their own cap. */
@@ -146,8 +149,21 @@ export const messageLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
-    error: 'Too many messages from this network. Please slow down.',
+    error: 'Please wait a moment before sending again.',
     reason: 'message-ip-limit',
   },
+  skip: (req) =>
+    isTest ||
+    req.method !== 'POST' ||
+    !/^\/api\/v1\/messages\/[^/]+\/messages(?:\?|$)/.test(req.originalUrl),
+});
+
+// Typing and message modifications stay protected without consuming the actual-send allowance.
+export const messageActionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Please wait a moment before trying again.' },
   skip: () => isTest,
 });

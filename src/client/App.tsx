@@ -203,7 +203,9 @@ export default function App() {
         path="professionals/dashboard"
         element={
           <RequireAuth>
-            <ProfessionalLayout />
+            <RequireRole roles={['professional']}>
+              <ProfessionalLayout />
+            </RequireRole>
           </RequireAuth>
         }
       >

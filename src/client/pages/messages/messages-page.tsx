@@ -3,7 +3,7 @@ import ConversationView from '@/components/messaging/ConversationView';
 import MessageSideTabs from '@/components/messaging/MessageSideTabs';
 import ThreadList from '@/components/messaging/ThreadList';
 import type { Thread, ThreadSide } from '@/services/messages.service';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // The dedicated full-page inbox behind the Tools "Chat" link, roomier than the launcher popup.
 export default function MessagesPage() {
@@ -12,13 +12,17 @@ export default function MessagesPage() {
   const [side, setSide] = useState<ThreadSide>('mine');
   const isProfessional = user?.role === 'professional';
 
+  useEffect(() => {
+    if (isProfessional) setSide('incoming');
+  }, [isProfessional]);
+
   const changeSide = (next: ThreadSide) => {
     setSide(next);
     setActive(null);
   };
 
   return (
-    <main className="flex h-[calc(100vh-4rem)] min-h-[32rem] w-full gap-3 bg-slate-50 p-3 sm:gap-4 sm:p-5">
+    <main className="flex h-[calc(100vh-4rem)] min-h-[32rem] w-full gap-3 bg-slate-50 p-3 sm:gap-4 sm:p-5 lg:p-6">
       <section
         className={`${
           active ? 'hidden sm:flex' : 'flex'
@@ -29,14 +33,20 @@ export default function MessagesPage() {
           {isProfessional && <MessageSideTabs side={side} onChange={changeSide} />}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <ThreadList side={isProfessional ? side : 'mine'} onOpen={setActive} />
+          <ThreadList
+            side={isProfessional ? side : 'mine'}
+            onOpen={setActive}
+            onThreadMoved={(threadId) =>
+              setActive((current) => (current?.id === threadId ? null : current))
+            }
+          />
         </div>
       </section>
 
       <section
         className={`${
           active ? 'flex' : 'hidden sm:flex'
-        } min-w-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm`}
+        } min-w-0 flex-1 items-stretch overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm`}
       >
         {active ? (
           <ConversationView thread={active} onBack={() => setActive(null)} />

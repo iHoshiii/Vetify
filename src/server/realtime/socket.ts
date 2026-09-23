@@ -4,23 +4,25 @@ import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 
 import { env } from '../config/env';
-import { findThreadById, isValidObjectId } from '../models';
-import { emitToUser, setRealtime, userRoom } from './hub';
+import { findThreadById, findUserById, isValidObjectId } from '../models';
+import { notifyTyping } from '../services/messages.service';
+import { setRealtime } from './hub';
+import { trackPresence } from './presence';
 
 // Passes a live "typing" ping to the other party, but only from someone actually on the thread.
-async function relayTyping(userId: string, payload: unknown): Promise<void> {
+async function relayTyping(userId: string, payload: unknown): Promise<boolean> {
   const data = payload as { threadId?: unknown; typing?: unknown };
-  if (typeof data?.threadId !== 'string' || !isValidObjectId(data.threadId)) return;
+  if (typeof data?.threadId !== 'string' || !isValidObjectId(data.threadId)) return false;
 
-  const thread = await findThreadById(data.threadId);
-  if (!thread) return;
+  const [thread, sender] = await Promise.all([findThreadById(data.threadId), findUserById(userId)]);
+  if (!thread || !sender) return false;
 
   const client = thread.client.toString();
   const professionalUser = thread.professionalUser.toString();
-  if (userId !== client && userId !== professionalUser) return;
+  if (userId !== client && userId !== professionalUser) return false;
 
-  const other = userId === client ? professionalUser : client;
-  emitToUser(other, 'thread:typing', { threadId: data.threadId, typing: Boolean(data.typing) });
+  notifyTyping(thread, sender, Boolean(data.typing));
+  return true;
 }
 
 // The access token, from the auth payload or the Authorization header, whichever the client sent.
@@ -62,8 +64,15 @@ export function attachRealtime(http: HttpServer): Server {
 
   io.on('connection', (socket) => {
     const userId = socket.data.userId as string;
-    void socket.join(userRoom(userId));
-    socket.on('thread:typing', (payload) => void relayTyping(userId, payload));
+    trackPresence(socket, userId);
+    socket.on(
+      'thread:typing',
+      (payload, acknowledge?: (result: { delivered: boolean }) => void) => {
+        void relayTyping(userId, payload)
+          .then((delivered) => acknowledge?.({ delivered }))
+          .catch(() => acknowledge?.({ delivered: false }));
+      }
+    );
   });
 
   setRealtime(io);

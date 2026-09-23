@@ -29,9 +29,16 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
     client: toObjectId(parsed.client),
     lastBody: null,
     lastSender: null,
+    lastMessage: null,
     lastAt: null,
     clientUnread: 0,
     professionalUnread: 0,
+    clientMuted: false,
+    professionalMuted: false,
+    clientReportedAt: null,
+    professionalReportedAt: null,
+    clientDeletedAt: null,
+    professionalDeletedAt: null,
     clientState: 'active',
     professionalState: 'active',
     clientReadAt: null,
@@ -46,6 +53,25 @@ export async function insertThread(attrs: ThreadAttrs): Promise<ThreadDocument> 
 
 export async function findThreadById(id: string | ObjectId): Promise<ThreadDocument | null> {
   return await threadsCollection().findOne({ _id: toObjectId(id) });
+}
+
+export async function findConversationPartnerIds(user: string | ObjectId): Promise<string[]> {
+  const id = toObjectId(user);
+  const threads = await threadsCollection()
+    .find({ $or: [{ client: id }, { professionalUser: id }] })
+    .project<Pick<ThreadDocument, 'client' | 'professionalUser'>>({
+      client: 1,
+      professionalUser: 1,
+    })
+    .toArray();
+
+  return [
+    ...new Set(
+      threads.map((thread) =>
+        thread.client.equals(id) ? thread.professionalUser.toString() : thread.client.toString()
+      )
+    ),
+  ];
 }
 
 // The one thread for a pair, so a repeat open reuses it rather than racing the unique index.
@@ -97,27 +123,47 @@ export async function findThreads(
 export async function touchThreadOnSend(input: {
   thread: string | ObjectId;
   sender: string | ObjectId;
+  message: string | ObjectId;
   body: string;
   senderIsClient: boolean;
   at: Date;
 }): Promise<ThreadDocument | null> {
-  // A message pulls the recipient's copy back to active, so an archived or deleted thread resurfaces the way Messenger's does.
-  const recipientState = input.senderIsClient ? { professionalUnread: 1 } : { clientUnread: 1 };
-  const wake: Partial<Pick<ThreadDocument, 'clientState' | 'professionalState'>> =
-    input.senderIsClient ? { professionalState: 'active' } : { clientState: 'active' };
+  // The recipient's side depends on who sent; the sender always re-engages their own copy.
+  const senderState = input.senderIsClient ? 'clientState' : 'professionalState';
+  const rcpState = input.senderIsClient ? 'professionalState' : 'clientState';
+  const rcpMuted = input.senderIsClient ? 'professionalMuted' : 'clientMuted';
+  const rcpUnread = input.senderIsClient ? 'professionalUnread' : 'clientUnread';
+
+  // A message wakes the recipient's thread back to All, except: spam never returns, and a muted+archived one stays archived.
+  const wokenRecipientState = {
+    $switch: {
+      branches: [
+        { case: { $eq: [`$${rcpState}`, 'spam'] }, then: 'spam' },
+        {
+          case: { $and: [{ $eq: [`$${rcpState}`, 'archived'] }, `$${rcpMuted}`] },
+          then: 'archived',
+        },
+      ],
+      default: 'active',
+    },
+  };
 
   return await threadsCollection().findOneAndUpdate(
     { _id: toObjectId(input.thread) },
-    {
-      $set: {
-        lastBody: input.body,
-        lastSender: toObjectId(input.sender),
-        lastAt: input.at,
-        updatedAt: input.at,
-        ...wake,
+    [
+      {
+        $set: {
+          lastBody: input.body,
+          lastSender: toObjectId(input.sender),
+          lastMessage: toObjectId(input.message),
+          lastAt: input.at,
+          updatedAt: input.at,
+          [senderState]: 'active',
+          [rcpState]: wokenRecipientState,
+          [rcpUnread]: { $add: [`$${rcpUnread}`, 1] },
+        },
       },
-      $inc: recipientState,
-    },
+    ],
     { returnDocument: 'after' }
   );
 }

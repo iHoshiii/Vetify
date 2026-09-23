@@ -175,7 +175,7 @@ export default function PublicProfilePage() {
                     <Briefcase className="h-4 w-4 text-slate-400" aria-hidden />
                     {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
                   </span>
-                  <span className="font-semibold text-slate-900">${vet.hourlyRate}/hr</span>
+                  <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
                   {vet.businessPhone && (
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="h-4 w-4 text-slate-400" aria-hidden />
@@ -205,19 +205,6 @@ export default function PublicProfilePage() {
               </p>
             )}
           </div>
-
-          {vet.specialties.length > 0 && (
-            <ul className="mt-5 flex flex-wrap gap-1.5">
-              {vet.specialties.map((specialty) => (
-                <li
-                  key={specialty}
-                  className="rounded-full bg-teal-900/5 px-3 py-1 text-xs font-semibold capitalize text-teal-900"
-                >
-                  {specialty}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-3">

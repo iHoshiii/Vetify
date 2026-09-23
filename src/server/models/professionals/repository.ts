@@ -146,7 +146,6 @@ export async function insertProfessional(attrs: ProfessionalAttrs): Promise<Prof
     licenseNumber: parsed.licenseNumber,
     licenseAuthority: parsed.licenseAuthority,
     credentialUrls: parsed.credentialUrls ?? [],
-    specialties: parsed.specialties ?? [],
     clinicName: parsed.clinicName ?? null,
     clinicAddress: publishableAddress(addresses),
     addresses,
@@ -246,7 +245,6 @@ export async function findProfessionals(
 }
 
 export type FindVerifiedOptions = {
-  specialty?: string;
   /** Name, clinic, or anywhere in either address. */
   q?: string;
   minExperience?: number;
@@ -280,7 +278,6 @@ export async function findVerifiedProfessionals(
   options: FindVerifiedOptions = {}
 ): Promise<{ items: ProfessionalWithAccount[]; total: number }> {
   const {
-    specialty,
     q,
     minExperience,
     maxRate,
@@ -293,9 +290,6 @@ export async function findVerifiedProfessionals(
   const match: Filter<ProfessionalDocument> = { status: 'verified' };
   // Rating ranks only the reviewed, so an unrated vet is off the list rather than last on it.
   if (sort === 'rating') match.ratingCount = { $gt: 0 };
-  // Specialties are stored lowercase, so an equality match against an array
-  // element is all this needs - no $elemMatch, no regex.
-  if (specialty) match.specialties = specialty;
 
   /**
    * Everything that needs an `$or` of its own, collected rather than assigned — two
@@ -340,7 +334,6 @@ export async function findVerifiedProfessionals(
         { fullName: like },
         { clinicName: like },
         { clinicAddress: like },
-        { specialties: like },
         { 'addresses.line1': like },
         { 'addresses.city': like },
         { 'addresses.province': like },

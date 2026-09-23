@@ -27,7 +27,6 @@ const APPLICATION = {
   licenseNumber: 'VET 1234-PH',
   licenseAuthority: 'Professional Regulation Commission',
   credentialUrls: ['https://example.com/licence.pdf'],
-  specialties: ['dentistry'],
   clinicName: 'Bayside Animal Clinic',
   clinicAddress: '12 Mabini Street, Cebu City',
   addresses: [],
@@ -135,13 +134,13 @@ describe('listProfessionals', () => {
     expect(requestedPath(fetchMock)).toBe('/professionals');
   });
 
-  it('carries page, limit and specialty through to the query string', async () => {
+  it('carries page and limit through to the query string', async () => {
     const fetchMock = respond(PAGE);
     vi.stubGlobal('fetch', fetchMock);
 
-    await listProfessionals({ page: 2, limit: 6, specialty: 'dentistry' });
+    await listProfessionals({ page: 2, limit: 6 });
 
-    expect(requestedPath(fetchMock)).toBe('/professionals?page=2&limit=6&specialty=dentistry');
+    expect(requestedPath(fetchMock)).toBe('/professionals?page=2&limit=6');
   });
 });
 

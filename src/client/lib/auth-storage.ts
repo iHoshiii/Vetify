@@ -41,23 +41,38 @@ const AUTH_STORAGE_KEY = 'vetify.auth';
 
 export function readAuthState(): AuthState | null {
   if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  const storage = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    ? window.localStorage
+    : window.sessionStorage;
+  const raw = storage.getItem(AUTH_STORAGE_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AuthState;
   } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    storage.removeItem(AUTH_STORAGE_KEY);
     return null;
   }
 }
 
-export function writeAuthState(state: AuthState | null) {
+export function writeAuthState(state: AuthState | null, remember?: boolean) {
   if (typeof window === 'undefined') return;
   if (!state?.accessToken || !state.user) {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
     return;
   }
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+
+  const persistent =
+    remember ??
+    (window.localStorage.getItem(AUTH_STORAGE_KEY)
+      ? true
+      : window.sessionStorage.getItem(AUTH_STORAGE_KEY)
+      ? false
+      : true);
+  const storage = persistent ? window.localStorage : window.sessionStorage;
+  const otherStorage = persistent ? window.sessionStorage : window.localStorage;
+  otherStorage.removeItem(AUTH_STORAGE_KEY);
+  storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
 }
 
 export function readAccessToken(): string | null {

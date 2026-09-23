@@ -118,6 +118,7 @@ router.post('/', bookingLimiter, validate(appointmentRequestSchema), async (req,
       petAge: body.petAge,
       reason: body.reason,
       phone: body.phone ?? null,
+      clientEmail: body.clientEmail ?? null,
     });
 
     if (!result) return fail(res, 404, 'That professional is not in the directory');

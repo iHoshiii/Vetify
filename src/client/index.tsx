@@ -7,6 +7,7 @@ import ChatLauncher from './components/messaging/ChatLauncher';
 import { ChatProvider } from './components/messaging/ChatProvider';
 import { AuthProvider } from './components/providers/AuthProvider';
 import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
+import { LocaleProvider } from './components/providers/LocaleProvider';
 import RealtimeBridge from './components/providers/RealtimeBridge';
 import './globals.css';
 
@@ -21,15 +22,17 @@ if (!container) {
 createRoot(container).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <ReactQueryProvider>
-          <RealtimeBridge />
-          <ChatProvider>
-            <App />
-            <ChatLauncher />
-          </ChatProvider>
-        </ReactQueryProvider>
-      </AuthProvider>
+      <LocaleProvider>
+        <AuthProvider>
+          <ReactQueryProvider>
+            <RealtimeBridge />
+            <ChatProvider>
+              <App />
+              <ChatLauncher />
+            </ChatProvider>
+          </ReactQueryProvider>
+        </AuthProvider>
+      </LocaleProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

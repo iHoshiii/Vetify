@@ -7,7 +7,6 @@ import {
   BLOG_PAGE_SIZE_MAX,
   METRIC_MAX_DAYS,
   METRIC_WINDOW_DAYS,
-  PROFESSIONAL_MAX_SPECIALTIES,
   PROFESSIONAL_PAGE_SIZE,
   PROFESSIONAL_PAGE_SIZE_MAX,
 } from '@shared/limits';
@@ -177,23 +176,6 @@ describe('professional schemas', () => {
 
     expect(result.licenseNumber).toBe('VET 1234-PH');
     expect(result.licenseAuthority).toBe('Professional Regulation Commission');
-    expect(result.specialties).toEqual([]);
-  });
-
-  it('lowercases and deduplicates specialties', () => {
-    // The directory filters on this field: 'Surgery' must not hide the surgeons.
-    const result = professionalApplySchema.parse({
-      ...valid,
-      specialties: ['Surgery', 'surgery', ' Dentistry '],
-    });
-
-    expect(result.specialties).toEqual(['surgery', 'dentistry']);
-    expect(
-      professionalApplySchema.safeParse({
-        ...valid,
-        specialties: Array.from({ length: PROFESSIONAL_MAX_SPECIALTIES + 1 }, (_, n) => `s${n}`),
-      }).success
-    ).toBe(false);
   });
 
   it('takes the licence from the photographs rather than from a link', () => {
@@ -307,10 +289,7 @@ describe('professional schemas', () => {
       page: 1,
       limit: PROFESSIONAL_PAGE_SIZE,
     });
-    expect(professionalListQuerySchema.parse({ page: '3', specialty: ' Surgery ' })).toMatchObject({
-      page: 3,
-      specialty: 'surgery',
-    });
+    expect(professionalListQuerySchema.parse({ page: '3' })).toMatchObject({ page: 3 });
     expect(
       professionalListQuerySchema.safeParse({ limit: String(PROFESSIONAL_PAGE_SIZE_MAX + 1) })
         .success

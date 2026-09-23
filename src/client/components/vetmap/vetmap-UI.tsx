@@ -11,7 +11,7 @@ export default function VetMap({
   zoom = 11,
   center = [16.32, 121.1],
   className = '',
-  showOverlay: _showOverlay = true,
+  showOverlay = true,
   interactive = true,
   clinics = [],
   clinicsLoading = false,
@@ -45,7 +45,8 @@ export default function VetMap({
   });
 
   const pinCount = visibleClinics.length + vets.length;
-  const settled = core.ready && !clinicsLoading && !clinicsFailed;
+  // Reveal the map once Leaflet is ready and the clinic fetch settles, whether it succeeded or failed.
+  const settled = core.ready && !clinicsLoading;
 
   return (
     <div className={`relative w-full h-full ${className}`}>
@@ -66,7 +67,7 @@ export default function VetMap({
           pointerEvents: settled ? 'auto' : 'none',
         }}
       />
-      {settled && pinCount > 0 && (
+      {settled && showOverlay && pinCount > 0 && (
         <div
           className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-blue-100 shadow-md text-xs font-bold text-blue-700 backdrop-blur-sm pointer-events-none"
           style={{ zIndex: 1100 }}
@@ -79,6 +80,14 @@ export default function VetMap({
             </>
           )}
           {vets.length > 0 && <span className="text-teal-700">{vets.length} on Vetify</span>}
+        </div>
+      )}
+      {settled && showOverlay && clinicsFailed && (
+        <div
+          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-white/95 border border-amber-100 shadow-md text-xs font-semibold text-amber-700 backdrop-blur-sm pointer-events-none"
+          style={{ zIndex: 1100 }}
+        >
+          Couldn't load nearby clinics
         </div>
       )}
     </div>
