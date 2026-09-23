@@ -23,6 +23,7 @@ export default function DeleteConfirm({
 
   return createPortal(
     <div
+      data-chat-overlay
       className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
       onClick={onCancel}
     >

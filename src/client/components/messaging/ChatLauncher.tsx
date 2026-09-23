@@ -20,8 +20,11 @@ export default function ChatLauncher() {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
       if (rootRef.current?.contains(target)) return;
-      // Modals (delete confirm, vet picker) render outside this box; a click inside one must not close the panel.
-      if (target instanceof Element && target.closest('[role="dialog"],[role="alertdialog"]'))
+      // Modals and menus (delete confirm, unsend, message menu) render outside this box via portals; a click inside one must not close the panel.
+      if (
+        target instanceof Element &&
+        target.closest('[role="dialog"],[role="alertdialog"],[data-chat-overlay]')
+      )
         return;
       closePanel();
     };
