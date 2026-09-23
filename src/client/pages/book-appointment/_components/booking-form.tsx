@@ -55,7 +55,7 @@ export default function BookingForm({
 
   const short = values.reason.trim().length < APPOINTMENT_REASON_MIN;
   const badPhone = !PHONE_RE.test(values.phone.trim());
-  const incomplete = !values.petSpecies.trim() || short || badPhone;
+  const incomplete = values.petSpecies.trim().length < 2 || short || badPhone;
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
