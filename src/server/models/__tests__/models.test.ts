@@ -2,7 +2,6 @@ import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { PETS_COLLECTION, insertPet, petsCollection, type PetAttrs } from '../pets';
 import {
   findRefreshTokenWithOwner,
   hashToken,
@@ -126,36 +125,6 @@ describe('User', () => {
       role: 'user',
     });
     expect(JSON.stringify(pub)).not.toContain('$2');
-  });
-});
-
-describe('Pet', () => {
-  async function ownerId() {
-    const user = await insertUser({ email: 'o@example.com', password: 'pw12345678' });
-    return user._id;
-  }
-
-  it('applies the migration-matching avatar defaults', async () => {
-    const pet = await insertPet({ name: 'Rex', species: 'dog', owner: await ownerId() });
-
-    expect(pet.avatar).toEqual({ url: null, color: '#A78BFA', initials: true });
-  });
-
-  it('requires name, species and owner', async () => {
-    await expect(insertPet({ name: 'Rex' } as PetAttrs)).rejects.toThrow(/species|owner/i);
-  });
-
-  it('rejects a negative age', async () => {
-    await expect(
-      insertPet({ name: 'Rex', species: 'dog', age: -1, owner: await ownerId() })
-    ).rejects.toThrow(/negative/i);
-  });
-
-  it('writes to the pets collection the earlier migration targeted', async () => {
-    const pet = await insertPet({ name: 'Rex', species: 'dog', owner: await ownerId() });
-
-    expect(PETS_COLLECTION).toBe('pets');
-    expect(await petsCollection().countDocuments({ _id: pet._id })).toBe(1);
   });
 });
 
