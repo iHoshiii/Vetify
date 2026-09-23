@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -136,13 +136,13 @@ export default function SignupForm({ from }: { from?: string | null }) {
 
       <p className="text-xs text-slate-500 mt-2">
         By signing up, you agree to our{' '}
-        <a href="#" className="text-blue-600 hover:underline transition-colors">
+        <Link to="/terms" className="text-blue-600 hover:underline transition-colors">
           Terms of Service
-        </a>{' '}
+        </Link>{' '}
         and{' '}
-        <a href="#" className="text-blue-600 hover:underline transition-colors">
+        <Link to="/privacy" className="text-blue-600 hover:underline transition-colors">
           Privacy Policy
-        </a>
+        </Link>
         .
       </p>
 
