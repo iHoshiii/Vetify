@@ -54,7 +54,7 @@ export default function Footer() {
               {[
                 { label: 'Blogs', href: '/blogs' },
                 { label: 'FAQs', href: '/help' },
-                { label: 'Anatomy Guide', href: '/chat?anatomy=true' },
+                { label: 'Anatomy Guide', href: '/anatomy' },
                 { label: 'Meal Planner', href: '/planner' },
               ].map((link) => (
                 <li key={link.label}>

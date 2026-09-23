@@ -3,12 +3,11 @@ import { NAV_ITEMS, TOOLS_ITEMS } from './nav-data';
 
 interface MobileMenuProps {
   isOpen: boolean;
-  isAuthenticated: boolean;
   showAuthActions: boolean;
   onClose: () => void;
 }
 
-export function MobileMenu({ isOpen, isAuthenticated, showAuthActions, onClose }: MobileMenuProps) {
+export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps) {
   return (
     <div
       className={`overflow-hidden transition-all duration-300 md:hidden ${
@@ -32,15 +31,13 @@ export function MobileMenu({ isOpen, isAuthenticated, showAuthActions, onClose }
           Tools
         </p>
 
-        {!isAuthenticated && (
-          <Link
-            to="/map"
-            onClick={onClose}
-            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
-          >
-            📍 Find Vets
-          </Link>
-        )}
+        <Link
+          to="/map"
+          onClick={onClose}
+          className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+        >
+          📍 Find Vets
+        </Link>
 
         {TOOLS_ITEMS.map((item) => (
           <Link
