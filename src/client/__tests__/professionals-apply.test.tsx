@@ -37,6 +37,31 @@ vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => auth,
 }));
 
+vi.mock('../pages/professionals/_components/location-picker-field', () => ({
+  default: ({
+    label,
+    onChange,
+  }: {
+    label: string;
+    onChange: (
+      point: { latitude: number; longitude: number },
+      address: { line1: string; city: string; province: string; postalCode: string }
+    ) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onChange(
+          { latitude: 10.3157, longitude: 123.8854 },
+          { line1: '12 Mabini Street', city: 'Cebu City', province: 'Cebu', postalCode: '6000' }
+        )
+      }
+    >
+      {label}
+    </button>
+  ),
+}));
+
 function application(overrides: Partial<OwnProfessional> = {}): OwnProfessional {
   return {
     id: 'a1',
@@ -94,16 +119,17 @@ function renderPage() {
 }
 
 /** Fills the short form with something the shared schema accepts. */
-async function fillEnquiry(user: ReturnType<typeof userEvent.setup>) {
+async function fillEnquiry(
+  user: ReturnType<typeof userEvent.setup>,
+  motivation = 'Fifteen years of small animal practice and nowhere to write any of it down.'
+) {
   await user.type(screen.getByLabelText('First name'), 'Marites');
   await user.type(screen.getByLabelText('Last name'), 'Reyes');
   await user.type(screen.getByLabelText('Email address'), 'marites@clinic.ph');
   await user.type(screen.getByLabelText('License number'), 'VET 1234-PH');
-  await user.type(screen.getByLabelText('Where you are based'), 'Cebu City, Cebu');
-  await user.type(
-    screen.getByLabelText('Why do you want to join our team?'),
-    'Fifteen years of small animal practice and nowhere to write any of it down.'
-  );
+  await user.type(screen.getByLabelText('Years of experience'), '15');
+  await user.click(screen.getByRole('button', { name: 'Your Home Address' }));
+  await user.type(screen.getByLabelText('Why do you want to join our team?'), motivation);
 }
 
 beforeEach(() => {
@@ -214,15 +240,10 @@ describe('the enquiry form', () => {
     renderPage();
     await screen.findByLabelText('First name');
 
-    await user.type(screen.getByLabelText('First name'), 'Marites');
-    await user.type(screen.getByLabelText('Last name'), 'Reyes');
-    await user.type(screen.getByLabelText('Email address'), 'marites@clinic.ph');
-    await user.type(screen.getByLabelText('License number'), 'VET 1234-PH');
-    await user.type(screen.getByLabelText('Where you are based'), 'Cebu City, Cebu');
-    await user.type(screen.getByLabelText('Why do you want to join our team?'), 'i want in');
-    await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
+    await fillEnquiry(user, 'i want in');
 
-    expect(await screen.findByText(/at least 40 characters/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send enquiry' })).toBeDisabled();
+    expect(screen.getByText(/31 more characters/i)).toBeInTheDocument();
     // Validated by the same schema the route uses, so the round trip is not spent
     // learning what the client already knew.
     expect(sendProfessionalInquiry).not.toHaveBeenCalled();
@@ -239,18 +260,19 @@ describe('the enquiry form', () => {
     await user.type(screen.getByLabelText('Middle name (optional)'), 'Santos');
     await user.selectOptions(screen.getByLabelText('Suffix'), 'Jr.');
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => expect(sendProfessionalInquiry).toHaveBeenCalledTimes(1));
     expect(vi.mocked(sendProfessionalInquiry).mock.calls[0][0]).toMatchObject({
       // The four boxes reach the schema as the one name it knows
       name: 'Marites Santos Reyes Jr.',
       email: 'marites@clinic.ph',
-      currentLocation: 'Cebu City, Cebu',
+      currentLocation: '12 Mabini Street, Cebu City, Cebu, 6000',
     });
 
     // The next thing that happens is an email, so the screen says so rather than
     // pretending there is a queue position to watch.
-    expect(await screen.findByText('Thank you — that is with us.')).toBeInTheDocument();
+    expect(await screen.findByText('Thank you! Your request is with us.')).toBeInTheDocument();
     expect(screen.getByText('marites@clinic.ph')).toBeInTheDocument();
   });
 
@@ -269,6 +291,7 @@ describe('the enquiry form', () => {
 
     await fillEnquiry(user);
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(
       await screen.findByText(/already have an enquiry from that address/)
@@ -288,6 +311,7 @@ describe('the enquiry form', () => {
 
     await fillEnquiry(user);
     await user.click(screen.getByRole('button', { name: 'Send enquiry' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(
       await screen.findByText('That license number is not one we recognise')
