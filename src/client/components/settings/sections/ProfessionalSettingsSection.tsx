@@ -164,11 +164,11 @@ function RateForm({ application }: { application: OwnProfessional }) {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!Number.isFinite(parsed) || parsed < PROFESSIONAL_MIN_RATE) {
-      setError(`The lowest rate allowed is $${PROFESSIONAL_MIN_RATE}/hr.`);
+      setError(`The lowest rate allowed is ₱${PROFESSIONAL_MIN_RATE}/hr.`);
       return;
     }
     if (parsed > PROFESSIONAL_MAX_RATE_CAP) {
-      setError(`The highest rate allowed is $${PROFESSIONAL_MAX_RATE_CAP}/hr.`);
+      setError(`The highest rate allowed is ₱${PROFESSIONAL_MAX_RATE_CAP}/hr.`);
       return;
     }
     save({ hourlyRate: parsed });
@@ -199,7 +199,7 @@ function RateForm({ application }: { application: OwnProfessional }) {
 
         <div className="space-y-2">
           <label className="block space-y-1">
-            <span className="text-sm font-bold text-slate-700">Consultation rate ($/hr)</span>
+            <span className="text-sm font-bold text-slate-700">Consultation rate (₱/hr)</span>
             <input
               type="number"
               inputMode="decimal"
@@ -213,7 +213,7 @@ function RateForm({ application }: { application: OwnProfessional }) {
             />
           </label>
           <p className="text-xs leading-snug text-slate-500">
-            Recommended up to <strong className="text-teal-900">${ceiling}/hr</strong> at{' '}
+            Recommended up to <strong className="text-teal-900">₱{ceiling}/hr</strong> at{' '}
             {application.yearsExperience} yr{application.yearsExperience === 1 ? '' : 's'}.
           </p>
           {overCeiling && (
@@ -369,7 +369,7 @@ export function RateExperienceSection({ isExpanded, onToggle }: SectionProps) {
   return (
     <SettingRow
       label="💵 Experience & Rate"
-      summary={`$${application.hourlyRate}/hr · ${application.yearsExperience} yr${
+      summary={`₱${application.hourlyRate}/hr · ${application.yearsExperience} yr${
         application.yearsExperience === 1 ? '' : 's'
       } experience`}
       isExpanded={isExpanded}

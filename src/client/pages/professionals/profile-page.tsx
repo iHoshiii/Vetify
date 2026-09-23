@@ -103,7 +103,7 @@ function PublicView({ application }: { application: OwnProfessional }) {
             <p className="text-sm font-semibold text-slate-700">
               {application.clinicName || 'Independent Practice'}
               <span className="text-slate-400"> · </span>
-              <span className="text-teal-900">${application.hourlyRate}/hr consultation</span>
+              <span className="text-teal-900">₱{application.hourlyRate}/hr consultation</span>
               <span className="text-slate-400"> · </span>
               {application.yearsExperience} yr
               {application.yearsExperience === 1 ? '' : 's'} experience

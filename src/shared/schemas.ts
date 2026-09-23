@@ -739,8 +739,8 @@ export const professionalProfileUpdateSchema = z.object({
   weeklySchedule: z.array(weeklyScheduleItemSchema).optional(),
   hourlyRate: z.coerce
     .number()
-    .min(PROFESSIONAL_MIN_RATE, `Minimum rate is $${PROFESSIONAL_MIN_RATE}`)
-    .max(PROFESSIONAL_MAX_RATE_CAP, `Maximum rate allowed is $${PROFESSIONAL_MAX_RATE_CAP}`)
+    .min(PROFESSIONAL_MIN_RATE, `Minimum rate is ₱${PROFESSIONAL_MIN_RATE}`)
+    .max(PROFESSIONAL_MAX_RATE_CAP, `Maximum rate allowed is ₱${PROFESSIONAL_MAX_RATE_CAP}`)
     .optional(),
   avatarUrl: z
     .string()

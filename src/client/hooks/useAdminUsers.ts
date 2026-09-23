@@ -52,6 +52,8 @@ export function useUpdateUserRole() {
     onSuccess: (result) => {
       queryClient.setQueryData(adminKeys.user(result.user.id), result.user);
       invalidateAdmin(queryClient, adminKeys.users());
+      // The applications queue embeds the applicant's role, so refresh it like a status change does.
+      void queryClient.invalidateQueries({ queryKey: adminKeys.professionals() });
     },
   });
 }
