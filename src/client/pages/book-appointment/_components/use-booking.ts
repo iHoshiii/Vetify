@@ -1,7 +1,7 @@
 import { useProfessional } from '@/hooks/useProfessionals';
 import type { PublicProfessional } from '@/services/professionals.service';
 import type { AppointmentKind } from '@shared/schemas';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { BookingDetails } from './booking-form';
@@ -25,11 +25,20 @@ export function useBooking() {
 
   const request = useBatchRequest();
 
-  const preselect = useProfessional(params.get('professional') ?? undefined);
+  const preselectId = params.get('professional') ?? undefined;
+  const preselect = useProfessional(preselectId);
   const chosen = vet ?? preselect.data ?? null;
 
   const reached: Stage = !chosen ? 1 : !kind ? 2 : runs.length === 0 ? 3 : 4;
   const at = (stage < reached ? stage : reached) as Stage;
+
+  // A vet linked in from a profile or the map is already answered, so open the first question that is not.
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (deepLinked.current || vet || !preselectId || !preselect.data) return;
+    deepLinked.current = true;
+    setStage(2);
+  }, [vet, preselectId, preselect.data]);
 
   function pick(next: PublicProfessional): void {
     setVet(next);
