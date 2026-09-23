@@ -23,8 +23,10 @@ function previewOf(thread: Thread): string {
 function whenOf(iso: string | null): string {
   if (!iso) return '';
   const date = new Date(iso);
-  const sameDay = new Date().toDateString() === date.toDateString();
   const { locale, timeZone } = currentLocalePreferences();
+  // Decide "today" in the reader's chosen zone so it matches the zone the value is formatted in.
+  const dayIn = (d: Date) => d.toLocaleDateString('en-CA', { timeZone });
+  const sameDay = dayIn(new Date()) === dayIn(date);
   return sameDay
     ? date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', timeZone })
     : date.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone });
