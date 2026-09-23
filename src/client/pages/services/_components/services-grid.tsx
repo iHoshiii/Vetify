@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import ScrollReveal from '@/components/ScrollReveal';
 import { services } from '../data/services-data';
 
@@ -20,12 +22,12 @@ export default function ServicesGrid() {
 
               <p className="flex-1 leading-relaxed text-slate-600 mb-8">{service.description}</p>
 
-              <a
-                href={service.href}
+              <Link
+                to={service.href}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-colors duration-200 hover:bg-teal-50 hover:text-teal-700 border border-slate-100"
               >
                 {service.actionText}
-              </a>
+              </Link>
             </div>
           </ScrollReveal>
         ))}
