@@ -1,36 +1,44 @@
 import type { Socket } from 'socket.io';
 
-import { findAppointmentById, isValidObjectId } from '../models';
+import { findAppointmentById, isValidObjectId, type AppointmentDocument } from '../models';
 import { iceServers, type IceServer } from './ice';
 
 // The join window opens a quarter-hour before the slot and closes when the slot ends.
 const JOIN_LEAD_MS = 15 * 60_000;
 
-// What the server hands back on a join attempt: the relays to use, or why it refused.
+// What the server hands back on a join attempt: the relays and this caller's role, or why it refused.
 type CallJoinAck =
-  | { ok: true; iceServers: IceServer[]; peerOnline: boolean }
+  | { ok: true; iceServers: IceServer[]; peerOnline: boolean; polite: boolean }
   | { ok: false; error: string };
 
 function callRoom(appointmentId: string): string {
   return `call:${appointmentId}`;
 }
 
-// The same gate the button enforces, re-checked here so a hand-crafted socket cannot skip it.
-// Must be a confirmed virtual booking, the caller one of its two parties, and now inside the window.
-export async function canJoinCall(userId: string, appointmentId: string): Promise<boolean> {
-  if (!isValidObjectId(appointmentId)) return false;
+// The booking a caller may join right now, or null. Guards kind, status, party, and the time window.
+export async function loadJoinableCall(
+  userId: string,
+  appointmentId: string
+): Promise<AppointmentDocument | null> {
+  if (!isValidObjectId(appointmentId)) return null;
 
   const appointment = await findAppointmentById(appointmentId);
-  if (!appointment) return false;
-  if (appointment.kind !== 'virtual' || appointment.status !== 'confirmed') return false;
+  if (!appointment) return null;
+  if (appointment.kind !== 'virtual' || appointment.status !== 'confirmed') return null;
 
   const isParty =
     userId === appointment.client.toString() || userId === appointment.professionalUser.toString();
-  if (!isParty) return false;
+  if (!isParty) return null;
 
   const start = appointment.startsAt.getTime();
   const now = Date.now();
-  return now >= start - JOIN_LEAD_MS && now <= start + appointment.minutes * 60_000;
+  if (now < start - JOIN_LEAD_MS || now > start + appointment.minutes * 60_000) return null;
+  return appointment;
+}
+
+// The same gate the button enforces, re-checked here so a hand-crafted socket cannot skip it.
+export async function canJoinCall(userId: string, appointmentId: string): Promise<boolean> {
+  return (await loadJoinableCall(userId, appointmentId)) !== null;
 }
 
 async function join(
@@ -40,7 +48,9 @@ async function join(
   ack?: (result: CallJoinAck) => void
 ): Promise<void> {
   const appointmentId = (payload as { appointmentId?: unknown })?.appointmentId;
-  if (typeof appointmentId !== 'string' || !(await canJoinCall(userId, appointmentId))) {
+  const appointment =
+    typeof appointmentId === 'string' ? await loadJoinableCall(userId, appointmentId) : null;
+  if (!appointment || typeof appointmentId !== 'string') {
     ack?.({ ok: false, error: 'not allowed' });
     return;
   }
@@ -53,11 +63,13 @@ async function join(
     return;
   }
 
+  // The owner is the polite peer and the vet the impolite one, a fixed split perfect negotiation needs.
+  const polite = userId === appointment.client.toString();
   // Read before joining, so the ack tells this caller whether the other party is already waiting.
   const peerOnline = size > 0;
   await socket.join(room);
   socket.to(room).emit('call:peer-joined');
-  ack?.({ ok: true, iceServers: iceServers(), peerOnline });
+  ack?.({ ok: true, iceServers: iceServers(), peerOnline, polite });
 }
 
 // Blind relay of SDP and ICE to the other member, but only from a socket that joined this room.
