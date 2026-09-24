@@ -393,6 +393,9 @@ export const APPOINTMENT_RESCHEDULE_MIN_HOURS = 6;
 export const APPOINTMENT_RATING_MIN = 1;
 export const APPOINTMENT_RATING_MAX = 5;
 
+// An optional written note left with the stars. Room for a real sentence or two, not an essay.
+export const APPOINTMENT_RATING_COMMENT_MAX = 500;
+
 // A single chat message. Long enough for a real question, short enough that the box is not a document.
 export const MESSAGE_MAX_LENGTH = 2000;
 export const MESSAGE_ACTION_WINDOW_MS = 15 * 60 * 1000;

@@ -88,6 +88,8 @@ export type AppointmentDocument = {
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
   rating: number | null;
+  // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
+  ratingComment: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -127,6 +129,7 @@ export type AppointmentView = {
   // Whether someone is in the call right now, so the other side's row can show it as ongoing.
   callActive: boolean;
   rating: number | null;
+  ratingComment: string | null;
   decidedAt: string | null;
   createdAt: string;
 };

@@ -353,13 +353,15 @@ export type RateAppointmentInput = {
   // The owner rating it. Only the client on the booking may, and only once.
   actor: User;
   rating: number;
+  // The owner's optional written note, null or absent when they leave only stars.
+  comment?: string | null;
 };
 
-// The owner's star on a finished consultation. Owner-only and completed-only checked here; once-only checked here and again in the write's filter, so two racing submissions cannot both land. The vet's average is recomputed from every rated booking rather than nudged, so a later correction cannot leave it adrift. Null for a booking that does not exist.
+// The owner's star on a consultation that happened. Owner-only checked here; rateable (completed, or a virtual call someone joined) and once-only checked here and again in the write's filter, so two racing submissions cannot both land. The vet's average is recomputed from every rated booking rather than nudged, so a later correction cannot leave it adrift. Null for a booking that does not exist.
 export async function rateAppointment(
   input: RateAppointmentInput
 ): Promise<AppointmentDocument | null> {
-  const { id, actor, rating } = input;
+  const { id, actor, rating, comment = null } = input;
 
   const current = await findAppointmentById(id);
   if (!current) return null;
@@ -369,15 +371,18 @@ export async function rateAppointment(
     throw AppError.forbidden('That is not your appointment');
   }
 
-  if (current.status !== 'completed') {
-    throw AppError.conflict('You can only rate an appointment once it is completed');
+  // A finished booking, or a virtual call the owner sat in, is one they can speak to.
+  const rateable =
+    current.status === 'completed' || (current.kind === 'virtual' && current.joinedAt !== null);
+  if (!rateable) {
+    throw AppError.conflict('You can only rate a consultation once it has taken place');
   }
 
   if (current.rating !== null) {
     throw AppError.conflict('You have already rated this appointment');
   }
 
-  const rated = await recordAppointmentRating(id, rating);
+  const rated = await recordAppointmentRating(id, rating, comment);
   if (!rated) return null;
 
   const summary = await averageRatingForProfessional(rated.professional);

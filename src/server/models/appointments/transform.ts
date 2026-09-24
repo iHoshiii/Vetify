@@ -50,6 +50,7 @@ export function toAppointmentView(input: {
     joinedAt: appointment.joinedAt?.toISOString() ?? null,
     callActive,
     rating: appointment.rating ?? null,
+    ratingComment: appointment.ratingComment ?? null,
     decidedAt: appointment.decidedAt?.toISOString() ?? null,
     createdAt: appointment.createdAt.toISOString(),
   };

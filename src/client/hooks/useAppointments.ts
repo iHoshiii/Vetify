@@ -148,7 +148,7 @@ export function useCancelAppointment() {
 export function useRateAppointment() {
   const queryClient = useQueryClient();
 
-  return useMutation<Appointment, Error, { id: string; rating: number }>({
+  return useMutation<Appointment, Error, { id: string; rating: number; comment?: string | null }>({
     mutationFn: rateAppointment,
     onSuccess: () => invalidateBookings(queryClient),
   });

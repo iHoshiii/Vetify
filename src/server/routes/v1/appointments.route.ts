@@ -291,7 +291,12 @@ router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
 
   if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
 
-  const result = await rateAppointment({ id: req.params.id, actor, rating: body.rating });
+  const result = await rateAppointment({
+    id: req.params.id,
+    actor,
+    rating: body.rating,
+    comment: body.comment,
+  });
   if (!result) return fail(res, 404, MISSING);
 
   ok(res, { appointment: await viewOf(result, actor._id) });

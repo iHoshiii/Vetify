@@ -1,5 +1,5 @@
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import CallChat from './call-chat';
@@ -7,6 +7,9 @@ import CallControls from './call-controls';
 import CallStage from './call-stage';
 import { beatCallActive, endCallActive, markCallVisited } from './call-visited';
 import { useCall } from './use-call';
+
+// The rating popup only earns its place after a real session, so both sides must stay connected this long.
+const RATE_AFTER_MS = 15 * 60_000;
 
 // The full-screen consultation room. Everything hangs off the one appointment id in the path.
 export default function CallPage() {
@@ -16,6 +19,13 @@ export default function CallPage() {
   const call = useCall(appointmentId);
   const [chatOpen, setChatOpen] = useState(false);
   const [seen, setSeen] = useState(0);
+  // Stamp when both sides first connect, so a no-show or an early drop can be told apart from a real visit.
+  const connectedAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (call.state === 'connected' && connectedAt.current === null)
+      connectedAt.current = Date.now();
+  }, [call.state]);
 
   // Mark the visit for the 'Rejoin' label, and beat a heartbeat so any other tab reads 'Ongoing' and cannot open a second way into the same call.
   useEffect(() => {
@@ -37,9 +47,20 @@ export default function CallPage() {
     if (chatOpen) setSeen(fromThem);
   }, [chatOpen, fromThem]);
 
-  // Back to wherever this booking lives for the caller: the vet's queue or the owner's list.
-  const exit = () =>
-    navigate(user?.role === 'professional' ? '/professionals/dashboard' : '/book-appointment');
+  // One side ending the call drops both out: the peer gets peer-left, and this routes each away, sending the owner into a rating popup only after a full session.
+  useEffect(() => {
+    if (call.state !== 'ended' && call.state !== 'error') return;
+    if (user?.role === 'professional') {
+      navigate('/professionals/dashboard');
+      return;
+    }
+    const rateable =
+      call.state === 'ended' &&
+      Boolean(appointmentId) &&
+      connectedAt.current !== null &&
+      Date.now() - connectedAt.current >= RATE_AFTER_MS;
+    navigate('/book-appointment', rateable ? { state: { rate: appointmentId } } : undefined);
+  }, [call.state, user?.role, appointmentId, navigate]);
 
   const finished = call.state === 'ended' || call.state === 'error';
 
@@ -53,17 +74,7 @@ export default function CallPage() {
         remoteStream={call.remoteStream}
       />
 
-      {finished ? (
-        <div className="flex items-center justify-center">
-          <button
-            type="button"
-            onClick={exit}
-            className="rounded-full bg-teal-700 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-600"
-          >
-            Back to appointments
-          </button>
-        </div>
-      ) : (
+      {!finished && (
         <CallControls
           micOn={call.micOn}
           camOn={call.camOn}
@@ -72,10 +83,7 @@ export default function CallPage() {
           onToggleChat={() => setChatOpen((open) => !open)}
           onToggleMic={call.toggleMic}
           onToggleCam={call.toggleCam}
-          onHangUp={() => {
-            call.hangUp();
-            exit();
-          }}
+          onHangUp={call.hangUp}
         />
       )}
 

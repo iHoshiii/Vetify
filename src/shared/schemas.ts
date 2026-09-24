@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   APPOINTMENT_PAGE_SIZE,
   APPOINTMENT_PAGE_SIZE_MAX,
+  APPOINTMENT_RATING_COMMENT_MAX,
   APPOINTMENT_RATING_MAX,
   APPOINTMENT_RATING_MIN,
   APPOINTMENT_REASON_MAX,
@@ -1354,9 +1355,18 @@ export const appointmentRequestSchema = z.object({
 /** Turning one down, or calling one off. The reason is shown to the other side. */
 export const appointmentRefuseSchema = z.object({ reason: moderationReason });
 
-// Rating a finished booking. One to five whole stars, coerced so a form body or query string both parse.
+// Rating a finished booking. One to five whole stars, coerced so a form body or query string both parse. The note is optional, trimmed, and blanks fold to null.
 export const appointmentRateSchema = z.object({
   rating: z.coerce.number().int().min(APPOINTMENT_RATING_MIN).max(APPOINTMENT_RATING_MAX),
+  comment: z
+    .string()
+    .trim()
+    .max(
+      APPOINTMENT_RATING_COMMENT_MAX,
+      `Keep your note under ${APPOINTMENT_RATING_COMMENT_MAX} characters`
+    )
+    .optional()
+    .transform((value) => value || null),
 });
 
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.

@@ -58,7 +58,7 @@ export default function MyBookings({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="appointments-title"
-        className="flex h-[630px] max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+        className="flex h-[760px] max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
           <h2 id="appointments-title" className="text-base font-semibold text-slate-900">

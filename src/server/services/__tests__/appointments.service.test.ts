@@ -9,6 +9,7 @@ import {
   insertProfessional,
   insertUser,
   isDuplicateSlot,
+  markCallJoined,
   updateProfessionalProfile,
   updateProfessional,
   type User,
@@ -681,6 +682,29 @@ describe('rateAppointment', () => {
     expect(rated?.rating).toBe(4);
     const vetNow = await findProfessionalById(application._id);
     expect(vetNow?.ratingAverage).toBe(4);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('rates a joined virtual call before its time is up, note and all', async () => {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    const id = booked!.appointment._id;
+    await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
+    await markCallJoined(id);
+
+    const rated = await rateAppointment({
+      id,
+      actor: client,
+      rating: 5,
+      comment: 'Kind and quick',
+    });
+
+    // Still confirmed: the owner rated straight off the call, before the completion sweep ran.
+    expect(rated?.status).toBe('confirmed');
+    expect(rated?.rating).toBe(5);
+    expect(rated?.ratingComment).toBe('Kind and quick');
+    const vetNow = await findProfessionalById(application!._id);
     expect(vetNow?.ratingCount).toBe(1);
   });
 

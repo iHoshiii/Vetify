@@ -64,6 +64,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     reminderSentAt: null,
     joinedAt: null,
     rating: null,
+    ratingComment: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -340,15 +341,20 @@ export function holdsSlotFor(status: AppointmentStatus): boolean {
   return (APPOINTMENT_LIVE_STATUSES as readonly string[]).includes(status);
 }
 
-// Records the owner's stars on a finished, unrated booking. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first. Returns the updated booking, or null when it was already rated or not completed.
+// Records the owner's stars and optional note on a consultation that has taken place. Rateable means completed, or a virtual booking someone joined, since a call the owner attended has happened whether or not the clock has ticked past its end. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
 export async function rateAppointment(
   id: string | ObjectId,
-  rating: number
+  rating: number,
+  comment: string | null
 ): Promise<AppointmentDocument | null> {
   const now = new Date();
   return await appointmentsCollection().findOneAndUpdate(
-    { _id: toObjectId(id), status: 'completed', rating: null },
-    { $set: { rating, updatedAt: now } },
+    {
+      _id: toObjectId(id),
+      rating: null,
+      $or: [{ status: 'completed' }, { kind: 'virtual', joinedAt: { $ne: null } }],
+    },
+    { $set: { rating, ratingComment: comment, updatedAt: now } },
     { returnDocument: 'after' }
   );
 }
