@@ -85,6 +85,8 @@ export default function CallPage() {
           onClose={() => setChatOpen(false)}
           messages={call.messages}
           onSend={call.sendChat}
+          me={{ name: user?.name ?? 'You', avatarUrl: user?.avatarUrl }}
+          peer={call.peer}
         />
       )}
     </main>
