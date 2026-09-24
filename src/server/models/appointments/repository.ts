@@ -211,6 +211,34 @@ export async function updateAppointment(
   );
 }
 
+// The new span a reschedule writes: where it now starts, and the hours it now holds.
+export type RescheduleFields = { startsAt: Date; heldSlots: Date[] };
+
+// Moves a booking onto a new span and puts it back to a fresh request. Replacing heldSlots frees the old hours and claims the new ones in one write, so the unique index rejects a slot another live booking holds; the route turns that into the same 409 a first booking gets.
+export async function moveAppointment(
+  id: string | ObjectId,
+  fields: RescheduleFields
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    {
+      $set: {
+        startsAt: fields.startsAt,
+        heldSlots: fields.heldSlots,
+        status: 'requested',
+        holdsSlot: true,
+        decidedAt: null,
+        refusalReason: null,
+        cancelledBy: null,
+        reminderSentAt: null,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: 'after' }
+  );
+}
+
 // Confirmed bookings not yet reminded whose start falls within the widest lead window ahead.
 export async function findRemindableAppointments(input: {
   from: Date;
