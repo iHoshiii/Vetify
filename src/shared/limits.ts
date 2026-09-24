@@ -386,6 +386,9 @@ export const APPOINTMENT_REQUESTS_PER_IP_PER_HOUR = 8;
 export const APPOINTMENT_PAGE_SIZE = 20;
 export const APPOINTMENT_PAGE_SIZE_MAX = 50;
 
+// How close to the start an owner may still move a booking. Six hours gives the vet real notice while leaving same-day bookings made in the morning movable.
+export const APPOINTMENT_RESCHEDULE_MIN_HOURS = 6;
+
 // A single chat message. Long enough for a real question, short enough that the box is not a document.
 export const MESSAGE_MAX_LENGTH = 2000;
 export const MESSAGE_ACTION_WINDOW_MS = 15 * 60 * 1000;
