@@ -56,6 +56,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     petAge: parsed.petAge ?? null,
     reason: parsed.reason,
     phone: parsed.phone ?? null,
+    clientEmail: parsed.clientEmail ?? null,
     meetingUrl: null,
     refusalReason: null,
     cancelledBy: null,

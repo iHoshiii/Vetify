@@ -1329,30 +1329,12 @@ export const appointmentRequestSchema = z.object({
     .string()
     .trim()
     .regex(/^\+63\d{10}$/, 'Enter a valid +63 mobile number'),
-  // Optional: a copy of the request is emailed here only when given
+  // Optional: the confirm or decline email is sent here, and only when given
   clientEmail: z
     .string()
     .trim()
     .toLowerCase()
     .email('Please enter a valid email address')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-});
-
-/**
- * The vet saying yes.
- *
- * A virtual booking owes a link, and the service refuses one without it. The rule
- * is not in this schema because the kind is on the stored booking rather than in
- * the body: asking the client which rule applies to it is asking the wrong side.
- */
-export const appointmentConfirmSchema = z.object({
-  meetingUrl: z
-    .string()
-    .trim()
-    // A vet pasting meet.google.com/abc means https, so assume it rather than reject a bare host.
-    .transform((raw) => (raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw))
-    .pipe(z.string().url('That is not a link').max(500, 'That link is too long'))
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
@@ -1387,7 +1369,6 @@ export const appointmentListQuerySchema = z.object({
 export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>;
 export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
-export type AppointmentConfirm = z.output<typeof appointmentConfirmSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 

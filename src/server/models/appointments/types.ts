@@ -74,7 +74,9 @@ export type AppointmentDocument = {
   reason: string;
   /** A number for the vet to ring, when the owner gave one. */
   phone: string | null;
-  /** Where a virtual consultation happens. Set by the vet when they confirm. */
+  // The address the owner gave at booking, if any, where their confirm/decline email goes.
+  clientEmail: string | null;
+  /** Unused since the call moved in-app. Kept nullable so old rows need no migration. */
   meetingUrl: string | null;
   /** Why it was declined or called off, and by whom. Shown to the other side. */
   refusalReason: string | null;

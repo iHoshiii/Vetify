@@ -54,10 +54,10 @@ export type AppointmentPage = {
   pages: number;
 };
 
-/** Both emails a request sends, reported separately. */
+// The vet's email outcome, so the UI can flag a request the vet never heard about.
 export type RequestResult = {
   appointment: Appointment;
-  mail: { client: MailOutcome; professional: MailOutcome };
+  mail: { professional: MailOutcome };
 };
 
 /** One decision, and how the other side was told. Null when nothing was owed. */
@@ -120,13 +120,8 @@ export async function getIncomingCounts(signal?: AbortSignal) {
 /** What the vet can do to a booking. Cancelling is separate: either side may do that. */
 export type AppointmentDecision = 'confirm' | 'decline' | 'complete';
 
-/**
- * PATCH /api/v1/appointments/:id/{confirm,decline,complete} — the vet answering.
- *
- * One function for the three, because they differ only in the word and in what they
- * owe: a decline owes a reason, and confirming a virtual consultation owes a link the
- * server refuses to do without.
- */
+// PATCH /api/v1/appointments/:id/{confirm,decline,complete} — the vet answering.
+// meetingUrl is legacy and ignored by the server; the ask-for-a-link flow is dropped when the in-app session button lands.
 export async function decideAppointment(input: {
   id: string;
   decision: AppointmentDecision;

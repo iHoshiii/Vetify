@@ -35,6 +35,8 @@ export const appointmentAttrsSchema = z.object({
   petAge: z.string().trim().min(1).nullish(),
   reason: z.string().trim().min(1, 'Say what it is about'),
   phone: z.string().trim().min(1).nullish(),
+  // The booking email is stored so the confirm/decline mail has somewhere to go later.
+  clientEmail: z.string().trim().toLowerCase().email().nullish(),
 });
 
 export type AppointmentAttrs = z.input<typeof appointmentAttrsSchema>;

@@ -136,7 +136,7 @@ function lastMail() {
 }
 
 describe('requestAppointment', () => {
-  it('holds the slot and tells both sides', async () => {
+  it('holds the slot and tells the vet', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
 
@@ -150,14 +150,26 @@ describe('requestAppointment', () => {
       minutes: APPOINTMENT_SLOT_MINUTES,
     });
     expect(result?.mail.professional.delivered).toBe(true);
-    expect(result?.mail.client.delivered).toBe(true);
 
-    const both = recentMail().map((message) => message.to);
-    expect(both).toContain(vetUser.email);
-    expect(both).toContain(client.email);
+    const to = recentMail().map((message) => message.to);
+    expect(to).toContain(vetUser.email);
+    // Nothing to the owner at request time; their address waits for the decision.
+    expect(to).not.toContain(client.email);
   });
 
-  it('sends the owner no copy when no email was given', async () => {
+  it('persists the booking email but sends the owner nothing yet', async () => {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+
+    const result = await request({ client, professional: application!._id });
+
+    expect(result?.appointment.clientEmail).toBe(client.email);
+    const to = recentMail().map((message) => message.to);
+    expect(to).toContain(vetUser.email);
+    expect(to).not.toContain(client.email);
+  });
+
+  it('keeps no booking email when none was given', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
 
@@ -171,9 +183,7 @@ describe('requestAppointment', () => {
       phone: '+639325550101',
     });
 
-    // Skipped rather than failed: no address, so a null error stands for "not requested".
-    expect(result?.mail.client).toEqual({ delivered: false, deliveryError: null });
-    expect(recentMail().map((message) => message.to)).not.toContain(client.email);
+    expect(result?.appointment.clientEmail).toBeNull();
     expect(recentMail().map((message) => message.to)).toContain(vetUser.email);
   });
 
@@ -343,36 +353,49 @@ describe('decideAppointment', () => {
     expect(lastMail()?.subject).toContain('confirmed');
   });
 
-  it('carries the meeting link into the email for a virtual consultation', async () => {
+  it('confirms a virtual consultation without needing a link', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
     const booked = await request({ client, professional: application!._id, kind: 'virtual' });
 
     clearRecentMail();
-    await decideAppointment({
+    const result = await decideAppointment({
       id: booked!.appointment._id,
       decision: 'confirmed',
       professional: vetUser,
-      meetingUrl: 'https://meet.example.com/milo',
     });
 
-    expect(lastMail()?.text).toContain('https://meet.example.com/milo');
+    expect(result?.appointment).toMatchObject({ status: 'confirmed', kind: 'virtual' });
+    expect(result?.mail?.delivered).toBe(true);
+    // No meeting link: the owner is pointed at the in-app session, not a URL to click.
+    expect(lastMail()?.text).not.toContain('Join here');
+    expect(lastMail()?.text).toContain('start the session');
   });
 
-  it('will not confirm a virtual consultation without a link', async () => {
+  it('sends no confirmation email when the booking carried no address', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
-    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    // No clientEmail on the booking, so a confirmation has nowhere to go.
+    const booked = await requestAppointment({
+      client,
+      professionalId: application!._id,
+      kind: 'onsite',
+      startsAt: SLOT.at,
+      petSpecies: 'Dog',
+      reason: 'A rash on his back leg that is not settling down.',
+      phone: '+639325550101',
+    });
 
-    // A time with nothing to click is not a confirmed call. Enforced here rather than
-    // in the schema because the kind is on the stored booking, not in the body.
-    await expect(
-      decideAppointment({
-        id: booked!.appointment._id,
-        decision: 'confirmed',
-        professional: vetUser,
-      })
-    ).rejects.toMatchObject({ statusCode: 400 });
+    clearRecentMail();
+    const result = await decideAppointment({
+      id: booked!.appointment._id,
+      decision: 'confirmed',
+      professional: vetUser,
+    });
+
+    expect(result?.appointment.status).toBe('confirmed');
+    expect(result?.mail).toBeNull();
+    expect(recentMail()).toHaveLength(0);
   });
 
   it('frees the slot when it is turned down, and puts it back on the grid', async () => {

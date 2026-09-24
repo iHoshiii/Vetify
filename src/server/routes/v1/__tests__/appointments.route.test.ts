@@ -165,9 +165,9 @@ describe('POST /api/v1/appointments', () => {
     });
     // The other side of the booking, so the row can be drawn without a second read.
     expect(res.body.appointment.with.email).toBe(doctor.user.email);
-    // Both emails reported: the vet not hearing is the failure worth acting on.
+    // Only the vet is emailed at request time; the owner hears back on the decision.
     expect(res.body.mail.professional.delivered).toBe(true);
-    expect(res.body.mail.client.delivered).toBe(true);
+    expect(res.body.mail.client).toBeUndefined();
   });
 
   it('says which slot went, so the page can redraw rather than apologise', async () => {

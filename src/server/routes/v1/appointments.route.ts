@@ -1,9 +1,7 @@
 import {
-  appointmentConfirmSchema,
   appointmentListQuerySchema,
   appointmentRefuseSchema,
   appointmentRequestSchema,
-  type AppointmentConfirm,
   type AppointmentListQuery,
   type AppointmentRefuse,
   type AppointmentRequest,
@@ -195,13 +193,13 @@ router.get('/incoming/counts', async (req, res) => {
 
 /**
  * The vet's three answers differ only in their word and in what they owe, so they
- * share a handler. Which statuses each may be reached from, and the rule that a
- * virtual consultation needs a link, live in the service where the stored booking is.
+ * share a handler. Which statuses each may be reached from lives in the service,
+ * where the stored booking is.
  */
 function decision(kind: AppointmentDecision): RequestHandler {
   return async (req, res) => {
     const professional = actorOf(req);
-    const body = req.body as Partial<AppointmentConfirm & AppointmentRefuse>;
+    const body = req.body as Partial<AppointmentRefuse>;
 
     if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
 
@@ -209,7 +207,6 @@ function decision(kind: AppointmentDecision): RequestHandler {
       id: req.params.id,
       decision: kind,
       professional,
-      meetingUrl: body.meetingUrl ?? null,
       reason: body.reason ?? null,
     });
 
@@ -226,10 +223,10 @@ function decision(kind: AppointmentDecision): RequestHandler {
 /**
  * PATCH /api/v1/appointments/:id/confirm
  *
- * Yes. Keeps the slot held and emails the owner — with the meeting link, when the
- * booking is a virtual one, which the service refuses to confirm without.
+ * Yes. Keeps the slot held and emails the booking address, when one was given. No link:
+ * a virtual booking is started in-app from the appointments page when its time comes.
  */
-router.patch('/:id/confirm', validate(appointmentConfirmSchema), decision('confirmed'));
+router.patch('/:id/confirm', decision('confirmed'));
 
 /**
  * PATCH /api/v1/appointments/:id/decline
