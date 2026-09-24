@@ -5,6 +5,7 @@ import {
   getIncomingCounts,
   listIncomingAppointments,
   listMyAppointments,
+  rateAppointment,
   requestAppointment,
   type Appointment,
   type AppointmentDecision,
@@ -139,6 +140,16 @@ export function useCancelAppointment() {
 
   return useMutation<DecisionResult, Error, { id: string; reason: string }>({
     mutationFn: cancelAppointment,
+    onSuccess: () => invalidateBookings(queryClient),
+  });
+}
+
+/** The owner's star on a finished booking. Once-only, so the row hides the control after it lands. */
+export function useRateAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation<Appointment, Error, { id: string; rating: number }>({
+    mutationFn: rateAppointment,
     onSuccess: () => invalidateBookings(queryClient),
   });
 }

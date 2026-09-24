@@ -1,9 +1,13 @@
 import type { Appointment } from '@/services/appointments.service';
+import { APPOINTMENT_RESCHEDULE_MIN_HOURS } from '@shared/limits';
 import type { AppointmentStatus } from '@shared/schemas';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import StartSessionButton from '@/pages/call/start-session-button';
+
+import RateBooking from './rate-booking';
 
 // Status label and a small dot color, no pill fill.
 const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
@@ -16,6 +20,9 @@ const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
 
 // The statuses still ahead of the owner, and so the only ones worth cancelling.
 const CANCELLABLE: AppointmentStatus[] = ['requested', 'confirmed'];
+
+// Cancel closes the same six hours before the start that a reschedule does, so a booking cannot be dropped once the vet is about to be waiting on it.
+const CANCEL_LOCK_MS = APPOINTMENT_RESCHEDULE_MIN_HOURS * 60 * 60_000;
 
 function when(at: string, locale: string, timeZone: string): string {
   return new Date(at).toLocaleString(locale, {
@@ -38,6 +45,17 @@ export default function BookingRow({
 }) {
   const { locale, timeZone } = useLocalePreferences();
   const status = STATUS[booking.status];
+  const [now, setNow] = useState(() => Date.now());
+
+  // A slow tick so the cancel window closes on screen without a reload.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cancellable =
+    CANCELLABLE.includes(booking.status) &&
+    now < new Date(booking.startsAt).getTime() - CANCEL_LOCK_MS;
 
   return (
     <li className="rounded-md border border-slate-200 bg-white p-4">
@@ -92,14 +110,22 @@ export default function BookingRow({
           {CANCELLABLE.includes(booking.status) && (
             <button
               type="button"
+              disabled={!cancellable}
               onClick={() => onCancel(booking.id)}
-              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700"
+              title={
+                cancellable
+                  ? undefined
+                  : `Cancel closes ${APPOINTMENT_RESCHEDULE_MIN_HOURS} hours before the start`
+              }
+              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200"
             >
               Cancel this booking
             </button>
           )}
         </div>
       )}
+
+      {booking.status === 'completed' && <RateBooking booking={booking} />}
     </li>
   );
 }
