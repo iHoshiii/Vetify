@@ -73,6 +73,39 @@ describe('canJoinCall', () => {
     const over = await booking({ minutesAhead: -40, minutes: 30 });
     expect(await canJoinCall(over.client, over.id)).toBe(false);
   });
+
+  it('keeps the window open across a back-to-back booking with the same two people', async () => {
+    const client = new ObjectId();
+    const professional = new ObjectId();
+    const professionalUser = new ObjectId();
+    // First slot ran out ten minutes ago on its own, so alone it would be closed.
+    const firstStart = new Date(Date.now() - 40 * 60_000);
+    const chained = { professional, professionalUser, client, kind: 'virtual' as const };
+
+    const first = await insertAppointment({
+      ...chained,
+      startsAt: firstStart,
+      minutes: 30,
+      heldSlots: [firstStart],
+      petSpecies: 'dog',
+      reason: 'Check',
+    });
+    await updateAppointment(first._id, { status: 'confirmed' });
+
+    // Second slot starts exactly where the first ends and runs on, so the session ends in the future.
+    const secondStart = new Date(firstStart.getTime() + 30 * 60_000);
+    const second = await insertAppointment({
+      ...chained,
+      startsAt: secondStart,
+      minutes: 30,
+      heldSlots: [secondStart],
+      petSpecies: 'dog',
+      reason: 'Check',
+    });
+    await updateAppointment(second._id, { status: 'confirmed' });
+
+    expect(await canJoinCall(client.toString(), first._id.toString())).toBe(true);
+  });
 });
 
 // A socket stub carrying only what relayChat touches: its rooms and a capturing `to().emit()`.

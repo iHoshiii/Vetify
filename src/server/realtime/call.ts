@@ -1,46 +1,57 @@
-import type { Socket } from 'socket.io';
+import type { Namespace, Socket } from 'socket.io';
 
 import { MESSAGE_MAX_LENGTH } from '@shared/limits';
 
-import { findAppointmentById, isValidObjectId, type AppointmentDocument } from '../models';
+import { findAppointmentById, markCallJoined, type AppointmentDocument } from '../models';
+import { callPeer, effectiveCallEnd, loadJoinableCall, type CallPeer } from './call-window';
+import { emitToUser } from './hub';
 import { iceServers, type IceServer } from './ice';
 
-// The join window opens a quarter-hour before the slot and closes when the slot ends.
-const JOIN_LEAD_MS = 15 * 60_000;
+export { canJoinCall, loadJoinableCall } from './call-window';
 
-// What the server hands back on a join attempt: the relays and this caller's role, or why it refused.
+// What the server hands back on a join: the relays, this caller's role, the peer, and when the session ends.
 type CallJoinAck =
-  | { ok: true; iceServers: IceServer[]; peerOnline: boolean; polite: boolean }
+  | {
+      ok: true;
+      iceServers: IceServer[];
+      peerOnline: boolean;
+      polite: boolean;
+      endsAt: string;
+      peer: CallPeer;
+    }
   | { ok: false; error: string };
+
+// Auto-stop timers by appointment id, so a live call closes itself at the session end even if nobody hangs up.
+const stopTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function callRoom(appointmentId: string): string {
   return `call:${appointmentId}`;
 }
 
-// The booking a caller may join right now, or null. Guards kind, status, party, and the time window.
-export async function loadJoinableCall(
-  userId: string,
-  appointmentId: string
-): Promise<AppointmentDocument | null> {
-  if (!isValidObjectId(appointmentId)) return null;
-
-  const appointment = await findAppointmentById(appointmentId);
-  if (!appointment) return null;
-  if (appointment.kind !== 'virtual' || appointment.status !== 'confirmed') return null;
-
-  const isParty =
-    userId === appointment.client.toString() || userId === appointment.professionalUser.toString();
-  if (!isParty) return null;
-
-  const start = appointment.startsAt.getTime();
-  const now = Date.now();
-  if (now < start - JOIN_LEAD_MS || now > start + appointment.minutes * 60_000) return null;
-  return appointment;
+// Tells both parties a call's presence changed, so a list not in the call refetches its ongoing state.
+function announceChanged(appointment: AppointmentDocument): void {
+  const payload = { id: appointment._id.toString() };
+  emitToUser(appointment.client.toString(), 'appointment:changed', payload);
+  emitToUser(appointment.professionalUser.toString(), 'appointment:changed', payload);
 }
 
-// The same gate the button enforces, re-checked here so a hand-crafted socket cannot skip it.
-export async function canJoinCall(userId: string, appointmentId: string): Promise<boolean> {
-  return (await loadJoinableCall(userId, appointmentId)) !== null;
+// Closes the room once, at the session end. Unref'd so a pending timer never holds the process open.
+function scheduleAutoStop(nsp: Namespace, appointmentId: string, endsAt: Date): void {
+  if (stopTimers.has(appointmentId)) return;
+  const room = callRoom(appointmentId);
+  const fire = () => {
+    stopTimers.delete(appointmentId);
+    nsp.to(room).emit('call:ended', { reason: 'ended' });
+    void nsp.in(room).socketsLeave(room);
+  };
+  const ms = endsAt.getTime() - Date.now();
+  if (ms <= 0) {
+    fire();
+    return;
+  }
+  const timer = setTimeout(fire, ms);
+  timer.unref();
+  stopTimers.set(appointmentId, timer);
 }
 
 async function join(
@@ -67,11 +78,24 @@ async function join(
 
   // The owner is the polite peer and the vet the impolite one, a fixed split perfect negotiation needs.
   const polite = userId === appointment.client.toString();
-  // Read before joining, so the ack tells this caller whether the other party is already waiting.
   const peerOnline = size > 0;
   await socket.join(room);
   socket.to(room).emit('call:peer-joined');
-  ack?.({ ok: true, iceServers: iceServers(), peerOnline, polite });
+
+  const endsAt = await effectiveCallEnd(appointment);
+  const peer = await callPeer(appointment, userId);
+  await markCallJoined(appointment._id);
+  announceChanged(appointment);
+  scheduleAutoStop(socket.nsp, appointmentId, endsAt);
+
+  ack?.({
+    ok: true,
+    iceServers: iceServers(),
+    peerOnline,
+    polite,
+    endsAt: endsAt.toISOString(),
+    peer,
+  });
 }
 
 // Blind relay of SDP and ICE to the other member, but only from a socket that joined this room.
@@ -84,13 +108,16 @@ function relaySignal(socket: Socket, payload: unknown): void {
   socket.to(room).emit('call:signal', { signal: data.signal });
 }
 
-function leave(socket: Socket, payload: unknown): void {
+async function leave(socket: Socket, payload: unknown): Promise<void> {
   const appointmentId = (payload as { appointmentId?: unknown })?.appointmentId;
   if (typeof appointmentId !== 'string') return;
 
   const room = callRoom(appointmentId);
   socket.to(room).emit('call:peer-left');
   void socket.leave(room);
+
+  const appointment = await findAppointmentById(appointmentId);
+  if (appointment) announceChanged(appointment);
 }
 
 // Relays one chat line to the other member, so a muted participant can still talk. Ephemeral, never stored.
@@ -115,12 +142,16 @@ export function registerCall(socket: Socket): void {
   });
   socket.on('call:signal', (payload: unknown) => relaySignal(socket, payload));
   socket.on('call:chat', (payload: unknown) => relayChat(socket, payload));
-  socket.on('call:leave', (payload: unknown) => leave(socket, payload));
+  socket.on('call:leave', (payload: unknown) => void leave(socket, payload));
 
-  // A dropped tab still in a call: tell the peer before Socket.IO clears the room.
+  // A dropped tab still in a call: tell the peer, and refresh both lists, before Socket.IO clears the room.
   socket.on('disconnecting', () => {
     for (const room of socket.rooms) {
-      if (room.startsWith('call:')) socket.to(room).emit('call:peer-left');
+      if (!room.startsWith('call:')) continue;
+      socket.to(room).emit('call:peer-left');
+      void findAppointmentById(room.slice('call:'.length)).then((a) => {
+        if (a) announceChanged(a);
+      });
     }
   });
 }

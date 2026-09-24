@@ -62,6 +62,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     cancelledBy: null,
     decidedAt: null,
     reminderSentAt: null,
+    joinedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -192,7 +193,13 @@ function emptyTally(): AppointmentTally {
 export type AppointmentPatch = Partial<
   Pick<
     AppointmentDocument,
-    'status' | 'holdsSlot' | 'meetingUrl' | 'refusalReason' | 'cancelledBy' | 'decidedAt'
+    | 'status'
+    | 'holdsSlot'
+    | 'meetingUrl'
+    | 'refusalReason'
+    | 'cancelledBy'
+    | 'decidedAt'
+    | 'joinedAt'
   >
 >;
 
@@ -281,6 +288,30 @@ export async function completeConfirmed(
     { $set: { status: 'completed', decidedAt: now, updatedAt: now } },
     { returnDocument: 'after' }
   );
+}
+
+// Stamps the first join on a call, once. The null-or-missing guard means later joins leave the original time alone.
+export async function markCallJoined(id: string | ObjectId): Promise<void> {
+  const now = new Date();
+  await appointmentsCollection().updateOne(
+    { _id: toObjectId(id), joinedAt: null },
+    { $set: { joinedAt: now, updatedAt: now } }
+  );
+}
+
+// The confirmed virtual booking the same two people hold starting exactly at a given instant, or null. Walks a back-to-back chain.
+export async function findConfirmedCallStartingAt(input: {
+  professional: ObjectId;
+  client: ObjectId;
+  startsAt: Date;
+}): Promise<AppointmentDocument | null> {
+  return await appointmentsCollection().findOne({
+    professional: input.professional,
+    client: input.client,
+    kind: 'virtual',
+    status: 'confirmed',
+    startsAt: input.startsAt,
+  });
 }
 
 // One aggregate for all ten figures the console draws, none of which may come from the page of rows on screen

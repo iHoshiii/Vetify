@@ -29,6 +29,7 @@ import {
   requestAppointment,
   type AppointmentDecision,
 } from '../../services/appointments.service';
+import { isCallLive } from '../../realtime/hub';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 
@@ -85,6 +86,7 @@ async function viewOf(appointment: AppointmentDocument, viewer: ObjectId) {
     appointment,
     viewer,
     party: parties.get(otherPartyId(appointment, viewer)) ?? null,
+    callActive: isCallLive(appointment._id.toString()),
   });
 }
 
@@ -165,6 +167,7 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
         total,
         page: query.page,
         limit: query.limit,
+        callActive: (appointment) => isCallLive(appointment._id.toString()),
       })
     );
   };
