@@ -14,10 +14,7 @@ import Step from './_components/step';
 import TopVets from './_components/top-vets';
 import { useBooking } from './_components/use-booking';
 
-/**
- * Booking a vet as four tabs rather than one long page: each answer decides the next
- * question, and going back to change one should not mean scrolling past the others.
- */
+// Booking a vet as four steps rather than one long page: each answer decides the next.
 export default function BookAppointmentPage() {
   useDocumentTitle('Book an appointment', 'Find a verified vet and ask for a time that suits.');
 
@@ -26,7 +23,7 @@ export default function BookAppointmentPage() {
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="min-h-screen bg-[#f6fbfb] px-5 py-10 text-slate-950 sm:px-8">
       <div className="mx-auto max-w-4xl">
         <BookingHeader
           appointmentsOpen={appointmentsOpen}

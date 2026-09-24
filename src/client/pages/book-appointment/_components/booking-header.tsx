@@ -2,7 +2,7 @@ import { CalendarDays } from 'lucide-react';
 
 import BookingIntro from './booking-intro';
 
-/** The introduction and appointment-list control share the booking page header. */
+// The intro and the appointments button share one compact header row.
 export default function BookingHeader({
   appointmentsOpen,
   onAppointmentsToggle,
@@ -11,7 +11,7 @@ export default function BookingHeader({
   onAppointmentsToggle: () => void;
 }) {
   return (
-    <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+    <header className="mb-8 flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <BookingIntro />
       </div>
@@ -20,10 +20,11 @@ export default function BookingHeader({
         aria-expanded={appointmentsOpen}
         aria-controls="my-appointments"
         onClick={onAppointmentsToggle}
-        className="inline-flex self-start items-center gap-2 rounded-lg border border-teal-800 bg-white px-3 py-2 text-sm font-bold text-teal-900 transition hover:bg-teal-50"
+        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
       >
-        <CalendarDays className="h-4 w-4" aria-hidden />
-        Your appointments
+        <CalendarDays className="h-4 w-4 text-teal-700" aria-hidden />
+        <span className="hidden sm:inline">Your appointments</span>
+        <span className="sm:hidden">Bookings</span>
       </button>
     </header>
   );

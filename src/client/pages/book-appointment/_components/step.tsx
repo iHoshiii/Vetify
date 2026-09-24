@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-/** A numbered heading, so the flow reads as a sequence rather than one long form. */
+// A numbered heading, so the flow reads as a sequence rather than one long form.
 export default function Step({
   number,
   title,
@@ -11,9 +11,9 @@ export default function Step({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-10">
-      <h2 className="flex items-center gap-3 text-xl font-black tracking-tight text-slate-950">
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-teal-800 text-sm text-white">
+    <section className="mt-8">
+      <h2 className="flex items-center gap-2.5 text-lg font-black tracking-tight text-slate-950">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-teal-800 text-sm text-white">
           {number}
         </span>
         {title}

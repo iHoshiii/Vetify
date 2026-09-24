@@ -88,7 +88,7 @@ export default function BookingRow({
         <button
           type="button"
           onClick={() => onCancel(booking.id)}
-          className="mt-3 text-sm font-bold text-rose-700 hover:underline"
+          className="mt-3 inline-flex h-9 items-center rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
         >
           Cancel this booking
         </button>
