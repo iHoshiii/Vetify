@@ -22,7 +22,7 @@ import {
   declinedEmail,
   requestedToProfessionalEmail,
 } from './appointment-mail';
-import { isOfferedSpan, slotStarts } from './appointment-slots';
+import { isOfferedSpan, scheduleForKind, slotStarts } from './appointment-slots';
 import { deliverMail, type MailDelivery } from './mail.service';
 import { createNotification } from './notifications.service';
 
@@ -178,7 +178,7 @@ export async function requestAppointment(
   // the first. Checked against the same function that draws it, so the two cannot
   // disagree about what counts as a slot.
   const offered = isOfferedSpan({
-    schedule: application.weeklySchedule ?? [],
+    schedule: scheduleForKind(application, kind),
     startsAt,
     minutes: APPOINTMENT_SLOT_MINUTES,
     slots,

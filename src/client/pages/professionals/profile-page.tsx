@@ -13,17 +13,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import VetHours from './_components/vet-hours';
 import { useConsoleApplication } from './professional-layout';
-
-const DAY_ORDER = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-] as const;
 
 const STATUS_CHIP: Record<ProfessionalAvailabilityStatus, { label: string; className: string }> = {
   available: {
@@ -33,15 +24,6 @@ const STATUS_CHIP: Record<ProfessionalAvailabilityStatus, { label: string; class
   busy: { label: 'Currently busy', className: 'bg-amber-100 text-amber-800 border-amber-200' },
   unavailable: { label: 'Off duty', className: 'bg-rose-100 text-rose-800 border-rose-200' },
 };
-
-/** 24h to something a pet owner reads without thinking about it. */
-function prettyTime(value: string): string {
-  const [h, m] = value.split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return value;
-  const suffix = h < 12 ? 'AM' : 'PM';
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
-}
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
@@ -62,9 +44,6 @@ function CardTitle({ icon, children }: { icon: React.ReactNode; children: React.
 
 function PublicView({ application }: { application: OwnProfessional }) {
   const status = STATUS_CHIP[application.availabilityStatus];
-  const openDays = DAY_ORDER.map((day) => application.weeklySchedule.find((s) => s.day === day))
-    .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot))
-    .filter((slot) => slot.enabled);
 
   const workHistory = [...application.workHistory].sort((a, b) => b.startYear - a.startYear);
 
@@ -138,26 +117,7 @@ function PublicView({ application }: { application: OwnProfessional }) {
         <CardTitle icon={<CalendarDays className="h-4 w-4 text-teal-800" />}>
           Consultation Hours
         </CardTitle>
-        {openDays.length === 0 ? (
-          <p className="text-xs text-slate-500">
-            No weekly hours published yet — set them in Professional Settings and pet owners will
-            see them here.
-          </p>
-        ) : (
-          <dl className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-            {openDays.map((slot) => (
-              <div
-                key={slot.day}
-                className="flex items-center justify-between px-3 py-2 text-xs even:bg-slate-50/60"
-              >
-                <dt className="font-bold text-slate-800">{slot.day}</dt>
-                <dd className="font-semibold text-slate-600">
-                  {prettyTime(slot.startTime)} – {prettyTime(slot.endTime)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        <VetHours vet={application} />
       </Card>
 
       {/* Work history */}
@@ -176,7 +136,7 @@ function PublicView({ application }: { application: OwnProfessional }) {
                 <p className="text-xs font-semibold text-slate-600">
                   {job.workplace}
                   <span className="text-slate-400"> · </span>
-                  {job.startYear}–{job.isCurrent ? 'Present' : job.endYear ?? 'Present'}
+                  {job.startYear} to {job.isCurrent ? 'Present' : job.endYear ?? 'Present'}
                 </p>
                 {job.description && (
                   <p className="mt-1 text-xs leading-relaxed text-slate-600">{job.description}</p>

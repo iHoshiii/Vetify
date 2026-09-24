@@ -54,7 +54,7 @@ import {
 } from '../../services/professional-inquiries.service';
 import { dropStaleRefusal, inquiryBlock } from '../../services/professional-retry.service';
 import { created, fail, failReason, ok } from '../../utils/response';
-import { slotRangeBounds, slotsForRange } from '../../services/appointment-slots';
+import { slotRangeBounds, slotsForRange, scheduleForKind } from '../../services/appointment-slots';
 import { actorOf, signedIn } from './caller';
 
 const router = Router();
@@ -178,6 +178,8 @@ router.patch(
     const patch: ProfessionalProfilePatch = {};
     if (body.availabilityStatus !== undefined) patch.availabilityStatus = body.availabilityStatus;
     if (body.weeklySchedule !== undefined) patch.weeklySchedule = body.weeklySchedule;
+    if (body.onsiteSchedule !== undefined) patch.onsiteSchedule = body.onsiteSchedule;
+    if (body.virtualSchedule !== undefined) patch.virtualSchedule = body.virtualSchedule;
     if (body.avatarUrl !== undefined) patch.avatarUrl = body.avatarUrl;
     if (body.workHistory !== undefined) patch.workHistory = body.workHistory;
     if (body.bookingNotificationMinutes !== undefined) {
@@ -559,7 +561,7 @@ router.get(
     ok(res, {
       minutes: APPOINTMENT_SLOT_MINUTES,
       days: slotsForRange({
-        schedule: listing.weeklySchedule ?? [],
+        schedule: scheduleForKind(listing, query.kind),
         from: query.from,
         to,
         minutes: APPOINTMENT_SLOT_MINUTES,

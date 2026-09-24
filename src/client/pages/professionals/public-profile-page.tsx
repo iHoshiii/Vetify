@@ -4,16 +4,7 @@ import type { PublicProfessional } from '@/services/professionals.service';
 import { BadgeCheck, Briefcase, Calendar, MapPin, Phone } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
-/** In the order a week runs, rather than the order the vet happened to save them in. */
-const WEEK = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-] as const;
+import VetHours from './_components/vet-hours';
 
 const AVAILABILITY: Record<string, { label: string; tone: string }> = {
   available: { label: 'Taking bookings', tone: 'bg-emerald-100 text-emerald-900' },
@@ -23,41 +14,6 @@ const AVAILABILITY: Record<string, { label: string; tone: string }> = {
 
 const PANEL = 'rounded-xl border border-slate-900/10 bg-white p-6 shadow-sm';
 const HEADING = 'text-sm font-bold uppercase tracking-wider text-slate-500';
-
-/**
- * The hours the vet keeps, as a week.
- *
- * Every day is listed, closed ones included. "Closed on Sunday" is the answer somebody
- * is looking for as often as the opening time is, and a list that skipped it would
- * leave them guessing whether it was closed or simply unsaid.
- */
-function Hours({ vet }: { vet: PublicProfessional }) {
-  if (vet.weeklySchedule.length === 0) {
-    return (
-      <p className="text-sm text-slate-600">
-        They have not published their hours. Ask for a time and they will say if it does not suit.
-      </p>
-    );
-  }
-
-  return (
-    <dl className="grid gap-1.5 text-sm">
-      {WEEK.map((day) => {
-        const entry = vet.weeklySchedule.find((item) => item.day === day);
-        const open = entry?.enabled ? `${entry.startTime} – ${entry.endTime}` : 'Closed';
-
-        return (
-          <div key={day} className="flex justify-between gap-4">
-            <dt className="text-slate-600">{day}</dt>
-            <dd className={entry?.enabled ? 'font-semibold text-slate-900' : 'text-slate-400'}>
-              {open}
-            </dd>
-          </div>
-        );
-      })}
-    </dl>
-  );
-}
 
 /**
  * Where somebody has worked, newest first.
@@ -83,7 +39,7 @@ function History({ vet }: { vet: PublicProfessional }) {
           <p className="font-bold text-slate-950">{job.title}</p>
           <p className="text-sm text-slate-600">{job.workplace}</p>
           <p className="mt-0.5 text-xs font-semibold text-slate-500">
-            {job.startYear} – {job.isCurrent ? 'now' : job.endYear ?? 'unknown'}
+            {job.startYear} to {job.isCurrent ? 'now' : job.endYear ?? 'unknown'}
           </p>
           {job.description && (
             <p className="mt-1 text-sm leading-6 text-slate-600">{job.description}</p>
@@ -249,7 +205,7 @@ export default function PublicProfilePage() {
                 Hours
               </h2>
               <div className="mt-3">
-                <Hours vet={vet} />
+                <VetHours vet={vet} />
               </div>
             </section>
           </div>

@@ -1,4 +1,5 @@
 import { useProfessionalSlots } from '@/hooks/useProfessionals';
+import type { AppointmentKind } from '@shared/schemas';
 import { useMemo, useState } from 'react';
 
 import DaySlots from './day-slots';
@@ -14,9 +15,11 @@ import { manilaToday, monthEnd, monthKeyOf } from './slot-time';
  */
 export default function SlotPicker({
   professionalId,
+  kind,
   onChoose,
 }: {
   professionalId: string;
+  kind: AppointmentKind;
   onChoose: (runs: Run[]) => void;
 }) {
   const today = useMemo(() => manilaToday(), []);
@@ -28,6 +31,7 @@ export default function SlotPicker({
     id: professionalId,
     from: `${month}-01`,
     to: monthEnd(month),
+    kind,
   });
 
   const minutes = grid.data?.minutes ?? 60;

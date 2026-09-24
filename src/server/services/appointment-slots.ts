@@ -1,5 +1,5 @@
 import { APPOINTMENT_HORIZON_DAYS, MANILA_UTC_OFFSET_HOURS } from '@shared/limits';
-import type { WeeklyScheduleItem } from '@shared/schemas';
+import type { AppointmentKind, WeeklyScheduleItem } from '@shared/schemas';
 
 /**
  * Turning a vet's weekly schedule into the slots somebody can actually click.
@@ -88,6 +88,24 @@ function daysBetween(from: string, to: string): string[] {
   }
 
   return days;
+}
+
+// The schedule that governs one kind of visit. Falls back to the shared weekly hours a vet kept before hours were split per kind, so an unset kind is not an empty week.
+export function scheduleForKind(
+  owner: {
+    weeklySchedule?: WeeklyScheduleItem[];
+    onsiteSchedule?: WeeklyScheduleItem[];
+    virtualSchedule?: WeeklyScheduleItem[];
+  },
+  kind?: AppointmentKind
+): WeeklyScheduleItem[] {
+  const specific =
+    kind === 'onsite'
+      ? owner.onsiteSchedule
+      : kind === 'virtual'
+      ? owner.virtualSchedule
+      : undefined;
+  return specific ?? owner.weeklySchedule ?? [];
 }
 
 /** The window a vet works on one weekday, or null when they do not work it. */

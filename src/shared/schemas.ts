@@ -737,6 +737,9 @@ export type WeeklyScheduleItem = z.output<typeof weeklyScheduleItemSchema>;
 export const professionalProfileUpdateSchema = z.object({
   availabilityStatus: z.enum(PROFESSIONAL_AVAILABILITY_STATUSES).optional(),
   weeklySchedule: z.array(weeklyScheduleItemSchema).optional(),
+  // Per-kind hours, so a vet can keep clinic visits and online consultations on different days
+  onsiteSchedule: z.array(weeklyScheduleItemSchema).optional(),
+  virtualSchedule: z.array(weeklyScheduleItemSchema).optional(),
   hourlyRate: z.coerce
     .number()
     .min(PROFESSIONAL_MIN_RATE, `Minimum rate is ₱${PROFESSIONAL_MIN_RATE}`)
@@ -1276,7 +1279,12 @@ const isoDayField = z
  * works no days".
  */
 export const appointmentSlotsQuerySchema = z
-  .object({ from: isoDayField, to: isoDayField.optional() })
+  .object({
+    from: isoDayField,
+    to: isoDayField.optional(),
+    // Which schedule to read the grid from. Absent falls back to the shared weekly hours.
+    kind: z.enum(APPOINTMENT_KINDS).optional(),
+  })
   .refine((query) => !query.to || query.to >= query.from, {
     path: ['to'],
     message: 'That range ends before it starts',

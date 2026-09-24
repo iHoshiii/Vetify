@@ -545,6 +545,8 @@ export type ProfessionalProfilePatch = Partial<
     ProfessionalDocument,
     | 'availabilityStatus'
     | 'weeklySchedule'
+    | 'onsiteSchedule'
+    | 'virtualSchedule'
     | 'hourlyRate'
     | 'avatarUrl'
     | 'workHistory'

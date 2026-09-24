@@ -123,6 +123,8 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
     ratingCount: 12,
     availabilityStatus: 'available',
     weeklySchedule: [],
+    onsiteSchedule: [],
+    virtualSchedule: [],
     workHistory: [],
     verifiedAt: '2026-08-01T00:00:00.000Z',
     ...overrides,
