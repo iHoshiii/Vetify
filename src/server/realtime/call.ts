@@ -1,5 +1,7 @@
 import type { Socket } from 'socket.io';
 
+import { MESSAGE_MAX_LENGTH } from '@shared/limits';
+
 import { findAppointmentById, isValidObjectId, type AppointmentDocument } from '../models';
 import { iceServers, type IceServer } from './ice';
 
@@ -91,6 +93,19 @@ function leave(socket: Socket, payload: unknown): void {
   void socket.leave(room);
 }
 
+// Relays one chat line to the other member, so a muted participant can still talk. Ephemeral, never stored.
+export function relayChat(socket: Socket, payload: unknown): void {
+  const data = payload as { appointmentId?: unknown; text?: unknown };
+  if (typeof data?.appointmentId !== 'string' || typeof data?.text !== 'string') return;
+
+  const text = data.text.trim().slice(0, MESSAGE_MAX_LENGTH);
+  if (!text) return;
+
+  const room = callRoom(data.appointmentId);
+  if (!socket.rooms.has(room)) return;
+  socket.to(room).emit('call:chat', { text });
+}
+
 // Wires the call signaling onto one connected socket. Called once per connection from socket.ts.
 export function registerCall(socket: Socket): void {
   const userId = socket.data.userId as string;
@@ -99,6 +114,7 @@ export function registerCall(socket: Socket): void {
     void join(socket, userId, payload, ack).catch(() => ack?.({ ok: false, error: 'join failed' }));
   });
   socket.on('call:signal', (payload: unknown) => relaySignal(socket, payload));
+  socket.on('call:chat', (payload: unknown) => relayChat(socket, payload));
   socket.on('call:leave', (payload: unknown) => leave(socket, payload));
 
   // A dropped tab still in a call: tell the peer before Socket.IO clears the room.

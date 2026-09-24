@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import type { Socket } from 'socket.io';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -7,7 +8,7 @@ import {
   type AppointmentKind,
   type AppointmentStatus,
 } from '../../models';
-import { canJoinCall } from '../call';
+import { canJoinCall, relayChat } from '../call';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 
 beforeAll(startTestDb, 120_000);
@@ -71,5 +72,45 @@ describe('canJoinCall', () => {
 
     const over = await booking({ minutesAhead: -40, minutes: 30 });
     expect(await canJoinCall(over.client, over.id)).toBe(false);
+  });
+});
+
+// A socket stub carrying only what relayChat touches: its rooms and a capturing `to().emit()`.
+function fakeSocket(rooms: string[]) {
+  const sent: { event: string; data: unknown }[] = [];
+  const socket = {
+    rooms: new Set(rooms),
+    to: () => ({ emit: (event: string, data: unknown) => sent.push({ event, data }) }),
+  } as unknown as Socket;
+  return { socket, sent };
+}
+
+describe('relayChat', () => {
+  const room = 'call:abc';
+
+  it('relays a trimmed line to the room a member sits in', () => {
+    const { socket, sent } = fakeSocket([room]);
+    relayChat(socket, { appointmentId: 'abc', text: '  hello  ' });
+    expect(sent).toEqual([{ event: 'call:chat', data: { text: 'hello' } }]);
+  });
+
+  it('drops a line from a socket not in the room', () => {
+    const { socket, sent } = fakeSocket([]);
+    relayChat(socket, { appointmentId: 'abc', text: 'hello' });
+    expect(sent).toHaveLength(0);
+  });
+
+  it('ignores an empty or non-string message', () => {
+    const { socket, sent } = fakeSocket([room]);
+    relayChat(socket, { appointmentId: 'abc', text: '   ' });
+    relayChat(socket, { appointmentId: 'abc', text: 42 });
+    relayChat(socket, { appointmentId: 'abc' });
+    expect(sent).toHaveLength(0);
+  });
+
+  it('caps a very long line at the shared message limit', () => {
+    const { socket, sent } = fakeSocket([room]);
+    relayChat(socket, { appointmentId: 'abc', text: 'x'.repeat(5000) });
+    expect((sent[0].data as { text: string }).text).toHaveLength(2000);
   });
 });

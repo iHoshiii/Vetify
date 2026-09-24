@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import CallChat from './call-chat';
 import CallControls from './call-controls';
 import CallStage from './call-stage';
 import { useCall } from './use-call';
@@ -49,6 +50,8 @@ export default function CallPage() {
           }}
         />
       )}
+
+      {!finished && <CallChat messages={call.messages} onSend={call.sendChat} />}
     </main>
   );
 }

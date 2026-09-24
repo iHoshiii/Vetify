@@ -2,6 +2,7 @@ import { getSocket } from '@/lib/socket';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { createPeer, type IceServer, type Signal } from './peer';
+import { useCallChat } from './use-call-chat';
 import { useMedia } from './use-media';
 
 export type CallState = 'waiting' | 'connecting' | 'connected' | 'ended' | 'error';
@@ -13,6 +14,7 @@ type JoinAck =
 // Ties the camera, the peer connection, and the signalling socket together behind one call state.
 export function useCall(appointmentId: string) {
   const { stream, error: mediaError } = useMedia();
+  const chat = useCallChat(appointmentId);
   const [state, setState] = useState<CallState>('waiting');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [micOn, setMicOn] = useState(true);
@@ -117,5 +119,7 @@ export function useCall(appointmentId: string) {
     toggleMic,
     toggleCam,
     hangUp,
+    messages: chat.messages,
+    sendChat: chat.sendChat,
   };
 }
