@@ -1344,6 +1344,11 @@ export const appointmentRequestSchema = z.object({
 /** Turning one down, or calling one off. The reason is shown to the other side. */
 export const appointmentRefuseSchema = z.object({ reason: moderationReason });
 
+// Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
+export const appointmentRescheduleSchema = z.object({
+  startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
+});
+
 /** The owner's own bookings, or a professional's incoming ones. */
 export const appointmentListQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
@@ -1372,6 +1377,7 @@ export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>
 export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
+export type AppointmentReschedule = z.output<typeof appointmentRescheduleSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 
 // One page of the caller's own notifications, newest first.
