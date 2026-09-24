@@ -1,9 +1,13 @@
 import type { Appointment } from '@/services/appointments.service';
+import { APPOINTMENT_RESCHEDULE_MIN_HOURS } from '@shared/limits';
 import type { AppointmentStatus } from '@shared/schemas';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import StartSessionButton from '@/pages/call/start-session-button';
+
+import RateBooking from './rate-booking';
 
 // Status label and a small dot color, no pill fill.
 const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
@@ -16,6 +20,9 @@ const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
 
 // The statuses still ahead of the owner, and so the only ones worth cancelling.
 const CANCELLABLE: AppointmentStatus[] = ['requested', 'confirmed'];
+
+// Cancel closes the same six hours before the start that a reschedule does, so a booking cannot be dropped once the vet is about to be waiting on it.
+const CANCEL_LOCK_MS = APPOINTMENT_RESCHEDULE_MIN_HOURS * 60 * 60_000;
 
 function when(at: string, locale: string, timeZone: string): string {
   return new Date(at).toLocaleString(locale, {
@@ -38,6 +45,17 @@ export default function BookingRow({
 }) {
   const { locale, timeZone } = useLocalePreferences();
   const status = STATUS[booking.status];
+  const [now, setNow] = useState(() => Date.now());
+
+  // A slow tick so the cancel window closes on screen without a reload.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cancellable =
+    CANCELLABLE.includes(booking.status) &&
+    now < new Date(booking.startsAt).getTime() - CANCEL_LOCK_MS;
 
   return (
     <li className="rounded-md border border-slate-200 bg-white p-4">
@@ -78,8 +96,7 @@ export default function BookingRow({
       )}
 
       {/* Actions sit on one row so the Start button and the cancel link stay aligned and separately clickable. */}
-      {((booking.status === 'confirmed' && booking.kind === 'virtual') ||
-        CANCELLABLE.includes(booking.status)) && (
+      {((booking.status === 'confirmed' && booking.kind === 'virtual') || cancellable) && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {booking.status === 'confirmed' && booking.kind === 'virtual' && (
             <StartSessionButton
@@ -89,7 +106,7 @@ export default function BookingRow({
             />
           )}
 
-          {CANCELLABLE.includes(booking.status) && (
+          {cancellable && (
             <button
               type="button"
               onClick={() => onCancel(booking.id)}
@@ -100,6 +117,8 @@ export default function BookingRow({
           )}
         </div>
       )}
+
+      {booking.status === 'completed' && <RateBooking booking={booking} />}
     </li>
   );
 }

@@ -41,6 +41,8 @@ function nearby(overrides: Partial<NearbyProfessional> = {}): NearbyProfessional
     ratingCount: 0,
     availabilityStatus: 'available',
     weeklySchedule: [],
+    onsiteSchedule: [],
+    virtualSchedule: [],
     workHistory: [],
     verifiedAt: '2026-08-20T09:00:00.000Z',
     distanceMeters: 1234,

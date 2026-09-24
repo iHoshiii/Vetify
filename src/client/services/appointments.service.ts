@@ -42,6 +42,10 @@ export type Appointment = {
   with: AppointmentParty | null;
   /** The listing behind the vet, so a row can link to their profile. */
   professionalId: string;
+  /** The owner's star on a finished booking, null until they leave one. */
+  rating: number | null;
+  /** The optional note the owner left with their stars, null when they wrote none. */
+  ratingComment: string | null;
   decidedAt: string | null;
   createdAt: string;
 };
@@ -142,4 +146,17 @@ export async function cancelAppointment(input: { id: string; reason: string }) {
     method: 'PATCH',
     body: { reason: input.reason },
   });
+}
+
+// PATCH /api/v1/appointments/:id/rate — the owner's stars and optional note on a finished booking. Owner-only and once-only, both enforced by the server.
+export async function rateAppointment(input: {
+  id: string;
+  rating: number;
+  comment?: string | null;
+}) {
+  const { appointment } = await apiFetch<{ appointment: Appointment }>(
+    `/appointments/${encodeURIComponent(input.id)}/rate`,
+    { method: 'PATCH', body: { rating: input.rating, comment: input.comment ?? null } }
+  );
+  return appointment;
 }

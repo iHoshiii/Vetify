@@ -61,6 +61,8 @@ function application(overrides: Partial<OwnProfessional> = {}): OwnProfessional 
     hourlyRate: 425,
     availabilityStatus: 'available',
     weeklySchedule: [],
+    onsiteSchedule: [],
+    virtualSchedule: [],
     avatarUrl: null,
     workHistory: [],
     bookingNotificationMinutes: 30,

@@ -1,5 +1,5 @@
 import type { PublicProfessional } from '@/services/professionals.service';
-import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
+import { APPOINTMENT_RESCHEDULE_MIN_HOURS, APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
 import type { AppointmentKind } from '@shared/schemas';
 
 import DialogShell, {
@@ -105,6 +105,11 @@ export default function ConfirmDialog({
 
         <p className="text-xs text-slate-500">
           Each time is held the moment you confirm, while the vet answers.
+        </p>
+
+        <p className="text-xs font-bold text-slate-600">
+          Cancelling or rescheduling closes {APPOINTMENT_RESCHEDULE_MIN_HOURS} hours before the
+          appointment, after which the booking cannot be changed.
         </p>
       </div>
     </DialogShell>

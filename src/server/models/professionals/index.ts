@@ -14,6 +14,7 @@ export {
   isDuplicateLicense,
   professionalsCollection,
   publishPinnedAddresses,
+  setProfessionalRating,
   updateAddressMap,
   updateProfessional,
   updateProfessionalProfile,

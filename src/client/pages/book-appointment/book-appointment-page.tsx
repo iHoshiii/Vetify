@@ -1,5 +1,7 @@
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import BookingForm from './_components/booking-form';
 import BookingHeader from './_components/booking-header';
@@ -8,6 +10,7 @@ import ConfirmDialog from './_components/confirm-dialog';
 import { messageOf } from './_components/error-note';
 import KindStep from './_components/kind-step';
 import MyBookings from './_components/my-bookings';
+import RatePopup from './_components/rate-popup';
 import SentToast from './_components/sent-toast';
 import SlotPicker from './_components/slot-picker';
 import Step from './_components/step';
@@ -23,7 +26,15 @@ export default function BookAppointmentPage() {
 
   const flow = useBooking();
   const { at, chosen, kind, request, runs, pending } = flow;
+  const location = useLocation();
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
+  // A finished call routes the owner here with the booking id, so the stars pop outside the call room.
+  const [rateId, setRateId] = useState<string | null>(
+    (location.state as { rate?: string } | null)?.rate ?? null
+  );
+
+  // The step overlay (2 to 4) dims the page behind it, so freeze that page while it shows.
+  useBodyScrollLock(at > 1 && Boolean(chosen));
 
   return (
     <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
@@ -34,6 +45,8 @@ export default function BookAppointmentPage() {
         />
 
         {appointmentsOpen && <MyBookings onClose={() => setAppointmentsOpen(false)} />}
+
+        {rateId && <RatePopup appointmentId={rateId} onClose={() => setRateId(null)} />}
 
         {request.isSuccess && chosen && (
           <SentToast
@@ -66,9 +79,9 @@ export default function BookAppointmentPage() {
                 </Step>
               )}
 
-              {at === 3 && (
+              {at === 3 && kind && (
                 <Step number={3} title={`When suits you with ${chosen.name ?? 'them'}?`}>
-                  <SlotPicker professionalId={chosen.id} onChoose={flow.chooseRuns} />
+                  <SlotPicker professionalId={chosen.id} kind={kind} onChoose={flow.chooseRuns} />
                 </Step>
               )}
 

@@ -3,6 +3,9 @@ import { z } from 'zod';
 import {
   APPOINTMENT_PAGE_SIZE,
   APPOINTMENT_PAGE_SIZE_MAX,
+  APPOINTMENT_RATING_COMMENT_MAX,
+  APPOINTMENT_RATING_MAX,
+  APPOINTMENT_RATING_MIN,
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
   APPOINTMENT_MAX_SLOTS,
@@ -737,6 +740,9 @@ export type WeeklyScheduleItem = z.output<typeof weeklyScheduleItemSchema>;
 export const professionalProfileUpdateSchema = z.object({
   availabilityStatus: z.enum(PROFESSIONAL_AVAILABILITY_STATUSES).optional(),
   weeklySchedule: z.array(weeklyScheduleItemSchema).optional(),
+  // Per-kind hours, so a vet can keep clinic visits and online consultations on different days
+  onsiteSchedule: z.array(weeklyScheduleItemSchema).optional(),
+  virtualSchedule: z.array(weeklyScheduleItemSchema).optional(),
   hourlyRate: z.coerce
     .number()
     .min(PROFESSIONAL_MIN_RATE, `Minimum rate is ₱${PROFESSIONAL_MIN_RATE}`)
@@ -1276,7 +1282,12 @@ const isoDayField = z
  * works no days".
  */
 export const appointmentSlotsQuerySchema = z
-  .object({ from: isoDayField, to: isoDayField.optional() })
+  .object({
+    from: isoDayField,
+    to: isoDayField.optional(),
+    // Which schedule to read the grid from. Absent falls back to the shared weekly hours.
+    kind: z.enum(APPOINTMENT_KINDS).optional(),
+  })
   .refine((query) => !query.to || query.to >= query.from, {
     path: ['to'],
     message: 'That range ends before it starts',
@@ -1344,6 +1355,20 @@ export const appointmentRequestSchema = z.object({
 /** Turning one down, or calling one off. The reason is shown to the other side. */
 export const appointmentRefuseSchema = z.object({ reason: moderationReason });
 
+// Rating a finished booking. One to five whole stars, coerced so a form body or query string both parse. The note is optional, trimmed, and blanks fold to null.
+export const appointmentRateSchema = z.object({
+  rating: z.coerce.number().int().min(APPOINTMENT_RATING_MIN).max(APPOINTMENT_RATING_MAX),
+  comment: z
+    .string()
+    .trim()
+    .max(
+      APPOINTMENT_RATING_COMMENT_MAX,
+      `Keep your note under ${APPOINTMENT_RATING_COMMENT_MAX} characters`
+    )
+    .optional()
+    .transform((value) => value || null),
+});
+
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
 export const appointmentRescheduleSchema = z.object({
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
@@ -1377,6 +1402,7 @@ export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>
 export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
+export type AppointmentRate = z.output<typeof appointmentRateSchema>;
 export type AppointmentReschedule = z.output<typeof appointmentRescheduleSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 

@@ -1,8 +1,10 @@
 import {
   appointmentListQuerySchema,
+  appointmentRateSchema,
   appointmentRefuseSchema,
   appointmentRequestSchema,
   type AppointmentListQuery,
+  type AppointmentRate,
   type AppointmentRefuse,
   type AppointmentRequest,
 } from '@shared/schemas';
@@ -14,6 +16,7 @@ import { validate, validateQuery } from '../../middleware/validate';
 import {
   findAppointments,
   findUsersByIds,
+  findVerifiedProfessionalsByUserIds,
   isDuplicateSlot,
   isValidObjectId,
   otherPartyId,
@@ -26,9 +29,11 @@ import {
 import {
   cancelAppointment,
   decideAppointment,
+  rateAppointment,
   requestAppointment,
   type AppointmentDecision,
 } from '../../services/appointments.service';
+import { isCallLive } from '../../realtime/hub';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 
@@ -62,18 +67,28 @@ async function partiesOf(
   viewer: ObjectId
 ): Promise<Map<string, AppointmentParty>> {
   const ids = [...new Set(items.map((item) => otherPartyId(item, viewer)))];
-  const users = await findUsersByIds(ids);
+  const [users, vets] = await Promise.all([
+    findUsersByIds(ids),
+    findVerifiedProfessionalsByUserIds(ids),
+  ]);
+
+  // A vet's photo and licence name live on their listing, so they win over the raw account the same way the message threads resolve a face.
+  const vetFaces = new Map(vets.map((vet) => [vet.user.toString(), vet]));
 
   return new Map(
-    users.map((user) => [
-      user._id.toString(),
-      {
-        id: user._id.toString(),
-        name: user.name ?? null,
-        email: user.email,
-        avatarUrl: user.avatarUrl ?? null,
-      },
-    ])
+    users.map((user) => {
+      const id = user._id.toString();
+      const vet = vetFaces.get(id);
+      return [
+        id,
+        {
+          id,
+          name: vet?.fullName ?? user.name ?? null,
+          email: user.email,
+          avatarUrl: vet?.avatarUrl ?? user.avatarUrl ?? null,
+        },
+      ];
+    })
   );
 }
 
@@ -85,6 +100,7 @@ async function viewOf(appointment: AppointmentDocument, viewer: ObjectId) {
     appointment,
     viewer,
     party: parties.get(otherPartyId(appointment, viewer)) ?? null,
+    callActive: isCallLive(appointment._id.toString()),
   });
 }
 
@@ -165,6 +181,7 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
         total,
         page: query.page,
         limit: query.limit,
+        callActive: (appointment) => isCallLive(appointment._id.toString()),
       })
     );
   };
@@ -265,6 +282,24 @@ router.patch('/:id/cancel', validate(appointmentRefuseSchema), async (req, res) 
     appointment: await viewOf(result.appointment, actor._id),
     mail: result.mail,
   });
+});
+
+// PATCH /api/v1/appointments/:id/rate: the owner's star on a finished consultation. Owner-only and once-only, both decided against the stored booking in the service rather than here, because neither can be read off the request.
+router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AppointmentRate;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
+
+  const result = await rateAppointment({
+    id: req.params.id,
+    actor,
+    rating: body.rating,
+    comment: body.comment,
+  });
+  if (!result) return fail(res, 404, MISSING);
+
+  ok(res, { appointment: await viewOf(result, actor._id) });
 });
 
 export default router;

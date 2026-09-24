@@ -1,4 +1,5 @@
 import type { AdminInquiry } from '@/services/admin.service';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useEffect, useId } from 'react';
 
 import { LABEL } from './ui';
@@ -17,6 +18,9 @@ export function EnquiryDialog({
   onClose: () => void;
 }) {
   const titleId = useId();
+
+  // Rendered only while a row is selected, so lock the page for the dialog's whole life.
+  useBodyScrollLock();
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

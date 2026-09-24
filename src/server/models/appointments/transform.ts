@@ -24,8 +24,10 @@ export function toAppointmentView(input: {
   viewer: ObjectId;
   /** The account on the other side, or null if it has since been deleted. */
   party: AppointmentParty | null;
+  // Whether a socket is in this booking's call room right now. Read from the hub, defaulted off for callers that do not track it.
+  callActive?: boolean;
 }): AppointmentView {
-  const { appointment, viewer, party } = input;
+  const { appointment, viewer, party, callActive = false } = input;
 
   return {
     id: appointment._id.toString(),
@@ -45,6 +47,10 @@ export function toAppointmentView(input: {
     cancelledByYou: appointment.cancelledBy?.equals(viewer) ?? false,
     with: party,
     professionalId: appointment.professional.toString(),
+    joinedAt: appointment.joinedAt?.toISOString() ?? null,
+    callActive,
+    rating: appointment.rating ?? null,
+    ratingComment: appointment.ratingComment ?? null,
     decidedAt: appointment.decidedAt?.toISOString() ?? null,
     createdAt: appointment.createdAt.toISOString(),
   };
@@ -59,8 +65,10 @@ export function toAppointmentPage(input: {
   total: number;
   page: number;
   limit: number;
+  // Whether each booking's call is live now, asked per row so the list marks an ongoing one.
+  callActive?: (appointment: AppointmentDocument) => boolean;
 }): AppointmentPage {
-  const { items, viewer, parties, total, page, limit } = input;
+  const { items, viewer, parties, total, page, limit, callActive } = input;
 
   return {
     items: items.map((appointment) =>
@@ -68,6 +76,7 @@ export function toAppointmentPage(input: {
         appointment,
         viewer,
         party: parties.get(otherPartyId(appointment, viewer)) ?? null,
+        callActive: callActive?.(appointment) ?? false,
       })
     ),
     page,

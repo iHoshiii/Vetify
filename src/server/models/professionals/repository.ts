@@ -545,6 +545,8 @@ export type ProfessionalProfilePatch = Partial<
     ProfessionalDocument,
     | 'availabilityStatus'
     | 'weeklySchedule'
+    | 'onsiteSchedule'
+    | 'virtualSchedule'
     | 'hourlyRate'
     | 'avatarUrl'
     | 'workHistory'
@@ -572,6 +574,18 @@ export async function updateProfessionalProfile(
   return await professionalsCollection().findOneAndUpdate(
     { _id },
     { $set: set },
+    { returnDocument: 'after' }
+  );
+}
+
+// Writes the two rating figures the directory sorts and shows. Recomputed from bookings by the appointments service, never nudged, so the pair here is always the true mean and count.
+export async function setProfessionalRating(
+  id: string | ObjectId,
+  rating: { average: number; count: number }
+): Promise<ProfessionalDocument | null> {
+  return await professionalsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    { $set: { ratingAverage: rating.average, ratingCount: rating.count, updatedAt: new Date() } },
     { returnDocument: 'after' }
   );
 }

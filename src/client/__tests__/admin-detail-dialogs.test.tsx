@@ -33,6 +33,8 @@ function application(overrides: Partial<AdminProfessional> = {}): AdminProfessio
     hourlyRate: 60,
     availabilityStatus: 'available',
     weeklySchedule: [],
+    onsiteSchedule: [],
+    virtualSchedule: [],
     avatarUrl: null,
     workHistory: [],
     bookingNotificationMinutes: 30,

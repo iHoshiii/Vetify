@@ -20,3 +20,8 @@ export function emitToUser(userId: string, event: string, payload: unknown): voi
 export function isUserOnline(userId: string): boolean {
   return (io?.sockets.adapter.rooms.get(userRoom(userId))?.size ?? 0) > 0;
 }
+
+// Whether a socket sits in this booking's call room right now. The `call:` prefix mirrors callRoom in call.ts.
+export function isCallLive(appointmentId: string): boolean {
+  return (io?.sockets.adapter.rooms.get(`call:${appointmentId}`)?.size ?? 0) > 0;
+}

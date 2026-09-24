@@ -32,13 +32,11 @@ export default function TopVets({
   return (
     <div className="rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">
-          Top-reviewed vets
-        </h3>
+        <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">Top vets</h3>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setAllOpen(true)} className={CHIP}>
             <List className="h-3.5 w-3.5 text-teal-700" aria-hidden />
-            View all vet prof
+            View all vets
           </button>
           <Link to="/map" className={CHIP}>
             <Map className="h-3.5 w-3.5 text-teal-700" aria-hidden />
@@ -57,7 +55,7 @@ export default function TopVets({
         />
       )}
 
-      {isPending && <p className={NOTE}>Finding the best-reviewed vets…</p>}
+      {isPending && <p className={NOTE}>Loading vets…</p>}
 
       {error != null && <ErrorNote message={messageOf(error)} onRetry={refetch} />}
 
@@ -66,7 +64,7 @@ export default function TopVets({
       )}
 
       {items.length > 0 && (
-        <ul aria-label="Top-reviewed vets" className="mt-3 grid gap-3">
+        <ul aria-label="Top vets" className="mt-3 grid gap-3">
           {items.map((vet) => (
             <VetCard key={vet.id} vet={vet} onPick={onPick} picked={chosenId === vet.id} />
           ))}

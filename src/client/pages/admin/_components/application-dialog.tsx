@@ -1,4 +1,5 @@
 import type { AdminProfessional } from '@/services/admin.service';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useId } from 'react';
 
@@ -12,6 +13,9 @@ export function ApplicationDialog({
   onClose: () => void;
 }) {
   const titleId = useId();
+
+  // Rendered only while a row is selected, so lock the page for the dialog's whole life.
+  useBodyScrollLock();
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
