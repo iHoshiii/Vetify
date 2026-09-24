@@ -96,8 +96,7 @@ export default function BookingRow({
       )}
 
       {/* Actions sit on one row so the Start button and the cancel link stay aligned and separately clickable. */}
-      {((booking.status === 'confirmed' && booking.kind === 'virtual') ||
-        CANCELLABLE.includes(booking.status)) && (
+      {((booking.status === 'confirmed' && booking.kind === 'virtual') || cancellable) && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {booking.status === 'confirmed' && booking.kind === 'virtual' && (
             <StartSessionButton
@@ -107,17 +106,11 @@ export default function BookingRow({
             />
           )}
 
-          {CANCELLABLE.includes(booking.status) && (
+          {cancellable && (
             <button
               type="button"
-              disabled={!cancellable}
               onClick={() => onCancel(booking.id)}
-              title={
-                cancellable
-                  ? undefined
-                  : `Cancel closes ${APPOINTMENT_RESCHEDULE_MIN_HOURS} hours before the start`
-              }
-              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200"
+              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700"
             >
               Cancel this booking
             </button>
