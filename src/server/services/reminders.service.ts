@@ -34,6 +34,7 @@ export async function scanReminders(): Promise<void> {
       user: appointment.professionalUser,
       kind: 'booking_reminder',
       appointment: appointment._id,
+      appointmentKind: appointment.kind,
       title: 'Appointment starting soon',
       body: `${appointment.petName ?? 'A pet'}'s appointment starts in about ${inMinutes} minutes.`,
     });

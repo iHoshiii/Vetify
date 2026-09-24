@@ -216,6 +216,7 @@ export async function requestAppointment(
     user: application.user,
     kind: 'booking_requested',
     appointment: appointment._id,
+    appointmentKind: appointment.kind,
     title: `New appointment request for ${petLabel}`,
     body: `${clientName(client)} requested a ${
       kind === 'virtual' ? 'online consultation' : 'clinic visit'
@@ -312,6 +313,7 @@ export async function decideAppointment(
       user: appointment.client,
       kind: decision === 'confirmed' ? 'booking_confirmed' : 'booking_declined',
       appointment: appointment._id,
+      appointmentKind: appointment.kind,
       title: decision === 'confirmed' ? 'Appointment confirmed' : 'Appointment declined',
       body:
         decision === 'confirmed'

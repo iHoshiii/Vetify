@@ -3,17 +3,21 @@ import {
   useMarkNotificationRead,
   useNotifications,
 } from '@/hooks/useNotifications';
-import type { Notification, NotificationKind } from '@/services/notifications.service';
+import type { Notification } from '@/services/notifications.service';
 import { CheckCheck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Reminders and new requests land on the vet's console; a decision lands on the owner's bookings.
-const ROUTE: Record<NotificationKind, string> = {
-  booking_requested: '/professionals/dashboard',
-  booking_reminder: '/professionals/dashboard',
-  booking_confirmed: '/book-appointment',
-  booking_declined: '/book-appointment',
-};
+// A reminder opens the vet's Scheduled queue for that booking's kind; a decision opens the owner's bookings; a new request opens the vet's default Request queue.
+function routeFor(notification: Notification): string {
+  if (notification.kind === 'booking_confirmed' || notification.kind === 'booking_declined') {
+    return '/book-appointment';
+  }
+  if (notification.kind === 'booking_reminder') {
+    const section = notification.appointmentKind === 'onsite' ? 'clinic-visits' : 'consultations';
+    return `/professionals/dashboard/${section}?tab=scheduled`;
+  }
+  return '/professionals/dashboard';
+}
 
 // Coarse "how long ago" without pulling in a date library, since the feed only needs a rough age.
 function ago(iso: string): string {
@@ -37,7 +41,7 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
   const open = (notification: Notification) => {
     if (!notification.read) markRead.mutate(notification.id);
     onClose();
-    navigate(ROUTE[notification.kind]);
+    navigate(routeFor(notification));
   };
 
   return (

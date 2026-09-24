@@ -1,3 +1,5 @@
+import type { AppointmentKind } from '@shared/schemas';
+
 import { apiFetch } from './api';
 
 // Mirrors the server's NotificationKind so the panel can pick copy and a route per event.
@@ -12,6 +14,7 @@ export type Notification = {
   id: string;
   kind: NotificationKind;
   appointmentId: string;
+  appointmentKind?: AppointmentKind;
   title: string;
   body: string;
   read: boolean;

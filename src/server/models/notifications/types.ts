@@ -1,5 +1,7 @@
 import { ObjectId, type IndexDescription } from 'mongodb';
 
+import type { AppointmentKind } from '@shared/schemas';
+
 export const NOTIFICATIONS_COLLECTION = 'notifications';
 
 // The booking events an in-app notification can announce. One list, so the client and server agree.
@@ -20,6 +22,8 @@ export type NotificationDocument = {
   kind: NotificationKind;
   // The booking it is about, so a click can route straight to it.
   appointment: ObjectId;
+  // The booking's kind, so a click routes to the right console queue. Absent on rows made before the field.
+  appointmentKind?: AppointmentKind;
   title: string;
   body: string;
   // Null until the account opens it; the unread count is the rows still null here.
@@ -31,6 +35,7 @@ export type NotificationView = {
   id: string;
   kind: NotificationKind;
   appointmentId: string;
+  appointmentKind?: AppointmentKind;
   title: string;
   body: string;
   read: boolean;

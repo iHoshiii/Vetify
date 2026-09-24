@@ -19,6 +19,8 @@ export async function insertNotification(attrs: NotificationAttrs): Promise<Noti
     user: toObjectId(parsed.user),
     kind: parsed.kind,
     appointment: toObjectId(parsed.appointment),
+    // Only stored when the caller knew it, so old-shape rows stay absent rather than null.
+    ...(parsed.appointmentKind ? { appointmentKind: parsed.appointmentKind } : {}),
     title: parsed.title,
     body: parsed.body,
     readAt: null,

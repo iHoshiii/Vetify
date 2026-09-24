@@ -10,6 +10,7 @@ import type { AppointmentKind } from '@shared/schemas';
 import { useState } from 'react';
 
 import { ApiError } from '@/services/api';
+import { useSearchParams } from 'react-router-dom';
 
 import { asks, type Action, type Ask } from './_components/booking-actions';
 import BookingAskBox from './_components/booking-ask-box';
@@ -34,7 +35,11 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
 
   const { bookingNotificationMinutes } = useConsoleApplication();
 
-  const [tab, setTab] = useState<BookingTab>(BOOKING_TABS[0]);
+  const [params, setParams] = useSearchParams();
+  // the active tab lives in the URL so a reminder can deep-link to Scheduled and each queue keeps its own tab
+  const tab = BOOKING_TABS.find((t) => t.key === params.get('tab')) ?? BOOKING_TABS[0];
+  const pickTab = (next: BookingTab) =>
+    setParams(next.key === BOOKING_TABS[0].key ? {} : { tab: next.key }, { replace: true });
   const [ask, setAsk] = useState<Ask | null>(null);
   const [text, setText] = useState('');
 
@@ -89,7 +94,7 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
         minutes={bookingNotificationMinutes}
         tab={tab}
         counts={counts.data?.[kind]}
-        onPick={setTab}
+        onPick={pickTab}
       />
 
       {ask && (

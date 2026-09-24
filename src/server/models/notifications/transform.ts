@@ -5,6 +5,7 @@ export function toNotificationView(notification: NotificationDocument): Notifica
     id: notification._id.toString(),
     kind: notification.kind,
     appointmentId: notification.appointment.toString(),
+    appointmentKind: notification.appointmentKind,
     title: notification.title,
     body: notification.body,
     read: notification.readAt !== null,

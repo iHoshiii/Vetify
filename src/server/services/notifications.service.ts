@@ -1,5 +1,6 @@
 import type { ObjectId } from 'mongodb';
 
+import type { AppointmentKind } from '@shared/schemas';
 import {
   countUnreadNotifications,
   findNotifications,
@@ -18,6 +19,7 @@ export type CreateNotificationInput = {
   user: string | ObjectId;
   kind: NotificationKind;
   appointment: string | ObjectId;
+  appointmentKind?: AppointmentKind;
   title: string;
   body: string;
 };
