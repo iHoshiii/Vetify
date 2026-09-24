@@ -1,3 +1,4 @@
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useState } from 'react';
 
@@ -24,6 +25,9 @@ export default function BookAppointmentPage() {
   const flow = useBooking();
   const { at, chosen, kind, request, runs, pending } = flow;
   const [appointmentsOpen, setAppointmentsOpen] = useState(false);
+
+  // The step overlay (2 to 4) dims the page behind it, so freeze that page while it shows.
+  useBodyScrollLock(at > 1 && Boolean(chosen));
 
   return (
     <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">

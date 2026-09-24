@@ -1,4 +1,5 @@
 import { useCancelAppointment, useMyAppointments } from '@/hooks/useAppointments';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,6 +12,9 @@ import Pager from './pager';
 export default function MyBookings({ onClose }: { onClose: () => void }) {
   const [filter, setFilter] = useState<BookingFilter>('all');
   const [page, setPage] = useState(1);
+
+  // This modal only mounts while open, so hold the page still for its whole life.
+  useBodyScrollLock();
 
   const list = useMyAppointments({ page, status: FILTER_STATUSES[filter] });
   const cancel = useCancelAppointment();

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import PinPicker, { type Point } from './pin-picker';
 import type { MarkerGlyph } from '@/components/marker-icon';
 import { MapSkeleton } from '@/components/vetmap/map-skeleton';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 export type PickedAddress = {
   line1: string;
@@ -32,6 +33,9 @@ export default function LocationPickerField({
   const [message, setMessage] = useState('');
   const [choice, setChoice] = useState<'pin' | null>(value ? 'pin' : null);
   const [mapReady, setMapReady] = useState(false);
+
+  // The map opens in a full-screen overlay, so freeze the form behind it while it is up.
+  useBodyScrollLock(choice === 'pin');
 
   async function pick(point: Point): Promise<void> {
     setLoading(true);
