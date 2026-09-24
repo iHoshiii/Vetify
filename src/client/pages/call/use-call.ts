@@ -41,11 +41,40 @@ export function useCall(appointmentId: string) {
     let closed = false;
     const send = (signal: Signal) => socket.emit('call:signal', { appointmentId, signal });
 
-    const onSignal = ({ signal }: { signal: Signal }) => void peerRef.current?.handleSignal(signal);
-    const onPeerJoined = () =>
-      !closed && setState((current) => (current === 'connected' ? current : 'connecting'));
+    // Signals arriving before the peer exists are held, so an offer racing ahead of our join ack is not dropped.
+    const pending: Signal[] = [];
+    let config: { iceServers: IceServer[]; polite: boolean } | null = null;
+
+    // Built only once the other side is in the room, so our first offer never goes to an empty room and strands us.
+    const startPeer = () => {
+      if (closed || peerRef.current || !config) return;
+      peerRef.current = createPeer({
+        iceServers: config.iceServers,
+        polite: config.polite,
+        stream,
+        sendSignal: send,
+        onRemote: setRemoteStream,
+        onConnected: () => !closed && setState('connected'),
+        onClosed: () => !closed && setState((current) => (current === 'ended' ? current : 'ended')),
+      });
+      for (const signal of pending.splice(0)) void peerRef.current.handleSignal(signal);
+    };
+
+    const onSignal = ({ signal }: { signal: Signal }) => {
+      if (peerRef.current) void peerRef.current.handleSignal(signal);
+      else pending.push(signal);
+    };
+    const onPeerJoined = () => {
+      if (closed) return;
+      setState((current) => (current === 'connected' ? current : 'connecting'));
+      startPeer();
+    };
     const onPeerLeft = () => {
       if (closed) return;
+      // drop the frozen last frame and close the dead peer so the tile clears instead of freezing
+      peerRef.current?.close();
+      peerRef.current = null;
+      setRemoteStream(null);
       setState('ended');
       setMessage('The other person left the call.');
     };
@@ -65,16 +94,10 @@ export function useCall(appointmentId: string) {
         );
         return;
       }
+      config = { iceServers: ack.iceServers, polite: ack.polite };
       setState(ack.peerOnline ? 'connecting' : 'waiting');
-      peerRef.current = createPeer({
-        iceServers: ack.iceServers,
-        polite: ack.polite,
-        stream,
-        sendSignal: send,
-        onRemote: setRemoteStream,
-        onConnected: () => !closed && setState('connected'),
-        onClosed: () => !closed && setState((current) => (current === 'ended' ? current : 'ended')),
-      });
+      // Second to arrive: the other side is already waiting, so build now and let our offer reach them.
+      if (ack.peerOnline) startPeer();
     });
 
     return () => {

@@ -20,7 +20,7 @@ export default function CallPage() {
   const finished = call.state === 'ended' || call.state === 'error';
 
   return (
-    <main className="flex h-[calc(100vh-4rem)] min-h-[32rem] w-full flex-col gap-4 bg-slate-50 p-3 sm:p-5 lg:p-6">
+    <main className="flex h-[100dvh] min-h-[32rem] w-full flex-col gap-4 bg-slate-50 p-3 sm:p-5 lg:p-6">
       <CallStage
         state={call.state}
         message={call.message}

@@ -12,7 +12,7 @@ type StartSessionButtonProps = {
   variant?: Variant;
 };
 
-const BLOCK = 'mt-3 inline-flex h-9 items-center rounded-lg px-4 text-sm font-bold';
+const BLOCK = 'inline-flex h-9 items-center rounded-lg px-4 text-sm font-bold';
 const INLINE =
   'inline-flex items-center gap-1 rounded px-3 py-1 text-xs font-bold transition-colors';
 

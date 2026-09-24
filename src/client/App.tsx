@@ -139,15 +139,6 @@ export default function App() {
             </RequireAuth>
           }
         />
-        {/* The consultation room itself, gated like the booking pages that open it. */}
-        <Route
-          path="call/:appointmentId"
-          element={
-            <RequireAuth>
-              <CallPage />
-            </RequireAuth>
-          }
-        />
         <Route path="chat" element={<ChatPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="help" element={<HelpPage />} />
@@ -229,6 +220,15 @@ export default function App() {
         <Route path="profile" element={<ProfessionalProfilePage />} />
         <Route path="settings" element={<ProfessionalSettingsPage />} />
       </Route>
+      {/* The consultation room is its own full-screen route, outside RootLayout, so no navbar or chrome sits over the call. */}
+      <Route
+        path="call/:appointmentId"
+        element={
+          <RequireAuth>
+            <CallPage />
+          </RequireAuth>
+        }
+      />
     </Routes>
   );
 }
