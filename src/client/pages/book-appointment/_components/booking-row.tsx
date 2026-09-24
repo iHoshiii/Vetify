@@ -5,13 +5,13 @@ import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
 import StartSessionButton from '@/pages/call/start-session-button';
 
-// How each status reads, and a muted badge tone to carry it. Past tense: a status is a result.
-const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
-  requested: { label: 'Waiting on the vet', tone: 'border-amber-200 bg-amber-50 text-amber-700' },
-  confirmed: { label: 'Confirmed', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  declined: { label: 'Turned down', tone: 'border-rose-200 bg-rose-50 text-rose-700' },
-  cancelled: { label: 'Cancelled', tone: 'border-slate-200 bg-slate-50 text-slate-600' },
-  completed: { label: 'Done', tone: 'border-slate-200 bg-slate-50 text-slate-600' },
+// Status label and a small dot color, no pill fill.
+const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
+  requested: { label: 'Pending', dot: 'bg-amber-500' },
+  confirmed: { label: 'Confirmed', dot: 'bg-emerald-500' },
+  declined: { label: 'Declined', dot: 'bg-rose-500' },
+  cancelled: { label: 'Cancelled', dot: 'bg-slate-400' },
+  completed: { label: 'Completed', dot: 'bg-slate-400' },
 };
 
 // The statuses still ahead of the owner, and so the only ones worth cancelling.
@@ -62,9 +62,8 @@ export default function BookingRow({
           </p>
         </div>
 
-        <span
-          className={`shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium ${status.tone}`}
-        >
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600">
+          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} aria-hidden />
           {status.label}
         </span>
       </div>
@@ -94,7 +93,7 @@ export default function BookingRow({
             <button
               type="button"
               onClick={() => onCancel(booking.id)}
-              className="text-sm font-medium text-rose-600 hover:underline"
+              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700"
             >
               Cancel this booking
             </button>
