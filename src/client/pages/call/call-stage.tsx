@@ -1,6 +1,6 @@
 import ParticipantAvatar from '@/components/messaging/ParticipantAvatar';
 
-import type { CallPeer, CallState } from './use-call';
+import type { CallPeer, CallState } from './call-types';
 import VideoTile from './video-tile';
 
 type CallStageProps = {

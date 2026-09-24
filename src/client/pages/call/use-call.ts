@@ -1,24 +1,10 @@
 import { getSocket } from '@/lib/socket';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { CallPeer, CallState, JoinAck } from './call-types';
 import { createPeer, type IceServer, type Signal } from './peer';
 import { useCallChat } from './use-call-chat';
 import { useMedia } from './use-media';
-
-export type CallState = 'waiting' | 'connecting' | 'connected' | 'ended' | 'error';
-
-export type CallPeer = { name: string | null; avatarUrl: string | null; role: 'vet' | 'owner' };
-
-type JoinAck =
-  | {
-      ok: true;
-      iceServers: IceServer[];
-      peerOnline: boolean;
-      polite: boolean;
-      endsAt: string;
-      peer: CallPeer;
-    }
-  | { ok: false; error: string };
 
 // Ties the camera, the peer connection, and the signalling socket together behind one call state.
 export function useCall(appointmentId: string) {
