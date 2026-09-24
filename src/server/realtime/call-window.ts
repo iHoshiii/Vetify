@@ -4,6 +4,7 @@ import {
   findAppointmentById,
   findConfirmedCallStartingAt,
   findUserById,
+  findVerifiedProfessionalsByUserIds,
   isValidObjectId,
   type AppointmentDocument,
 } from '../models';
@@ -63,10 +64,16 @@ export async function callPeer(
   userId: string
 ): Promise<CallPeer> {
   const iAmClient = userId === appointment.client.toString();
-  const peer = await findUserById(iAmClient ? appointment.professionalUser : appointment.client);
+  const peerId = iAmClient ? appointment.professionalUser : appointment.client;
+  const [peer, vets] = await Promise.all([
+    findUserById(peerId),
+    findVerifiedProfessionalsByUserIds([peerId.toString()]),
+  ]);
+  // A vet's listing name and photo win over the raw account, the same fallback the booking rows and message threads use.
+  const vet = vets[0];
   return {
-    name: peer?.name ?? null,
-    avatarUrl: peer?.avatarUrl ?? null,
+    name: vet?.fullName ?? peer?.name ?? null,
+    avatarUrl: vet?.avatarUrl ?? peer?.avatarUrl ?? null,
     role: iAmClient ? 'vet' : 'owner',
   };
 }

@@ -16,6 +16,7 @@ import { validate, validateQuery } from '../../middleware/validate';
 import {
   findAppointments,
   findUsersByIds,
+  findVerifiedProfessionalsByUserIds,
   isDuplicateSlot,
   isValidObjectId,
   otherPartyId,
@@ -66,18 +67,28 @@ async function partiesOf(
   viewer: ObjectId
 ): Promise<Map<string, AppointmentParty>> {
   const ids = [...new Set(items.map((item) => otherPartyId(item, viewer)))];
-  const users = await findUsersByIds(ids);
+  const [users, vets] = await Promise.all([
+    findUsersByIds(ids),
+    findVerifiedProfessionalsByUserIds(ids),
+  ]);
+
+  // A vet's photo and licence name live on their listing, so they win over the raw account the same way the message threads resolve a face.
+  const vetFaces = new Map(vets.map((vet) => [vet.user.toString(), vet]));
 
   return new Map(
-    users.map((user) => [
-      user._id.toString(),
-      {
-        id: user._id.toString(),
-        name: user.name ?? null,
-        email: user.email,
-        avatarUrl: user.avatarUrl ?? null,
-      },
-    ])
+    users.map((user) => {
+      const id = user._id.toString();
+      const vet = vetFaces.get(id);
+      return [
+        id,
+        {
+          id,
+          name: vet?.fullName ?? user.name ?? null,
+          email: user.email,
+          avatarUrl: vet?.avatarUrl ?? user.avatarUrl ?? null,
+        },
+      ];
+    })
   );
 }
 
