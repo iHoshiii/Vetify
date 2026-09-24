@@ -7,8 +7,17 @@ import { useMedia } from './use-media';
 
 export type CallState = 'waiting' | 'connecting' | 'connected' | 'ended' | 'error';
 
+export type CallPeer = { name: string | null; avatarUrl: string | null; role: 'vet' | 'owner' };
+
 type JoinAck =
-  | { ok: true; iceServers: IceServer[]; peerOnline: boolean; polite: boolean }
+  | {
+      ok: true;
+      iceServers: IceServer[];
+      peerOnline: boolean;
+      polite: boolean;
+      endsAt: string;
+      peer: CallPeer;
+    }
   | { ok: false; error: string };
 
 // Ties the camera, the peer connection, and the signalling socket together behind one call state.
@@ -17,6 +26,7 @@ export function useCall(appointmentId: string) {
   const chat = useCallChat(appointmentId);
   const [state, setState] = useState<CallState>('waiting');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [peer, setPeer] = useState<CallPeer | null>(null);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -44,6 +54,7 @@ export function useCall(appointmentId: string) {
     // Signals arriving before the peer exists are held, so an offer racing ahead of our join ack is not dropped.
     const pending: Signal[] = [];
     let config: { iceServers: IceServer[]; polite: boolean } | null = null;
+    let endTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Built only once the other side is in the room, so our first offer never goes to an empty room and strands us.
     const startPeer = () => {
@@ -69,19 +80,22 @@ export function useCall(appointmentId: string) {
       setState((current) => (current === 'connected' ? current : 'connecting'));
       startPeer();
     };
-    const onPeerLeft = () => {
-      if (closed) return;
-      // drop the frozen last frame and close the dead peer so the tile clears instead of freezing
+    const endNow = () => {
       peerRef.current?.close();
       peerRef.current = null;
       setRemoteStream(null);
       setState('ended');
+    };
+    const onPeerLeft = () => {
+      if (closed) return;
+      endNow();
       setMessage('The other person left the call.');
     };
 
     socket.on('call:signal', onSignal);
     socket.on('call:peer-joined', onPeerJoined);
     socket.on('call:peer-left', onPeerLeft);
+    socket.on('call:ended', endNow);
 
     socket.emit('call:join', { appointmentId }, (ack: JoinAck) => {
       if (closed) return;
@@ -95,8 +109,10 @@ export function useCall(appointmentId: string) {
         return;
       }
       config = { iceServers: ack.iceServers, polite: ack.polite };
+      setPeer(ack.peer);
+      // Auto-hang at the effective session end, when the server also closes the room.
+      endTimer = setTimeout(endNow, new Date(ack.endsAt).getTime() - Date.now());
       setState(ack.peerOnline ? 'connecting' : 'waiting');
-      // Second to arrive: the other side is already waiting, so build now and let our offer reach them.
       if (ack.peerOnline) startPeer();
     });
 
@@ -105,6 +121,8 @@ export function useCall(appointmentId: string) {
       socket.off('call:signal', onSignal);
       socket.off('call:peer-joined', onPeerJoined);
       socket.off('call:peer-left', onPeerLeft);
+      socket.off('call:ended', endNow);
+      if (endTimer) clearTimeout(endTimer);
       socket.emit('call:leave', { appointmentId });
       peerRef.current?.close();
       peerRef.current = null;
@@ -137,6 +155,7 @@ export function useCall(appointmentId: string) {
     message,
     localStream: stream,
     remoteStream,
+    peer,
     micOn,
     camOn,
     toggleMic,

@@ -1,17 +1,23 @@
-import { Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Mic, MessageCircle, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
 
 type CallControlsProps = {
   micOn: boolean;
   camOn: boolean;
+  chatOpen: boolean;
+  chatUnread: number;
+  onToggleChat: () => void;
   onToggleMic: () => void;
   onToggleCam: () => void;
   onHangUp: () => void;
 };
 
-// The mic/cam/hang-up row pinned under the video stage.
+// The chat/mic/cam/hang-up row pinned under the video stage.
 export default function CallControls({
   micOn,
   camOn,
+  chatOpen,
+  chatUnread,
+  onToggleChat,
   onToggleMic,
   onToggleCam,
   onHangUp,
@@ -24,6 +30,21 @@ export default function CallControls({
 
   return (
     <div className="flex items-center justify-center gap-4">
+      <button
+        type="button"
+        onClick={onToggleChat}
+        aria-label={chatOpen ? 'Close chat' : 'Open chat'}
+        className={`relative flex h-12 w-12 items-center justify-center rounded-full text-white transition-colors ${
+          chatOpen ? 'bg-teal-600 hover:bg-teal-500' : 'bg-slate-700 hover:bg-slate-600'
+        }`}
+      >
+        <MessageCircle className="h-5 w-5" />
+        {chatUnread > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold">
+            {chatUnread > 9 ? '9+' : chatUnread}
+          </span>
+        )}
+      </button>
       <button
         type="button"
         onClick={onToggleMic}

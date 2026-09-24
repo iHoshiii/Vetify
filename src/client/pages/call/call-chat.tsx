@@ -1,29 +1,23 @@
 import { MESSAGE_MAX_LENGTH } from '@shared/limits';
-import { MessageCircle, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import type { ChatMessage } from './use-call-chat';
 
-// The in-call chat: a floating button that opens a side panel, so a muted participant can still type.
+// The in-call chat side panel, opened from the control bar so a muted participant can still type.
 export default function CallChat({
+  open,
+  onClose,
   messages,
   onSend,
 }: {
+  open: boolean;
+  onClose: () => void;
   messages: ChatMessage[];
   onSend: (text: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [seen, setSeen] = useState(0);
   const [text, setText] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
-
-  const fromThem = messages.filter((m) => !m.mine).length;
-  const unread = open ? 0 : Math.max(0, fromThem - seen);
-
-  // Clear the badge the moment the panel is open, and keep it clear as new lines land.
-  useEffect(() => {
-    if (open) setSeen(fromThem);
-  }, [open, fromThem]);
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ block: 'end' });
@@ -35,23 +29,7 @@ export default function CallChat({
     setText('');
   };
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open chat"
-        className="fixed right-4 top-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/80 text-white shadow-lg backdrop-blur transition-colors hover:bg-slate-700"
-      >
-        <MessageCircle className="h-5 w-5" />
-        {unread > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold">
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
-      </button>
-    );
-  }
+  if (!open) return null;
 
   return (
     <aside className="fixed inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-2xl">
@@ -59,7 +37,7 @@ export default function CallChat({
         <span className="text-sm font-black text-slate-900">Chat</span>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           aria-label="Close chat"
           className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
         >

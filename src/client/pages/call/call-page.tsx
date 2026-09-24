@@ -1,4 +1,5 @@
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import CallChat from './call-chat';
@@ -12,6 +13,16 @@ export default function CallPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const call = useCall(appointmentId);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [seen, setSeen] = useState(0);
+
+  const fromThem = call.messages.filter((m) => !m.mine).length;
+  const unread = chatOpen ? 0 : Math.max(0, fromThem - seen);
+
+  // Clear the badge while the panel is open, and keep it clear as new lines land.
+  useEffect(() => {
+    if (chatOpen) setSeen(fromThem);
+  }, [chatOpen, fromThem]);
 
   // Back to wherever this booking lives for the caller: the vet's queue or the owner's list.
   const exit = () =>
@@ -24,6 +35,7 @@ export default function CallPage() {
       <CallStage
         state={call.state}
         message={call.message}
+        peer={call.peer}
         localStream={call.localStream}
         remoteStream={call.remoteStream}
       />
@@ -42,6 +54,9 @@ export default function CallPage() {
         <CallControls
           micOn={call.micOn}
           camOn={call.camOn}
+          chatOpen={chatOpen}
+          chatUnread={unread}
+          onToggleChat={() => setChatOpen((open) => !open)}
           onToggleMic={call.toggleMic}
           onToggleCam={call.toggleCam}
           onHangUp={() => {
@@ -51,7 +66,14 @@ export default function CallPage() {
         />
       )}
 
-      {!finished && <CallChat messages={call.messages} onSend={call.sendChat} />}
+      {!finished && (
+        <CallChat
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          messages={call.messages}
+          onSend={call.sendChat}
+        />
+      )}
     </main>
   );
 }
