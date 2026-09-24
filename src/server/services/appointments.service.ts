@@ -3,11 +3,14 @@ import type { AppointmentKind } from '@shared/schemas';
 import type { ObjectId } from 'mongodb';
 
 import {
+  averageRatingForProfessional,
   findAppointmentById,
   findProfessionalById,
   findUserById,
   holdsSlotFor,
   insertAppointment,
+  rateAppointment as recordAppointmentRating,
+  setProfessionalRating,
   updateAppointment,
   type AppointmentDocument,
   type AppointmentStatus,
@@ -343,6 +346,46 @@ export async function decideAppointment(
   );
 
   return { appointment, mail };
+}
+
+export type RateAppointmentInput = {
+  id: string | ObjectId;
+  // The owner rating it. Only the client on the booking may, and only once.
+  actor: User;
+  rating: number;
+};
+
+// The owner's star on a finished consultation. Owner-only and completed-only checked here; once-only checked here and again in the write's filter, so two racing submissions cannot both land. The vet's average is recomputed from every rated booking rather than nudged, so a later correction cannot leave it adrift. Null for a booking that does not exist.
+export async function rateAppointment(
+  input: RateAppointmentInput
+): Promise<AppointmentDocument | null> {
+  const { id, actor, rating } = input;
+
+  const current = await findAppointmentById(id);
+  if (!current) return null;
+
+  // Not the vet, not a bystander: the owner whose pet was seen is the only one whose star means anything.
+  if (!current.client.equals(actor._id)) {
+    throw AppError.forbidden('That is not your appointment');
+  }
+
+  if (current.status !== 'completed') {
+    throw AppError.conflict('You can only rate an appointment once it is completed');
+  }
+
+  if (current.rating !== null) {
+    throw AppError.conflict('You have already rated this appointment');
+  }
+
+  const rated = await recordAppointmentRating(id, rating);
+  if (!rated) return null;
+
+  const summary = await averageRatingForProfessional(rated.professional);
+  await setProfessionalRating(rated.professional, summary);
+
+  announceAppointment(rated);
+
+  return rated;
 }
 
 export type CancelAppointmentInput = {

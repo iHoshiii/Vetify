@@ -578,6 +578,18 @@ export async function updateProfessionalProfile(
   );
 }
 
+// Writes the two rating figures the directory sorts and shows. Recomputed from bookings by the appointments service, never nudged, so the pair here is always the true mean and count.
+export async function setProfessionalRating(
+  id: string | ObjectId,
+  rating: { average: number; count: number }
+): Promise<ProfessionalDocument | null> {
+  return await professionalsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    { $set: { ratingAverage: rating.average, ratingCount: rating.count, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+}
+
 /**
  * Where a vet's pin sits, and whether it is published.
  *

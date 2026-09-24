@@ -87,6 +87,7 @@ export type AppointmentDocument = {
   reminderSentAt: Date | null;
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
+  rating: number | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -125,6 +126,7 @@ export type AppointmentView = {
   joinedAt: string | null;
   // Whether someone is in the call right now, so the other side's row can show it as ongoing.
   callActive: boolean;
+  rating: number | null;
   decidedAt: string | null;
   createdAt: string;
 };

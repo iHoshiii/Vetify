@@ -1,5 +1,6 @@
 export {
   appointmentsCollection,
+  averageRatingForProfessional,
   claimReminder,
   completeConfirmed,
   findAppointmentById,
@@ -12,6 +13,7 @@ export {
   insertAppointment,
   isDuplicateSlot,
   markCallJoined,
+  rateAppointment,
   tallyAppointments,
   updateAppointment,
   type AppointmentPatch,

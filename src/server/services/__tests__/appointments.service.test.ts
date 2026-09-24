@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 
 import {
   findHeldSlots,
+  findProfessionalById,
   insertProfessional,
   insertUser,
   isDuplicateSlot,
@@ -13,7 +14,12 @@ import {
   type User,
 } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { cancelAppointment, decideAppointment, requestAppointment } from '../appointments.service';
+import {
+  cancelAppointment,
+  decideAppointment,
+  rateAppointment,
+  requestAppointment,
+} from '../appointments.service';
 import { clearRecentMail, recentMail } from '../mail.service';
 
 beforeAll(startTestDb, 120_000);
@@ -651,6 +657,86 @@ describe('cancelAppointment', () => {
 
     await expect(
       cancelAppointment({ id: new ObjectId(), actor: client, reason: 'Never mind this one.' })
+    ).resolves.toBeNull();
+  });
+});
+
+describe('rateAppointment', () => {
+  // A booking taken all the way to completed, which is the only state a rating is allowed from.
+  async function completed(at: Date = SLOT.at) {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, at });
+    for (const decision of ['confirmed', 'completed'] as const) {
+      await decideAppointment({ id: booked!.appointment._id, decision, professional: vetUser });
+    }
+    return { client, vetUser, application: application!, id: booked!.appointment._id };
+  }
+
+  it("stars a finished booking and moves the vet's average", async () => {
+    const { client, application, id } = await completed();
+
+    const rated = await rateAppointment({ id, actor: client, rating: 4 });
+
+    expect(rated?.rating).toBe(4);
+    const vetNow = await findProfessionalById(application._id);
+    expect(vetNow?.ratingAverage).toBe(4);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('averages every rated booking a vet has', async () => {
+    const one = await account('owner');
+    const two = await account('owner');
+    const { user: vetUser, application } = await vet();
+
+    const first = await request({ client: one, professional: application!._id });
+    const second = await request({ client: two, professional: application!._id, at: LATER });
+    for (const booked of [first, second]) {
+      for (const decision of ['confirmed', 'completed'] as const) {
+        await decideAppointment({ id: booked!.appointment._id, decision, professional: vetUser });
+      }
+    }
+
+    await rateAppointment({ id: first!.appointment._id, actor: one, rating: 5 });
+    await rateAppointment({ id: second!.appointment._id, actor: two, rating: 3 });
+
+    const vetNow = await findProfessionalById(application!._id);
+    expect(vetNow?.ratingAverage).toBe(4);
+    expect(vetNow?.ratingCount).toBe(2);
+  });
+
+  it('refuses a second rating on the same booking', async () => {
+    const { client, id } = await completed();
+    await rateAppointment({ id, actor: client, rating: 5 });
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('refuses one that has not been completed', async () => {
+    const client = await account('owner');
+    const { application } = await vet();
+    const booked = await request({ client, professional: application!._id });
+
+    await expect(
+      rateAppointment({ id: booked!.appointment._id, actor: client, rating: 5 })
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('refuses anyone who is not the owner', async () => {
+    const { vetUser, id } = await completed();
+
+    await expect(rateAppointment({ id, actor: vetUser, rating: 5 })).rejects.toMatchObject({
+      statusCode: 403,
+    });
+  });
+
+  it('answers null for a booking that does not exist', async () => {
+    const client = await account('owner');
+
+    await expect(
+      rateAppointment({ id: new ObjectId(), actor: client, rating: 5 })
     ).resolves.toBeNull();
   });
 });

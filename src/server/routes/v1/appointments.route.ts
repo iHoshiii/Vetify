@@ -1,8 +1,10 @@
 import {
   appointmentListQuerySchema,
+  appointmentRateSchema,
   appointmentRefuseSchema,
   appointmentRequestSchema,
   type AppointmentListQuery,
+  type AppointmentRate,
   type AppointmentRefuse,
   type AppointmentRequest,
 } from '@shared/schemas';
@@ -26,6 +28,7 @@ import {
 import {
   cancelAppointment,
   decideAppointment,
+  rateAppointment,
   requestAppointment,
   type AppointmentDecision,
 } from '../../services/appointments.service';
@@ -268,6 +271,19 @@ router.patch('/:id/cancel', validate(appointmentRefuseSchema), async (req, res) 
     appointment: await viewOf(result.appointment, actor._id),
     mail: result.mail,
   });
+});
+
+// PATCH /api/v1/appointments/:id/rate: the owner's star on a finished consultation. Owner-only and once-only, both decided against the stored booking in the service rather than here, because neither can be read off the request.
+router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AppointmentRate;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
+
+  const result = await rateAppointment({ id: req.params.id, actor, rating: body.rating });
+  if (!result) return fail(res, 404, MISSING);
+
+  ok(res, { appointment: await viewOf(result, actor._id) });
 });
 
 export default router;

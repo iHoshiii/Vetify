@@ -63,6 +63,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     decidedAt: null,
     reminderSentAt: null,
     joinedAt: null,
+    rating: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -337,4 +338,31 @@ export async function tallyAppointments(
 /** Whether a status is one that keeps its slot. Read off the shared list. */
 export function holdsSlotFor(status: AppointmentStatus): boolean {
   return (APPOINTMENT_LIVE_STATUSES as readonly string[]).includes(status);
+}
+
+// Records the owner's stars on a finished, unrated booking. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first. Returns the updated booking, or null when it was already rated or not completed.
+export async function rateAppointment(
+  id: string | ObjectId,
+  rating: number
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), status: 'completed', rating: null },
+    { $set: { rating, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
+
+// The mean and count of stars one vet has been given, over every rated booking. Recomputed from scratch on each new star so a changed rating cannot leave the figure drifting.
+export async function averageRatingForProfessional(
+  professional: string | ObjectId
+): Promise<{ average: number; count: number }> {
+  const [row] = await appointmentsCollection()
+    .aggregate<{ average: number; count: number }>([
+      { $match: { professional: toObjectId(professional), rating: { $type: 'number' } } },
+      { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  return { average: row?.average ?? 0, count: row?.count ?? 0 };
 }

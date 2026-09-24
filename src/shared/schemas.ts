@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   APPOINTMENT_PAGE_SIZE,
   APPOINTMENT_PAGE_SIZE_MAX,
+  APPOINTMENT_RATING_MAX,
+  APPOINTMENT_RATING_MIN,
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
   APPOINTMENT_MAX_SLOTS,
@@ -1352,6 +1354,11 @@ export const appointmentRequestSchema = z.object({
 /** Turning one down, or calling one off. The reason is shown to the other side. */
 export const appointmentRefuseSchema = z.object({ reason: moderationReason });
 
+// Rating a finished booking. One to five whole stars, coerced so a form body or query string both parse.
+export const appointmentRateSchema = z.object({
+  rating: z.coerce.number().int().min(APPOINTMENT_RATING_MIN).max(APPOINTMENT_RATING_MAX),
+});
+
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
 export const appointmentRescheduleSchema = z.object({
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
@@ -1385,6 +1392,7 @@ export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>
 export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
+export type AppointmentRate = z.output<typeof appointmentRateSchema>;
 export type AppointmentReschedule = z.output<typeof appointmentRescheduleSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 
