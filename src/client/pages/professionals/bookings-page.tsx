@@ -63,7 +63,6 @@ export default function ProfessionalBookingsPage({ kind }: { kind: AppointmentKi
         id: booking.id,
         decision: action,
         ...(action === 'decline' ? { reason: typed } : {}),
-        ...(action === 'confirm' && typed ? { meetingUrl: typed } : {}),
       },
       { onSuccess: done }
     );

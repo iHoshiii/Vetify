@@ -3,6 +3,8 @@ import type { AppointmentStatus } from '@shared/schemas';
 import { Link } from 'react-router-dom';
 import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
+import StartSessionButton from '@/pages/call/start-session-button';
+
 /** How each status reads, and how it looks. Past tense, because a status is a result. */
 const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
   requested: { label: 'Waiting on the vet', tone: 'bg-amber-100 text-amber-900' },
@@ -72,16 +74,13 @@ export default function BookingRow({
         </p>
       )}
 
-      {/* A link only once confirmed: on a booking nobody agreed to it links to nothing. */}
-      {booking.status === 'confirmed' && booking.meetingUrl && (
-        <a
-          href={booking.meetingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex h-9 items-center rounded-lg bg-teal-800 px-4 text-sm font-bold text-white hover:bg-teal-900"
-        >
-          Join the call
-        </a>
+      {/* Confirmed online consultations open the in-app room; the button gates itself on the join window. */}
+      {booking.status === 'confirmed' && booking.kind === 'virtual' && (
+        <StartSessionButton
+          appointmentId={booking.id}
+          startsAt={booking.startsAt}
+          minutes={booking.minutes}
+        />
       )}
 
       {CANCELLABLE.includes(booking.status) && (
