@@ -88,6 +88,13 @@ const envSchema = z.object({
   // sent, so a developer who never mails anything is not stopped at boot.
   MAIL_API_URL: z.string().url().default('https://api.resend.com/emails'),
   MAIL_API_KEY: z.string().min(1).optional(),
+
+  // ---- In-app video call ----
+  // Optional TURN relay for calls that cannot hole-punch. All three go together;
+  // with none set the call falls back to Google STUN alone, which is enough on most networks.
+  TURN_URL: z.string().min(1).optional(),
+  TURN_USERNAME: z.string().min(1).optional(),
+  TURN_CREDENTIAL: z.string().min(1).optional(),
 });
 
 /**

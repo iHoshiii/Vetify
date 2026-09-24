@@ -74,13 +74,17 @@ export type AppointmentDocument = {
   reason: string;
   /** A number for the vet to ring, when the owner gave one. */
   phone: string | null;
-  /** Where a virtual consultation happens. Set by the vet when they confirm. */
+  // The address the owner gave at booking, if any, where their confirm/decline email goes.
+  clientEmail: string | null;
+  /** Unused since the call moved in-app. Kept nullable so old rows need no migration. */
   meetingUrl: string | null;
   /** Why it was declined or called off, and by whom. Shown to the other side. */
   refusalReason: string | null;
   /** Which of the two ended it, so neither is told they cancelled their own booking. */
   cancelledBy: ObjectId | null;
   decidedAt: Date | null;
+  // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
+  reminderSentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

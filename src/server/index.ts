@@ -1,9 +1,10 @@
 import { createApp } from './app';
 import { connectDb, disconnectDb } from './config/db';
 import { applyDnsServers } from './config/dns';
-import { env, isProduction } from './config/env';
+import { env, isProduction, isTest } from './config/env';
 import { ensureIndexes } from './models';
 import { attachRealtime } from './realtime/socket';
+import { startReminderScanner } from './services/reminders.service';
 
 /**
  * Mongoose created indexes on its own the first time each model was used. The
@@ -31,6 +32,9 @@ async function main() {
 
   const dbUp = await connectDb();
   if (dbUp) await buildIndexes();
+
+  // The pre-appointment reminder scan needs the DB and has no place in a test run.
+  if (dbUp && !isTest) startReminderScanner();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

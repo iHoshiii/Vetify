@@ -68,45 +68,17 @@ export function requestedToProfessionalEmail(
   return compose(input.to, `Appointment request for ${input.petName}`, text);
 }
 
-/**
- * To the owner: we have asked, and the slot is yours while you wait.
- *
- * Says the slot is held, because that is the question somebody has the moment they
- * click: whether they need to sit on the page in case somebody else takes it.
- */
-export function requestedToClientEmail(
-  input: AppointmentEmailBase & { professionalName: string }
-): MailMessage {
-  const text = [
-    `Hi ${firstName(input.name)},`,
-    `Your request has gone to ${input.professionalName}.`,
-    `${kindOf(input.kind)}: ${MANILA_DATE_TIME.format(input.startsAt)} (Philippine time)\nFor: ${
-      input.petName
-    }`,
-    'That time is held for you while they answer, so nobody else can take it. We will email you either way.',
-    `You can see it, or withdraw it, at ${bookingsLink()}.`,
-  ].join('\n\n');
-
-  return compose(input.to, `We have asked about ${input.petName}'s appointment`, text);
-}
-
-/**
- * To the owner: it is on.
- *
- * The link for a virtual consultation is a line of its own rather than folded into a
- * sentence — it is the thing they will come back to this email to find.
- */
+// To the owner: it is on. A virtual booking names no link — the session is started in-app.
 export function confirmedEmail(
-  input: AppointmentEmailBase & { professionalName: string; meetingUrl: string | null }
+  input: AppointmentEmailBase & { professionalName: string }
 ): MailMessage {
   const text = [
     `Hi ${firstName(input.name)},`,
     `${input.professionalName} has confirmed ${input.petName}'s appointment.`,
     `${kindOf(input.kind)}: ${MANILA_DATE_TIME.format(input.startsAt)} (Philippine time)`,
-    input.meetingUrl ? `Join here at the time:\n${input.meetingUrl}` : null,
     input.kind === 'onsite'
       ? 'Come to the address on their listing. Bring any records you have for the visit.'
-      : null,
+      : 'When the time comes, open your appointments page and start the session from there.',
     `If you can no longer make it, cancel at ${bookingsLink()} rather than leaving the slot held — somebody else may want it.`,
   ]
     .filter(Boolean)

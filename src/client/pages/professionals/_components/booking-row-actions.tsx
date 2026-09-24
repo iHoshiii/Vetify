@@ -1,5 +1,6 @@
 import type { Appointment } from '@/services/appointments.service';
-import { Video } from 'lucide-react';
+
+import StartSessionButton from '@/pages/call/start-session-button';
 
 import { ACT_DANGER, ACT_PRIMARY, ACT_QUIET, type Action } from './booking-actions';
 
@@ -27,15 +28,13 @@ export default function BookingRowActions({
   if (booking.status === 'confirmed') {
     return (
       <>
-        {booking.meetingUrl && (
-          <a
-            href={booking.meetingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-1 ${ACT_PRIMARY}`}
-          >
-            <Video className="h-3 w-3" /> Join call
-          </a>
+        {booking.kind === 'virtual' && (
+          <StartSessionButton
+            appointmentId={booking.id}
+            startsAt={booking.startsAt}
+            minutes={booking.minutes}
+            variant="inline"
+          />
         )}
         <button type="button" onClick={() => onAct(booking, 'complete')} className={ACT_QUIET}>
           Mark done

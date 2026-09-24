@@ -1,6 +1,6 @@
 import type { RequestResult } from '@/services/appointments.service';
 
-/** The request landed, and whether each side actually heard about it. */
+/** The request landed. The owner is emailed later, on the vet's decision, not now. */
 export function AskedNotice({ mail }: { mail: RequestResult['mail'] }) {
   return (
     <div role="status" className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
@@ -8,15 +8,10 @@ export function AskedNotice({ mail }: { mail: RequestResult['mail'] }) {
         Asked. That time is held for you while they answer.
       </p>
       <p className="mt-1 text-sm text-emerald-900/80">
-        {/* A null error means no email was asked for, so say nothing about a copy. */}
-        {mail.client.delivered
-          ? 'We have emailed you a copy. '
-          : mail.client.deliveryError
-          ? `We could not email you a copy: ${mail.client.deliveryError} `
-          : ''}
+        {/* An email follows only when the vet decides, and only if you gave an address. */}
         {mail.professional.delivered
-          ? ''
-          : ' The vet was not reachable by email either, so it may be worth ringing them.'}
+          ? "We have let the vet know. You'll hear back once they confirm or decline."
+          : 'The vet was not reachable by email, so it may be worth ringing them.'}
       </p>
     </div>
   );

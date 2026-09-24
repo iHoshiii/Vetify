@@ -6,6 +6,7 @@ import { Server } from 'socket.io';
 import { env } from '../config/env';
 import { findThreadById, findUserById, isValidObjectId } from '../models';
 import { notifyTyping } from '../services/messages.service';
+import { registerCall } from './call';
 import { setRealtime } from './hub';
 import { trackPresence } from './presence';
 
@@ -65,6 +66,7 @@ export function attachRealtime(http: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = socket.data.userId as string;
     trackPresence(socket, userId);
+    registerCall(socket);
     socket.on(
       'thread:typing',
       (payload, acknowledge?: (result: { delivered: boolean }) => void) => {

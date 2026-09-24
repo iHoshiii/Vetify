@@ -102,11 +102,11 @@ export default function BookingForm({
           placeholder="you@example.com"
           className={`${FIELD} mt-1`}
         />
-        {/* Left blank, no confirmation is sent — there is nowhere to send it. */}
+        {/* Left blank, no email is sent — there is nowhere to send it. */}
         <p className="mt-1 text-xs text-slate-500">
           {badEmail
             ? 'That does not look like an email address.'
-            : 'Fill this in and we email you a copy once you book.'}
+            : "Add this and we'll email you when the vet confirms or declines."}
         </p>
       </div>
 

@@ -18,6 +18,8 @@ import {
   METRIC_WINDOW_DAYS,
   MODERATION_REASON_MAX,
   MODERATION_REASON_MIN,
+  NOTIFICATION_PAGE_SIZE,
+  NOTIFICATION_PAGE_SIZE_MAX,
   THREAD_PAGE_SIZE,
   THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
@@ -1329,30 +1331,12 @@ export const appointmentRequestSchema = z.object({
     .string()
     .trim()
     .regex(/^\+63\d{10}$/, 'Enter a valid +63 mobile number'),
-  // Optional: a copy of the request is emailed here only when given
+  // Optional: the confirm or decline email is sent here, and only when given
   clientEmail: z
     .string()
     .trim()
     .toLowerCase()
     .email('Please enter a valid email address')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-});
-
-/**
- * The vet saying yes.
- *
- * A virtual booking owes a link, and the service refuses one without it. The rule
- * is not in this schema because the kind is on the stored booking rather than in
- * the body: asking the client which rule applies to it is asking the wrong side.
- */
-export const appointmentConfirmSchema = z.object({
-  meetingUrl: z
-    .string()
-    .trim()
-    // A vet pasting meet.google.com/abc means https, so assume it rather than reject a bare host.
-    .transform((raw) => (raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw))
-    .pipe(z.string().url('That is not a link').max(500, 'That link is too long'))
     .optional()
     .or(z.literal('').transform(() => undefined)),
 });
@@ -1387,9 +1371,21 @@ export const appointmentListQuerySchema = z.object({
 export type AppointmentSlotsQuery = z.output<typeof appointmentSlotsQuerySchema>;
 export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
-export type AppointmentConfirm = z.output<typeof appointmentConfirmSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
+
+// One page of the caller's own notifications, newest first.
+export const notificationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(NOTIFICATION_PAGE_SIZE_MAX, `Ask for at most ${NOTIFICATION_PAGE_SIZE_MAX} per page`)
+    .default(NOTIFICATION_PAGE_SIZE),
+});
+
+export type NotificationListQuery = z.output<typeof notificationListQuerySchema>;
 
 /* ---------------------------------------------------------------------------
  * Messaging. One private thread per owner-and-vet pair, both accounts. Opening
