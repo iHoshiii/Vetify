@@ -74,13 +74,22 @@ export type AppointmentDocument = {
   reason: string;
   /** A number for the vet to ring, when the owner gave one. */
   phone: string | null;
-  /** Where a virtual consultation happens. Set by the vet when they confirm. */
+  // The address the owner gave at booking, if any, where their confirm/decline email goes.
+  clientEmail: string | null;
+  /** Unused since the call moved in-app. Kept nullable so old rows need no migration. */
   meetingUrl: string | null;
   /** Why it was declined or called off, and by whom. Shown to the other side. */
   refusalReason: string | null;
   /** Which of the two ended it, so neither is told they cancelled their own booking. */
   cancelledBy: ObjectId | null;
   decidedAt: Date | null;
+  // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
+  reminderSentAt: Date | null;
+  // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
+  joinedAt: Date | null;
+  rating: number | null;
+  // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
+  ratingComment: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -93,14 +102,7 @@ export type AppointmentParty = {
   avatarUrl: string | null;
 };
 
-/**
- * A booking as either side reads it.
- *
- * One shape for both consoles rather than two. The owner and the vet want the same
- * facts about the same booking — when, what kind, what it is about, where it
- * stands — and the only thing that differs is which party is "the other one", which
- * is why that is a single field rather than two.
- */
+// One shape for both consoles: owner and vet want the same facts, and only which party is "the other one" differs, so that is one field not two.
 export type AppointmentView = {
   id: string;
   kind: AppointmentKind;
@@ -122,6 +124,12 @@ export type AppointmentView = {
   with: AppointmentParty | null;
   /** The listing behind the vet, so an owner's row can link to their profile. */
   professionalId: string;
+  // When either side first joined the call, so the owner's row offers Start before and Rejoin after.
+  joinedAt: string | null;
+  // Whether someone is in the call right now, so the other side's row can show it as ongoing.
+  callActive: boolean;
+  rating: number | null;
+  ratingComment: string | null;
   decidedAt: string | null;
   createdAt: string;
 };

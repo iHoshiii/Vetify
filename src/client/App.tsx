@@ -20,6 +20,7 @@ import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
 import BlogDetailPage from '@/pages/blogs/blog-detail-page';
 import BlogsPage from '@/pages/blogs/blogs-page';
 import BookAppointmentPage from '@/pages/book-appointment/book-appointment-page';
+import CallPage from '@/pages/call/call-page';
 import ChatPage from '@/pages/chat/chat-page';
 import ContactPage from '@/pages/contact/contact-page';
 import HelpPage from '@/pages/help/help-page';
@@ -219,6 +220,15 @@ export default function App() {
         <Route path="profile" element={<ProfessionalProfilePage />} />
         <Route path="settings" element={<ProfessionalSettingsPage />} />
       </Route>
+      {/* The consultation room is its own full-screen route, outside RootLayout, so no navbar or chrome sits over the call. */}
+      <Route
+        path="call/:appointmentId"
+        element={
+          <RequireAuth>
+            <CallPage />
+          </RequireAuth>
+        }
+      />
     </Routes>
   );
 }

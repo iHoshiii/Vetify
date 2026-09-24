@@ -13,6 +13,8 @@ import { AlertTriangle, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
+import ScheduleGrid from './ScheduleGrid';
+
 // The console settings rows: three forms a vet fills in, and one that only reports because placing a map pin needs a map
 
 const DAYS = [
@@ -235,18 +237,25 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
   const [status, setStatus] = useState<ProfessionalAvailabilityStatus>(
     application.availabilityStatus
   );
-  const [schedule, setSchedule] = useState<WeeklyScheduleItem[]>(
-    application.weeklySchedule.length > 0 ? application.weeklySchedule : defaultSchedule()
+  const [tab, setTab] = useState<'onsite' | 'virtual'>('onsite');
+  const [onsite, setOnsite] = useState<WeeklyScheduleItem[]>(
+    application.onsiteSchedule.length > 0 ? application.onsiteSchedule : defaultSchedule()
+  );
+  const [virtual, setVirtual] = useState<WeeklyScheduleItem[]>(
+    application.virtualSchedule.length > 0 ? application.virtualSchedule : defaultSchedule()
   );
 
+  const setActive = tab === 'onsite' ? setOnsite : setVirtual;
+  const active = tab === 'onsite' ? onsite : virtual;
+
   const edit = (day: string, change: Partial<WeeklyScheduleItem>) =>
-    setSchedule((current) =>
+    setActive((current) =>
       current.map((item) => (item.day === day ? { ...item, ...change } : item))
     );
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    save({ availabilityStatus: status, weeklySchedule: schedule });
+    save({ availabilityStatus: status, onsiteSchedule: onsite, virtualSchedule: virtual });
   };
 
   return (
@@ -269,58 +278,20 @@ function AvailabilityForm({ application }: { application: OwnProfessional }) {
 
       <div className="space-y-1.5">
         <span className="text-sm font-bold text-slate-700">Weekly hours</span>
-        {/* Every day switchable, because a vet who consults on a Sunday has to be able to say so */}
-        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {DAYS.map(([day, short]) => {
-            const item = schedule.find((one) => one.day === day);
-            if (!item) return null;
-
-            return (
-              <li
-                key={day}
-                className={`flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 ${
-                  item.enabled ? '' : 'bg-slate-50'
-                }`}
-              >
-                <label className="flex w-20 shrink-0 items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={item.enabled}
-                    onChange={() => edit(day, { enabled: !item.enabled })}
-                    className="h-4 w-4 rounded border-slate-300 text-teal-800 focus:ring-teal-700"
-                  />
-                  <span
-                    className={`text-xs font-bold ${
-                      item.enabled ? 'text-slate-800' : 'text-slate-400'
-                    }`}
-                  >
-                    {short}
-                  </span>
-                </label>
-
-                {item.enabled ? (
-                  <span className="flex flex-1 items-center gap-1">
-                    <input
-                      type="time"
-                      value={item.startTime}
-                      onChange={(event) => edit(day, { startTime: event.target.value })}
-                      className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
-                    />
-                    <span className="text-xs text-slate-400">–</span>
-                    <input
-                      type="time"
-                      value={item.endTime}
-                      onChange={(event) => edit(day, { endTime: event.target.value })}
-                      className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
-                    />
-                  </span>
-                ) : (
-                  <span className="flex-1 text-xs italic text-slate-400">Closed</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        {/* Clinic visits and online consultations keep separate hours, one grid at a time */}
+        <div className="flex gap-1.5 sm:max-w-xs">
+          {(['onsite', 'virtual'] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTab(value)}
+              className={`flex-1 ${PILL} ${tab === value ? 'bg-teal-800 text-white' : PILL_IDLE}`}
+            >
+              {value === 'onsite' ? 'Clinic visit' : 'Online'}
+            </button>
+          ))}
+        </div>
+        <ScheduleGrid schedule={active} onEdit={edit} />
       </div>
 
       <SaveRow pending={pending} error={error} saved={saved} label="Save availability" />
@@ -384,14 +355,15 @@ export function AvailabilitySection({ isExpanded, onToggle }: SectionProps) {
   const application = useVerifiedApplication();
   if (!application) return null;
 
-  const open = application.weeklySchedule.filter((day) => day.enabled).length;
+  const onsiteOpen = application.onsiteSchedule.filter((day) => day.enabled).length;
+  const virtualOpen = application.virtualSchedule.filter((day) => day.enabled).length;
 
   return (
     <SettingRow
       label="🗓️ Availability"
-      summary={`${STATUS_LABEL[application.availabilityStatus]} · ${
-        application.weeklySchedule.length === 0 ? 'no hours set' : `${open} of 7 days open`
-      }`}
+      summary={`${
+        STATUS_LABEL[application.availabilityStatus]
+      } · Clinic ${onsiteOpen}/7 · Online ${virtualOpen}/7`}
       isExpanded={isExpanded}
       onToggle={onToggle}
     >

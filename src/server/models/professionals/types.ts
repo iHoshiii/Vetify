@@ -142,6 +142,9 @@ export type ProfessionalDocument = {
   ratingCount?: number;
   availabilityStatus?: ProfessionalAvailabilityStatus;
   weeklySchedule?: WeeklyScheduleItem[];
+  // Per-kind overrides. Absent means this kind uses weeklySchedule.
+  onsiteSchedule?: WeeklyScheduleItem[];
+  virtualSchedule?: WeeklyScheduleItem[];
   avatarUrl?: string | null;
   workHistory?: WorkHistoryItem[];
   bookingNotificationMinutes?: ProfessionalBookingNotificationTime;
@@ -259,6 +262,8 @@ export type OwnProfessional = {
   hourlyRate: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
+  onsiteSchedule: WeeklyScheduleItem[];
+  virtualSchedule: WeeklyScheduleItem[];
   avatarUrl: string | null;
   workHistory: WorkHistoryItem[];
   bookingNotificationMinutes: ProfessionalBookingNotificationTime;
@@ -304,6 +309,8 @@ export type PublicProfessional = {
   ratingCount: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
+  onsiteSchedule: WeeklyScheduleItem[];
+  virtualSchedule: WeeklyScheduleItem[];
   workHistory: WorkHistoryItem[];
   /** When the licence was verified. Every entry in the directory has one. */
   verifiedAt: string | null;

@@ -1,19 +1,28 @@
 import type { Appointment } from '@/services/appointments.service';
+import { APPOINTMENT_RESCHEDULE_MIN_HOURS } from '@shared/limits';
 import type { AppointmentStatus } from '@shared/schemas';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 
-/** How each status reads, and how it looks. Past tense, because a status is a result. */
-const STATUS: Record<AppointmentStatus, { label: string; tone: string }> = {
-  requested: { label: 'Waiting on the vet', tone: 'bg-amber-100 text-amber-900' },
-  confirmed: { label: 'Confirmed', tone: 'bg-emerald-100 text-emerald-900' },
-  declined: { label: 'Turned down', tone: 'bg-rose-100 text-rose-900' },
-  cancelled: { label: 'Cancelled', tone: 'bg-slate-100 text-slate-700' },
-  completed: { label: 'Done', tone: 'bg-slate-100 text-slate-700' },
+import StartSessionButton from '@/pages/call/start-session-button';
+
+import RateBooking from './rate-booking';
+
+// Status label and a small dot color, no pill fill.
+const STATUS: Record<AppointmentStatus, { label: string; dot: string }> = {
+  requested: { label: 'Pending', dot: 'bg-amber-500' },
+  confirmed: { label: 'Confirmed', dot: 'bg-emerald-500' },
+  declined: { label: 'Declined', dot: 'bg-rose-500' },
+  cancelled: { label: 'Cancelled', dot: 'bg-slate-400' },
+  completed: { label: 'Completed', dot: 'bg-slate-400' },
 };
 
-/** The statuses still ahead of the owner, and so the only ones worth cancelling. */
+// The statuses still ahead of the owner, and so the only ones worth cancelling.
 const CANCELLABLE: AppointmentStatus[] = ['requested', 'confirmed'];
+
+// Cancel closes the same six hours before the start that a reschedule does, so a booking cannot be dropped once the vet is about to be waiting on it.
+const CANCEL_LOCK_MS = APPOINTMENT_RESCHEDULE_MIN_HOURS * 60 * 60_000;
 
 function when(at: string, locale: string, timeZone: string): string {
   return new Date(at).toLocaleString(locale, {
@@ -26,7 +35,7 @@ function when(at: string, locale: string, timeZone: string): string {
   });
 }
 
-/** One booking of the caller's, with the reason it went that way and the way out of it. */
+// One booking of the caller's, with the reason it went that way and the way out of it.
 export default function BookingRow({
   booking,
   onCancel,
@@ -36,63 +45,80 @@ export default function BookingRow({
 }) {
   const { locale, timeZone } = useLocalePreferences();
   const status = STATUS[booking.status];
+  const [now, setNow] = useState(() => Date.now());
+
+  // A slow tick so the cancel window closes on screen without a reload.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cancellable =
+    CANCELLABLE.includes(booking.status) &&
+    now < new Date(booking.startsAt).getTime() - CANCEL_LOCK_MS;
 
   return (
-    <li className="rounded-xl border border-slate-900/10 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <li className="rounded-md border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-bold text-slate-950">
+          <p className="text-sm font-semibold text-slate-900">
             {booking.petName}
             <span className="font-normal text-slate-500"> &middot; {booking.petSpecies}</span>
           </p>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-500">
             {when(booking.startsAt, locale, timeZone)} &middot;{' '}
             {booking.kind === 'virtual' ? 'Online consultation' : 'Clinic visit'}
           </p>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-500">
             With{' '}
             <Link
               to={`/professionals/${booking.professionalId}`}
-              className="font-semibold text-teal-800 hover:underline"
+              className="font-medium text-teal-700 hover:underline"
             >
               {booking.with?.name ?? booking.with?.email ?? 'a vet'}
             </Link>
           </p>
         </div>
 
-        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${status.tone}`}>
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600">
+          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} aria-hidden />
           {status.label}
         </span>
       </div>
 
       {booking.refusalReason && (
-        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
-          {booking.cancelledByYou ? 'You said: ' : 'They said: '}
+        <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          <span className="font-medium text-slate-700">
+            {booking.cancelledByYou ? 'You said: ' : 'They said: '}
+          </span>
           {booking.refusalReason}
         </p>
       )}
 
-      {/* A link only once confirmed: on a booking nobody agreed to it links to nothing. */}
-      {booking.status === 'confirmed' && booking.meetingUrl && (
-        <a
-          href={booking.meetingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex h-9 items-center rounded-lg bg-teal-800 px-4 text-sm font-bold text-white hover:bg-teal-900"
-        >
-          Join the call
-        </a>
+      {/* Actions sit on one row so the Start button and the cancel link stay aligned and separately clickable. */}
+      {((booking.status === 'confirmed' && booking.kind === 'virtual') || cancellable) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {booking.status === 'confirmed' && booking.kind === 'virtual' && (
+            <StartSessionButton
+              appointmentId={booking.id}
+              startsAt={booking.startsAt}
+              minutes={booking.minutes}
+            />
+          )}
+
+          {cancellable && (
+            <button
+              type="button"
+              onClick={() => onCancel(booking.id)}
+              className="inline-flex h-9 items-center rounded-lg bg-rose-600 px-4 text-sm font-bold text-white transition hover:bg-rose-700"
+            >
+              Cancel this booking
+            </button>
+          )}
+        </div>
       )}
 
-      {CANCELLABLE.includes(booking.status) && (
-        <button
-          type="button"
-          onClick={() => onCancel(booking.id)}
-          className="mt-3 text-sm font-bold text-rose-700 hover:underline"
-        >
-          Cancel this booking
-        </button>
-      )}
+      {booking.status === 'completed' && <RateBooking booking={booking} />}
     </li>
   );
 }

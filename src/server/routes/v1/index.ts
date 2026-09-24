@@ -7,6 +7,7 @@ import authRoute from './auth.route';
 import blogsRoute from './blogs.route';
 import chatRoute from './chat.route';
 import messagesRoute from './messages.route';
+import notificationsRoute from './notifications.route';
 import professionalsRoute from './professionals.route';
 
 const router = Router();
@@ -32,6 +33,7 @@ router.use('/auth', authRoute);
 router.use('/blogs', blogsRoute);
 router.use('/appointments', appointmentsRoute);
 router.use('/messages', messagesRoute);
+router.use('/notifications', notificationsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/admin', adminRoute);
 

@@ -56,10 +56,15 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     petAge: parsed.petAge ?? null,
     reason: parsed.reason,
     phone: parsed.phone ?? null,
+    clientEmail: parsed.clientEmail ?? null,
     meetingUrl: null,
     refusalReason: null,
     cancelledBy: null,
     decidedAt: null,
+    reminderSentAt: null,
+    joinedAt: null,
+    rating: null,
+    ratingComment: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -190,7 +195,13 @@ function emptyTally(): AppointmentTally {
 export type AppointmentPatch = Partial<
   Pick<
     AppointmentDocument,
-    'status' | 'holdsSlot' | 'meetingUrl' | 'refusalReason' | 'cancelledBy' | 'decidedAt'
+    | 'status'
+    | 'holdsSlot'
+    | 'meetingUrl'
+    | 'refusalReason'
+    | 'cancelledBy'
+    | 'decidedAt'
+    | 'joinedAt'
   >
 >;
 
@@ -207,6 +218,102 @@ export async function updateAppointment(
     { $set: { ...patch, updatedAt: new Date() } },
     { returnDocument: 'after' }
   );
+}
+
+// The new span a reschedule writes: where it now starts, and the hours it now holds.
+export type RescheduleFields = { startsAt: Date; heldSlots: Date[] };
+
+// Moves a booking onto a new span and puts it back to a fresh request. Replacing heldSlots frees the old hours and claims the new ones in one write, so the unique index rejects a slot another live booking holds; the route turns that into the same 409 a first booking gets.
+export async function moveAppointment(
+  id: string | ObjectId,
+  fields: RescheduleFields
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    {
+      $set: {
+        startsAt: fields.startsAt,
+        heldSlots: fields.heldSlots,
+        status: 'requested',
+        holdsSlot: true,
+        decidedAt: null,
+        refusalReason: null,
+        cancelledBy: null,
+        reminderSentAt: null,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: 'after' }
+  );
+}
+
+// Confirmed bookings not yet reminded whose start falls within the widest lead window ahead.
+export async function findRemindableAppointments(input: {
+  from: Date;
+  to: Date;
+}): Promise<AppointmentDocument[]> {
+  return await appointmentsCollection()
+    .find({
+      status: 'confirmed',
+      // Missing on rows made before the field, which null also matches, so old bookings are covered.
+      reminderSentAt: null,
+      startsAt: { $gt: input.from, $lte: input.to },
+    })
+    .toArray();
+}
+
+// Claims a booking's reminder atomically, so two ticks or two instances cannot both send it.
+export async function claimReminder(id: string | ObjectId): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), reminderSentAt: null },
+    { $set: { reminderSentAt: now, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
+
+// Confirmed bookings whose start is already past. The sweep re-checks each one's end (startsAt + minutes) in JS, since the end is not a stored field.
+export async function findStartedConfirmed(before: Date): Promise<AppointmentDocument[]> {
+  return await appointmentsCollection()
+    .find({ status: 'confirmed', startsAt: { $lte: before } })
+    .toArray();
+}
+
+// Flips one booking to completed, guarded on it still being confirmed so two ticks cannot both act. holdsSlot stays true because completed is a live status.
+export async function completeConfirmed(
+  id: string | ObjectId
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), status: 'confirmed' },
+    { $set: { status: 'completed', decidedAt: now, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
+
+// Stamps the first join on a call, once. The null-or-missing guard means later joins leave the original time alone.
+export async function markCallJoined(id: string | ObjectId): Promise<void> {
+  const now = new Date();
+  await appointmentsCollection().updateOne(
+    { _id: toObjectId(id), joinedAt: null },
+    { $set: { joinedAt: now, updatedAt: now } }
+  );
+}
+
+// The confirmed virtual booking the same two people hold starting exactly at a given instant, or null. Walks a back-to-back chain.
+export async function findConfirmedCallStartingAt(input: {
+  professional: ObjectId;
+  client: ObjectId;
+  startsAt: Date;
+}): Promise<AppointmentDocument | null> {
+  return await appointmentsCollection().findOne({
+    professional: input.professional,
+    client: input.client,
+    kind: 'virtual',
+    status: 'confirmed',
+    startsAt: input.startsAt,
+  });
 }
 
 // One aggregate for all ten figures the console draws, none of which may come from the page of rows on screen
@@ -232,4 +339,36 @@ export async function tallyAppointments(
 /** Whether a status is one that keeps its slot. Read off the shared list. */
 export function holdsSlotFor(status: AppointmentStatus): boolean {
   return (APPOINTMENT_LIVE_STATUSES as readonly string[]).includes(status);
+}
+
+// Records the owner's stars and optional note on a consultation that has taken place. Rateable means completed, or a virtual booking someone joined, since a call the owner attended has happened whether or not the clock has ticked past its end. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
+export async function rateAppointment(
+  id: string | ObjectId,
+  rating: number,
+  comment: string | null
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    {
+      _id: toObjectId(id),
+      rating: null,
+      $or: [{ status: 'completed' }, { kind: 'virtual', joinedAt: { $ne: null } }],
+    },
+    { $set: { rating, ratingComment: comment, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
+
+// The mean and count of stars one vet has been given, over every rated booking. Recomputed from scratch on each new star so a changed rating cannot leave the figure drifting.
+export async function averageRatingForProfessional(
+  professional: string | ObjectId
+): Promise<{ average: number; count: number }> {
+  const [row] = await appointmentsCollection()
+    .aggregate<{ average: number; count: number }>([
+      { $match: { professional: toObjectId(professional), rating: { $type: 'number' } } },
+      { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  return { average: row?.average ?? 0, count: row?.count ?? 0 };
 }

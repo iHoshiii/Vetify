@@ -1,4 +1,5 @@
 import { MODERATION_REASON_MAX, MODERATION_REASON_MIN } from '@shared/limits';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { CONTROL } from './ui';
@@ -75,6 +76,9 @@ export function InterviewDialog({ open, applicant, isPending, error, onCancel, o
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onCancel]);
+
+  // Hold the page still whenever the dialog is showing.
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

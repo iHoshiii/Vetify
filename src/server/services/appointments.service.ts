@@ -3,11 +3,14 @@ import type { AppointmentKind } from '@shared/schemas';
 import type { ObjectId } from 'mongodb';
 
 import {
+  averageRatingForProfessional,
   findAppointmentById,
   findProfessionalById,
   findUserById,
   holdsSlotFor,
   insertAppointment,
+  rateAppointment as recordAppointmentRating,
+  setProfessionalRating,
   updateAppointment,
   type AppointmentDocument,
   type AppointmentStatus,
@@ -20,11 +23,11 @@ import {
   cancelledEmail,
   confirmedEmail,
   declinedEmail,
-  requestedToClientEmail,
   requestedToProfessionalEmail,
 } from './appointment-mail';
-import { isOfferedSpan, slotStarts } from './appointment-slots';
+import { isOfferedSpan, scheduleForKind, slotStarts } from './appointment-slots';
 import { deliverMail, type MailDelivery } from './mail.service';
+import { createNotification } from './notifications.service';
 
 // Tells both sides a booking moved, so each console refetches without waiting for its poll. A no-op until the socket server is up, so seeds and tests need none.
 function announceAppointment(appointment: AppointmentDocument): void {
@@ -125,12 +128,8 @@ export type RequestAppointmentInput = {
 
 export type RequestAppointmentResult = {
   appointment: AppointmentDocument;
-  /**
-   * Both emails, reported separately. The owner's is a courtesy; the vet's is the
-   * request itself, and a request nobody was told about is the one failure here worth
-   * surfacing differently from the other.
-   */
-  mail: { client: MailDelivery; professional: MailDelivery };
+  // Only the vet is emailed at request time; the owner's address waits for the decision.
+  mail: { professional: MailDelivery };
 };
 
 /**
@@ -182,7 +181,7 @@ export async function requestAppointment(
   // the first. Checked against the same function that draws it, so the two cannot
   // disagree about what counts as a slot.
   const offered = isOfferedSpan({
-    schedule: application.weeklySchedule ?? [],
+    schedule: scheduleForKind(application, kind),
     startsAt,
     minutes: APPOINTMENT_SLOT_MINUTES,
     slots,
@@ -209,49 +208,44 @@ export async function requestAppointment(
     petAge: input.petAge?.trim() || null,
     reason,
     phone: input.phone ?? null,
+    // Persisted now so the confirm/decline email has an address; normalised to match the schema.
+    clientEmail: input.clientEmail?.trim().toLowerCase() || null,
   });
 
   announceAppointment(appointment);
 
+  // In-app notice to the vet, alongside the email, so the console shows the request without a refetch.
+  await createNotification({
+    user: application.user,
+    kind: 'booking_requested',
+    appointment: appointment._id,
+    appointmentKind: appointment.kind,
+    title: `New appointment request for ${petLabel}`,
+    body: `${clientName(client)} requested a ${
+      kind === 'virtual' ? 'online consultation' : 'clinic visit'
+    }.`,
+  });
+
   const vet = await findUserById(application.user);
 
-  const clientEmail = input.clientEmail?.trim() || null;
+  // The request itself. A booking nobody told the vet about is the one failure worth surfacing.
+  const professional = vet
+    ? await deliverMail(
+        requestedToProfessionalEmail({
+          to: vet.email,
+          name: vetName(application, vet),
+          kind,
+          startsAt,
+          petName: petLabel,
+          petSpecies,
+          reason,
+          phone: appointment.phone,
+          clientName: clientName(client),
+        })
+      )
+    : { delivered: false, deliveryError: 'That vet no longer has an account' };
 
-  const [toProfessional, toClient] = await Promise.all([
-    vet
-      ? deliverMail(
-          requestedToProfessionalEmail({
-            to: vet.email,
-            name: vetName(application, vet),
-            kind,
-            startsAt,
-            petName: petLabel,
-            petSpecies,
-            reason,
-            phone: appointment.phone,
-            clientName: clientName(client),
-          })
-        )
-      : Promise.resolve({
-          delivered: false,
-          deliveryError: 'That vet no longer has an account',
-        }),
-    // Only when an address was given; a null error marks "not requested", not a failure.
-    clientEmail
-      ? deliverMail(
-          requestedToClientEmail({
-            to: clientEmail,
-            name: client.name ?? '',
-            kind,
-            startsAt,
-            petName: petLabel,
-            professionalName: vetName(application, vet),
-          })
-        )
-      : Promise.resolve({ delivered: false, deliveryError: null }),
-  ]);
-
-  return { appointment, mail: { client: toClient, professional: toProfessional } };
+  return { appointment, mail: { professional } };
 }
 
 export type DecideAppointmentInput = {
@@ -259,7 +253,6 @@ export type DecideAppointmentInput = {
   decision: AppointmentDecision;
   /** The vet answering. Only the one the booking is with may. */
   professional: User;
-  meetingUrl?: string | null;
   reason?: string | null;
 };
 
@@ -282,7 +275,7 @@ export type DecideAppointmentResult = {
 export async function decideAppointment(
   input: DecideAppointmentInput
 ): Promise<DecideAppointmentResult | null> {
-  const { id, decision, professional, meetingUrl = null, reason = null } = input;
+  const { id, decision, professional, reason = null } = input;
 
   const current = await findAppointmentById(id);
   if (!current) return null;
@@ -302,16 +295,7 @@ export async function decideAppointment(
     throw AppError.badRequest('A reason is required to turn an appointment down');
   }
 
-  const link = meetingUrl?.trim() || null;
-  // Enforced here rather than in the schema because the kind is on the stored row:
-  // confirming a call without saying where it happens leaves the owner holding a time
-  // and nothing to click.
-  if (decision === 'confirmed' && current.kind === 'virtual' && !link) {
-    throw AppError.badRequest('A virtual consultation needs a link the owner can open');
-  }
-
   const appointment = await moveTo(current, decision, {
-    ...(decision === 'confirmed' ? { meetingUrl: link } : {}),
     ...(decision === 'declined' ? { refusalReason: stated } : {}),
   });
 
@@ -324,14 +308,31 @@ export async function decideAppointment(
     findProfessionalById(appointment.professional),
   ]);
 
-  // Nothing to send for a completion. The owner was there.
-  if (decision === 'completed' || !owner) {
+  // The owner's in-app notice, on yes or no but not on a completion, so their feed and badge move regardless of email.
+  if (decision === 'confirmed' || decision === 'declined') {
+    const vet = application ? vetName(application, professional) : professional.name ?? 'Your vet';
+    const pet = appointment.petName ?? 'your pet';
+    await createNotification({
+      user: appointment.client,
+      kind: decision === 'confirmed' ? 'booking_confirmed' : 'booking_declined',
+      appointment: appointment._id,
+      appointmentKind: appointment.kind,
+      title: decision === 'confirmed' ? 'Appointment confirmed' : 'Appointment declined',
+      body:
+        decision === 'confirmed'
+          ? `${vet} confirmed ${pet}'s appointment.`
+          : `${vet} declined ${pet}'s appointment.`,
+    });
+  }
+
+  // A completion owes nobody a word; a booking with no address has nowhere to send one.
+  if (decision === 'completed' || !appointment.clientEmail) {
     return { appointment, mail: null };
   }
 
   const shared = {
-    to: owner.email,
-    name: owner.name ?? '',
+    to: appointment.clientEmail,
+    name: owner?.name ?? '',
     kind: appointment.kind,
     startsAt: appointment.startsAt,
     petName: appointment.petName ?? 'your pet',
@@ -340,11 +341,56 @@ export async function decideAppointment(
 
   const mail = await deliverMail(
     decision === 'confirmed'
-      ? confirmedEmail({ ...shared, meetingUrl: appointment.meetingUrl })
+      ? confirmedEmail(shared)
       : declinedEmail({ ...shared, reason: appointment.refusalReason ?? '' })
   );
 
   return { appointment, mail };
+}
+
+export type RateAppointmentInput = {
+  id: string | ObjectId;
+  // The owner rating it. Only the client on the booking may, and only once.
+  actor: User;
+  rating: number;
+  // The owner's optional written note, null or absent when they leave only stars.
+  comment?: string | null;
+};
+
+// The owner's star on a consultation that happened. Owner-only checked here; rateable (completed, or a virtual call someone joined) and once-only checked here and again in the write's filter, so two racing submissions cannot both land. The vet's average is recomputed from every rated booking rather than nudged, so a later correction cannot leave it adrift. Null for a booking that does not exist.
+export async function rateAppointment(
+  input: RateAppointmentInput
+): Promise<AppointmentDocument | null> {
+  const { id, actor, rating, comment = null } = input;
+
+  const current = await findAppointmentById(id);
+  if (!current) return null;
+
+  // Not the vet, not a bystander: the owner whose pet was seen is the only one whose star means anything.
+  if (!current.client.equals(actor._id)) {
+    throw AppError.forbidden('That is not your appointment');
+  }
+
+  // A finished booking, or a virtual call the owner sat in, is one they can speak to.
+  const rateable =
+    current.status === 'completed' || (current.kind === 'virtual' && current.joinedAt !== null);
+  if (!rateable) {
+    throw AppError.conflict('You can only rate a consultation once it has taken place');
+  }
+
+  if (current.rating !== null) {
+    throw AppError.conflict('You have already rated this appointment');
+  }
+
+  const rated = await recordAppointmentRating(id, rating, comment);
+  if (!rated) return null;
+
+  const summary = await averageRatingForProfessional(rated.professional);
+  await setProfessionalRating(rated.professional, summary);
+
+  announceAppointment(rated);
+
+  return rated;
 }
 
 export type CancelAppointmentInput = {

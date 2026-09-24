@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
-import ChatLauncher from './components/messaging/ChatLauncher';
+import FloatingLaunchers from './components/FloatingLaunchers';
 import { ChatProvider } from './components/messaging/ChatProvider';
 import { AuthProvider } from './components/providers/AuthProvider';
 import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
@@ -28,7 +28,7 @@ createRoot(container).render(
             <RealtimeBridge />
             <ChatProvider>
               <App />
-              <ChatLauncher />
+              <FloatingLaunchers />
             </ChatProvider>
           </ReactQueryProvider>
         </AuthProvider>

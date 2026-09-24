@@ -5,6 +5,7 @@ import type {
 } from '@shared/limits';
 import type {
   ProfessionalAddressKind,
+  AppointmentKind,
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalInviteRefusal,
@@ -41,6 +42,8 @@ export type PublicProfessional = {
   ratingCount: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
+  onsiteSchedule: WeeklyScheduleItem[];
+  virtualSchedule: WeeklyScheduleItem[];
   workHistory: WorkHistoryItem[];
   verifiedAt: string | null;
 };
@@ -115,6 +118,8 @@ export type OwnProfessional = {
   hourlyRate: number;
   availabilityStatus: ProfessionalAvailabilityStatus;
   weeklySchedule: WeeklyScheduleItem[];
+  onsiteSchedule: WeeklyScheduleItem[];
+  virtualSchedule: WeeklyScheduleItem[];
   avatarUrl: string | null;
   workHistory: WorkHistoryItem[];
   bookingNotificationMinutes: ProfessionalBookingNotificationTime;
@@ -270,11 +275,12 @@ export async function getProfessional(id: string, signal?: AbortSignal) {
  * so asking for one day means sending one date.
  */
 export async function getProfessionalSlots(
-  input: { id: string; from: string; to?: string },
+  input: { id: string; from: string; to?: string; kind?: AppointmentKind },
   signal?: AbortSignal
 ) {
   const search = new URLSearchParams({ from: input.from });
   if (input.to) search.set('to', input.to);
+  if (input.kind) search.set('kind', input.kind);
 
   return await apiFetch<SlotGrid>(
     `/professionals/${encodeURIComponent(input.id)}/slots?${search.toString()}`,

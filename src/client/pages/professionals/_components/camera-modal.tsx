@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useState, type RefObject } from 'react';
 
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import type { Guide } from './capture-check';
 import CaptureGuide from './capture-guide';
 import useAutoShot from './use-auto-shot';
@@ -28,6 +29,9 @@ function standing(armed: boolean, stuck: boolean): string {
 export default function CameraModal({ label, guide, video, onShoot, onClose }: Props) {
   const [ratio, setRatio] = useState(3 / 4);
   const shot = useAutoShot({ video, guide, active: true, onShoot });
+
+  // Only mounts while the camera is up, so lock the page for its whole life.
+  useBodyScrollLock();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm sm:p-8">

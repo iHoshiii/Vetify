@@ -123,6 +123,8 @@ function vet(overrides: Partial<PublicProfessional> = {}): PublicProfessional {
     ratingCount: 12,
     availabilityStatus: 'available',
     weeklySchedule: [],
+    onsiteSchedule: [],
+    virtualSchedule: [],
     workHistory: [],
     verifiedAt: '2026-08-01T00:00:00.000Z',
     ...overrides,
@@ -627,7 +629,7 @@ describe('the view-all-vets popup', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    await user.click(screen.getByRole('button', { name: /View all vets/ }));
 
     // Bookable only, alphabetical, and a page of twenty — the whole directory on demand.
     expect(asked).toMatchObject({ available: true, sort: 'name', page: 1, limit: 20 });
@@ -638,7 +640,7 @@ describe('the view-all-vets popup', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    await user.click(screen.getByRole('button', { name: /View all vets/ }));
     const dialog = within(screen.getByRole('dialog'));
 
     expect(dialog.getByPlaceholderText('Search by name or clinic')).toBeInTheDocument();
@@ -648,7 +650,7 @@ describe('the view-all-vets popup', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /View all vet prof/ }));
+    await user.click(screen.getByRole('button', { name: /View all vets/ }));
     const dialog = within(screen.getByRole('dialog'));
     await user.click(dialog.getByRole('button', { name: 'Book' }));
 

@@ -17,40 +17,49 @@ export function createMongoClient(uri: string): MongoClient {
   return mongoClient;
 }
 
+// Atlas intermittently answers the TLS handshake with alert 80, so bound a retry rather than let one blip strand the whole server in degraded mode.
+const CONNECT_RETRIES = 4;
+const RETRY_BASE_MS = 500;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // execute the connectDb function to connect to the database
-// Promise<boolean> is used to indicate that the function returns a promise that resolves to a boolean value, indicating whether the connection was successful or not.
 export async function connectDb(uri: string = env.MONGODB_URI): Promise<boolean> {
   if (state.client) return state.serverResponding;
 
-  const mongoClient = createMongoClient(uri);
-
-  try {
-    await mongoClient.connect(); // wait for the 'mongoClient' to connect to the mongoClient
-    await mongoClient.db().command({ ping: 1 }); // tries to command a ping to the 'mongoClient' db
-  } catch (err) {
-    await mongoClient.close().catch(() => {}); // if error 'mongoClient' will be closed
-
-    // Printed before the production branch on purpose: a resolver that cannot
-    // answer SRV queries strands a container just as easily as a laptop, and the
-    // bare ECONNREFUSED names nothing that would point at the cause.
-    const hint = dnsFallbackHint(err as Error);
-    if (hint) console.warn(hint);
-
-    if (isProduction) throw err; // if its currently in production
-    console.warn(
-      `[db] could not reach Mongo (${(err as Error).message.split('\n')[0]}).\n` +
-        '[db] continuing without a database — DB-backed routes will fail until it is up.'
-    );
-    return false;
+  let lastErr: Error | null = null;
+  for (let attempt = 1; attempt <= CONNECT_RETRIES; attempt++) {
+    const mongoClient = createMongoClient(uri);
+    try {
+      await mongoClient.connect();
+      await mongoClient.db().command({ ping: 1 });
+      state.client = mongoClient;
+      state.database = mongoClient.db();
+      state.serverResponding = true;
+      console.log(`[db] connected to ${state.database.databaseName}`);
+      return true;
+    } catch (err) {
+      lastErr = err as Error;
+      await mongoClient.close().catch(() => {});
+      if (attempt < CONNECT_RETRIES) {
+        console.warn(
+          `[db] connect attempt ${attempt} failed (${lastErr.message.split('\n')[0]}), retrying`
+        );
+        await wait(RETRY_BASE_MS * attempt);
+      }
+    }
   }
 
-  // if mongoClient is connected/responding, execute this
-  state.client = mongoClient;
-  state.database = mongoClient.db();
-  state.serverResponding = true;
-
-  console.log(`[db] connected to ${state.database.databaseName}`);
-  return true;
+  // A resolver that cannot answer SRV queries strands a container as easily as a laptop, so name that cause before the production branch.
+  const hint = dnsFallbackHint(lastErr as Error);
+  if (hint) console.warn(hint);
+  if (isProduction) throw lastErr as Error;
+  console.warn(
+    `[db] could not reach Mongo after ${CONNECT_RETRIES} attempts (${
+      lastErr?.message.split('\n')[0]
+    }).\n` + '[db] continuing without a database, DB-backed routes will fail until it is up.'
+  );
+  return false;
 }
 
 // if mongoClient is NOT connected/responding, execute this

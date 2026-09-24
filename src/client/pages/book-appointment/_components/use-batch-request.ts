@@ -25,7 +25,7 @@ async function requestAll(inputs: AppointmentRequestInput[]): Promise<RequestRes
       throw error;
     }
   }
-  // The last reply's mail line is the one the notice shows; every run emails the same pair.
+  // The last reply's mail line is the one the notice shows; every run emails the same vet.
   return last as RequestResult;
 }
 

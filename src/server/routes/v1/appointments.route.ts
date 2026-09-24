@@ -1,10 +1,10 @@
 import {
-  appointmentConfirmSchema,
   appointmentListQuerySchema,
+  appointmentRateSchema,
   appointmentRefuseSchema,
   appointmentRequestSchema,
-  type AppointmentConfirm,
   type AppointmentListQuery,
+  type AppointmentRate,
   type AppointmentRefuse,
   type AppointmentRequest,
 } from '@shared/schemas';
@@ -16,6 +16,7 @@ import { validate, validateQuery } from '../../middleware/validate';
 import {
   findAppointments,
   findUsersByIds,
+  findVerifiedProfessionalsByUserIds,
   isDuplicateSlot,
   isValidObjectId,
   otherPartyId,
@@ -28,9 +29,11 @@ import {
 import {
   cancelAppointment,
   decideAppointment,
+  rateAppointment,
   requestAppointment,
   type AppointmentDecision,
 } from '../../services/appointments.service';
+import { isCallLive } from '../../realtime/hub';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 
@@ -64,18 +67,28 @@ async function partiesOf(
   viewer: ObjectId
 ): Promise<Map<string, AppointmentParty>> {
   const ids = [...new Set(items.map((item) => otherPartyId(item, viewer)))];
-  const users = await findUsersByIds(ids);
+  const [users, vets] = await Promise.all([
+    findUsersByIds(ids),
+    findVerifiedProfessionalsByUserIds(ids),
+  ]);
+
+  // A vet's photo and licence name live on their listing, so they win over the raw account the same way the message threads resolve a face.
+  const vetFaces = new Map(vets.map((vet) => [vet.user.toString(), vet]));
 
   return new Map(
-    users.map((user) => [
-      user._id.toString(),
-      {
-        id: user._id.toString(),
-        name: user.name ?? null,
-        email: user.email,
-        avatarUrl: user.avatarUrl ?? null,
-      },
-    ])
+    users.map((user) => {
+      const id = user._id.toString();
+      const vet = vetFaces.get(id);
+      return [
+        id,
+        {
+          id,
+          name: vet?.fullName ?? user.name ?? null,
+          email: user.email,
+          avatarUrl: vet?.avatarUrl ?? user.avatarUrl ?? null,
+        },
+      ];
+    })
   );
 }
 
@@ -87,6 +100,7 @@ async function viewOf(appointment: AppointmentDocument, viewer: ObjectId) {
     appointment,
     viewer,
     party: parties.get(otherPartyId(appointment, viewer)) ?? null,
+    callActive: isCallLive(appointment._id.toString()),
   });
 }
 
@@ -167,6 +181,7 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
         total,
         page: query.page,
         limit: query.limit,
+        callActive: (appointment) => isCallLive(appointment._id.toString()),
       })
     );
   };
@@ -195,13 +210,13 @@ router.get('/incoming/counts', async (req, res) => {
 
 /**
  * The vet's three answers differ only in their word and in what they owe, so they
- * share a handler. Which statuses each may be reached from, and the rule that a
- * virtual consultation needs a link, live in the service where the stored booking is.
+ * share a handler. Which statuses each may be reached from lives in the service,
+ * where the stored booking is.
  */
 function decision(kind: AppointmentDecision): RequestHandler {
   return async (req, res) => {
     const professional = actorOf(req);
-    const body = req.body as Partial<AppointmentConfirm & AppointmentRefuse>;
+    const body = req.body as Partial<AppointmentRefuse>;
 
     if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
 
@@ -209,7 +224,6 @@ function decision(kind: AppointmentDecision): RequestHandler {
       id: req.params.id,
       decision: kind,
       professional,
-      meetingUrl: body.meetingUrl ?? null,
       reason: body.reason ?? null,
     });
 
@@ -226,10 +240,10 @@ function decision(kind: AppointmentDecision): RequestHandler {
 /**
  * PATCH /api/v1/appointments/:id/confirm
  *
- * Yes. Keeps the slot held and emails the owner — with the meeting link, when the
- * booking is a virtual one, which the service refuses to confirm without.
+ * Yes. Keeps the slot held and emails the booking address, when one was given. No link:
+ * a virtual booking is started in-app from the appointments page when its time comes.
  */
-router.patch('/:id/confirm', validate(appointmentConfirmSchema), decision('confirmed'));
+router.patch('/:id/confirm', decision('confirmed'));
 
 /**
  * PATCH /api/v1/appointments/:id/decline
@@ -268,6 +282,24 @@ router.patch('/:id/cancel', validate(appointmentRefuseSchema), async (req, res) 
     appointment: await viewOf(result.appointment, actor._id),
     mail: result.mail,
   });
+});
+
+// PATCH /api/v1/appointments/:id/rate: the owner's star on a finished consultation. Owner-only and once-only, both decided against the stored booking in the service rather than here, because neither can be read off the request.
+router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AppointmentRate;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
+
+  const result = await rateAppointment({
+    id: req.params.id,
+    actor,
+    rating: body.rating,
+    comment: body.comment,
+  });
+  if (!result) return fail(res, 404, MISSING);
+
+  ok(res, { appointment: await viewOf(result, actor._id) });
 });
 
 export default router;

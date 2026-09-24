@@ -11,6 +11,7 @@ import {
   THREADS_COLLECTION,
   THREAD_INDEXES,
 } from './messages';
+import { NOTIFICATIONS_COLLECTION, NOTIFICATION_INDEXES } from './notifications';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
@@ -36,13 +37,21 @@ export {
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
   APPOINTMENTS_COLLECTION,
+  averageRatingForProfessional,
   findAppointmentById,
   findAppointments,
+  findConfirmedCallStartingAt,
   findHeldSlots,
+  findRemindableAppointments,
+  findStartedConfirmed,
+  claimReminder,
+  completeConfirmed,
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,
+  markCallJoined,
   otherPartyId,
+  rateAppointment,
   tallyAppointments,
   toAppointmentPage,
   toAppointmentView,
@@ -100,6 +109,25 @@ export {
   type ThreadParty,
   type ThreadView,
 } from './messages';
+
+export {
+  NOTIFICATIONS_COLLECTION,
+  NOTIFICATION_INDEXES,
+  NOTIFICATION_KINDS,
+  countUnreadNotifications,
+  findNotifications,
+  insertNotification,
+  markAllNotificationsRead,
+  markNotificationRead,
+  notificationsCollection,
+  toNotificationPage,
+  toNotificationView,
+  type NotificationAttrs,
+  type NotificationDocument,
+  type NotificationKind,
+  type NotificationPage,
+  type NotificationView,
+} from './notifications';
 
 export {
   ACTIVITY_EVENTS_COLLECTION,
@@ -251,6 +279,7 @@ export {
   professionalAttrsSchema,
   professionalsCollection,
   publishPinnedAddresses,
+  setProfessionalRating,
   toAdminProfessional,
   toAdminProfessionalPage,
   toNearbyProfessional,
@@ -346,6 +375,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
   { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
   { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
+  { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },

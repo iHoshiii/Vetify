@@ -21,6 +21,7 @@ import {
   type SlotGrid,
 } from '@/services/professionals.service';
 import type {
+  AppointmentKind,
   ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalProfileUpdateInput,
@@ -46,7 +47,7 @@ export const professionalKeys = {
    * a booking invalidates: taking one slot changes every grid that was showing it.
    */
   slots: () => [...professionalKeys.all, 'slots'] as const,
-  slotsFor: (input: { id: string; from: string; to?: string }) =>
+  slotsFor: (input: { id: string; from: string; to?: string; kind?: AppointmentKind }) =>
     [...professionalKeys.slots(), input] as const,
   /**
    * The nearest vets to a point. Its own branch rather than a `list()` with different
@@ -247,15 +248,24 @@ export function useProfessional(id: string | undefined) {
  * somebody just took — the booking route's 409 is the backstop for the window this
  * still leaves open.
  */
-export function useProfessionalSlots(input: { id: string | undefined; from: string; to?: string }) {
+export function useProfessionalSlots(input: {
+  id: string | undefined;
+  from: string;
+  to?: string;
+  kind?: AppointmentKind;
+}) {
   return useQuery<SlotGrid>({
     queryKey: professionalKeys.slotsFor({
       id: input.id ?? '',
       from: input.from,
       to: input.to,
+      kind: input.kind,
     }),
     queryFn: ({ signal }) =>
-      getProfessionalSlots({ id: input.id as string, from: input.from, to: input.to }, signal),
+      getProfessionalSlots(
+        { id: input.id as string, from: input.from, to: input.to, kind: input.kind },
+        signal
+      ),
     enabled: Boolean(input.id),
     staleTime: 15_000,
     retry: retryUnlessMissing,

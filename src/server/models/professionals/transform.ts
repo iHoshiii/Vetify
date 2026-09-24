@@ -97,6 +97,8 @@ export function toOwnProfessional(
     hourlyRate: application.hourlyRate ?? 50,
     availabilityStatus: application.availabilityStatus ?? 'available',
     weeklySchedule: application.weeklySchedule ?? [],
+    onsiteSchedule: application.onsiteSchedule ?? application.weeklySchedule ?? [],
+    virtualSchedule: application.virtualSchedule ?? application.weeklySchedule ?? [],
     avatarUrl: application.avatarUrl ?? null,
     workHistory: application.workHistory ?? [],
     bookingNotificationMinutes: application.bookingNotificationMinutes ?? 30,
@@ -180,6 +182,8 @@ export function toPublicProfessional(application: ProfessionalWithAccount): Publ
     ratingCount: application.ratingCount ?? 0,
     availabilityStatus: application.availabilityStatus ?? 'available',
     weeklySchedule: application.weeklySchedule ?? [],
+    onsiteSchedule: application.onsiteSchedule ?? application.weeklySchedule ?? [],
+    virtualSchedule: application.virtualSchedule ?? application.weeklySchedule ?? [],
     workHistory: application.workHistory ?? [],
     verifiedAt: application.reviewedAt?.toISOString() ?? null,
   };

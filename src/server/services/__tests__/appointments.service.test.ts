@@ -5,15 +5,22 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 
 import {
   findHeldSlots,
+  findProfessionalById,
   insertProfessional,
   insertUser,
   isDuplicateSlot,
+  markCallJoined,
   updateProfessionalProfile,
   updateProfessional,
   type User,
 } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
-import { cancelAppointment, decideAppointment, requestAppointment } from '../appointments.service';
+import {
+  cancelAppointment,
+  decideAppointment,
+  rateAppointment,
+  requestAppointment,
+} from '../appointments.service';
 import { clearRecentMail, recentMail } from '../mail.service';
 
 beforeAll(startTestDb, 120_000);
@@ -136,7 +143,7 @@ function lastMail() {
 }
 
 describe('requestAppointment', () => {
-  it('holds the slot and tells both sides', async () => {
+  it('holds the slot and tells the vet', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
 
@@ -150,14 +157,26 @@ describe('requestAppointment', () => {
       minutes: APPOINTMENT_SLOT_MINUTES,
     });
     expect(result?.mail.professional.delivered).toBe(true);
-    expect(result?.mail.client.delivered).toBe(true);
 
-    const both = recentMail().map((message) => message.to);
-    expect(both).toContain(vetUser.email);
-    expect(both).toContain(client.email);
+    const to = recentMail().map((message) => message.to);
+    expect(to).toContain(vetUser.email);
+    // Nothing to the owner at request time; their address waits for the decision.
+    expect(to).not.toContain(client.email);
   });
 
-  it('sends the owner no copy when no email was given', async () => {
+  it('persists the booking email but sends the owner nothing yet', async () => {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+
+    const result = await request({ client, professional: application!._id });
+
+    expect(result?.appointment.clientEmail).toBe(client.email);
+    const to = recentMail().map((message) => message.to);
+    expect(to).toContain(vetUser.email);
+    expect(to).not.toContain(client.email);
+  });
+
+  it('keeps no booking email when none was given', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
 
@@ -171,9 +190,7 @@ describe('requestAppointment', () => {
       phone: '+639325550101',
     });
 
-    // Skipped rather than failed: no address, so a null error stands for "not requested".
-    expect(result?.mail.client).toEqual({ delivered: false, deliveryError: null });
-    expect(recentMail().map((message) => message.to)).not.toContain(client.email);
+    expect(result?.appointment.clientEmail).toBeNull();
     expect(recentMail().map((message) => message.to)).toContain(vetUser.email);
   });
 
@@ -343,36 +360,49 @@ describe('decideAppointment', () => {
     expect(lastMail()?.subject).toContain('confirmed');
   });
 
-  it('carries the meeting link into the email for a virtual consultation', async () => {
+  it('confirms a virtual consultation without needing a link', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
     const booked = await request({ client, professional: application!._id, kind: 'virtual' });
 
     clearRecentMail();
-    await decideAppointment({
+    const result = await decideAppointment({
       id: booked!.appointment._id,
       decision: 'confirmed',
       professional: vetUser,
-      meetingUrl: 'https://meet.example.com/milo',
     });
 
-    expect(lastMail()?.text).toContain('https://meet.example.com/milo');
+    expect(result?.appointment).toMatchObject({ status: 'confirmed', kind: 'virtual' });
+    expect(result?.mail?.delivered).toBe(true);
+    // No meeting link: the owner is pointed at the in-app session, not a URL to click.
+    expect(lastMail()?.text).not.toContain('Join here');
+    expect(lastMail()?.text).toContain('start the session');
   });
 
-  it('will not confirm a virtual consultation without a link', async () => {
+  it('sends no confirmation email when the booking carried no address', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
-    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    // No clientEmail on the booking, so a confirmation has nowhere to go.
+    const booked = await requestAppointment({
+      client,
+      professionalId: application!._id,
+      kind: 'onsite',
+      startsAt: SLOT.at,
+      petSpecies: 'Dog',
+      reason: 'A rash on his back leg that is not settling down.',
+      phone: '+639325550101',
+    });
 
-    // A time with nothing to click is not a confirmed call. Enforced here rather than
-    // in the schema because the kind is on the stored booking, not in the body.
-    await expect(
-      decideAppointment({
-        id: booked!.appointment._id,
-        decision: 'confirmed',
-        professional: vetUser,
-      })
-    ).rejects.toMatchObject({ statusCode: 400 });
+    clearRecentMail();
+    const result = await decideAppointment({
+      id: booked!.appointment._id,
+      decision: 'confirmed',
+      professional: vetUser,
+    });
+
+    expect(result?.appointment.status).toBe('confirmed');
+    expect(result?.mail).toBeNull();
+    expect(recentMail()).toHaveLength(0);
   });
 
   it('frees the slot when it is turned down, and puts it back on the grid', async () => {
@@ -628,6 +658,109 @@ describe('cancelAppointment', () => {
 
     await expect(
       cancelAppointment({ id: new ObjectId(), actor: client, reason: 'Never mind this one.' })
+    ).resolves.toBeNull();
+  });
+});
+
+describe('rateAppointment', () => {
+  // A booking taken all the way to completed, which is the only state a rating is allowed from.
+  async function completed(at: Date = SLOT.at) {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, at });
+    for (const decision of ['confirmed', 'completed'] as const) {
+      await decideAppointment({ id: booked!.appointment._id, decision, professional: vetUser });
+    }
+    return { client, vetUser, application: application!, id: booked!.appointment._id };
+  }
+
+  it("stars a finished booking and moves the vet's average", async () => {
+    const { client, application, id } = await completed();
+
+    const rated = await rateAppointment({ id, actor: client, rating: 4 });
+
+    expect(rated?.rating).toBe(4);
+    const vetNow = await findProfessionalById(application._id);
+    expect(vetNow?.ratingAverage).toBe(4);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('rates a joined virtual call before its time is up, note and all', async () => {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    const id = booked!.appointment._id;
+    await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
+    await markCallJoined(id);
+
+    const rated = await rateAppointment({
+      id,
+      actor: client,
+      rating: 5,
+      comment: 'Kind and quick',
+    });
+
+    // Still confirmed: the owner rated straight off the call, before the completion sweep ran.
+    expect(rated?.status).toBe('confirmed');
+    expect(rated?.rating).toBe(5);
+    expect(rated?.ratingComment).toBe('Kind and quick');
+    const vetNow = await findProfessionalById(application!._id);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('averages every rated booking a vet has', async () => {
+    const one = await account('owner');
+    const two = await account('owner');
+    const { user: vetUser, application } = await vet();
+
+    const first = await request({ client: one, professional: application!._id });
+    const second = await request({ client: two, professional: application!._id, at: LATER });
+    for (const booked of [first, second]) {
+      for (const decision of ['confirmed', 'completed'] as const) {
+        await decideAppointment({ id: booked!.appointment._id, decision, professional: vetUser });
+      }
+    }
+
+    await rateAppointment({ id: first!.appointment._id, actor: one, rating: 5 });
+    await rateAppointment({ id: second!.appointment._id, actor: two, rating: 3 });
+
+    const vetNow = await findProfessionalById(application!._id);
+    expect(vetNow?.ratingAverage).toBe(4);
+    expect(vetNow?.ratingCount).toBe(2);
+  });
+
+  it('refuses a second rating on the same booking', async () => {
+    const { client, id } = await completed();
+    await rateAppointment({ id, actor: client, rating: 5 });
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('refuses one that has not been completed', async () => {
+    const client = await account('owner');
+    const { application } = await vet();
+    const booked = await request({ client, professional: application!._id });
+
+    await expect(
+      rateAppointment({ id: booked!.appointment._id, actor: client, rating: 5 })
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('refuses anyone who is not the owner', async () => {
+    const { vetUser, id } = await completed();
+
+    await expect(rateAppointment({ id, actor: vetUser, rating: 5 })).rejects.toMatchObject({
+      statusCode: 403,
+    });
+  });
+
+  it('answers null for a booking that does not exist', async () => {
+    const client = await account('owner');
+
+    await expect(
+      rateAppointment({ id: new ObjectId(), actor: client, rating: 5 })
     ).resolves.toBeNull();
   });
 });
