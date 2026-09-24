@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CallChat from './call-chat';
 import CallControls from './call-controls';
 import CallStage from './call-stage';
+import { beatCallActive, endCallActive, markCallVisited } from './call-visited';
 import { useCall } from './use-call';
 
 // The full-screen consultation room. Everything hangs off the one appointment id in the path.
@@ -15,6 +16,18 @@ export default function CallPage() {
   const call = useCall(appointmentId);
   const [chatOpen, setChatOpen] = useState(false);
   const [seen, setSeen] = useState(0);
+
+  // Mark the visit for the 'Rejoin' label, and beat a heartbeat so any other tab reads 'Ongoing' and cannot open a second way into the same call.
+  useEffect(() => {
+    if (!appointmentId) return;
+    markCallVisited(appointmentId);
+    beatCallActive(appointmentId);
+    const id = setInterval(() => beatCallActive(appointmentId), 4_000);
+    return () => {
+      clearInterval(id);
+      endCallActive(appointmentId);
+    };
+  }, [appointmentId]);
 
   const fromThem = call.messages.filter((m) => !m.mine).length;
   const unread = chatOpen ? 0 : Math.max(0, fromThem - seen);

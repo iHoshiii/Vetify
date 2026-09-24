@@ -1,7 +1,8 @@
 import { Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useJoinWindow } from './use-join-window';
+import { hasVisitedCall } from './call-visited';
+import { useCallActive, useJoinWindow } from './use-join-window';
 
 type Variant = 'block' | 'inline';
 
@@ -25,20 +26,33 @@ export default function StartSessionButton({
 }: StartSessionButtonProps) {
   const navigate = useNavigate();
   const phase = useJoinWindow(startsAt, minutes);
+  const active = useCallActive(appointmentId);
   const base = variant === 'block' ? BLOCK : INLINE;
 
-  if (phase === 'open') {
+  if (phase === 'before' || phase === 'after') {
+    const copy =
+      phase === 'before' ? 'Opens 15 minutes before the start' : 'This session has ended';
+    return <span className={`${base} bg-slate-100 text-slate-500`}>{copy}</span>;
+  }
+
+  // Already in the room from another tab, so this is a status and not a second door in.
+  if (active) {
     return (
-      <button
-        type="button"
-        onClick={() => navigate(`/call/${appointmentId}`)}
-        className={`${base} bg-teal-800 text-white hover:bg-teal-900`}
-      >
-        {variant === 'inline' && <Video className="h-3 w-3" />} Start the session
-      </button>
+      <span className={`${base} bg-emerald-100 text-emerald-700`}>
+        {variant === 'inline' && <Video className="h-3 w-3" />} Ongoing
+      </span>
     );
   }
 
-  const copy = phase === 'before' ? 'Opens 15 minutes before the start' : 'This session has ended';
-  return <span className={`${base} bg-slate-100 text-slate-500`}>{copy}</span>;
+  // First time in reads 'Join', a return after leaving reads 'Rejoin'.
+  const label = hasVisitedCall(appointmentId) ? 'Rejoin' : 'Join';
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/call/${appointmentId}`)}
+      className={`${base} bg-teal-800 text-white hover:bg-teal-900`}
+    >
+      {variant === 'inline' && <Video className="h-3 w-3" />} {label}
+    </button>
+  );
 }
