@@ -24,6 +24,7 @@ import {
 } from './appointment-mail';
 import { isOfferedSpan, slotStarts } from './appointment-slots';
 import { deliverMail, type MailDelivery } from './mail.service';
+import { createNotification } from './notifications.service';
 
 // Tells both sides a booking moved, so each console refetches without waiting for its poll. A no-op until the socket server is up, so seeds and tests need none.
 function announceAppointment(appointment: AppointmentDocument): void {
@@ -210,6 +211,17 @@ export async function requestAppointment(
 
   announceAppointment(appointment);
 
+  // In-app notice to the vet, alongside the email, so the console shows the request without a refetch.
+  await createNotification({
+    user: application.user,
+    kind: 'booking_requested',
+    appointment: appointment._id,
+    title: `New appointment request for ${petLabel}`,
+    body: `${clientName(client)} requested a ${
+      kind === 'virtual' ? 'online consultation' : 'clinic visit'
+    }.`,
+  });
+
   const vet = await findUserById(application.user);
 
   // The request itself. A booking nobody told the vet about is the one failure worth surfacing.
@@ -291,6 +303,22 @@ export async function decideAppointment(
     findUserById(appointment.client),
     findProfessionalById(appointment.professional),
   ]);
+
+  // The owner's in-app notice, on yes or no but not on a completion, so their feed and badge move regardless of email.
+  if (decision === 'confirmed' || decision === 'declined') {
+    const vet = application ? vetName(application, professional) : professional.name ?? 'Your vet';
+    const pet = appointment.petName ?? 'your pet';
+    await createNotification({
+      user: appointment.client,
+      kind: decision === 'confirmed' ? 'booking_confirmed' : 'booking_declined',
+      appointment: appointment._id,
+      title: decision === 'confirmed' ? 'Appointment confirmed' : 'Appointment declined',
+      body:
+        decision === 'confirmed'
+          ? `${vet} confirmed ${pet}'s appointment.`
+          : `${vet} declined ${pet}'s appointment.`,
+    });
+  }
 
   // A completion owes nobody a word; a booking with no address has nowhere to send one.
   if (decision === 'completed' || !appointment.clientEmail) {

@@ -18,6 +18,8 @@ import {
   METRIC_WINDOW_DAYS,
   MODERATION_REASON_MAX,
   MODERATION_REASON_MIN,
+  NOTIFICATION_PAGE_SIZE,
+  NOTIFICATION_PAGE_SIZE_MAX,
   THREAD_PAGE_SIZE,
   THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
@@ -1371,6 +1373,19 @@ export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
+
+// One page of the caller's own notifications, newest first.
+export const notificationListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(NOTIFICATION_PAGE_SIZE_MAX, `Ask for at most ${NOTIFICATION_PAGE_SIZE_MAX} per page`)
+    .default(NOTIFICATION_PAGE_SIZE),
+});
+
+export type NotificationListQuery = z.output<typeof notificationListQuerySchema>;
 
 /* ---------------------------------------------------------------------------
  * Messaging. One private thread per owner-and-vet pair, both accounts. Opening

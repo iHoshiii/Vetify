@@ -398,5 +398,9 @@ export const MESSAGE_PAGE_SIZE_MAX = 60;
 export const THREAD_PAGE_SIZE = 20;
 export const THREAD_PAGE_SIZE_MAX = 50;
 
+// One page of the notification feed, paged the same way the thread list is.
+export const NOTIFICATION_PAGE_SIZE = 20;
+export const NOTIFICATION_PAGE_SIZE_MAX = 50;
+
 // How many messages one network may send in a minute, so a wedged client cannot flood a thread.
 export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 100;
