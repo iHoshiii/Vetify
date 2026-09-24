@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import ChatLauncher from './components/messaging/ChatLauncher';
 import { ChatProvider } from './components/messaging/ChatProvider';
+import NotificationLauncher from './components/notifications/NotificationLauncher';
 import { AuthProvider } from './components/providers/AuthProvider';
 import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
 import { LocaleProvider } from './components/providers/LocaleProvider';
@@ -29,6 +30,7 @@ createRoot(container).render(
             <ChatProvider>
               <App />
               <ChatLauncher />
+              <NotificationLauncher />
             </ChatProvider>
           </ReactQueryProvider>
         </AuthProvider>

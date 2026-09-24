@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { appointmentKeys } from './useAppointments';
 import { messageKeys } from './useMessages';
+import { notificationKeys } from './useNotifications';
 import { clearPresence, notePresence, replacePresence } from './usePresence';
 import { noteTyping } from './useTyping';
 
@@ -74,6 +75,10 @@ export function useRealtime(): void {
     const onAppointment = () => {
       void queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
     };
+    // A new notification: the bell badge and, if open, the feed both refetch through the guarded read.
+    const onNotification = () => {
+      void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+    };
     // Typing carries its own flag, so it updates the ephemeral store instead of refetching.
     const onTyping = (e: TypingEvent) => noteTyping(e.threadId, e.typing);
     const onPresence = (event: PresenceEvent) => notePresence(event.userId, event.online);
@@ -83,12 +88,14 @@ export function useRealtime(): void {
     const onConnect = () => {
       void queryClient.invalidateQueries({ queryKey: messageKeys.all });
       void queryClient.invalidateQueries({ queryKey: appointmentKeys.all });
+      void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     };
 
     socket.on('connect', onConnect);
     socket.on('thread:message', onMessage);
     socket.on('thread:read', onRead);
     socket.on('appointment:changed', onAppointment);
+    socket.on('notification:new', onNotification);
     socket.on('thread:typing', onTyping);
     socket.on('presence:changed', onPresence);
     socket.on('presence:snapshot', onPresenceSnapshot);
@@ -99,6 +106,7 @@ export function useRealtime(): void {
       socket.off('thread:message', onMessage);
       socket.off('thread:read', onRead);
       socket.off('appointment:changed', onAppointment);
+      socket.off('notification:new', onNotification);
       socket.off('thread:typing', onTyping);
       socket.off('presence:changed', onPresence);
       socket.off('presence:snapshot', onPresenceSnapshot);
