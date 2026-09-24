@@ -40,6 +40,8 @@ export {
   findAppointmentById,
   findAppointments,
   findHeldSlots,
+  findRemindableAppointments,
+  claimReminder,
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,

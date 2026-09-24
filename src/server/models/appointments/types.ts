@@ -83,6 +83,8 @@ export type AppointmentDocument = {
   /** Which of the two ended it, so neither is told they cancelled their own booking. */
   cancelledBy: ObjectId | null;
   decidedAt: Date | null;
+  // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
+  reminderSentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

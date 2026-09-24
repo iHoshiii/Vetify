@@ -61,6 +61,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     refusalReason: null,
     cancelledBy: null,
     decidedAt: null,
+    reminderSentAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -206,6 +207,31 @@ export async function updateAppointment(
   return await appointmentsCollection().findOneAndUpdate(
     { _id },
     { $set: { ...patch, updatedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+}
+
+// Confirmed bookings not yet reminded whose start falls within the widest lead window ahead.
+export async function findRemindableAppointments(input: {
+  from: Date;
+  to: Date;
+}): Promise<AppointmentDocument[]> {
+  return await appointmentsCollection()
+    .find({
+      status: 'confirmed',
+      // Missing on rows made before the field, which null also matches, so old bookings are covered.
+      reminderSentAt: null,
+      startsAt: { $gt: input.from, $lte: input.to },
+    })
+    .toArray();
+}
+
+// Claims a booking's reminder atomically, so two ticks or two instances cannot both send it.
+export async function claimReminder(id: string | ObjectId): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), reminderSentAt: null },
+    { $set: { reminderSentAt: now, updatedAt: now } },
     { returnDocument: 'after' }
   );
 }
