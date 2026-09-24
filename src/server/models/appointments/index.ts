@@ -1,10 +1,12 @@
 export {
   appointmentsCollection,
   claimReminder,
+  completeConfirmed,
   findAppointmentById,
   findAppointments,
   findHeldSlots,
   findRemindableAppointments,
+  findStartedConfirmed,
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,

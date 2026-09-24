@@ -264,6 +264,25 @@ export async function claimReminder(id: string | ObjectId): Promise<AppointmentD
   );
 }
 
+// Confirmed bookings whose start is already past. The sweep re-checks each one's end (startsAt + minutes) in JS, since the end is not a stored field.
+export async function findStartedConfirmed(before: Date): Promise<AppointmentDocument[]> {
+  return await appointmentsCollection()
+    .find({ status: 'confirmed', startsAt: { $lte: before } })
+    .toArray();
+}
+
+// Flips one booking to completed, guarded on it still being confirmed so two ticks cannot both act. holdsSlot stays true because completed is a live status.
+export async function completeConfirmed(
+  id: string | ObjectId
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id), status: 'confirmed' },
+    { $set: { status: 'completed', decidedAt: now, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
+
 // One aggregate for all ten figures the console draws, none of which may come from the page of rows on screen
 export async function tallyAppointments(
   professionalUser: string | ObjectId

@@ -4,6 +4,7 @@ import { applyDnsServers } from './config/dns';
 import { env, isProduction, isTest } from './config/env';
 import { ensureIndexes } from './models';
 import { attachRealtime } from './realtime/socket';
+import { startCompletionScanner } from './services/appointment-completion.service';
 import { startReminderScanner } from './services/reminders.service';
 
 /**
@@ -35,6 +36,9 @@ async function main() {
 
   // The pre-appointment reminder scan needs the DB and has no place in a test run.
   if (dbUp && !isTest) startReminderScanner();
+
+  // Flips confirmed bookings to completed once their time has passed, same conditions.
+  if (dbUp && !isTest) startCompletionScanner();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
