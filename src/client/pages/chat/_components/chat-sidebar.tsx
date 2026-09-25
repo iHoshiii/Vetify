@@ -51,7 +51,15 @@ export default function ChatSidebar({
           sessions.map((s) => (
             <div
               key={s.id}
+              role="button"
+              tabIndex={0}
               onClick={() => onSelectSession(s)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectSession(s);
+                }
+              }}
               className={`group flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
                 s.id === activeId ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:bg-slate-50'
               }`}
