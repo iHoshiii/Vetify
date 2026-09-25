@@ -25,6 +25,8 @@ export {
 
 export { appointmentAttrsSchema, type AppointmentAttrs } from './schema';
 
+export { claimReviewPrompt } from './review-writes';
+
 export { otherPartyId, toAppointmentPage, toAppointmentView } from './transform';
 
 export {

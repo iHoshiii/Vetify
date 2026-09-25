@@ -38,6 +38,7 @@ export {
   APPOINTMENT_STATUSES,
   APPOINTMENTS_COLLECTION,
   averageRatingForProfessional,
+  claimReviewPrompt,
   findAppointmentById,
   findAppointments,
   findConfirmedCallStartingAt,

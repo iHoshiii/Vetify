@@ -85,6 +85,8 @@ export type AppointmentDocument = {
   decidedAt: Date | null;
   // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
   reminderSentAt: Date | null;
+  // When the post-visit review nudge was sent, so the completion sweep prompts the owner once and never again after a restart.
+  reviewPromptSentAt: Date | null;
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
   // When both accounts were in the call together, stamped once. A virtual booking is only rateable after this, so a no-show the scanner auto-completes cannot be rated.

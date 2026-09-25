@@ -902,6 +902,7 @@ describe('findProfessionalReviews', () => {
       cancelledBy: null,
       decidedAt: when,
       reminderSentAt: null,
+      reviewPromptSentAt: null,
       joinedAt: null,
       consultedAt: null,
       clientJoinedAt: null,
