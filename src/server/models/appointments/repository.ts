@@ -67,6 +67,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     clientJoinedAt: null,
     rating: null,
     ratingComment: null,
+    ratedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -384,7 +385,7 @@ export async function rateAppointment(
         },
       ],
     },
-    { $set: { rating, ratingComment: comment, updatedAt: now } },
+    { $set: { rating, ratingComment: comment, ratedAt: now, updatedAt: now } },
     { returnDocument: 'after' }
   );
 }

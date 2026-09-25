@@ -94,6 +94,8 @@ export type AppointmentDocument = {
   rating: number | null;
   // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
   ratingComment: string | null;
+  // When the stars were recorded, so the public review list can date each one. Null until rated, and missing on rows rated before this field, which read back through updatedAt.
+  ratedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
