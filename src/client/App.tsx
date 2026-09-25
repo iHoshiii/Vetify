@@ -13,6 +13,7 @@ import AdminApplicationStatistics from '@/pages/admin/applications/statistics-ta
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
+import AdminReviewsPage from '@/pages/admin/reviews/reviews-page';
 import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
 import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
@@ -113,6 +114,7 @@ export default function App() {
           element={<Navigate to="/admin/applications/application" replace />}
         />
         <Route path="blogs" element={<AdminBlogsPage />} />
+        <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="audit" element={<AdminAuditPage />} />
       </Route>
 
