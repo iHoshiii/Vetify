@@ -4,6 +4,7 @@ import PinPicker, { type Point } from './pin-picker';
 import type { MarkerGlyph } from '@/components/marker-icon';
 import { MapSkeleton } from '@/components/vetmap/map-skeleton';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export type PickedAddress = {
   line1: string;
@@ -36,6 +37,7 @@ export default function LocationPickerField({
 
   // The map opens in a full-screen overlay, so freeze the form behind it while it is up.
   useBodyScrollLock(choice === 'pin');
+  const dialogRef = useFocusTrap<HTMLDivElement>(() => setChoice(null), choice === 'pin');
 
   async function pick(point: Point): Promise<void> {
     setLoading(true);
@@ -90,7 +92,14 @@ export default function LocationPickerField({
       )}
       {choice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm sm:p-8">
-          <div className="animate-scaleIn relative w-full max-w-6xl rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pin your location on the map"
+            tabIndex={-1}
+            className="animate-scaleIn relative w-full max-w-6xl rounded-2xl bg-white p-4 shadow-2xl outline-none sm:p-6"
+          >
             <button
               type="button"
               onClick={() => setChoice(null)}
