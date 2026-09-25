@@ -3,11 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ConsoleLinks from '@/components/settings/console-links';
+import { ApiError } from '@/services/api';
 import type { ProfessionalStatus, UserRole } from '@shared/schemas';
 
 const state = vi.hoisted(() => ({
   role: 'user' as UserRole,
   status: null as ProfessionalStatus | null,
+  error: null as ApiError | null,
 }));
 
 vi.mock('@/components/providers/AuthProvider', () => ({
@@ -15,12 +17,16 @@ vi.mock('@/components/providers/AuthProvider', () => ({
 }));
 
 vi.mock('@/hooks/useProfessionals', () => ({
-  useOwnApplication: () => ({ data: state.status ? { status: state.status } : null }),
+  useOwnApplication: () => ({
+    data: state.status ? { status: state.status } : null,
+    error: state.error,
+  }),
 }));
 
-function draw(role: UserRole, status: ProfessionalStatus | null) {
+function draw(role: UserRole, status: ProfessionalStatus | null, error: ApiError | null = null) {
   state.role = role;
   state.status = status;
+  state.error = error;
   return render(
     <MemoryRouter>
       <ConsoleLinks onNavigate={() => {}} />
@@ -34,6 +40,7 @@ describe('the console entry in the settings tray', () => {
   beforeEach(() => {
     state.role = 'user';
     state.status = null;
+    state.error = null;
   });
 
   it('offers nothing to somebody who has never applied', () => {
@@ -71,6 +78,32 @@ describe('the console entry in the settings tray', () => {
 
     expect(screen.queryByText(CONSOLE)).toBeNull();
     expect(screen.getByText(/suspended/)).toBeInTheDocument();
+  });
+
+  it('shows the suspension notice when the whole account is suspended', () => {
+    draw(
+      'professional',
+      'verified',
+      new ApiError(403, 'This account is suspended.', 'account-suspended')
+    );
+
+    expect(screen.queryByText(CONSOLE)).toBeNull();
+    expect(screen.getByText(/listing is suspended/)).toBeInTheDocument();
+  });
+
+  it('replaces the console link with a support notice when the account is banned', () => {
+    draw(
+      'professional',
+      'verified',
+      new ApiError(403, 'This account is banned.', 'account-banned')
+    );
+
+    expect(screen.queryByText(CONSOLE)).toBeNull();
+    expect(screen.getByText(/account is banned/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'support.vetify@gmail.com' })).toHaveAttribute(
+      'href',
+      'mailto:support.vetify@gmail.com'
+    );
   });
 
   it('still shows an admin their own console', () => {
