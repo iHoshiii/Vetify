@@ -9,7 +9,7 @@ import {
 import { ApiError } from '@/services/api';
 import { sendMessage as sendChatMessage } from '@/services/chat.service';
 import { CHAT_MODELS } from '@/types/chat';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChatEmpty } from './chat-empty';
 import { ChatInput } from './chat-input';
 import { ChatMessages } from './chat-messages';
@@ -31,6 +31,9 @@ export default function ChatWindow({ messages, onMessagesChange }: Props) {
   const sessionId = user?.id ?? 'anonymous';
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight request when the window unmounts, so no state update lands after teardown
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Seeded from storage so the allowance survives a reload, then kept in state
   // so spending one re-renders the composer without another read.
