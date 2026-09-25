@@ -173,3 +173,11 @@ export async function rateAppointment(input: {
   );
   return appointment;
 }
+
+// POST /api/v1/appointments/:id/reply — the vet's one public response to a rated visit. Vet-only, checked server-side against the stored booking.
+export async function replyToReview(input: { id: string; reply: string }) {
+  return await apiFetch<{ reply: string | null; repliedAt: string | null }>(
+    `/appointments/${encodeURIComponent(input.id)}/reply`,
+    { method: 'POST', body: { reply: input.reply } }
+  );
+}

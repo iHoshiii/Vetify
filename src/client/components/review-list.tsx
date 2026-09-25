@@ -1,5 +1,6 @@
-import type { ProfessionalReviewPage } from '@/services/professionals.service';
+import type { ProfessionalReview, ProfessionalReviewPage } from '@/services/professionals.service';
 import { Star } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 // Five stars with the first `value` filled, for one review's whole-number score.
 function Stars({ value }: { value: number }) {
@@ -28,17 +29,19 @@ function when(iso: string): string {
 const PAGER =
   'rounded-md px-3 py-1.5 font-semibold text-teal-800 transition hover:bg-teal-50 disabled:text-slate-300 disabled:hover:bg-transparent';
 
-// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational.
+// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational. renderFooter lets the vet console hang a reply composer under each review without this knowing what one is.
 export default function ReviewList({
   page,
   onPageChange,
   isLoading,
   emptyLabel,
+  renderFooter,
 }: {
   page?: ProfessionalReviewPage;
   onPageChange: (next: number) => void;
   isLoading: boolean;
   emptyLabel: string;
+  renderFooter?: (review: ProfessionalReview) => ReactNode;
 }) {
   if (!page) return <p className="text-sm text-slate-500">{isLoading ? 'Loading…' : emptyLabel}</p>;
   if (page.items.length === 0) return <p className="text-sm text-slate-500">{emptyLabel}</p>;
@@ -68,6 +71,7 @@ export default function ReviewList({
                 </p>
               </div>
             )}
+            {renderFooter?.(review)}
           </li>
         ))}
       </ul>

@@ -39,6 +39,7 @@ import ProfessionalMapLocationPage from '@/pages/professionals/map-location-page
 import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalLayout from '@/pages/professionals/professional-layout';
 import ProfessionalProfilePage from '@/pages/professionals/profile-page';
+import ProfessionalReviewsPage from '@/pages/professionals/reviews-page';
 import ProfessionalSettingsPage from '@/pages/professionals/settings-page';
 import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
@@ -214,6 +215,7 @@ export default function App() {
         <Route index element={<Navigate to="consultations" replace />} />
         <Route path="consultations" element={<ProfessionalBookingsPage kind="virtual" />} />
         <Route path="clinic-visits" element={<ProfessionalBookingsPage kind="onsite" />} />
+        <Route path="reviews" element={<ProfessionalReviewsPage />} />
         <Route path="conversations" element={<ProfessionalConversationsPage />} />
         <Route path="history" element={<ProfessionalHistoryPage />} />
         <Route path="location" element={<ProfessionalMapLocationPage />} />
