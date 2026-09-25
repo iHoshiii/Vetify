@@ -1,5 +1,5 @@
 import { useChatPanel } from '@/components/messaging/chat-context';
-import StarRating from '@/components/star-rating';
+import RatingStars from '@/components/rating-stars';
 import type { PublicProfessional } from '@/services/professionals.service';
 import { Briefcase, MapPin, MessageCircle, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -75,7 +75,12 @@ export default function VetCard({
             </span>
             <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
             {vet.ratingCount > 0 && (
-              <StarRating value={vet.ratingAverage} count={vet.ratingCount} />
+              <RatingStars
+                professionalId={vet.id}
+                name={vet.name ?? vet.clinicName ?? 'this vet'}
+                value={vet.ratingAverage}
+                count={vet.ratingCount}
+              />
             )}
             {away && (
               <span className="inline-flex items-center gap-1.5 font-semibold text-teal-900">
