@@ -1,15 +1,22 @@
-import { APPOINTMENT_SLOT_MINUTES, MANILA_UTC_OFFSET_HOURS } from '@shared/limits';
+import {
+  APPOINTMENT_NO_SHOW_GRACE_MINUTES,
+  APPOINTMENT_SLOT_MINUTES,
+  MANILA_UTC_OFFSET_HOURS,
+} from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  appointmentsCollection,
   findHeldSlots,
   findProfessionalById,
   insertProfessional,
   insertUser,
   isDuplicateSlot,
+  markCallConnected,
   markCallJoined,
+  markClientJoined,
   updateProfessionalProfile,
   updateProfessional,
   type User,
@@ -685,13 +692,13 @@ describe('rateAppointment', () => {
     expect(vetNow?.ratingCount).toBe(1);
   });
 
-  it('rates a joined virtual call before its time is up, note and all', async () => {
+  it('rates a virtual call both sides connected on before its time is up, note and all', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
     const booked = await request({ client, professional: application!._id, kind: 'virtual' });
     const id = booked!.appointment._id;
     await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
-    await markCallJoined(id);
+    await markCallConnected(id);
 
     const rated = await rateAppointment({
       id,
@@ -706,6 +713,59 @@ describe('rateAppointment', () => {
     expect(rated?.ratingComment).toBe('Kind and quick');
     const vetNow = await findProfessionalById(application!._id);
     expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  // Pushes a booking's start into the past so the no-show grace can be exercised without waiting.
+  async function backdateStart(id: ObjectId, minutesAgo: number) {
+    await appointmentsCollection().updateOne(
+      { _id: id },
+      { $set: { startsAt: new Date(Date.now() - minutesAgo * 60_000) } }
+    );
+  }
+
+  async function confirmedVirtual() {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    const id = booked!.appointment._id;
+    await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
+    return { client, vetUser, application: application!, id };
+  }
+
+  it('lets a booker who showed up rate a vet who never joined once the grace passes', async () => {
+    const { client, application, id } = await confirmedVirtual();
+    await markClientJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES + 1);
+
+    const rated = await rateAppointment({ id, actor: client, rating: 1, comment: 'Never showed' });
+
+    // Still confirmed: the sweep only completes it once its whole span is past.
+    expect(rated?.status).toBe('confirmed');
+    expect(rated?.rating).toBe(1);
+    const vetNow = await findProfessionalById(application._id);
+    expect(vetNow?.ratingAverage).toBe(1);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('refuses a no-show rating before the grace has passed', async () => {
+    const { client, id } = await confirmedVirtual();
+    await markClientJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES - 5);
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('refuses a no-show rating when the booker never joined', async () => {
+    const { client, id } = await confirmedVirtual();
+    // Party-agnostic: someone joined, but not the booker, so this must not open a rating.
+    await markCallJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES + 1);
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
   });
 
   it('averages every rated booking a vet has', async () => {

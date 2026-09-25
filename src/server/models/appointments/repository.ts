@@ -1,4 +1,4 @@
-import { APPOINTMENT_PAGE_SIZE } from '@shared/limits';
+import { APPOINTMENT_NO_SHOW_GRACE_MINUTES, APPOINTMENT_PAGE_SIZE } from '@shared/limits';
 import { APPOINTMENT_LIVE_STATUSES } from '@shared/schemas';
 import { ObjectId, type Collection, type Filter } from 'mongodb';
 
@@ -64,6 +64,7 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     reminderSentAt: null,
     joinedAt: null,
     consultedAt: null,
+    clientJoinedAt: null,
     rating: null,
     ratingComment: null,
     createdAt: now,
@@ -311,6 +312,15 @@ export async function markCallConnected(id: string | ObjectId): Promise<void> {
   );
 }
 
+// Stamps the instant the booker themselves joined, once. Lets a booker who showed up rate a vet who never connected, since joinedAt alone cannot say which party arrived.
+export async function markClientJoined(id: string | ObjectId): Promise<void> {
+  const now = new Date();
+  await appointmentsCollection().updateOne(
+    { _id: toObjectId(id), clientJoinedAt: null },
+    { $set: { clientJoinedAt: now, updatedAt: now } }
+  );
+}
+
 // The confirmed virtual booking the same two people hold starting exactly at a given instant, or null. Walks a back-to-back chain.
 export async function findConfirmedCallStartingAt(input: {
   professional: ObjectId;
@@ -351,13 +361,14 @@ export function holdsSlotFor(status: AppointmentStatus): boolean {
   return (APPOINTMENT_LIVE_STATUSES as readonly string[]).includes(status);
 }
 
-// Records the owner's stars and optional note on a consultation that has taken place. Rateable means an onsite booking that completed, or a virtual one both parties actually connected on (consultedAt) so a no-show the scanner auto-completes is not. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
+// Records the owner's stars and optional note on a consultation that has taken place. Rateable means an onsite booking that completed, a virtual one both parties actually connected on (consultedAt), or a virtual no-show the booker joined for once the grace past its start has passed. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
 export async function rateAppointment(
   id: string | ObjectId,
   rating: number,
   comment: string | null
 ): Promise<AppointmentDocument | null> {
   const now = new Date();
+  const noShowCutoff = new Date(now.getTime() - APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000);
   return await appointmentsCollection().findOneAndUpdate(
     {
       _id: toObjectId(id),
@@ -365,6 +376,12 @@ export async function rateAppointment(
       $or: [
         { status: 'completed', kind: 'onsite' },
         { kind: 'virtual', consultedAt: { $ne: null } },
+        {
+          kind: 'virtual',
+          consultedAt: null,
+          clientJoinedAt: { $ne: null },
+          startsAt: { $lte: noShowCutoff },
+        },
       ],
     },
     { $set: { rating, ratingComment: comment, updatedAt: now } },

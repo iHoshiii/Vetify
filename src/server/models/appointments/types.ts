@@ -89,6 +89,8 @@ export type AppointmentDocument = {
   joinedAt: Date | null;
   // When both accounts were in the call together, stamped once. A virtual booking is only rateable after this, so a no-show the scanner auto-completes cannot be rated.
   consultedAt: Date | null;
+  // When the booker themselves joined the call, stamped once. Lets a booker who showed up rate a vet who never connected, once the no-show grace has passed.
+  clientJoinedAt: Date | null;
   rating: number | null;
   // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
   ratingComment: string | null;
@@ -130,6 +132,8 @@ export type AppointmentView = {
   joinedAt: string | null;
   // When both sides were in the call together, so the owner's row only offers a rating after a real session.
   consultedAt: string | null;
+  // When the booker joined, so the owner's row can offer a no-show rating once the grace passes even though consultedAt stayed null.
+  clientJoinedAt: string | null;
   // Whether someone is in the call right now, so the other side's row can show it as ongoing.
   callActive: boolean;
   rating: number | null;

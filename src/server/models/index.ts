@@ -51,6 +51,7 @@ export {
   isDuplicateSlot,
   markCallConnected,
   markCallJoined,
+  markClientJoined,
   otherPartyId,
   rateAppointment,
   tallyAppointments,

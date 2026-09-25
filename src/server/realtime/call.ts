@@ -2,7 +2,12 @@ import type { Namespace, Socket } from 'socket.io';
 
 import { MESSAGE_MAX_LENGTH } from '@shared/limits';
 
-import { findAppointmentById, markCallJoined, type AppointmentDocument } from '../models';
+import {
+  findAppointmentById,
+  markCallJoined,
+  markClientJoined,
+  type AppointmentDocument,
+} from '../models';
 import { callPeer, effectiveCallEnd, loadJoinableCall, type CallPeer } from './call-window';
 import { emitToUser, stampCallConnected } from './hub';
 import { iceServers, type IceServer } from './ice';
@@ -85,6 +90,8 @@ async function join(
   const endsAt = await effectiveCallEnd(appointment);
   const peer = await callPeer(appointment, userId);
   await markCallJoined(appointment._id);
+  // polite means this socket is the booker, so this stamps that the client themselves showed up, which a no-show rating needs.
+  if (polite) await markClientJoined(appointment._id);
   await stampCallConnected(appointmentId);
   announceChanged(appointment);
   scheduleAutoStop(socket.nsp, appointmentId, endsAt);
