@@ -1,4 +1,4 @@
-import { calculateMaxRecommendedRate } from '@shared/limits';
+import { calculateMaxRecommendedRate, PROFESSIONAL_REVIEWS_PAGE_SIZE } from '@shared/limits';
 import {
   appointmentSlotsQuerySchema,
   professionalApplySchema,
@@ -27,6 +27,7 @@ import {
   findProfessionalById,
   findProfessionalByUser,
   findProfessionalCapture,
+  findProfessionalReviews,
   findProfessionalsNear,
   findVerifiedProfessionals,
   findHeldSlots,
@@ -43,6 +44,7 @@ import {
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
+  toReviewPage,
   updateProfessionalProfile,
   type ProfessionalCaptureIds,
   type ProfessionalProfilePatch,
@@ -570,5 +572,25 @@ router.get(
     });
   }
 );
+
+// GET /api/v1/professionals/:id/reviews?page=&comments= - one page of a vet's ratings, newest first, rater names masked. Public and 404-guarded exactly like GET /:id; comments=true narrows it to ratings that carry a written note.
+router.get('/:id/reviews', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, NOT_LISTED);
+
+  const listing = await listedProfessional(req.params.id);
+  if (!listing) return fail(res, 404, NOT_LISTED);
+
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const withComment = req.query.comments === 'true';
+
+  const { items, total } = await findProfessionalReviews({
+    professional: listing._id,
+    page,
+    limit: PROFESSIONAL_REVIEWS_PAGE_SIZE,
+    withComment,
+  });
+
+  ok(res, toReviewPage({ items, total, page, limit: PROFESSIONAL_REVIEWS_PAGE_SIZE }));
+});
 
 export default router;

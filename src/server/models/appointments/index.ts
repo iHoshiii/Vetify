@@ -28,6 +28,14 @@ export { appointmentAttrsSchema, type AppointmentAttrs } from './schema';
 export { otherPartyId, toAppointmentPage, toAppointmentView } from './transform';
 
 export {
+  findProfessionalReviews,
+  maskName,
+  toReviewPage,
+  type ProfessionalReview,
+  type ProfessionalReviewPage,
+} from './reviews';
+
+export {
   APPOINTMENT_INDEXES,
   APPOINTMENT_LIVE_STATUSES,
   APPOINTMENT_STATUSES,
