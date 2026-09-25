@@ -1,13 +1,18 @@
 import ReviewList from '@/components/review-list';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useProfessionalRatingBreakdown, useProfessionalReviews } from '@/hooks/useProfessionals';
+import type { ProfessionalReview } from '@/services/professionals.service';
 import { useState } from 'react';
 
 import RatingBreakdown from './rating-breakdown';
+import ReportReview from './report-review';
 
 // The profile's Ratings panel: the star histogram over a page of written reviews, newest first, names masked. Clicking a bar filters the list to that score.
 export default function VetRatings({ professionalId }: { professionalId: string }) {
+  const { isAuthenticated } = useAuth();
   const [page, setPage] = useState(1);
   const [stars, setStars] = useState<number | null>(null);
+  const [reporting, setReporting] = useState<ProfessionalReview | null>(null);
   const breakdown = useProfessionalRatingBreakdown(professionalId);
   const query = useProfessionalReviews(professionalId, {
     page,
@@ -53,7 +58,16 @@ export default function VetRatings({ professionalId }: { professionalId: string 
         emptyLabel={
           stars !== null ? `No written ${stars}-star reviews.` : 'No written reviews yet.'
         }
+        onReport={isAuthenticated ? setReporting : undefined}
       />
+
+      {reporting && (
+        <ReportReview
+          professionalId={professionalId}
+          review={reporting}
+          onClose={() => setReporting(null)}
+        />
+      )}
     </div>
   );
 }

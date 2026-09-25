@@ -1,4 +1,5 @@
 import { replyToReview } from '@/services/appointments.service';
+import { reportReview } from '@/services/professionals.service';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { professionalKeys } from './useProfessionals';
@@ -18,5 +19,16 @@ export function useReplyToReview(professionalId: string) {
         queryKey: [...professionalKeys.detail(professionalId), 'reviews'],
       });
     },
+  });
+}
+
+// Files an abuse report against one review. Nothing on the profile changes until an admin acts, so this touches no cache; the caller shows its own acknowledgement.
+export function useReportReview() {
+  return useMutation<
+    { reported: true },
+    Error,
+    { professionalId: string; appointmentId: string; reason: string }
+  >({
+    mutationFn: reportReview,
   });
 }

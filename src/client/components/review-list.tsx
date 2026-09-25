@@ -29,19 +29,21 @@ function when(iso: string): string {
 const PAGER =
   'rounded-md px-3 py-1.5 font-semibold text-teal-800 transition hover:bg-teal-50 disabled:text-slate-300 disabled:hover:bg-transparent';
 
-// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational. renderFooter lets the vet console hang a reply composer under each review without this knowing what one is.
+// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational. renderFooter lets the vet console hang a reply composer under each review, and onReport hangs a report control for signed-in visitors, without this knowing what either is.
 export default function ReviewList({
   page,
   onPageChange,
   isLoading,
   emptyLabel,
   renderFooter,
+  onReport,
 }: {
   page?: ProfessionalReviewPage;
   onPageChange: (next: number) => void;
   isLoading: boolean;
   emptyLabel: string;
   renderFooter?: (review: ProfessionalReview) => ReactNode;
+  onReport?: (review: ProfessionalReview) => void;
 }) {
   if (!page) return <p className="text-sm text-slate-500">{isLoading ? 'Loading…' : emptyLabel}</p>;
   if (page.items.length === 0) return <p className="text-sm text-slate-500">{emptyLabel}</p>;
@@ -72,6 +74,15 @@ export default function ReviewList({
               </div>
             )}
             {renderFooter?.(review)}
+            {onReport && (
+              <button
+                type="button"
+                onClick={() => onReport(review)}
+                className="mt-2 text-xs font-semibold text-slate-400 transition hover:text-rose-700"
+              >
+                Report
+              </button>
+            )}
           </li>
         ))}
       </ul>

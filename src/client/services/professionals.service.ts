@@ -342,6 +342,20 @@ export async function getRatingBreakdown(
   });
 }
 
+// POST /api/v1/professionals/:id/reviews/:appointmentId/report - flags a rated review for abuse. Any signed-in user may report; the reason feeds the admin queue and audit trail.
+export async function reportReview(input: {
+  professionalId: string;
+  appointmentId: string;
+  reason: string;
+}): Promise<{ reported: true }> {
+  return apiFetch(
+    `/professionals/${encodeURIComponent(input.professionalId)}/reviews/${encodeURIComponent(
+      input.appointmentId
+    )}/report`,
+    { method: 'POST', body: { reason: input.reason } }
+  );
+}
+
 /**
  * GET /api/v1/professionals/me — the caller's application.
  *
