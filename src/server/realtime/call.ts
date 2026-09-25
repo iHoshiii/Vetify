@@ -4,7 +4,7 @@ import { MESSAGE_MAX_LENGTH } from '@shared/limits';
 
 import { findAppointmentById, markCallJoined, type AppointmentDocument } from '../models';
 import { callPeer, effectiveCallEnd, loadJoinableCall, type CallPeer } from './call-window';
-import { emitToUser } from './hub';
+import { emitToUser, stampCallConnected } from './hub';
 import { iceServers, type IceServer } from './ice';
 
 export { canJoinCall, loadJoinableCall } from './call-window';
@@ -85,6 +85,7 @@ async function join(
   const endsAt = await effectiveCallEnd(appointment);
   const peer = await callPeer(appointment, userId);
   await markCallJoined(appointment._id);
+  await stampCallConnected(appointmentId);
   announceChanged(appointment);
   scheduleAutoStop(socket.nsp, appointmentId, endsAt);
 

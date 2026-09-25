@@ -42,6 +42,8 @@ export type Appointment = {
   with: AppointmentParty | null;
   /** The listing behind the vet, so a row can link to their profile. */
   professionalId: string;
+  // Set once both sides were in the call together, so a virtual no-show the scanner completes stays unrateable.
+  consultedAt: string | null;
   /** The owner's star on a finished booking, null until they leave one. */
   rating: number | null;
   /** The optional note the owner left with their stars, null when they wrote none. */

@@ -12,6 +12,7 @@ export {
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,
+  markCallConnected,
   markCallJoined,
   rateAppointment,
   tallyAppointments,
