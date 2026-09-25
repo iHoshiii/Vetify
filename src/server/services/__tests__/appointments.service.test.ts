@@ -6,7 +6,7 @@ import {
 } from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   appointmentsCollection,
@@ -34,6 +34,7 @@ import {
   requestAppointment,
 } from '../appointments.service';
 import { clearRecentMail, recentMail } from '../mail.service';
+import * as notifications from '../notifications.service';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
@@ -695,6 +696,33 @@ describe('rateAppointment', () => {
     const vetNow = await findProfessionalById(application._id);
     expect(vetNow?.ratingAverage).toBe(4);
     expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('notifies the vet when their visit is rated, without leaking the note', async () => {
+    const { client, vetUser, id } = await completed();
+    const before = await notifications.countUnread(vetUser._id);
+
+    await rateAppointment({ id, actor: client, rating: 4, comment: 'Gentle and thorough' });
+
+    expect(await notifications.countUnread(vetUser._id)).toBe(before + 1);
+    const page = await notifications.listForUser({ user: vetUser._id, page: 1, limit: 20 });
+    expect(page.items[0].kind).toBe('appointment_rated');
+    expect(page.items[0].body).not.toContain('Gentle and thorough');
+  });
+
+  it('keeps the rating when notifying the vet fails', async () => {
+    const { client, application, vetUser, id } = await completed();
+    const before = await notifications.countUnread(vetUser._id);
+    const spy = vi
+      .spyOn(notifications, 'createNotification')
+      .mockRejectedValueOnce(new Error('boom'));
+
+    const rated = await rateAppointment({ id, actor: client, rating: 4 });
+
+    expect(rated?.rating).toBe(4);
+    expect((await findProfessionalById(application._id))?.ratingCount).toBe(1);
+    expect(await notifications.countUnread(vetUser._id)).toBe(before);
+    spy.mockRestore();
   });
 
   it('rates a virtual call both sides connected on before its time is up, note and all', async () => {
