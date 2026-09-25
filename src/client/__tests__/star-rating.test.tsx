@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import StarRating from '../pages/book-appointment/_components/star-rating';
+import StarRating from '../components/star-rating';
 
 describe('StarRating', () => {
   it('states the score and the review count for a screen reader', () => {

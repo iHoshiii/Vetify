@@ -1,9 +1,8 @@
 import { useChatPanel } from '@/components/messaging/chat-context';
+import StarRating from '@/components/star-rating';
 import type { PublicProfessional } from '@/services/professionals.service';
 import { Briefcase, MapPin, MessageCircle, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-import StarRating from './star-rating';
 
 const ACTION =
   'inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-bold transition';
