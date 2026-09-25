@@ -52,14 +52,7 @@ export default function SlotPicker({
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-bold uppercase tracking-wider text-slate-500">Pick your hours</p>
-        {grid.data && (
-          <p className="text-xs text-slate-500">
-            Tap any hours &middot; ones in a row book together &middot; Philippine time
-          </p>
-        )}
-      </div>
+      <p className="text-sm font-bold uppercase tracking-wider text-slate-500">Pick your hours</p>
 
       {grid.isPending && <p className="mt-3 text-sm text-slate-600">Reading their diary…</p>}
 
