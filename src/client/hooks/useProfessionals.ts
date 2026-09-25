@@ -8,6 +8,7 @@ import {
   getProfessionalReviews,
   getProfessionalSlots,
   getOwnApplication,
+  getRatingBreakdown,
   listProfessionals,
   listProfessionalsNear,
   sendProfessionalInquiry,
@@ -20,6 +21,7 @@ import {
   type ProfessionalPage,
   type ProfessionalReviewPage,
   type PublicProfessional,
+  type RatingBreakdown,
   type SlotGrid,
 } from '@/services/professionals.service';
 import type {
@@ -45,8 +47,10 @@ export const professionalKeys = {
   capture: (id: string) => [...professionalKeys.all, 'capture', id] as const,
   detail: (id: string) => [...professionalKeys.all, 'detail', id] as const,
   // One page of a vet's public reviews, nested under their detail so a profile refresh drops it too.
-  reviews: (id: string, params: { page?: number; comments?: boolean }) =>
+  reviews: (id: string, params: { page?: number; comments?: boolean; stars?: number }) =>
     [...professionalKeys.detail(id), 'reviews', params] as const,
+  // The rating histogram, nested under detail so a profile refresh drops it with the rest.
+  breakdown: (id: string) => [...professionalKeys.detail(id), 'breakdown'] as const,
   /**
    * The bookable grid. `slots()` with no arguments is the whole family, which is what
    * a booking invalidates: taking one slot changes every grid that was showing it.
@@ -277,10 +281,10 @@ export function useProfessionalSlots(input: {
   });
 }
 
-// One page of a vet's public ratings. comments:true is the profile's written-review panel; the default is every rater, for the card popup.
+// One page of a vet's public ratings. comments:true is the profile's written-review panel; the default is every rater, for the card popup. stars narrows to a single bar of the histogram.
 export function useProfessionalReviews(
   id: string | undefined,
-  params: { page?: number; comments?: boolean } = {}
+  params: { page?: number; comments?: boolean; stars?: number } = {}
 ) {
   return useQuery<ProfessionalReviewPage>({
     queryKey: professionalKeys.reviews(id ?? '', params),
@@ -289,6 +293,17 @@ export function useProfessionalReviews(
     staleTime: STALE_TIME,
     // Keeps the current page on screen while the next one loads.
     placeholderData: (previous) => previous,
+    retry: retryUnlessMissing,
+  });
+}
+
+// The per-star histogram behind a vet's average, loaded only on the profile that draws the bars.
+export function useProfessionalRatingBreakdown(id: string | undefined) {
+  return useQuery<RatingBreakdown>({
+    queryKey: professionalKeys.breakdown(id ?? ''),
+    queryFn: ({ signal }) => getRatingBreakdown(id as string, signal),
+    enabled: Boolean(id),
+    staleTime: STALE_TIME,
     retry: retryUnlessMissing,
   });
 }
