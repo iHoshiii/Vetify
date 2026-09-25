@@ -202,7 +202,8 @@ router.get('/:provider', (req, res) => {
 
   const config = getProviderConfig(name);
   if (!config) {
-    return fail(res, 501, `${name} login is not configured on this server`);
+    console.warn(`[auth] ${name} login requested but not configured`);
+    return redirectWithError(res, 'unconfigured');
   }
 
   const state = crypto.randomBytes(16).toString('base64url');
@@ -246,7 +247,10 @@ router.get('/:provider/callback', async (req, res) => {
   if (typeof code !== 'string' || !code) return redirectWithError(res, 'code');
 
   const config = getProviderConfig(name);
-  if (!config) return fail(res, 501, `${name} login is not configured on this server`);
+  if (!config) {
+    console.warn(`[auth] ${name} callback but not configured`);
+    return redirectWithError(res, 'unconfigured');
+  }
 
   try {
     const profile = await fetchProfileFromCode(name, config, code, sealed.codeVerifier);
