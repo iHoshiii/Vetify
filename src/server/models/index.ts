@@ -58,6 +58,7 @@ export {
   maskName,
   otherPartyId,
   rateAppointment,
+  replyToReview,
   tallyAppointments,
   toAppointmentPage,
   toAppointmentView,

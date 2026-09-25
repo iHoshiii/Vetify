@@ -15,3 +15,21 @@ export async function claimReviewPrompt(
     { returnDocument: 'after' }
   );
 }
+
+// Records the vet's public reply to their own rated review, guarded on the account match and on the booking being rated, so a reply cannot land on someone else's review or on stars that were never left. Returns null when neither condition holds.
+export async function replyToReview(input: {
+  id: string | ObjectId;
+  professionalUser: string | ObjectId;
+  reply: string;
+}): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    {
+      _id: toObjectId(input.id),
+      professionalUser: toObjectId(input.professionalUser),
+      rating: { $ne: null },
+    },
+    { $set: { reviewReply: input.reply, reviewReplyAt: now, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}

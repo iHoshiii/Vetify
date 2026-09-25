@@ -2,10 +2,12 @@ import {
   appointmentListQuerySchema,
   appointmentRateSchema,
   appointmentRefuseSchema,
+  appointmentReplySchema,
   appointmentRequestSchema,
   type AppointmentListQuery,
   type AppointmentRate,
   type AppointmentRefuse,
+  type AppointmentReply,
   type AppointmentRequest,
 } from '@shared/schemas';
 import { Router, type RequestHandler } from 'express';
@@ -33,6 +35,7 @@ import {
   requestAppointment,
   type AppointmentDecision,
 } from '../../services/appointments.service';
+import { replyToReview } from '../../services/review-reply.service';
 import { isCallLive } from '../../realtime/hub';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
@@ -300,6 +303,19 @@ router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
   if (!result) return fail(res, 404, MISSING);
 
   ok(res, { appointment: await viewOf(result, actor._id) });
+});
+
+// POST /api/v1/appointments/:id/reply: the vet's one public response to a rated visit. Ownership and the rated guard live in the service against the stored booking, not here.
+router.post('/:id/reply', validate(appointmentReplySchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AppointmentReply;
+
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
+
+  const result = await replyToReview({ id: req.params.id, actor, reply: body.reply });
+  if (!result) return fail(res, 404, MISSING);
+
+  ok(res, { reply: result.reviewReply, repliedAt: result.reviewReplyAt?.toISOString() ?? null });
 });
 
 export default router;

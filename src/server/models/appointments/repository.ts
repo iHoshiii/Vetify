@@ -69,6 +69,8 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     rating: null,
     ratingComment: null,
     ratedAt: null,
+    reviewReply: null,
+    reviewReplyAt: null,
     createdAt: now,
     updatedAt: now,
   };

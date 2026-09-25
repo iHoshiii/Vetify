@@ -396,6 +396,9 @@ export const APPOINTMENT_RATING_MAX = 5;
 // An optional written note left with the stars. Room for a real sentence or two, not an essay.
 export const APPOINTMENT_RATING_COMMENT_MAX = 500;
 
+// The vet's one public response to a review. A little longer than the note it answers, so a full reply fits.
+export const REVIEW_REPLY_MAX = 600;
+
 // Reviews per page on a professional's public rating list, newest first.
 export const PROFESSIONAL_REVIEWS_PAGE_SIZE = 5;
 

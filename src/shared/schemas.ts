@@ -9,6 +9,7 @@ import {
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
   APPOINTMENT_MAX_SLOTS,
+  REVIEW_REPLY_MAX,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -1369,6 +1370,15 @@ export const appointmentRateSchema = z.object({
     .transform((value) => value || null),
 });
 
+// The vet's public reply to a review. One required, trimmed line, capped like the note it answers.
+export const appointmentReplySchema = z.object({
+  reply: z
+    .string()
+    .trim()
+    .min(1, 'Write a reply before posting it')
+    .max(REVIEW_REPLY_MAX, `Keep your reply under ${REVIEW_REPLY_MAX} characters`),
+});
+
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
 export const appointmentRescheduleSchema = z.object({
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
@@ -1403,6 +1413,7 @@ export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentRate = z.output<typeof appointmentRateSchema>;
+export type AppointmentReply = z.output<typeof appointmentReplySchema>;
 export type AppointmentReschedule = z.output<typeof appointmentRescheduleSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 

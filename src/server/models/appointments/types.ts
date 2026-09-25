@@ -98,6 +98,9 @@ export type AppointmentDocument = {
   ratingComment: string | null;
   // When the stars were recorded, so the public review list can date each one. Null until rated, and missing on rows rated before this field, which read back through updatedAt.
   ratedAt: Date | null;
+  // The vet's one public response to this review, and when they posted it. Null until they reply; vet-authored, so it is shown unmasked.
+  reviewReply: string | null;
+  reviewReplyAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

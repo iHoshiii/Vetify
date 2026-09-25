@@ -6,13 +6,15 @@ import { USERS_COLLECTION } from '../users';
 import { appointmentsCollection } from './repository';
 import type { AppointmentDocument } from './types';
 
-// One rating as the public profile and the card popup show it: stars, the note if any, when it was left, and the rater's name already masked.
+// One rating as the public profile and the card popup show it: stars, the note if any, when it was left, the rater's name already masked, and the vet's public reply if they left one.
 export type ProfessionalReview = {
   id: string;
   stars: number;
   comment: string | null;
   reviewer: string;
   ratedAt: string;
+  reply: string | null;
+  repliedAt: string | null;
 };
 
 export type ProfessionalReviewPage = {
@@ -39,6 +41,8 @@ type ReviewRow = {
   ratingComment: string | null;
   reviewerName: string | null;
   ratedAt: Date;
+  reviewReply: string | null;
+  reviewReplyAt: Date | null;
 };
 
 // One page of a vet's ratings, newest first, the rater's account name masked in place. withComment narrows it to ratings that carry a written note, which is what the profile's Ratings panel lists. ratedAt reads through updatedAt for rows rated before the field existed.
@@ -82,6 +86,8 @@ export async function findProfessionalReviews(input: {
             rating: 1,
             ratingComment: 1,
             ratedAt: 1,
+            reviewReply: 1,
+            reviewReplyAt: 1,
             reviewerName: { $arrayElemAt: ['$_reviewer.name', 0] },
           },
         },
@@ -96,6 +102,8 @@ export async function findProfessionalReviews(input: {
     comment: row.ratingComment ?? null,
     reviewer: maskName(row.reviewerName),
     ratedAt: row.ratedAt.toISOString(),
+    reply: row.reviewReply ?? null,
+    repliedAt: row.reviewReplyAt ? row.reviewReplyAt.toISOString() : null,
   }));
 
   return { items, total };
