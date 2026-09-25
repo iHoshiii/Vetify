@@ -6,6 +6,7 @@ import { BadgeCheck, Briefcase, Calendar, MapPin, Phone } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 import VetHours from './_components/vet-hours';
+import VetRatings from './_components/vet-ratings';
 
 const AVAILABILITY: Record<string, { label: string; tone: string }> = {
   available: { label: 'Taking bookings', tone: 'bg-emerald-100 text-emerald-900' },
@@ -173,8 +174,8 @@ export default function PublicProfilePage() {
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="grid gap-6 lg:col-span-2">
             <section className={PANEL}>
-              <h2 className={HEADING}>About</h2>
-              <p className="mt-3 whitespace-pre-line leading-7 text-slate-700">{vet.bio}</p>
+              <h2 className={HEADING}>Ratings</h2>
+              <VetRatings professionalId={vet.id} />
             </section>
 
             <section className={PANEL}>
