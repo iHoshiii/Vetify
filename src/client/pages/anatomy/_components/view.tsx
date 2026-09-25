@@ -54,11 +54,22 @@ export default function View({ selectedAnimal, selectedSystem, hotspots }: Viewe
         {hotspots.map((spot) => (
           <div
             key={spot.id}
+            role="button"
+            tabIndex={0}
+            aria-label={spot.title}
             className={`absolute z-20 group ${hoveredSpot === spot.id ? 'z-50' : ''}`}
             style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
             onMouseEnter={() => setHoveredSpot(spot.id)}
             onMouseLeave={() => setHoveredSpot(null)}
+            onFocus={() => setHoveredSpot(spot.id)}
+            onBlur={() => setHoveredSpot(null)}
             onClick={() => setHoveredSpot(hoveredSpot === spot.id ? null : spot.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setHoveredSpot(hoveredSpot === spot.id ? null : spot.id);
+              }
+            }}
           >
             <div className="relative flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center">
               <span className="absolute inline-flex h-5 w-5 animate-ping rounded-full bg-teal-400 opacity-50 group-hover:opacity-75 transition-opacity" />

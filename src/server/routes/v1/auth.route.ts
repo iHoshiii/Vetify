@@ -4,12 +4,14 @@ import crypto from 'node:crypto';
 
 import { env } from '../../config/env';
 import { optionalAuth } from '../../middleware/optionalAuth';
+import { authLimiter } from '../../middleware/auth-limiter';
 import { validate } from '../../middleware/validate';
 import { recordActivity } from '../../models/activity-event';
 import {
   findRefreshTokenWithOwner,
   hashToken,
   isRefreshTokenActive,
+  revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
 } from '../../models/refresh-token';
 import {
@@ -22,6 +24,7 @@ import {
 import {
   accessTokenClaimsFor,
   createAuthPayloadFor,
+  createRefreshToken,
   findOrCreateOAuthUser,
   setRefreshCookie,
   signAccessToken,
@@ -82,7 +85,7 @@ function redirectWithError(res: Response, reason: string): void {
 }
 
 // POST /api/v1/auth/signup
-router.post('/signup', validate(signupSchema), async (req, res) => {
+router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
   const payload = req.body as SignupInput;
 
   const existing = await findUserByEmail(payload.email);
@@ -103,7 +106,7 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
 });
 
 // POST /api/v1/auth/login
-router.post('/login', validate(loginSchema), async (req, res) => {
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   const payload = req.body as LoginInput;
   // The one read in the codebase that returns the stored hash.
   const user = await findUserWithPasswordByEmail(payload.email);
@@ -134,16 +137,21 @@ router.post('/login', validate(loginSchema), async (req, res) => {
  * callback page can learn who just logged in — that flow never sees a JSON login
  * response, only the refresh cookie the callback planted.
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authLimiter, async (req, res) => {
   const raw = readRefreshCookie(req);
   if (!raw) return fail(res, 401, 'Missing refresh token');
 
   const tokenHash = hashToken(raw);
   const rt = await findRefreshTokenWithOwner(tokenHash);
-  if (!rt || !isRefreshTokenActive(rt)) {
+  if (!rt) return fail(res, 401, 'Invalid or expired refresh token');
+
+  // Reuse detection: a token still on record but already revoked is a replay of one rotation burned, so drop every session for that owner.
+  if (rt.revokedAt) {
+    await revokeAllRefreshTokensForUser(rt.user);
+    res.clearCookie(env.REFRESH_COOKIE_NAME);
     return fail(res, 401, 'Invalid or expired refresh token');
   }
-
+  if (!isRefreshTokenActive(rt)) return fail(res, 401, 'Invalid or expired refresh token');
   if (!rt.owner) return fail(res, 401, 'Refresh token is not attached to a user');
 
   // Suspending or banning revokes the stored tokens, so this rarely fires. It
@@ -156,7 +164,11 @@ router.post('/refresh', async (req, res) => {
     return failReason(res, 403, blockedMessage(blocked), `account-${blocked}`);
   }
 
+  // Rotate: burn the presented token and plant a fresh one, so a cookie is good for a single use and its replay trips the reuse check above.
+  await revokeRefreshTokenByHash(tokenHash);
   const publicUser = toPublicUser(rt.owner);
+  const rotated = await createRefreshToken(publicUser.id);
+  setRefreshCookie(res, rotated.token, rotated.expiresAt);
   const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   ok(res, { accessToken, user: publicUser });
 });
@@ -190,7 +202,8 @@ router.get('/:provider', (req, res) => {
 
   const config = getProviderConfig(name);
   if (!config) {
-    return fail(res, 501, `${name} login is not configured on this server`);
+    console.warn(`[auth] ${name} login requested but not configured`);
+    return redirectWithError(res, 'unconfigured');
   }
 
   const state = crypto.randomBytes(16).toString('base64url');
@@ -234,7 +247,10 @@ router.get('/:provider/callback', async (req, res) => {
   if (typeof code !== 'string' || !code) return redirectWithError(res, 'code');
 
   const config = getProviderConfig(name);
-  if (!config) return fail(res, 501, `${name} login is not configured on this server`);
+  if (!config) {
+    console.warn(`[auth] ${name} callback but not configured`);
+    return redirectWithError(res, 'unconfigured');
+  }
 
   try {
     const profile = await fetchProfileFromCode(name, config, code, sealed.codeVerifier);

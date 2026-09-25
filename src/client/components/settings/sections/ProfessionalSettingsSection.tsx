@@ -10,7 +10,7 @@ import {
 } from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { AlertTriangle, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import ScheduleGrid from './ScheduleGrid';
@@ -128,6 +128,10 @@ function useSave() {
   const updateProfile = useUpdateProfessionalProfile();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the pending Saved reset if the form unmounts, so it never sets state after teardown
+  useEffect(() => () => clearTimeout(savedTimer.current ?? undefined), []);
 
   return {
     pending: updateProfile.isPending,
@@ -140,7 +144,8 @@ function useSave() {
       updateProfile.mutate(patch, {
         onSuccess: () => {
           setSaved(true);
-          setTimeout(() => setSaved(false), 3000);
+          clearTimeout(savedTimer.current ?? undefined);
+          savedTimer.current = setTimeout(() => setSaved(false), 3000);
         },
         onError: (err) => setError(err.message || 'That did not save. Try again.'),
       });

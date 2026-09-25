@@ -51,7 +51,7 @@ export default function HelpCenterPage() {
           <h2 className="mb-2 text-xl font-bold text-teal-900">Still need help?</h2>
           <p className="mb-6 text-teal-700">Our support team is always ready to assist you.</p>
           <a
-            href="mailto:support@vetify.com"
+            href="mailto:support.vetify@gmail.com"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-600 px-6 font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-teal-700 hover:shadow-lg"
           >
             Contact Support

@@ -87,6 +87,8 @@ export type AppointmentDocument = {
   reminderSentAt: Date | null;
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
+  // When both accounts were in the call together, stamped once. A virtual booking is only rateable after this, so a no-show the scanner auto-completes cannot be rated.
+  consultedAt: Date | null;
   rating: number | null;
   // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
   ratingComment: string | null;
@@ -126,6 +128,8 @@ export type AppointmentView = {
   professionalId: string;
   // When either side first joined the call, so the owner's row offers Start before and Rejoin after.
   joinedAt: string | null;
+  // When both sides were in the call together, so the owner's row only offers a rating after a real session.
+  consultedAt: string | null;
   // Whether someone is in the call right now, so the other side's row can show it as ongoing.
   callActive: boolean;
   rating: number | null;

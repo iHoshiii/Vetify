@@ -49,6 +49,7 @@ export {
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,
+  markCallConnected,
   markCallJoined,
   otherPartyId,
   rateAppointment,

@@ -1,4 +1,5 @@
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { X } from 'lucide-react';
 
 import RateForm from './rate-form';
@@ -12,6 +13,7 @@ export default function RatePopup({
   onClose: () => void;
 }) {
   useBodyScrollLock();
+  const dialogRef = useFocusTrap<HTMLElement>(onClose);
 
   return (
     <div
@@ -22,10 +24,12 @@ export default function RatePopup({
       }}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Rate your experience"
-        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl outline-none"
       >
         <button
           type="button"

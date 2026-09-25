@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocalePreferences } from '@/components/providers/LocaleProvider';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface LanguageModalProps {
   isOpen: boolean;
@@ -33,19 +35,15 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
   const [selectedLang, setSelectedLang] = useState(preferences.language);
   const [selectedTimezone, setSelectedTimezone] = useState(preferences.timeZone);
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useFocusTrap<HTMLDivElement>(onClose, isOpen);
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      setSelectedLang(preferences.language);
-      setSelectedTimezone(preferences.timeZone);
-      setMounted(true);
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    if (!isOpen) return;
+    setSelectedLang(preferences.language);
+    setSelectedTimezone(preferences.timeZone);
+    setMounted(true);
   }, [isOpen, preferences.language, preferences.timeZone]);
 
   if (!isOpen) return null;
@@ -57,7 +55,14 @@ export default function LanguageModal({ isOpen, onClose }: LanguageModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all dark:bg-black/60">
-      <div className="w-full max-w-md scale-100 rounded-2xl bg-white p-6 shadow-2xl transition-transform dark:bg-slate-900 dark:shadow-black/30">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Language and region"
+        tabIndex={-1}
+        className="w-full max-w-md scale-100 rounded-2xl bg-white p-6 shadow-2xl outline-none transition-transform dark:bg-slate-900 dark:shadow-black/30"
+      >
         <h3 className="mb-2 text-xl font-bold text-slate-800 dark:text-slate-100">
           Language & Region
         </h3>

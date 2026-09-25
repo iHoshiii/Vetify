@@ -1,7 +1,10 @@
 import type { MapVet, OsmClinic } from '@/components/map-prof-vet';
 import type { MapUserLocation } from '@/components/vetmap';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 const VetMap = lazy(() => import('@/components/vetmap'));
 
@@ -24,21 +27,9 @@ export default function MapModal({
 }: MapModalProps) {
   const navigate = useNavigate();
 
-  // Handle Escape key and body scroll lock on mount
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-
-    // Cleanup on unmount
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [onClose]);
+  // Freeze the page behind the overlay and keep keyboard focus inside it while the map is open
+  useBodyScrollLock();
+  const dialogRef = useFocusTrap<HTMLDivElement>(onClose);
 
   return (
     <>
@@ -48,7 +39,12 @@ export default function MapModal({
         onClick={onClose}
       >
         <div
-          className="relative w-full h-full"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Map of nearby vets and clinics"
+          tabIndex={-1}
+          className="relative w-full h-full outline-none"
           style={{ animation: 'scaleIn 0.25s ease both' }}
           onClick={(e) => e.stopPropagation()}
         >

@@ -48,6 +48,7 @@ export function toAppointmentView(input: {
     with: party,
     professionalId: appointment.professional.toString(),
     joinedAt: appointment.joinedAt?.toISOString() ?? null,
+    consultedAt: appointment.consultedAt?.toISOString() ?? null,
     callActive,
     rating: appointment.rating ?? null,
     ratingComment: appointment.ratingComment ?? null,

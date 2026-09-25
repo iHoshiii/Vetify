@@ -118,7 +118,10 @@ export default function BookingRow({
         </div>
       )}
 
-      {booking.status === 'completed' && <RateBooking booking={booking} />}
+      {booking.status === 'completed' &&
+        (booking.kind !== 'virtual' || booking.consultedAt !== null) && (
+          <RateBooking booking={booking} />
+        )}
     </li>
   );
 }

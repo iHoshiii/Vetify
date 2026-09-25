@@ -1,3 +1,5 @@
+import { SiteLink } from '@/components/common/site-link';
+
 interface SectionProps {
   isExpanded: boolean;
   onToggle: () => void;
@@ -38,31 +40,16 @@ export default function SupportSection({ isExpanded, onToggle }: SectionProps) {
         }`}
       >
         <div className="flex flex-col gap-1 px-2 pb-2">
-          {items.map((item, idx) => {
-            const innerContent = (
-              <>
-                <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                <span className="text-xs text-slate-500">{item.desc}</span>
-              </>
-            );
-
-            const className =
-              'flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50 w-full';
-
-            if (item.href) {
-              return (
-                <a key={idx} href={item.href} className={className}>
-                  {innerContent}
-                </a>
-              );
-            }
-
-            return (
-              <button key={idx} className={className}>
-                {innerContent}
-              </button>
-            );
-          })}
+          {items.map((item, idx) => (
+            <SiteLink
+              key={idx}
+              to={item.href}
+              className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50 w-full"
+            >
+              <span className="text-sm font-semibold text-slate-800">{item.label}</span>
+              <span className="text-xs text-slate-500">{item.desc}</span>
+            </SiteLink>
+          ))}
         </div>
       </div>
     </div>
