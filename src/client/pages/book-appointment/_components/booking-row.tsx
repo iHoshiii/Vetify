@@ -1,4 +1,5 @@
 import type { Appointment } from '@/services/appointments.service';
+import { canRateBooking } from '@/services/appointments.service';
 import { APPOINTMENT_RESCHEDULE_MIN_HOURS } from '@shared/limits';
 import type { AppointmentStatus } from '@shared/schemas';
 import { useEffect, useState } from 'react';
@@ -118,10 +119,9 @@ export default function BookingRow({
         </div>
       )}
 
-      {booking.status === 'completed' &&
-        (booking.kind !== 'virtual' || booking.consultedAt !== null) && (
-          <RateBooking booking={booking} />
-        )}
+      {(booking.rating !== null || canRateBooking(booking, now)) && (
+        <RateBooking booking={booking} />
+      )}
     </li>
   );
 }
