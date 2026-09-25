@@ -40,6 +40,8 @@ export function useCall(appointmentId: string) {
     // Signals arriving before the peer exists are held, so an offer racing ahead of our join ack is not dropped.
     const pending: Signal[] = [];
     let config: { iceServers: IceServer[]; polite: boolean } | null = null;
+    // A peer-joined that beats our own join ack sets this, so the ack can start the peer instead of stranding us on waiting.
+    let peerArrived = false;
     let endTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Built only once the other side is in the room, so our first offer never goes to an empty room and strands us.
@@ -63,6 +65,7 @@ export function useCall(appointmentId: string) {
     };
     const onPeerJoined = () => {
       if (closed) return;
+      peerArrived = true;
       setState((current) => (current === 'connected' ? current : 'connecting'));
       startPeer();
     };
@@ -98,8 +101,10 @@ export function useCall(appointmentId: string) {
       setPeer(ack.peer);
       // Auto-hang at the effective session end, when the server also closes the room.
       endTimer = setTimeout(endNow, new Date(ack.endsAt).getTime() - Date.now());
-      setState(ack.peerOnline ? 'connecting' : 'waiting');
-      if (ack.peerOnline) startPeer();
+      // peerArrived covers a peer-joined that landed before this ack, so a peer already waiting is not missed.
+      const peerHere = ack.peerOnline || peerArrived;
+      setState(peerHere ? 'connecting' : 'waiting');
+      if (peerHere) startPeer();
     });
 
     return () => {
