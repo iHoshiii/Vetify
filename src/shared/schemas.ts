@@ -10,6 +10,7 @@ import {
   APPOINTMENT_REASON_MIN,
   APPOINTMENT_MAX_SLOTS,
   REVIEW_REPLY_MAX,
+  REVIEW_REPORT_REASON_MAX,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -156,6 +157,8 @@ export const AUDIT_ACTIONS = [
   'professional.rejected',
   'professional.suspended',
   'professional.verified',
+  'review.dismissed',
+  'review.removed',
   'user.role.changed',
   'user.status.changed',
   'user.status.expired',
@@ -200,7 +203,13 @@ export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
  * no application yet, so an audit row pointing at a professional id would be
  * pointing at nothing.
  */
-export const AUDIT_TARGET_TYPES = ['blog', 'professional', 'professional-inquiry', 'user'] as const;
+export const AUDIT_TARGET_TYPES = [
+  'blog',
+  'professional',
+  'professional-inquiry',
+  'review',
+  'user',
+] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 
 /**
@@ -1378,6 +1387,40 @@ export const appointmentReplySchema = z.object({
     .min(1, 'Write a reply before posting it')
     .max(REVIEW_REPLY_MAX, `Keep your reply under ${REVIEW_REPLY_MAX} characters`),
 });
+
+// Where a review report sits. 'reviewed' means an admin removed the review, 'dismissed' that they judged it fair; the queue filters and badges on these, so the server may not store one the screen cannot draw.
+export const REVIEW_REPORT_STATUSES = ['pending', 'reviewed', 'dismissed'] as const;
+export type ReviewReportStatus = (typeof REVIEW_REPORT_STATUSES)[number];
+
+// An owner flagging a review for abuse. One required, trimmed reason, shared by the form and the route validator.
+export const reviewReportSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Tell us what is wrong with the review')
+    .max(REVIEW_REPORT_REASON_MAX, `Keep it under ${REVIEW_REPORT_REASON_MAX} characters`),
+});
+
+// The moderation queue, defaulting to the only status anybody is waiting on.
+export const adminReviewReportListQuerySchema = z.object({
+  ...adminPageFields,
+  status: z.enum(REVIEW_REPORT_STATUSES).default('pending'),
+});
+
+// An admin's verdict on a report. 'remove' strips the review and needs a reason for the audit log; 'dismiss' leaves it and does not.
+export const reviewReportDecisionSchema = z
+  .object({
+    action: z.enum(['dismiss', 'remove']),
+    reason: z.string().trim().max(REVIEW_REPORT_REASON_MAX).optional(),
+  })
+  .refine((value) => value.action !== 'remove' || !!value.reason, {
+    message: 'A reason is required to remove a review',
+    path: ['reason'],
+  });
+
+export type ReviewReport = z.output<typeof reviewReportSchema>;
+export type AdminReviewReportListQuery = z.output<typeof adminReviewReportListQuerySchema>;
+export type ReviewReportDecision = z.output<typeof reviewReportDecisionSchema>;
 
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
 export const appointmentRescheduleSchema = z.object({

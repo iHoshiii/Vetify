@@ -33,3 +33,15 @@ export async function replyToReview(input: {
     { returnDocument: 'after' }
   );
 }
+
+// Strips the stars and note off a booking when an admin removes an abusive review, leaving the reply untouched so a vet's response is not orphaned onto nothing.
+export async function clearAppointmentRating(
+  id: string | ObjectId
+): Promise<AppointmentDocument | null> {
+  const now = new Date();
+  return await appointmentsCollection().findOneAndUpdate(
+    { _id: toObjectId(id) },
+    { $set: { rating: null, ratingComment: null, updatedAt: now } },
+    { returnDocument: 'after' }
+  );
+}
