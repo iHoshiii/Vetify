@@ -74,7 +74,7 @@ function toAddressView(address: ProfessionalAddress): ProfessionalAddressView {
  * also what lets the capture route check the caller owns them before it answers.
  *
  * Nothing here has a counterpart that writes it. The submission is frozen once it
- * is filed - the name was matched to a register, the addresses to a device - so the
+ * is filed - the name and licence were checked - so the
  * dashboard renders this read-only and points at support instead of a form.
  */
 export function toOwnProfessional(
