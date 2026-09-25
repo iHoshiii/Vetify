@@ -20,6 +20,7 @@ import {
   markCallJoined,
   markClientJoined,
   maskName,
+  ratingBreakdownForProfessional,
   toReviewPage,
   updateProfessionalProfile,
   updateProfessional,
@@ -1040,5 +1041,33 @@ describe('findProfessionalReviews', () => {
     const { items } = await findProfessionalReviews({ professional });
 
     expect(items[0].reviewer).toBe('A pet owner');
+  });
+
+  it('breaks ratings down per star, zero-filling and counting a double alongside ints', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, rating: 1 });
+    await seedReview({ professional, rating: 3 });
+    await seedReview({ professional, rating: 5 });
+    const asDouble = await seedReview({ professional, rating: 5 });
+    // Force a BSON double so the $toInt bucketing is exercised, not just int32 storage.
+    await appointmentsCollection().updateOne({ _id: asDouble }, [
+      { $set: { rating: { $toDouble: 5 } } },
+    ]);
+
+    const breakdown = await ratingBreakdownForProfessional(professional);
+
+    expect(breakdown).toEqual([1, 0, 1, 0, 2]);
+  });
+
+  it('narrows the list to a single star', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, rating: 5 });
+    await seedReview({ professional, rating: 5 });
+    await seedReview({ professional, rating: 2 });
+
+    const fives = await findProfessionalReviews({ professional, stars: 5 });
+
+    expect(fives.total).toBe(2);
+    expect(fives.items.every((review) => review.stars === 5)).toBe(true);
   });
 });

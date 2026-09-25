@@ -32,6 +32,7 @@ export { otherPartyId, toAppointmentPage, toAppointmentView } from './transform'
 export {
   findProfessionalReviews,
   maskName,
+  ratingBreakdownForProfessional,
   toReviewPage,
   type ProfessionalReview,
   type ProfessionalReviewPage,

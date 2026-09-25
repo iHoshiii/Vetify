@@ -47,6 +47,7 @@ export async function findProfessionalReviews(input: {
   page?: number;
   limit?: number;
   withComment?: boolean;
+  stars?: number;
 }): Promise<{ items: ProfessionalReview[]; total: number }> {
   const page = Math.max(1, input.page ?? 1);
   const limit = Math.max(1, input.limit ?? PROFESSIONAL_REVIEWS_PAGE_SIZE);
@@ -57,6 +58,8 @@ export async function findProfessionalReviews(input: {
     rating: { $type: 'number' },
   };
   if (input.withComment) match.ratingComment = { $type: 'string' };
+  // A star equality matches an int and its double alike, so narrowing to one bar keeps both.
+  if (input.stars) match.rating = input.stars;
 
   const [rows, total] = await Promise.all([
     appointmentsCollection()
@@ -112,4 +115,26 @@ export function toReviewPage(input: {
     total: input.total,
     pages: Math.max(1, Math.ceil(input.total / input.limit)),
   };
+}
+
+// How many ratings a vet has at each star, index 0 = one star through index 4 = five, zero-filled so every bar renders. $type: 'number' takes an int or a double, and $toInt drops a 5.0 double onto the 5 bucket.
+export async function ratingBreakdownForProfessional(
+  professional: string | ObjectId
+): Promise<number[]> {
+  const match: Record<string, unknown> = {
+    professional: toObjectId(professional),
+    rating: { $type: 'number' },
+  };
+  const rows = await appointmentsCollection()
+    .aggregate<{ _id: number; count: number }>([
+      { $match: match },
+      { $group: { _id: { $toInt: '$rating' }, count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  const breakdown = [0, 0, 0, 0, 0];
+  for (const row of rows) {
+    if (row._id >= 1 && row._id <= 5) breakdown[row._id - 1] = row.count;
+  }
+  return breakdown;
 }

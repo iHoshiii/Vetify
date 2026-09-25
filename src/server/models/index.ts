@@ -44,6 +44,7 @@ export {
   findConfirmedCallStartingAt,
   findHeldSlots,
   findProfessionalReviews,
+  ratingBreakdownForProfessional,
   findRemindableAppointments,
   findStartedConfirmed,
   claimReminder,
