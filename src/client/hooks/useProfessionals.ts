@@ -85,7 +85,7 @@ export function useProfessionals(params: ProfessionalListParams = {}) {
  * is folded into the data here. The form then branches on `data` alone and never
  * has to read a status code to decide whether to render itself.
  */
-export function useOwnApplication() {
+export function useOwnApplication(options: { refetchInterval?: number | false } = {}) {
   const { isAuthenticated } = useAuth();
 
   return useQuery<OwnProfessional | null>({
@@ -100,6 +100,8 @@ export function useOwnApplication() {
     },
     enabled: isAuthenticated,
     staleTime: STALE_TIME,
+    refetchInterval: options.refetchInterval,
+    refetchIntervalInBackground: false,
     retry: retryUnlessMissing,
   });
 }

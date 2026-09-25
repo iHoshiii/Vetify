@@ -1,5 +1,6 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useOwnApplication } from '@/hooks/useProfessionals';
+import { ApiError } from '@/services/api';
 import { ShieldCheck, Stethoscope } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -7,6 +8,7 @@ const ROW =
   'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-teal-800 transition-colors hover:bg-teal-50';
 
 const NOTE = 'rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600';
+const STATUS_REFRESH_MS = 30_000;
 
 // The other consoles this account can open, from the tray it already signs into.
 //
@@ -19,14 +21,23 @@ const NOTE = 'rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600'
 // re-reads the stored role, so forging the flag in devtools buys 403s.
 export default function ConsoleLinks({ onNavigate }: { onNavigate: () => void }) {
   const { user } = useAuth();
-  const { data: application } = useOwnApplication();
+  const { data: application, error } = useOwnApplication({ refetchInterval: STATUS_REFRESH_MS });
   const status = application?.status;
+  const blocked = error instanceof ApiError ? error.reason : undefined;
   // The role keeps a verified vet's link drawn while the application is still in flight
   const filed = user?.role === 'professional' || status === 'pending' || status === 'interview';
 
   return (
     <>
-      {status === 'suspended' ? (
+      {blocked === 'account-banned' ? (
+        <p className={NOTE}>
+          Your account is banned. Please contact{' '}
+          <a className="font-bold text-teal-800 underline" href="mailto:support.vetify@gmail.com">
+            support.vetify@gmail.com
+          </a>{' '}
+          if you believe this was a mistake.
+        </p>
+      ) : status === 'suspended' || blocked === 'account-suspended' ? (
         <p className={NOTE}>
           Your professional listing is suspended, so the console is closed. Write to us if you want
           it looked at again.
