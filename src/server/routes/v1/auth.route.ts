@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 
 import { env } from '../../config/env';
 import { optionalAuth } from '../../middleware/optionalAuth';
+import { authLimiter } from '../../middleware/auth-limiter';
 import { validate } from '../../middleware/validate';
 import { recordActivity } from '../../models/activity-event';
 import {
@@ -82,7 +83,7 @@ function redirectWithError(res: Response, reason: string): void {
 }
 
 // POST /api/v1/auth/signup
-router.post('/signup', validate(signupSchema), async (req, res) => {
+router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
   const payload = req.body as SignupInput;
 
   const existing = await findUserByEmail(payload.email);
@@ -103,7 +104,7 @@ router.post('/signup', validate(signupSchema), async (req, res) => {
 });
 
 // POST /api/v1/auth/login
-router.post('/login', validate(loginSchema), async (req, res) => {
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   const payload = req.body as LoginInput;
   // The one read in the codebase that returns the stored hash.
   const user = await findUserWithPasswordByEmail(payload.email);
@@ -134,7 +135,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
  * callback page can learn who just logged in — that flow never sees a JSON login
  * response, only the refresh cookie the callback planted.
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authLimiter, async (req, res) => {
   const raw = readRefreshCookie(req);
   if (!raw) return fail(res, 401, 'Missing refresh token');
 
