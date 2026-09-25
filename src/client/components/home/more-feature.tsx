@@ -1,4 +1,5 @@
 import ScrollReveal from '@/components/ScrollReveal';
+import { SiteLink } from '@/components/common/site-link';
 
 const moreFeatures = [
   {
@@ -71,8 +72,8 @@ export default function MoreFeatures() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {moreFeatures.map((f, i) => (
             <ScrollReveal key={f.title} variant="reveal-scale" delay={i * 110}>
-              <a
-                href={f.href}
+              <SiteLink
+                to={f.href}
                 className="card-shine group flex h-full flex-col rounded-2xl border border-teal-900/10 bg-white p-8 transition-all duration-300 hover:-translate-y-2 hover:border-teal-500/30 hover:shadow-xl"
               >
                 <div
@@ -98,7 +99,7 @@ export default function MoreFeatures() {
                     <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-              </a>
+              </SiteLink>
             </ScrollReveal>
           ))}
         </div>

@@ -1,3 +1,5 @@
+import { SiteLink } from '@/components/common/site-link';
+
 export default function Footer() {
   return (
     <footer className="bg-slate-900 text-white">
@@ -26,12 +28,12 @@ export default function Footer() {
                 { label: 'Book Appointment', href: '/book-appointment' },
               ].map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <SiteLink
+                    to={link.href}
                     className="inline-block text-slate-400 transition-all duration-200 hover:translate-x-1 hover:text-teal-400"
                   >
                     {link.label}
-                  </a>
+                  </SiteLink>
                 </li>
               ))}
             </ul>
@@ -47,12 +49,12 @@ export default function Footer() {
                 { label: 'Meal Planner', href: '/planner' },
               ].map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <SiteLink
+                    to={link.href}
                     className="inline-block text-slate-400 transition-all duration-200 hover:translate-x-1 hover:text-teal-400"
                   >
                     {link.label}
-                  </a>
+                  </SiteLink>
                 </li>
               ))}
             </ul>
@@ -68,12 +70,12 @@ export default function Footer() {
                 { label: 'Contact Us', href: '/contact' },
               ].map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <SiteLink
+                    to={link.href}
                     className="inline-block text-slate-400 transition-all duration-200 hover:translate-x-1 hover:text-teal-400"
                   >
                     {link.label}
-                  </a>
+                  </SiteLink>
                 </li>
               ))}
             </ul>
