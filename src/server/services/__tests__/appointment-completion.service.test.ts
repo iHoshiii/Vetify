@@ -1,6 +1,8 @@
 import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import type { AppointmentKind } from '@shared/schemas';
+
 import {
   findAppointmentById,
   insertAppointment,
@@ -9,19 +11,24 @@ import {
 } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import { scanCompletions } from '../appointment-completion.service';
+import { countUnread, listForUser } from '../notifications.service';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
 afterAll(stopTestDb);
 
-// Every booking runs 30 minutes, so minutesAhead of -40 has already ended and -10 is still running.
-async function booking(minutesAhead: number, status: AppointmentStatus = 'confirmed') {
+// Every booking runs 30 minutes, so minutesAhead of -40 has already ended and -10 is still running. A virtual booking nobody joined stays unrateable; an onsite one is rateable by attendance.
+async function booking(
+  minutesAhead: number,
+  status: AppointmentStatus = 'confirmed',
+  kind: AppointmentKind = 'virtual'
+) {
   const startsAt = new Date(Date.now() + minutesAhead * 60_000);
   const appointment = await insertAppointment({
     professional: new ObjectId(),
     professionalUser: new ObjectId(),
     client: new ObjectId(),
-    kind: 'virtual',
+    kind,
     startsAt,
     minutes: 30,
     heldSlots: [startsAt],
@@ -67,5 +74,35 @@ describe('appointment-completion.service', () => {
     await scanCompletions();
 
     expect((await findAppointmentById(appointment._id))?.status).toBe('requested');
+  });
+
+  it('nudges the owner to review once a rateable booking completes', async () => {
+    const appointment = await booking(-40, 'confirmed', 'onsite');
+
+    await scanCompletions();
+
+    expect(await countUnread(appointment.client)).toBe(1);
+    const page = await listForUser({ user: appointment.client, page: 1, limit: 20 });
+    expect(page.items[0].kind).toBe('review_request');
+    expect((await findAppointmentById(appointment._id))?.reviewPromptSentAt).not.toBeNull();
+  });
+
+  it('does not nudge twice across scans', async () => {
+    const appointment = await booking(-40, 'confirmed', 'onsite');
+
+    await scanCompletions();
+    await scanCompletions();
+
+    expect(await countUnread(appointment.client)).toBe(1);
+  });
+
+  it('does not nudge for a virtual booking nobody joined', async () => {
+    const appointment = await booking(-40);
+
+    await scanCompletions();
+
+    expect((await findAppointmentById(appointment._id))?.status).toBe('completed');
+    expect(await countUnread(appointment.client)).toBe(0);
+    expect((await findAppointmentById(appointment._id))?.reviewPromptSentAt).toBeNull();
   });
 });

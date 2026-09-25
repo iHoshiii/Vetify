@@ -10,6 +10,7 @@ export const NOTIFICATION_KINDS = [
   'booking_confirmed',
   'booking_declined',
   'booking_reminder',
+  'review_request',
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

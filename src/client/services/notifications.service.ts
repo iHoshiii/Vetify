@@ -7,7 +7,8 @@ export type NotificationKind =
   | 'booking_requested'
   | 'booking_confirmed'
   | 'booking_declined'
-  | 'booking_reminder';
+  | 'booking_reminder'
+  | 'review_request';
 
 // One notification as the recipient reads it, matching the server's NotificationView.
 export type Notification = {
