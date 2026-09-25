@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
           <h2 className="mt-8 mb-4 text-2xl font-bold text-slate-800">5. Contact Us</h2>
           <p className="text-slate-600">
             If you have any questions about this Privacy Policy, please contact us at
-            support@vetify.com.
+            support.vetify@gmail.com.
           </p>
         </div>
 
