@@ -65,7 +65,11 @@ export default function BookAppointmentPage() {
 
         {at > 1 && chosen && (
           <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-sm sm:p-8">
-            <div className="animate-slideLeft relative w-full max-w-3xl rounded-2xl bg-[#f6fbfb] p-5 shadow-2xl sm:p-8">
+            <div
+              className={`animate-slideLeft relative w-full rounded-2xl bg-[#f6fbfb] p-5 shadow-2xl sm:p-8 ${
+                at === 3 ? 'max-w-lg' : 'max-w-3xl'
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => flow.setStage(1)}
