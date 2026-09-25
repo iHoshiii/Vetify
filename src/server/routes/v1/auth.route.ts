@@ -11,6 +11,7 @@ import {
   findRefreshTokenWithOwner,
   hashToken,
   isRefreshTokenActive,
+  revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
 } from '../../models/refresh-token';
 import {
@@ -23,6 +24,7 @@ import {
 import {
   accessTokenClaimsFor,
   createAuthPayloadFor,
+  createRefreshToken,
   findOrCreateOAuthUser,
   setRefreshCookie,
   signAccessToken,
@@ -141,10 +143,15 @@ router.post('/refresh', authLimiter, async (req, res) => {
 
   const tokenHash = hashToken(raw);
   const rt = await findRefreshTokenWithOwner(tokenHash);
-  if (!rt || !isRefreshTokenActive(rt)) {
+  if (!rt) return fail(res, 401, 'Invalid or expired refresh token');
+
+  // Reuse detection: a token still on record but already revoked is a replay of one rotation burned, so drop every session for that owner.
+  if (rt.revokedAt) {
+    await revokeAllRefreshTokensForUser(rt.user);
+    res.clearCookie(env.REFRESH_COOKIE_NAME);
     return fail(res, 401, 'Invalid or expired refresh token');
   }
-
+  if (!isRefreshTokenActive(rt)) return fail(res, 401, 'Invalid or expired refresh token');
   if (!rt.owner) return fail(res, 401, 'Refresh token is not attached to a user');
 
   // Suspending or banning revokes the stored tokens, so this rarely fires. It
@@ -157,7 +164,11 @@ router.post('/refresh', authLimiter, async (req, res) => {
     return failReason(res, 403, blockedMessage(blocked), `account-${blocked}`);
   }
 
+  // Rotate: burn the presented token and plant a fresh one, so a cookie is good for a single use and its replay trips the reuse check above.
+  await revokeRefreshTokenByHash(tokenHash);
   const publicUser = toPublicUser(rt.owner);
+  const rotated = await createRefreshToken(publicUser.id);
+  setRefreshCookie(res, rotated.token, rotated.expiresAt);
   const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   ok(res, { accessToken, user: publicUser });
 });
