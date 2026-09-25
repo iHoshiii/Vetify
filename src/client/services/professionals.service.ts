@@ -295,6 +295,9 @@ export type ProfessionalReview = {
   comment: string | null;
   reviewer: string;
   ratedAt: string;
+  // The vet's one public response, and when they left it. Null until they reply; shown unmasked because the vet authored it.
+  reply: string | null;
+  repliedAt: string | null;
 };
 
 export type ProfessionalReviewPage = {

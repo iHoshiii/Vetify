@@ -58,6 +58,16 @@ export default function ReviewList({
                 {review.comment}
               </p>
             )}
+            {review.reply && (
+              <div className="mt-2 rounded-lg border-l-2 border-teal-200 bg-teal-50/60 px-3 py-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-teal-800">
+                  Response from the vet
+                </p>
+                <p className="mt-0.5 whitespace-pre-line text-sm leading-6 text-slate-700">
+                  {review.reply}
+                </p>
+              </div>
+            )}
           </li>
         ))}
       </ul>
