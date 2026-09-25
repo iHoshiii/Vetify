@@ -1,3 +1,4 @@
+import StarRating from '@/components/star-rating';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useProfessional } from '@/hooks/useProfessionals';
 import type { PublicProfessional } from '@/services/professionals.service';
@@ -132,6 +133,12 @@ export default function PublicProfilePage() {
                     {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
                   </span>
                   <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
+                  {/* Stated either way here, unlike the compact card that hides it: a profile that says nothing about reviews reads as a gap. */}
+                  {vet.ratingCount > 0 ? (
+                    <StarRating value={vet.ratingAverage} count={vet.ratingCount} />
+                  ) : (
+                    <span className="text-slate-500">No reviews yet</span>
+                  )}
                   {vet.businessPhone && (
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="h-4 w-4 text-slate-400" aria-hidden />
