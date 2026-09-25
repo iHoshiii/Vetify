@@ -1,9 +1,17 @@
-import { completeConfirmed, findStartedConfirmed } from '../models';
+import { completeConfirmed, findStartedConfirmed, type AppointmentDocument } from '../models';
+import { emitToUser } from '../realtime/hub';
 
 // How often the scanner wakes.
 const SCAN_INTERVAL_MS = 60_000;
 
 let timer: ReturnType<typeof setInterval> | null = null;
+
+// Tells both parties the booking flipped to completed, so a list open on the old status refetches. Mirrors the join/leave signal.
+function announceCompletion(appointment: AppointmentDocument): void {
+  const payload = { id: appointment._id.toString() };
+  emitToUser(appointment.client.toString(), 'appointment:changed', payload);
+  emitToUser(appointment.professionalUser.toString(), 'appointment:changed', payload);
+}
 
 // One pass: any confirmed booking whose end (startsAt + minutes) has passed becomes completed.
 export async function scanCompletions(): Promise<void> {
@@ -15,7 +23,8 @@ export async function scanCompletions(): Promise<void> {
     const endMs = appointment.startsAt.getTime() + appointment.minutes * 60_000;
     if (endMs > now.getTime()) continue;
 
-    await completeConfirmed(appointment._id);
+    const done = await completeConfirmed(appointment._id);
+    if (done) announceCompletion(done);
   }
 }
 
