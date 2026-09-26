@@ -82,7 +82,7 @@ export default function VetMap({
       {settled && showOverlay && clinicsLoading && (
         <div
           role="status"
-          className="pointer-events-none absolute right-3 top-3 rounded-full border border-blue-100 bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-md backdrop-blur-sm"
+          className="pointer-events-none absolute right-5 top-20 rounded-full border border-blue-100 bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-md backdrop-blur-sm"
           style={{ zIndex: 1100 }}
         >
           Loading nearby clinics…

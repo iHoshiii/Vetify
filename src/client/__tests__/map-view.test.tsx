@@ -133,7 +133,7 @@ async function mounted(element: ReactElement) {
 describe('a map nobody can drag', () => {
   it('shows the basemap while clinic data continues loading', async () => {
     await mounted(<VetMap interactive={false} clinicsLoading userLocation={null} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Loading nearby clinics…');
+    expect(screen.getByText('Loading nearby clinics…')).toHaveClass('top-20');
   });
   it('goes to the reader once they say, however it was built', async () => {
     const { rerender, map } = await mounted(
