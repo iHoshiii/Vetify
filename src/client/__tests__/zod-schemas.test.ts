@@ -166,7 +166,6 @@ describe('professional schemas', () => {
     portrait: photo(),
     licenseFront: photo(),
     licenseBack: photo(),
-    bio: 'x'.repeat(80),
     yearsExperience: 7,
     backgroundCheckConsent: true,
   };
@@ -189,28 +188,10 @@ describe('professional schemas', () => {
     ).toBe(false);
   });
 
-  it('wants a home address located and lets a clinic go without', () => {
+  it('accepts a home address without a live device location', () => {
     const home = { ...valid.addresses[0], kind: 'home' as const };
 
-    // A house on an unnamed road cannot be found any other way, so the fix is what
-    // makes the address usable.
-    expect(professionalApplySchema.safeParse({ ...valid, addresses: [home] }).success).toBe(false);
-    expect(
-      professionalApplySchema.safeParse({
-        ...valid,
-        addresses: [
-          {
-            ...home,
-            fix: {
-              latitude: 10.3157,
-              longitude: 123.8854,
-              accuracyMeters: 12,
-              capturedAt: new Date().toISOString(),
-            },
-          },
-        ],
-      }).success
-    ).toBe(true);
+    expect(professionalApplySchema.safeParse({ ...valid, addresses: [home] }).success).toBe(true);
   });
 
   it('refuses two addresses of a kind, and refuses none at all', () => {

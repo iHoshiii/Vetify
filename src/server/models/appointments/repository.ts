@@ -1,4 +1,4 @@
-import { APPOINTMENT_PAGE_SIZE } from '@shared/limits';
+import { APPOINTMENT_NO_SHOW_GRACE_MINUTES, APPOINTMENT_PAGE_SIZE } from '@shared/limits';
 import { APPOINTMENT_LIVE_STATUSES } from '@shared/schemas';
 import { ObjectId, type Collection, type Filter } from 'mongodb';
 
@@ -62,9 +62,15 @@ export async function insertAppointment(attrs: AppointmentAttrs): Promise<Appoin
     cancelledBy: null,
     decidedAt: null,
     reminderSentAt: null,
+    reviewPromptSentAt: null,
     joinedAt: null,
+    consultedAt: null,
+    clientJoinedAt: null,
     rating: null,
     ratingComment: null,
+    ratedAt: null,
+    reviewReply: null,
+    reviewReplyAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -241,6 +247,7 @@ export async function moveAppointment(
         refusalReason: null,
         cancelledBy: null,
         reminderSentAt: null,
+        reviewPromptSentAt: null,
         updatedAt: now,
       },
     },
@@ -301,6 +308,24 @@ export async function markCallJoined(id: string | ObjectId): Promise<void> {
   );
 }
 
+// Stamps the instant both accounts were in the call together, once. Only this marks a virtual booking rateable, so a no-show the scanner auto-completes never can be.
+export async function markCallConnected(id: string | ObjectId): Promise<void> {
+  const now = new Date();
+  await appointmentsCollection().updateOne(
+    { _id: toObjectId(id), consultedAt: null },
+    { $set: { consultedAt: now, updatedAt: now } }
+  );
+}
+
+// Stamps the instant the booker themselves joined, once. Lets a booker who showed up rate a vet who never connected, since joinedAt alone cannot say which party arrived.
+export async function markClientJoined(id: string | ObjectId): Promise<void> {
+  const now = new Date();
+  await appointmentsCollection().updateOne(
+    { _id: toObjectId(id), clientJoinedAt: null },
+    { $set: { clientJoinedAt: now, updatedAt: now } }
+  );
+}
+
 // The confirmed virtual booking the same two people hold starting exactly at a given instant, or null. Walks a back-to-back chain.
 export async function findConfirmedCallStartingAt(input: {
   professional: ObjectId;
@@ -341,20 +366,30 @@ export function holdsSlotFor(status: AppointmentStatus): boolean {
   return (APPOINTMENT_LIVE_STATUSES as readonly string[]).includes(status);
 }
 
-// Records the owner's stars and optional note on a consultation that has taken place. Rateable means completed, or a virtual booking someone joined, since a call the owner attended has happened whether or not the clock has ticked past its end. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
+// Records the owner's stars and optional note on a consultation that has taken place. Rateable means an onsite booking that completed, a virtual one both parties actually connected on (consultedAt), or a virtual no-show the booker joined for once the grace past its start has passed. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
 export async function rateAppointment(
   id: string | ObjectId,
   rating: number,
   comment: string | null
 ): Promise<AppointmentDocument | null> {
   const now = new Date();
+  const noShowCutoff = new Date(now.getTime() - APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000);
   return await appointmentsCollection().findOneAndUpdate(
     {
       _id: toObjectId(id),
       rating: null,
-      $or: [{ status: 'completed' }, { kind: 'virtual', joinedAt: { $ne: null } }],
+      $or: [
+        { status: 'completed', kind: 'onsite' },
+        { kind: 'virtual', consultedAt: { $ne: null } },
+        {
+          kind: 'virtual',
+          consultedAt: null,
+          clientJoinedAt: { $ne: null },
+          startsAt: { $lte: noShowCutoff },
+        },
+      ],
     },
-    { $set: { rating, ratingComment: comment, updatedAt: now } },
+    { $set: { rating, ratingComment: comment, ratedAt: now, updatedAt: now } },
     { returnDocument: 'after' }
   );
 }

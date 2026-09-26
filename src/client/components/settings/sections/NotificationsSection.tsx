@@ -35,13 +35,10 @@ export default function NotificationsSection({ isExpanded, onToggle }: SectionPr
       >
         <div className="flex flex-col gap-1 px-2 pb-2">
           {items.map((item, idx) => (
-            <button
-              key={idx}
-              className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-slate-50"
-            >
+            <div key={idx} className="flex flex-col rounded-xl px-3 py-2">
               <span className="text-sm font-semibold text-slate-800">{item.label}</span>
               <span className="text-xs text-slate-500">{item.desc}</span>
-            </button>
+            </div>
           ))}
         </div>
       </div>

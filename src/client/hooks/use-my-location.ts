@@ -8,11 +8,13 @@ export type MyLocation = {
   accuracyMeters: number;
 };
 
-// No cached fix: Update re-reads the device, and a stale position returns the same coordinates.
+// A nearby-vet search does not need a slow GPS-level fix. Let the browser reuse a recent
+// position and prefer its faster network/Wi-Fi estimate; the search radius is much wider
+// than the usual accuracy difference.
 const OPTIONS: PositionOptions = {
-  enableHighAccuracy: true,
-  timeout: 15_000,
-  maximumAge: 0,
+  enableHighAccuracy: false,
+  timeout: 7_000,
+  maximumAge: 5 * 60_000,
 };
 
 export function useMyLocation() {

@@ -5,8 +5,10 @@ import {
   fetchCapture,
   getInvite,
   getProfessional,
+  getProfessionalReviews,
   getProfessionalSlots,
   getOwnApplication,
+  getRatingBreakdown,
   listProfessionals,
   listProfessionalsNear,
   sendProfessionalInquiry,
@@ -17,7 +19,9 @@ import {
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
+  type ProfessionalReviewPage,
   type PublicProfessional,
+  type RatingBreakdown,
   type SlotGrid,
 } from '@/services/professionals.service';
 import type {
@@ -42,6 +46,11 @@ export const professionalKeys = {
   invite: (token: string) => [...professionalKeys.all, 'invite', token] as const,
   capture: (id: string) => [...professionalKeys.all, 'capture', id] as const,
   detail: (id: string) => [...professionalKeys.all, 'detail', id] as const,
+  // One page of a vet's public reviews, nested under their detail so a profile refresh drops it too.
+  reviews: (id: string, params: { page?: number; comments?: boolean; stars?: number }) =>
+    [...professionalKeys.detail(id), 'reviews', params] as const,
+  // The rating histogram, nested under detail so a profile refresh drops it with the rest.
+  breakdown: (id: string) => [...professionalKeys.detail(id), 'breakdown'] as const,
   /**
    * The bookable grid. `slots()` with no arguments is the whole family, which is what
    * a booking invalidates: taking one slot changes every grid that was showing it.
@@ -85,7 +94,7 @@ export function useProfessionals(params: ProfessionalListParams = {}) {
  * is folded into the data here. The form then branches on `data` alone and never
  * has to read a status code to decide whether to render itself.
  */
-export function useOwnApplication() {
+export function useOwnApplication(options: { refetchInterval?: number | false } = {}) {
   const { isAuthenticated } = useAuth();
 
   return useQuery<OwnProfessional | null>({
@@ -100,6 +109,8 @@ export function useOwnApplication() {
     },
     enabled: isAuthenticated,
     staleTime: STALE_TIME,
+    refetchInterval: options.refetchInterval,
+    refetchIntervalInBackground: false,
     retry: retryUnlessMissing,
   });
 }
@@ -268,6 +279,33 @@ export function useProfessionalSlots(input: {
       ),
     enabled: Boolean(input.id),
     staleTime: 15_000,
+    retry: retryUnlessMissing,
+  });
+}
+
+// One page of a vet's public ratings. comments:true is the profile's written-review panel; the default is every rater, for the card popup. stars narrows to a single bar of the histogram.
+export function useProfessionalReviews(
+  id: string | undefined,
+  params: { page?: number; comments?: boolean; stars?: number } = {}
+) {
+  return useQuery<ProfessionalReviewPage>({
+    queryKey: professionalKeys.reviews(id ?? '', params),
+    queryFn: ({ signal }) => getProfessionalReviews(id as string, params, signal),
+    enabled: Boolean(id),
+    staleTime: STALE_TIME,
+    // Keeps the current page on screen while the next one loads.
+    placeholderData: (previous) => previous,
+    retry: retryUnlessMissing,
+  });
+}
+
+// The per-star histogram behind a vet's average, loaded only on the profile that draws the bars.
+export function useProfessionalRatingBreakdown(id: string | undefined) {
+  return useQuery<RatingBreakdown>({
+    queryKey: professionalKeys.breakdown(id ?? ''),
+    queryFn: ({ signal }) => getRatingBreakdown(id as string, signal),
+    enabled: Boolean(id),
+    staleTime: STALE_TIME,
     retry: retryUnlessMissing,
   });
 }

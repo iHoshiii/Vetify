@@ -288,6 +288,74 @@ export async function getProfessionalSlots(
   );
 }
 
+// One rating as the public list shows it, the rater's name already masked server-side.
+export type ProfessionalReview = {
+  id: string;
+  stars: number;
+  comment: string | null;
+  reviewer: string;
+  ratedAt: string;
+  // The vet's one public response, and when they left it. Null until they reply; shown unmasked because the vet authored it.
+  reply: string | null;
+  repliedAt: string | null;
+};
+
+export type ProfessionalReviewPage = {
+  items: ProfessionalReview[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
+
+// GET /api/v1/professionals/:id/reviews - one page of a vet's ratings, newest first. comments:true narrows it to the ones that carry a written note, stars to a single bar of the histogram.
+export async function getProfessionalReviews(
+  id: string,
+  params: { page?: number; comments?: boolean; stars?: number } = {},
+  signal?: AbortSignal
+): Promise<ProfessionalReviewPage> {
+  const search = new URLSearchParams();
+  if (params.page && params.page > 1) search.set('page', String(params.page));
+  if (params.comments) search.set('comments', 'true');
+  if (params.stars) search.set('stars', String(params.stars));
+  const query = search.toString();
+  return apiFetch<ProfessionalReviewPage>(
+    `/professionals/${encodeURIComponent(id)}/reviews${query ? `?${query}` : ''}`,
+    { signal }
+  );
+}
+
+// The per-star counts a profile draws as bars, plus the headline the card already shows. breakdown[0] is one star through breakdown[4] is five.
+export type RatingBreakdown = {
+  breakdown: number[];
+  average: number;
+  count: number;
+};
+
+// GET /api/v1/professionals/:id/rating-breakdown - the histogram behind the average, loaded only on the profile that draws it.
+export async function getRatingBreakdown(
+  id: string,
+  signal?: AbortSignal
+): Promise<RatingBreakdown> {
+  return apiFetch<RatingBreakdown>(`/professionals/${encodeURIComponent(id)}/rating-breakdown`, {
+    signal,
+  });
+}
+
+// POST /api/v1/professionals/:id/reviews/:appointmentId/report - flags a rated review for abuse. Any signed-in user may report; the reason feeds the admin queue and audit trail.
+export async function reportReview(input: {
+  professionalId: string;
+  appointmentId: string;
+  reason: string;
+}): Promise<{ reported: true }> {
+  return apiFetch(
+    `/professionals/${encodeURIComponent(input.professionalId)}/reviews/${encodeURIComponent(
+      input.appointmentId
+    )}/report`,
+    { method: 'POST', body: { reason: input.reason } }
+  );
+}
+
 /**
  * GET /api/v1/professionals/me — the caller's application.
  *

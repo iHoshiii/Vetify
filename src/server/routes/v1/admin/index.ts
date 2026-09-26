@@ -8,6 +8,7 @@ import blogsRoute from './blogs.route';
 import inquiriesRoute from './inquiries.route';
 import metricsRoute from './metrics.route';
 import professionalsRoute from './professionals.route';
+import reviewsRoute from './reviews.route';
 import usersRoute from './users.route';
 
 const router = Router();
@@ -32,6 +33,7 @@ router.use('/blogs', blogsRoute);
 router.use('/inquiries', inquiriesRoute);
 router.use('/metrics', metricsRoute);
 router.use('/professionals', professionalsRoute);
+router.use('/reviews', reviewsRoute);
 router.use('/users', usersRoute);
 
 export default router;

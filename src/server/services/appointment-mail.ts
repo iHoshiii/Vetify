@@ -137,3 +137,18 @@ export function cancelledEmail(
 
   return compose(input.to, `${input.petName}'s appointment was cancelled`, text);
 }
+
+// To the owner, once the visit is behind them: a nudge to rate the vet, with the link back to their bookings where the stars live.
+export function reviewRequestEmail(
+  input: AppointmentEmailBase & { professionalName: string }
+): MailMessage {
+  const text = [
+    `Hi ${firstName(input.name)},`,
+    `How did ${input.petName}'s ${kindOf(input.kind).toLowerCase()} with ${
+      input.professionalName
+    } go?`,
+    `A rating helps other owners choose, and takes a moment. Leave one at ${bookingsLink()}.`,
+  ].join('\n\n');
+
+  return compose(input.to, `How was ${input.petName}'s visit?`, text);
+}

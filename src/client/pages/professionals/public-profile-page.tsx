@@ -1,3 +1,4 @@
+import StarRating from '@/components/star-rating';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useProfessional } from '@/hooks/useProfessionals';
 import type { PublicProfessional } from '@/services/professionals.service';
@@ -5,6 +6,7 @@ import { BadgeCheck, Briefcase, Calendar, MapPin, Phone } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 import VetHours from './_components/vet-hours';
+import VetRatings from './_components/vet-ratings';
 
 const AVAILABILITY: Record<string, { label: string; tone: string }> = {
   available: { label: 'Taking bookings', tone: 'bg-emerald-100 text-emerald-900' },
@@ -132,6 +134,12 @@ export default function PublicProfilePage() {
                     {vet.yearsExperience} year{vet.yearsExperience === 1 ? '' : 's'}
                   </span>
                   <span className="font-semibold text-slate-900">₱{vet.hourlyRate}/hr</span>
+                  {/* Stated either way here, unlike the compact card that hides it: a profile that says nothing about reviews reads as a gap. */}
+                  {vet.ratingCount > 0 ? (
+                    <StarRating value={vet.ratingAverage} count={vet.ratingCount} />
+                  ) : (
+                    <span className="text-slate-500">No reviews yet</span>
+                  )}
                   {vet.businessPhone && (
                     <span className="inline-flex items-center gap-1.5">
                       <Phone className="h-4 w-4 text-slate-400" aria-hidden />
@@ -166,8 +174,8 @@ export default function PublicProfilePage() {
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="grid gap-6 lg:col-span-2">
             <section className={PANEL}>
-              <h2 className={HEADING}>About</h2>
-              <p className="mt-3 whitespace-pre-line leading-7 text-slate-700">{vet.bio}</p>
+              <h2 className={HEADING}>Ratings</h2>
+              <VetRatings professionalId={vet.id} />
             </section>
 
             <section className={PANEL}>

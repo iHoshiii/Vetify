@@ -12,7 +12,9 @@ export {
   holdsSlotFor,
   insertAppointment,
   isDuplicateSlot,
+  markCallConnected,
   markCallJoined,
+  markClientJoined,
   rateAppointment,
   tallyAppointments,
   updateAppointment,
@@ -23,7 +25,18 @@ export {
 
 export { appointmentAttrsSchema, type AppointmentAttrs } from './schema';
 
+export { claimReviewPrompt, clearAppointmentRating, replyToReview } from './review-writes';
+
 export { otherPartyId, toAppointmentPage, toAppointmentView } from './transform';
+
+export {
+  findProfessionalReviews,
+  maskName,
+  ratingBreakdownForProfessional,
+  toReviewPage,
+  type ProfessionalReview,
+  type ProfessionalReviewPage,
+} from './reviews';
 
 export {
   APPOINTMENT_INDEXES,

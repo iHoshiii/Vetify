@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { BASEMAP_ATTRIBUTION, basemapUrl } from '../basemap';
 
 interface LeafletCoreOptions {
@@ -30,14 +33,13 @@ export function useLeafletCore({ mapRef, center, zoom, interactive, onReady }: L
 
     async function init() {
       const L = (await import('leaflet')).default;
-      await import('leaflet.markercluster');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconRetinaUrl: markerIcon2x,
+        iconUrl: markerIcon,
+        shadowUrl: markerShadow,
       });
 
       if (cancelled || !mapRef.current) return;
@@ -71,16 +73,6 @@ export function useLeafletCore({ mapRef, center, zoom, interactive, onReady }: L
         pane: 'overlayPane',
       }).addTo(map);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const clusters = (L as any).markerClusterGroup({
-        chunkedLoading: true,
-        maxClusterRadius: 50,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-      }) as import('leaflet').LayerGroup;
-
-      clinicLayerRef.current = clusters;
-      map.addLayer(clusters);
       vetLayerRef.current = L.layerGroup().addTo(map);
       youLayerRef.current = L.layerGroup().addTo(map);
       if (!cancelled) {

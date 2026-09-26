@@ -85,11 +85,22 @@ export type AppointmentDocument = {
   decidedAt: Date | null;
   // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
   reminderSentAt: Date | null;
+  // When the post-visit review nudge was sent, so the completion sweep prompts the owner once and never again after a restart.
+  reviewPromptSentAt: Date | null;
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
+  // When both accounts were in the call together, stamped once. A virtual booking is only rateable after this, so a no-show the scanner auto-completes cannot be rated.
+  consultedAt: Date | null;
+  // When the booker themselves joined the call, stamped once. Lets a booker who showed up rate a vet who never connected, once the no-show grace has passed.
+  clientJoinedAt: Date | null;
   rating: number | null;
   // The optional note the owner left with their stars. Null when they rated without words, or have not rated at all.
   ratingComment: string | null;
+  // When the stars were recorded, so the public review list can date each one. Null until rated, and missing on rows rated before this field, which read back through updatedAt.
+  ratedAt: Date | null;
+  // The vet's one public response to this review, and when they posted it. Null until they reply; vet-authored, so it is shown unmasked.
+  reviewReply: string | null;
+  reviewReplyAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -126,6 +137,10 @@ export type AppointmentView = {
   professionalId: string;
   // When either side first joined the call, so the owner's row offers Start before and Rejoin after.
   joinedAt: string | null;
+  // When both sides were in the call together, so the owner's row only offers a rating after a real session.
+  consultedAt: string | null;
+  // When the booker joined, so the owner's row can offer a no-show rating once the grace passes even though consultedAt stayed null.
+  clientJoinedAt: string | null;
   // Whether someone is in the call right now, so the other side's row can show it as ongoing.
   callActive: boolean;
   rating: number | null;

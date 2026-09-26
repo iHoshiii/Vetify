@@ -1,4 +1,8 @@
-import { APPOINTMENT_MAX_SLOTS, APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
+import {
+  APPOINTMENT_MAX_SLOTS,
+  APPOINTMENT_NO_SHOW_GRACE_MINUTES,
+  APPOINTMENT_SLOT_MINUTES,
+} from '@shared/limits';
 import type { AppointmentKind } from '@shared/schemas';
 import type { ObjectId } from 'mongodb';
 
@@ -371,9 +375,16 @@ export async function rateAppointment(
     throw AppError.forbidden('That is not your appointment');
   }
 
-  // A finished booking, or a virtual call the owner sat in, is one they can speak to.
+  // Onsite done, a virtual call both sides connected on, or a virtual no-show the booker showed up for once its grace past the start has passed.
+  const noShow =
+    current.kind === 'virtual' &&
+    current.consultedAt === null &&
+    current.clientJoinedAt !== null &&
+    Date.now() - current.startsAt.getTime() >= APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000;
   const rateable =
-    current.status === 'completed' || (current.kind === 'virtual' && current.joinedAt !== null);
+    (current.status === 'completed' && current.kind === 'onsite') ||
+    (current.kind === 'virtual' && current.consultedAt !== null) ||
+    noShow;
   if (!rateable) {
     throw AppError.conflict('You can only rate a consultation once it has taken place');
   }
@@ -387,6 +398,20 @@ export async function rateAppointment(
 
   const summary = await averageRatingForProfessional(rated.professional);
   await setProfessionalRating(rated.professional, summary);
+
+  // The rating is already committed, so a notification failure must not surface as a failed rating; the body carries no comment text, only that a star landed.
+  try {
+    await createNotification({
+      user: rated.professionalUser,
+      kind: 'appointment_rated',
+      appointment: rated._id,
+      appointmentKind: rated.kind,
+      title: `New ${rating}-star rating`,
+      body: `${actor.name || 'A pet owner'} left a rating on their visit.`,
+    });
+  } catch (err) {
+    console.error('[appointments] rating notification failed', err);
+  }
 
   announceAppointment(rated);
 

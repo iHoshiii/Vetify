@@ -1,4 +1,4 @@
-import { calculateMaxRecommendedRate } from '@shared/limits';
+import { calculateMaxRecommendedRate, PROFESSIONAL_REVIEWS_PAGE_SIZE } from '@shared/limits';
 import {
   appointmentSlotsQuerySchema,
   professionalApplySchema,
@@ -6,6 +6,7 @@ import {
   professionalListQuerySchema,
   professionalNearQuerySchema,
   professionalProfileUpdateSchema,
+  reviewReportSchema,
   type AppointmentSlotsQuery,
   type ProfessionalApply,
   type ProfessionalInquiry,
@@ -13,6 +14,7 @@ import {
   type ProfessionalListQuery,
   type ProfessionalNearQuery,
   type ProfessionalProfileUpdate,
+  type ReviewReport,
 } from '@shared/schemas';
 import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
 import { Router, type Request, type Response } from 'express';
@@ -27,6 +29,7 @@ import {
   findProfessionalById,
   findProfessionalByUser,
   findProfessionalCapture,
+  findProfessionalReviews,
   findProfessionalsNear,
   findVerifiedProfessionals,
   findHeldSlots,
@@ -37,12 +40,14 @@ import {
   isDuplicateInquiry,
   isDuplicateLicense,
   isValidObjectId,
+  ratingBreakdownForProfessional,
   recordActivity,
   toInviteSummary,
   toNearbyProfessional,
   toOwnProfessional,
   toProfessionalPage,
   toPublicProfessional,
+  toReviewPage,
   updateProfessionalProfile,
   type ProfessionalCaptureIds,
   type ProfessionalProfilePatch,
@@ -53,6 +58,7 @@ import {
   submitInquiry,
 } from '../../services/professional-inquiries.service';
 import { dropStaleRefusal, inquiryBlock } from '../../services/professional-retry.service';
+import { reportReview } from '../../services/review-reports.service';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { slotRangeBounds, slotsForRange, scheduleForKind } from '../../services/appointment-slots';
 import { actorOf, signedIn } from './caller';
@@ -568,6 +574,71 @@ router.get(
         held,
       }),
     });
+  }
+);
+
+// GET /api/v1/professionals/:id/reviews?page=&comments=&stars= - one page of a vet's ratings, newest first, rater names masked. Public and 404-guarded exactly like GET /:id; comments=true narrows it to ratings that carry a written note, stars=1..5 to one bar of the histogram.
+router.get('/:id/reviews', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, NOT_LISTED);
+
+  const listing = await listedProfessional(req.params.id);
+  if (!listing) return fail(res, 404, NOT_LISTED);
+
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const withComment = req.query.comments === 'true';
+  // Only a whole 1..5 filters; anything else falls back to the unfiltered page.
+  const starsRaw = Number(req.query.stars);
+  const stars = Number.isInteger(starsRaw) && starsRaw >= 1 && starsRaw <= 5 ? starsRaw : undefined;
+
+  const { items, total } = await findProfessionalReviews({
+    professional: listing._id,
+    page,
+    limit: PROFESSIONAL_REVIEWS_PAGE_SIZE,
+    withComment,
+    stars,
+  });
+
+  ok(res, toReviewPage({ items, total, page, limit: PROFESSIONAL_REVIEWS_PAGE_SIZE }));
+});
+
+// GET /api/v1/professionals/:id/rating-breakdown - the per-star counts plus the headline average and total. Public and 404-guarded like GET /:id, and kept off the directory list so it only loads on the profile that draws it.
+router.get('/:id/rating-breakdown', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, NOT_LISTED);
+
+  const listing = await listedProfessional(req.params.id);
+  if (!listing) return fail(res, 404, NOT_LISTED);
+
+  const breakdown = await ratingBreakdownForProfessional(listing._id);
+  ok(res, {
+    breakdown,
+    average: listing.ratingAverage ?? 0,
+    count: listing.ratingCount ?? 0,
+  });
+});
+
+// POST /api/v1/professionals/:id/reviews/:appointmentId/report - a signed-in user flags a rated review for abuse. 404-guarded like the profile it hangs off, and again on a review that is missing or was never rated. The report keys off the booking's own professional, so the admin queue reads correctly whatever the id in the path.
+router.post(
+  '/:id/reviews/:appointmentId/report',
+  optionalAuth,
+  signedIn,
+  validate(reviewReportSchema),
+  async (req, res) => {
+    if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.appointmentId)) {
+      return fail(res, 404, NOT_LISTED);
+    }
+
+    const listing = await listedProfessional(req.params.id);
+    if (!listing) return fail(res, 404, NOT_LISTED);
+
+    const body = req.body as ReviewReport;
+    const report = await reportReview({
+      appointmentId: req.params.appointmentId,
+      reporter: actorOf(req)._id,
+      reason: body.reason,
+    });
+    if (!report) return fail(res, 404, 'That review is not one we can report');
+
+    created(res, { reported: true });
   }
 );
 

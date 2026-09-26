@@ -3,6 +3,7 @@ import { NavBrand } from '@/components/navbar/nav-brand';
 import { useAdminBlogs } from '@/hooks/useAdminBlogs';
 import { useAdminInquiries } from '@/hooks/useAdminInquiries';
 import { useAdminProfessionals } from '@/hooks/useAdminProfessionals';
+import { useAdminReviewReports } from '@/hooks/useAdminReviews';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { GROUND, badgeOf } from './_components/ui';
@@ -24,6 +25,7 @@ const SECTIONS = [
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/applications', label: 'Applications' },
   { to: '/admin/blogs', label: 'Posts' },
+  { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/applications/statistics', label: 'Statistics', end: true },
   { to: '/admin/audit', label: 'Audit log' },
 ] as const;
@@ -69,10 +71,12 @@ export default function AdminLayout() {
   const requests = useAdminInquiries({ status: 'pending', limit: 1 }).data?.total ?? 0;
   const applications = useAdminProfessionals({ status: 'pending', limit: 1 }).data?.total ?? 0;
   const held = useAdminBlogs({ status: 'flagged', limit: 1 }).data?.total ?? 0;
+  const reports = useAdminReviewReports({ status: 'pending', limit: 1 }).data?.total ?? 0;
 
   const WAITING: Record<string, number> = {
     '/admin/applications': requests + applications,
     '/admin/blogs': held,
+    '/admin/reviews': reports,
   };
 
   return (

@@ -1,4 +1,5 @@
 import type { AppointmentKind, AppointmentStatus, AppointmentRequestInput } from '@shared/schemas';
+import { APPOINTMENT_NO_SHOW_GRACE_MINUTES } from '@shared/limits';
 
 import { apiFetch } from './api';
 
@@ -42,6 +43,10 @@ export type Appointment = {
   with: AppointmentParty | null;
   /** The listing behind the vet, so a row can link to their profile. */
   professionalId: string;
+  // Set once both sides were in the call together, so a virtual no-show the scanner completes stays unrateable.
+  consultedAt: string | null;
+  // Set once the booker themselves joined, so a no-show the booker showed up for turns rateable after the grace.
+  clientJoinedAt: string | null;
   /** The owner's star on a finished booking, null until they leave one. */
   rating: number | null;
   /** The optional note the owner left with their stars, null when they wrote none. */
@@ -57,6 +62,14 @@ export type AppointmentPage = {
   total: number;
   pages: number;
 };
+
+// Whether the booker may leave stars now: an onsite booking that finished, a virtual call both joined, or a virtual no-show they showed up for once the grace past the start has passed.
+export function canRateBooking(booking: Appointment, now: number): boolean {
+  if (booking.kind === 'onsite') return booking.status === 'completed';
+  if (booking.consultedAt !== null) return true;
+  if (booking.clientJoinedAt === null) return false;
+  return now - Date.parse(booking.startsAt) >= APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000;
+}
 
 // The vet's email outcome, so the UI can flag a request the vet never heard about.
 export type RequestResult = {
@@ -159,4 +172,12 @@ export async function rateAppointment(input: {
     { method: 'PATCH', body: { rating: input.rating, comment: input.comment ?? null } }
   );
   return appointment;
+}
+
+// POST /api/v1/appointments/:id/reply — the vet's one public response to a rated visit. Vet-only, checked server-side against the stored booking.
+export async function replyToReview(input: { id: string; reply: string }) {
+  return await apiFetch<{ reply: string | null; repliedAt: string | null }>(
+    `/appointments/${encodeURIComponent(input.id)}/reply`,
+    { method: 'POST', body: { reply: input.reply } }
+  );
 }

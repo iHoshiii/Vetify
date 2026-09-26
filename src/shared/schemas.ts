@@ -9,6 +9,8 @@ import {
   APPOINTMENT_REASON_MAX,
   APPOINTMENT_REASON_MIN,
   APPOINTMENT_MAX_SLOTS,
+  REVIEW_REPLY_MAX,
+  REVIEW_REPORT_REASON_MAX,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   BLOG_MAX_TAGS,
@@ -26,8 +28,6 @@ import {
   THREAD_PAGE_SIZE,
   THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
-  PROFESSIONAL_BIO_MAX,
-  PROFESSIONAL_BIO_MIN,
   PROFESSIONAL_CAPTURE_MAX_AGE_MINUTES,
   PROFESSIONAL_LOCATION_MAX,
   PROFESSIONAL_LOCATION_MAX_ACCURACY_M,
@@ -155,6 +155,8 @@ export const AUDIT_ACTIONS = [
   'professional.rejected',
   'professional.suspended',
   'professional.verified',
+  'review.dismissed',
+  'review.removed',
   'user.role.changed',
   'user.status.changed',
   'user.status.expired',
@@ -199,7 +201,13 @@ export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
  * no application yet, so an audit row pointing at a professional id would be
  * pointing at nothing.
  */
-export const AUDIT_TARGET_TYPES = ['blog', 'professional', 'professional-inquiry', 'user'] as const;
+export const AUDIT_TARGET_TYPES = [
+  'blog',
+  'professional',
+  'professional-inquiry',
+  'review',
+  'user',
+] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 
 /**
@@ -298,15 +306,12 @@ export type BlogListQuery = z.output<typeof blogListQuerySchema>;
 /**
  * What an applicant fills in. Defined once so the form and the validator behind
  * it cannot drift, and shaped to the eligibility list the professionals page
- * already publishes: a licence, proof of it, active practice, and an
- * introduction someone can actually read.
+ * already publishes.
  */
 /**
  * What an applicant fills in on the second form — the one behind the emailed
  * link. Defined once so the form and the validator behind it cannot drift, and
- * shaped to the eligibility list the professionals page already publishes: a
- * licence, proof of it, active practice, and an introduction someone can
- * actually read.
+ * shaped to the eligibility list the professionals page already publishes.
  */
 const professionalFields = {
   licenseNumber: z
@@ -349,11 +354,6 @@ const professionalFields = {
     .min(2, 'Where do you practise?')
     .max(140, 'That clinic name is too long')
     .optional(),
-  bio: z
-    .string()
-    .trim()
-    .min(PROFESSIONAL_BIO_MIN, `Write at least ${PROFESSIONAL_BIO_MIN} characters`)
-    .max(PROFESSIONAL_BIO_MAX, 'That introduction is too long'),
   yearsExperience: z.coerce
     .number()
     .int('Years of experience must be a whole number')
@@ -492,11 +492,8 @@ export type MapPin = z.output<typeof mapPinSchema>;
 /**
  * A reading taken from the device while the applicant stood at the address.
  *
- * `accuracyMeters` is the browser's own estimate, and is required rather than
- * nullable: the Geolocation API always supplies one, so an absent value means the
- * coordinate came from somewhere that is not a device. Capped, because a fix good
- * to half a kilometre describes a neighbourhood, and storing it as a precise pin
- * would be a lie told in a number.
+ * `accuracyMeters` is the browser's own estimate. Older applications may retain
+ * this reading, though new applications no longer request it.
  */
 export const liveLocationSchema = z.object({
   latitude: latitude(),
@@ -511,39 +508,25 @@ export const liveLocationSchema = z.object({
   capturedAt: z.string().datetime({ message: 'A location fix has to say when it was taken' }),
 });
 
-const professionalAddressSchema = z
-  .object({
-    kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
-    line1: z
-      .string()
-      .trim()
-      .min(6, 'Give the street and number')
-      .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
-    city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
-    province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
-    postalCode: z
-      .string()
-      .trim()
-      .max(12, 'That postal code is too long')
-      .optional()
-      .or(z.literal('').transform(() => undefined)),
-    /**
-     * Where the device said this was. Required on a home address and welcome on a
-     * clinic one: a clinic can be found by its name and its street, and a house
-     * on an unnamed road cannot.
-     */
-    fix: liveLocationSchema.nullish(),
-    mapPin: mapPinSchema.nullish(),
-  })
-  .superRefine((address, ctx) => {
-    if (address.kind === 'home' && !address.fix) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['fix'],
-        message: 'A home address needs a live location fix taken at the address.',
-      });
-    }
-  });
+const professionalAddressSchema = z.object({
+  kind: z.enum(PROFESSIONAL_ADDRESS_KINDS),
+  line1: z
+    .string()
+    .trim()
+    .min(6, 'Give the street and number')
+    .max(PROFESSIONAL_LOCATION_MAX, 'That address line is too long'),
+  city: z.string().trim().min(2, 'Which city or municipality?').max(80, 'That city is too long'),
+  province: z.string().trim().min(2, 'Which province?').max(80, 'That province is too long'),
+  postalCode: z
+    .string()
+    .trim()
+    .max(12, 'That postal code is too long')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+  /** An optional legacy device reading retained on older applications. */
+  fix: liveLocationSchema.nullish(),
+  mapPin: mapPinSchema.nullish(),
+});
 
 const professionalAddressesField = z
   .array(professionalAddressSchema)
@@ -1369,6 +1352,49 @@ export const appointmentRateSchema = z.object({
     .transform((value) => value || null),
 });
 
+// The vet's public reply to a review. One required, trimmed line, capped like the note it answers.
+export const appointmentReplySchema = z.object({
+  reply: z
+    .string()
+    .trim()
+    .min(1, 'Write a reply before posting it')
+    .max(REVIEW_REPLY_MAX, `Keep your reply under ${REVIEW_REPLY_MAX} characters`),
+});
+
+// Where a review report sits. 'reviewed' means an admin removed the review, 'dismissed' that they judged it fair; the queue filters and badges on these, so the server may not store one the screen cannot draw.
+export const REVIEW_REPORT_STATUSES = ['pending', 'reviewed', 'dismissed'] as const;
+export type ReviewReportStatus = (typeof REVIEW_REPORT_STATUSES)[number];
+
+// An owner flagging a review for abuse. One required, trimmed reason, shared by the form and the route validator.
+export const reviewReportSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Tell us what is wrong with the review')
+    .max(REVIEW_REPORT_REASON_MAX, `Keep it under ${REVIEW_REPORT_REASON_MAX} characters`),
+});
+
+// The moderation queue, defaulting to the only status anybody is waiting on.
+export const adminReviewReportListQuerySchema = z.object({
+  ...adminPageFields,
+  status: z.enum(REVIEW_REPORT_STATUSES).default('pending'),
+});
+
+// An admin's verdict on a report. 'remove' strips the review and needs a reason for the audit log; 'dismiss' leaves it and does not.
+export const reviewReportDecisionSchema = z
+  .object({
+    action: z.enum(['dismiss', 'remove']),
+    reason: z.string().trim().max(REVIEW_REPORT_REASON_MAX).optional(),
+  })
+  .refine((value) => value.action !== 'remove' || !!value.reason, {
+    message: 'A reason is required to remove a review',
+    path: ['reason'],
+  });
+
+export type ReviewReport = z.output<typeof reviewReportSchema>;
+export type AdminReviewReportListQuery = z.output<typeof adminReviewReportListQuerySchema>;
+export type ReviewReportDecision = z.output<typeof reviewReportDecisionSchema>;
+
 // Moving a booking to another offered slot. Only the new start travels; the span and kind are kept from the booking so the owner cannot change what was agreed while moving it.
 export const appointmentRescheduleSchema = z.object({
   startsAt: z.string().datetime({ message: 'Pick a time from the ones offered' }),
@@ -1403,6 +1429,7 @@ export type AppointmentRequestInput = z.input<typeof appointmentRequestSchema>;
 export type AppointmentRequest = z.output<typeof appointmentRequestSchema>;
 export type AppointmentRefuse = z.output<typeof appointmentRefuseSchema>;
 export type AppointmentRate = z.output<typeof appointmentRateSchema>;
+export type AppointmentReply = z.output<typeof appointmentReplySchema>;
 export type AppointmentReschedule = z.output<typeof appointmentRescheduleSchema>;
 export type AppointmentListQuery = z.output<typeof appointmentListQuerySchema>;
 

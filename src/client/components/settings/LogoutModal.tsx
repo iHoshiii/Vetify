@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -12,17 +14,9 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
+  const dialogRef = useFocusTrap<HTMLDivElement>(onClose, isOpen);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -42,7 +36,14 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all">
-      <div className="w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl transition-transform">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Log out"
+        tabIndex={-1}
+        className="w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl outline-none transition-transform"
+      >
         <h3 className="mb-2 text-xl font-bold text-slate-800">Log Out</h3>
         <p className="mb-6 text-sm text-slate-600">Are you sure you want to log out?</p>
         <div className="flex justify-end gap-3">
