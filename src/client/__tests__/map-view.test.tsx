@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -77,7 +77,7 @@ const leaflet = vi.hoisted(() => {
     remove() {}
   }
 
-  const state = { maps: [] as FakeMap[] };
+  const state = { maps: [] as FakeMap[], clusterCalls: 0 };
 
   /** Markers, circles and the dot: chainable, and none of them assert anything. */
   const stubMarker = () => {
@@ -99,7 +99,10 @@ const leaflet = vi.hoisted(() => {
     Icon: { Default: { prototype: {}, mergeOptions: noop } },
     tileLayer: () => ({ addTo: noop }),
     control: { attribution: () => ({ addTo: noop }) },
-    markerClusterGroup: () => new FakeGroup(),
+    markerClusterGroup: () => {
+      state.clusterCalls += 1;
+      return new FakeGroup();
+    },
     layerGroup: () => new FakeGroup(),
     marker: stubMarker,
     circle: stubMarker,
@@ -121,6 +124,7 @@ const HOME = { latitude: 16.4832, longitude: 121.1497, accuracyMeters: 40 };
 
 beforeEach(() => {
   leaflet.state.maps.length = 0;
+  leaflet.state.clusterCalls = 0;
 });
 
 /** The map, once Leaflet has been awaited and the layers are up. */
@@ -131,6 +135,13 @@ async function mounted(element: ReactElement) {
 }
 
 describe('a map nobody can drag', () => {
+  it('shows the basemap while clinic data continues loading', async () => {
+    await mounted(<VetMap interactive={false} clinicsLoading userLocation={null} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent('Loading nearby clinics…');
+    expect(leaflet.state.clusterCalls).toBe(0);
+  });
+
   it('goes to the reader once they say, however it was built', async () => {
     const { rerender, map } = await mounted(
       <VetMap interactive={false} zoom={15} center={MANILA} userLocation={null} />

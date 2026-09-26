@@ -115,6 +115,7 @@ const leaflet = vi.hoisted(() => {
     },
     divIcon: (options: unknown) => options,
     layerGroup: () => new FakeLayerGroup(),
+    markerClusterGroup: () => new FakeLayerGroup(),
   };
 
   return { state, L };
