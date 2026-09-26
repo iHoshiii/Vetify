@@ -14,6 +14,7 @@ export {
   isDuplicateSlot,
   markCallConnected,
   markCallJoined,
+  markClientJoined,
   rateAppointment,
   tallyAppointments,
   updateAppointment,
@@ -25,6 +26,14 @@ export {
 export { appointmentAttrsSchema, type AppointmentAttrs } from './schema';
 
 export { otherPartyId, toAppointmentPage, toAppointmentView } from './transform';
+
+export {
+  findProfessionalReviews,
+  maskName,
+  toReviewPage,
+  type ProfessionalReview,
+  type ProfessionalReviewPage,
+} from './reviews';
 
 export {
   APPOINTMENT_INDEXES,

@@ -5,6 +5,7 @@ import {
   fetchCapture,
   getInvite,
   getProfessional,
+  getProfessionalReviews,
   getProfessionalSlots,
   getOwnApplication,
   listProfessionals,
@@ -17,6 +18,7 @@ import {
   type OwnProfessional,
   type ProfessionalListParams,
   type ProfessionalPage,
+  type ProfessionalReviewPage,
   type PublicProfessional,
   type SlotGrid,
 } from '@/services/professionals.service';
@@ -42,6 +44,9 @@ export const professionalKeys = {
   invite: (token: string) => [...professionalKeys.all, 'invite', token] as const,
   capture: (id: string) => [...professionalKeys.all, 'capture', id] as const,
   detail: (id: string) => [...professionalKeys.all, 'detail', id] as const,
+  // One page of a vet's public reviews, nested under their detail so a profile refresh drops it too.
+  reviews: (id: string, params: { page?: number; comments?: boolean }) =>
+    [...professionalKeys.detail(id), 'reviews', params] as const,
   /**
    * The bookable grid. `slots()` with no arguments is the whole family, which is what
    * a booking invalidates: taking one slot changes every grid that was showing it.
@@ -268,6 +273,22 @@ export function useProfessionalSlots(input: {
       ),
     enabled: Boolean(input.id),
     staleTime: 15_000,
+    retry: retryUnlessMissing,
+  });
+}
+
+// One page of a vet's public ratings. comments:true is the profile's written-review panel; the default is every rater, for the card popup.
+export function useProfessionalReviews(
+  id: string | undefined,
+  params: { page?: number; comments?: boolean } = {}
+) {
+  return useQuery<ProfessionalReviewPage>({
+    queryKey: professionalKeys.reviews(id ?? '', params),
+    queryFn: ({ signal }) => getProfessionalReviews(id as string, params, signal),
+    enabled: Boolean(id),
+    staleTime: STALE_TIME,
+    // Keeps the current page on screen while the next one loads.
+    placeholderData: (previous) => previous,
     retry: retryUnlessMissing,
   });
 }

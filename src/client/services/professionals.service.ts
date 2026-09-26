@@ -288,6 +288,39 @@ export async function getProfessionalSlots(
   );
 }
 
+// One rating as the public list shows it, the rater's name already masked server-side.
+export type ProfessionalReview = {
+  id: string;
+  stars: number;
+  comment: string | null;
+  reviewer: string;
+  ratedAt: string;
+};
+
+export type ProfessionalReviewPage = {
+  items: ProfessionalReview[];
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+};
+
+// GET /api/v1/professionals/:id/reviews - one page of a vet's ratings, newest first. comments:true narrows it to the ones that carry a written note.
+export async function getProfessionalReviews(
+  id: string,
+  params: { page?: number; comments?: boolean } = {},
+  signal?: AbortSignal
+): Promise<ProfessionalReviewPage> {
+  const search = new URLSearchParams();
+  if (params.page && params.page > 1) search.set('page', String(params.page));
+  if (params.comments) search.set('comments', 'true');
+  const query = search.toString();
+  return apiFetch<ProfessionalReviewPage>(
+    `/professionals/${encodeURIComponent(id)}/reviews${query ? `?${query}` : ''}`,
+    { signal }
+  );
+}
+
 /**
  * GET /api/v1/professionals/me — the caller's application.
  *

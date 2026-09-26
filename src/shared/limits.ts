@@ -396,6 +396,12 @@ export const APPOINTMENT_RATING_MAX = 5;
 // An optional written note left with the stars. Room for a real sentence or two, not an essay.
 export const APPOINTMENT_RATING_COMMENT_MAX = 500;
 
+// Reviews per page on a professional's public rating list, newest first.
+export const PROFESSIONAL_REVIEWS_PAGE_SIZE = 5;
+
+// How long past a virtual booking's start the vet has to connect before the booker who showed up may rate it as a no-show.
+export const APPOINTMENT_NO_SHOW_GRACE_MINUTES = 15;
+
 // A single chat message. Long enough for a real question, short enough that the box is not a document.
 export const MESSAGE_MAX_LENGTH = 2000;
 export const MESSAGE_ACTION_WINDOW_MS = 15 * 60 * 1000;

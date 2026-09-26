@@ -42,6 +42,7 @@ export {
   findAppointments,
   findConfirmedCallStartingAt,
   findHeldSlots,
+  findProfessionalReviews,
   findRemindableAppointments,
   findStartedConfirmed,
   claimReminder,
@@ -51,11 +52,14 @@ export {
   isDuplicateSlot,
   markCallConnected,
   markCallJoined,
+  markClientJoined,
+  maskName,
   otherPartyId,
   rateAppointment,
   tallyAppointments,
   toAppointmentPage,
   toAppointmentView,
+  toReviewPage,
   updateAppointment,
   type AppointmentAttrs,
   type AppointmentDocument,
@@ -67,6 +71,8 @@ export {
   type AppointmentTally,
   type AppointmentView,
   type FindAppointmentsOptions,
+  type ProfessionalReview,
+  type ProfessionalReviewPage,
 } from './appointments';
 
 export {

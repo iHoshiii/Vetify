@@ -1,17 +1,29 @@
-import { APPOINTMENT_SLOT_MINUTES, MANILA_UTC_OFFSET_HOURS } from '@shared/limits';
+import {
+  APPOINTMENT_NO_SHOW_GRACE_MINUTES,
+  APPOINTMENT_SLOT_MINUTES,
+  MANILA_UTC_OFFSET_HOURS,
+  PROFESSIONAL_REVIEWS_PAGE_SIZE,
+} from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  appointmentsCollection,
   findHeldSlots,
   findProfessionalById,
+  findProfessionalReviews,
   insertProfessional,
   insertUser,
   isDuplicateSlot,
+  markCallConnected,
   markCallJoined,
+  markClientJoined,
+  maskName,
+  toReviewPage,
   updateProfessionalProfile,
   updateProfessional,
+  type AppointmentDocument,
   type User,
 } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
@@ -685,13 +697,13 @@ describe('rateAppointment', () => {
     expect(vetNow?.ratingCount).toBe(1);
   });
 
-  it('rates a joined virtual call before its time is up, note and all', async () => {
+  it('rates a virtual call both sides connected on before its time is up, note and all', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
     const booked = await request({ client, professional: application!._id, kind: 'virtual' });
     const id = booked!.appointment._id;
     await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
-    await markCallJoined(id);
+    await markCallConnected(id);
 
     const rated = await rateAppointment({
       id,
@@ -706,6 +718,59 @@ describe('rateAppointment', () => {
     expect(rated?.ratingComment).toBe('Kind and quick');
     const vetNow = await findProfessionalById(application!._id);
     expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  // Pushes a booking's start into the past so the no-show grace can be exercised without waiting.
+  async function backdateStart(id: ObjectId, minutesAgo: number) {
+    await appointmentsCollection().updateOne(
+      { _id: id },
+      { $set: { startsAt: new Date(Date.now() - minutesAgo * 60_000) } }
+    );
+  }
+
+  async function confirmedVirtual() {
+    const client = await account('owner');
+    const { user: vetUser, application } = await vet();
+    const booked = await request({ client, professional: application!._id, kind: 'virtual' });
+    const id = booked!.appointment._id;
+    await decideAppointment({ id, decision: 'confirmed', professional: vetUser });
+    return { client, vetUser, application: application!, id };
+  }
+
+  it('lets a booker who showed up rate a vet who never joined once the grace passes', async () => {
+    const { client, application, id } = await confirmedVirtual();
+    await markClientJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES + 1);
+
+    const rated = await rateAppointment({ id, actor: client, rating: 1, comment: 'Never showed' });
+
+    // Still confirmed: the sweep only completes it once its whole span is past.
+    expect(rated?.status).toBe('confirmed');
+    expect(rated?.rating).toBe(1);
+    const vetNow = await findProfessionalById(application._id);
+    expect(vetNow?.ratingAverage).toBe(1);
+    expect(vetNow?.ratingCount).toBe(1);
+  });
+
+  it('refuses a no-show rating before the grace has passed', async () => {
+    const { client, id } = await confirmedVirtual();
+    await markClientJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES - 5);
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('refuses a no-show rating when the booker never joined', async () => {
+    const { client, id } = await confirmedVirtual();
+    // Party-agnostic: someone joined, but not the booker, so this must not open a rating.
+    await markCallJoined(id);
+    await backdateStart(id, APPOINTMENT_NO_SHOW_GRACE_MINUTES + 1);
+
+    await expect(rateAppointment({ id, actor: client, rating: 1 })).rejects.toMatchObject({
+      statusCode: 409,
+    });
   });
 
   it('averages every rated booking a vet has', async () => {
@@ -762,5 +827,189 @@ describe('rateAppointment', () => {
     await expect(
       rateAppointment({ id: new ObjectId(), actor: client, rating: 5 })
     ).resolves.toBeNull();
+  });
+});
+
+describe('maskName', () => {
+  it('keeps each first letter and stars the rest', () => {
+    expect(maskName('Aldwin Loreto')).toBe('A***** L*****');
+    expect(maskName('Bea')).toBe('B**');
+  });
+
+  it('falls back to a generic label when the name is blank or missing', () => {
+    expect(maskName('   ')).toBe('A pet owner');
+    expect(maskName(null)).toBe('A pet owner');
+  });
+});
+
+describe('toReviewPage', () => {
+  it('wraps a page and derives the count', () => {
+    expect(toReviewPage({ items: [], total: 6, page: 2, limit: 5 })).toEqual({
+      items: [],
+      page: 2,
+      limit: 5,
+      total: 6,
+      pages: 2,
+    });
+  });
+
+  it('never reports fewer than one page', () => {
+    expect(toReviewPage({ items: [], total: 0, page: 1, limit: 5 }).pages).toBe(1);
+  });
+});
+describe('findProfessionalReviews', () => {
+  // A rated booking written straight into the collection, so a vet can be given many reviews without the two-slot fixture schedule getting in the way. reviewerName null uses a client id with no user, exercising the "account gone" masking path.
+  async function seedReview(input: {
+    professional: ObjectId;
+    reviewerName?: string | null;
+    rating?: number | null;
+    comment?: string | null;
+    ratedAt?: Date;
+    legacy?: boolean;
+  }): Promise<ObjectId> {
+    seq += 1;
+    const client =
+      input.reviewerName === null
+        ? new ObjectId()
+        : (
+            await insertUser({
+              email: `rater${seq}@example.com`,
+              password: 'pw12345678',
+              name: input.reviewerName ?? 'Aldwin Loreto',
+            })
+          )._id;
+    const when = input.ratedAt ?? new Date();
+    const doc: AppointmentDocument = {
+      _id: new ObjectId(),
+      professional: input.professional,
+      professionalUser: new ObjectId(),
+      client,
+      kind: 'onsite',
+      startsAt: when,
+      minutes: APPOINTMENT_SLOT_MINUTES,
+      heldSlots: [when],
+      status: 'completed',
+      holdsSlot: true,
+      petName: null,
+      petSpecies: 'Dog',
+      petBreed: null,
+      petAge: null,
+      reason: 'A checkup.',
+      phone: null,
+      clientEmail: null,
+      meetingUrl: null,
+      refusalReason: null,
+      cancelledBy: null,
+      decidedAt: when,
+      reminderSentAt: null,
+      joinedAt: null,
+      consultedAt: null,
+      clientJoinedAt: null,
+      rating: input.rating === undefined ? 5 : input.rating,
+      ratingComment: input.comment ?? null,
+      // legacy rows predate the field, so leave it null to prove the read falls back to updatedAt
+      ratedAt: input.legacy ? null : when,
+      createdAt: when,
+      updatedAt: when,
+    };
+    await appointmentsCollection().insertOne(doc);
+    return doc._id;
+  }
+
+  it('masks the reviewer and keeps the stars, note and date', async () => {
+    const professional = new ObjectId();
+    const when = new Date(Date.now() - HOUR_MS);
+    await seedReview({
+      professional,
+      reviewerName: 'Aldwin Loreto',
+      rating: 4,
+      comment: 'Great with my cat',
+      ratedAt: when,
+    });
+
+    const { items, total } = await findProfessionalReviews({ professional });
+
+    expect(total).toBe(1);
+    expect(items[0]).toMatchObject({
+      stars: 4,
+      comment: 'Great with my cat',
+      reviewer: 'A***** L*****',
+      ratedAt: when.toISOString(),
+    });
+  });
+
+  it('counts only rated bookings', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, rating: 5 });
+    await seedReview({ professional, rating: null, comment: null });
+
+    const { items, total } = await findProfessionalReviews({ professional });
+
+    expect(total).toBe(1);
+    expect(items).toHaveLength(1);
+  });
+
+  it('orders newest first', async () => {
+    const professional = new ObjectId();
+    const t1 = new Date(Date.now() - 3 * HOUR_MS);
+    const t2 = new Date(Date.now() - 2 * HOUR_MS);
+    const t3 = new Date(Date.now() - 1 * HOUR_MS);
+    await seedReview({ professional, ratedAt: t2 });
+    await seedReview({ professional, ratedAt: t1 });
+    await seedReview({ professional, ratedAt: t3 });
+
+    const { items } = await findProfessionalReviews({ professional });
+
+    expect(items.map((review) => review.ratedAt)).toEqual([t3, t2, t1].map((d) => d.toISOString()));
+  });
+
+  it('paginates at the shared page size', async () => {
+    const professional = new ObjectId();
+    for (let i = 0; i < PROFESSIONAL_REVIEWS_PAGE_SIZE + 1; i += 1) {
+      await seedReview({ professional, ratedAt: new Date(Date.now() - i * HOUR_MS) });
+    }
+
+    const first = await findProfessionalReviews({ professional, page: 1 });
+    const second = await findProfessionalReviews({ professional, page: 2 });
+
+    expect(first.total).toBe(PROFESSIONAL_REVIEWS_PAGE_SIZE + 1);
+    expect(first.items).toHaveLength(PROFESSIONAL_REVIEWS_PAGE_SIZE);
+    expect(second.total).toBe(PROFESSIONAL_REVIEWS_PAGE_SIZE + 1);
+    expect(second.items).toHaveLength(1);
+    const firstIds = new Set(first.items.map((review) => review.id));
+    expect(firstIds.has(second.items[0].id)).toBe(false);
+  });
+
+  it('narrows to commented reviews and reflects it in the total', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, comment: 'Gentle and thorough' });
+    await seedReview({ professional, comment: 'Ran late but kind' });
+    await seedReview({ professional, comment: null });
+
+    const commented = await findProfessionalReviews({ professional, withComment: true });
+    const all = await findProfessionalReviews({ professional });
+
+    expect(all.total).toBe(3);
+    expect(commented.total).toBe(2);
+    expect(commented.items.every((review) => review.comment !== null)).toBe(true);
+  });
+
+  it('dates a legacy rated row through updatedAt', async () => {
+    const professional = new ObjectId();
+    const when = new Date(Date.now() - 2 * HOUR_MS);
+    await seedReview({ professional, ratedAt: when, legacy: true });
+
+    const { items } = await findProfessionalReviews({ professional });
+
+    expect(items[0].ratedAt).toBe(when.toISOString());
+  });
+
+  it('masks a rater whose account is gone as a generic label', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, reviewerName: null });
+
+    const { items } = await findProfessionalReviews({ professional });
+
+    expect(items[0].reviewer).toBe('A pet owner');
   });
 });
