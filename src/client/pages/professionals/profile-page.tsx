@@ -1,16 +1,7 @@
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import type { OwnProfessional } from '@/services/professionals.service';
 import type { ProfessionalAvailabilityStatus } from '@shared/limits';
-import {
-  Briefcase,
-  CalendarDays,
-  Eye,
-  MapPin,
-  Phone,
-  ShieldCheck,
-  Stethoscope,
-  User,
-} from 'lucide-react';
+import { Briefcase, CalendarDays, Eye, MapPin, Phone, ShieldCheck, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import VetHours from './_components/vet-hours';
@@ -102,14 +93,6 @@ function PublicView({ application }: { application: OwnProfessional }) {
             </div>
           </div>
         </div>
-      </Card>
-
-      {/* Bio */}
-      <Card className="space-y-2">
-        <CardTitle icon={<Stethoscope className="h-4 w-4 text-teal-800" />}>About</CardTitle>
-        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-          {application.bio}
-        </p>
       </Card>
 
       {/* Consultation hours */}

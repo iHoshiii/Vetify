@@ -121,6 +121,8 @@ describe('the invited application page', () => {
     expect(screen.queryByLabelText('License number')).not.toBeInTheDocument();
 
     expect(screen.getByText('Photographs, taken now')).toBeInTheDocument();
+    expect(screen.queryByText('Professional bio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verify at home' })).not.toBeInTheDocument();
     // Three cameras and no file input anywhere on the page.
     expect(screen.getAllByRole('button', { name: 'Open camera' })).toHaveLength(3);
     expect(document.querySelector('input[type="file"]')).toBeNull();
@@ -202,7 +204,7 @@ describe('the invited application page', () => {
 
     expect(screen.getByRole('button', { name: 'Submit application' })).toBeDisabled();
     expect(screen.getByText(/a photo of your face/)).toBeInTheDocument();
-    expect(screen.getByText(/a live location fix for your home address/)).toBeInTheDocument();
+    expect(screen.queryByText(/a live location fix for your home address/)).not.toBeInTheDocument();
     expect(applyThroughInvite).not.toHaveBeenCalled();
   });
 });

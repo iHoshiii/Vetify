@@ -68,7 +68,7 @@ export type ProfessionalAddress = {
   city: string;
   province: string;
   postalCode: string | null;
-  /** Present on every home address, and on a clinic only if one was taken. */
+  /** Optional device reading retained on older applications. */
   fix: ProfessionalLocationFix | null;
   /**
    * Where the vet dragged the marker.
