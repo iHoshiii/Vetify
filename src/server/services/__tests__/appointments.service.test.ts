@@ -6,7 +6,7 @@ import {
 } from '@shared/limits';
 import type { WeeklyScheduleItem } from '@shared/schemas';
 import { ObjectId } from 'mongodb';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   appointmentsCollection,
@@ -20,6 +20,7 @@ import {
   markCallJoined,
   markClientJoined,
   maskName,
+  ratingBreakdownForProfessional,
   toReviewPage,
   updateProfessionalProfile,
   updateProfessional,
@@ -34,6 +35,8 @@ import {
   requestAppointment,
 } from '../appointments.service';
 import { clearRecentMail, recentMail } from '../mail.service';
+import * as notifications from '../notifications.service';
+import { replyToReview } from '../review-reply.service';
 
 beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
@@ -697,6 +700,33 @@ describe('rateAppointment', () => {
     expect(vetNow?.ratingCount).toBe(1);
   });
 
+  it('notifies the vet when their visit is rated, without leaking the note', async () => {
+    const { client, vetUser, id } = await completed();
+    const before = await notifications.countUnread(vetUser._id);
+
+    await rateAppointment({ id, actor: client, rating: 4, comment: 'Gentle and thorough' });
+
+    expect(await notifications.countUnread(vetUser._id)).toBe(before + 1);
+    const page = await notifications.listForUser({ user: vetUser._id, page: 1, limit: 20 });
+    expect(page.items[0].kind).toBe('appointment_rated');
+    expect(page.items[0].body).not.toContain('Gentle and thorough');
+  });
+
+  it('keeps the rating when notifying the vet fails', async () => {
+    const { client, application, vetUser, id } = await completed();
+    const before = await notifications.countUnread(vetUser._id);
+    const spy = vi
+      .spyOn(notifications, 'createNotification')
+      .mockRejectedValueOnce(new Error('boom'));
+
+    const rated = await rateAppointment({ id, actor: client, rating: 4 });
+
+    expect(rated?.rating).toBe(4);
+    expect((await findProfessionalById(application._id))?.ratingCount).toBe(1);
+    expect(await notifications.countUnread(vetUser._id)).toBe(before);
+    spy.mockRestore();
+  });
+
   it('rates a virtual call both sides connected on before its time is up, note and all', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
@@ -828,6 +858,44 @@ describe('rateAppointment', () => {
       rateAppointment({ id: new ObjectId(), actor: client, rating: 5 })
     ).resolves.toBeNull();
   });
+
+  describe('replyToReview', () => {
+    it('posts the reply and surfaces it, trimmed, on the review', async () => {
+      const { client, vetUser, application, id } = await completed();
+      await rateAppointment({ id, actor: client, rating: 5, comment: 'Great visit' });
+
+      const replied = await replyToReview({
+        id: id.toString(),
+        actor: vetUser,
+        reply: '  Thank you for the kind words.  ',
+      });
+
+      expect(replied?.reviewReply).toBe('Thank you for the kind words.');
+      expect(replied?.reviewReplyAt).toBeInstanceOf(Date);
+
+      const page = await findProfessionalReviews({ professional: application._id });
+      expect(page.items[0].reply).toBe('Thank you for the kind words.');
+      expect(page.items[0].repliedAt).toBe(replied?.reviewReplyAt?.toISOString());
+    });
+
+    it('forbids a vet who is not the one the review is about', async () => {
+      const { client, id } = await completed();
+      await rateAppointment({ id, actor: client, rating: 5 });
+      const { user: stranger } = await vet();
+
+      await expect(
+        replyToReview({ id: id.toString(), actor: stranger, reply: 'Not mine.' })
+      ).rejects.toMatchObject({ statusCode: 403 });
+    });
+
+    it('refuses a reply to a visit that has not been rated', async () => {
+      const { vetUser, id } = await completed();
+
+      await expect(
+        replyToReview({ id: id.toString(), actor: vetUser, reply: 'Too soon.' })
+      ).rejects.toMatchObject({ statusCode: 409 });
+    });
+  });
 });
 
 describe('maskName', () => {
@@ -861,6 +929,7 @@ describe('findProfessionalReviews', () => {
   // A rated booking written straight into the collection, so a vet can be given many reviews without the two-slot fixture schedule getting in the way. reviewerName null uses a client id with no user, exercising the "account gone" masking path.
   async function seedReview(input: {
     professional: ObjectId;
+    professionalUser?: ObjectId;
     reviewerName?: string | null;
     rating?: number | null;
     comment?: string | null;
@@ -882,7 +951,7 @@ describe('findProfessionalReviews', () => {
     const doc: AppointmentDocument = {
       _id: new ObjectId(),
       professional: input.professional,
-      professionalUser: new ObjectId(),
+      professionalUser: input.professionalUser ?? new ObjectId(),
       client,
       kind: 'onsite',
       startsAt: when,
@@ -902,6 +971,7 @@ describe('findProfessionalReviews', () => {
       cancelledBy: null,
       decidedAt: when,
       reminderSentAt: null,
+      reviewPromptSentAt: null,
       joinedAt: null,
       consultedAt: null,
       clientJoinedAt: null,
@@ -909,6 +979,8 @@ describe('findProfessionalReviews', () => {
       ratingComment: input.comment ?? null,
       // legacy rows predate the field, so leave it null to prove the read falls back to updatedAt
       ratedAt: input.legacy ? null : when,
+      reviewReply: null,
+      reviewReplyAt: null,
       createdAt: when,
       updatedAt: when,
     };
@@ -1011,5 +1083,33 @@ describe('findProfessionalReviews', () => {
     const { items } = await findProfessionalReviews({ professional });
 
     expect(items[0].reviewer).toBe('A pet owner');
+  });
+
+  it('breaks ratings down per star, zero-filling and counting a double alongside ints', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, rating: 1 });
+    await seedReview({ professional, rating: 3 });
+    await seedReview({ professional, rating: 5 });
+    const asDouble = await seedReview({ professional, rating: 5 });
+    // Force a BSON double so the $toInt bucketing is exercised, not just int32 storage.
+    await appointmentsCollection().updateOne({ _id: asDouble }, [
+      { $set: { rating: { $toDouble: 5 } } },
+    ]);
+
+    const breakdown = await ratingBreakdownForProfessional(professional);
+
+    expect(breakdown).toEqual([1, 0, 1, 0, 2]);
+  });
+
+  it('narrows the list to a single star', async () => {
+    const professional = new ObjectId();
+    await seedReview({ professional, rating: 5 });
+    await seedReview({ professional, rating: 5 });
+    await seedReview({ professional, rating: 2 });
+
+    const fives = await findProfessionalReviews({ professional, stars: 5 });
+
+    expect(fives.total).toBe(2);
+    expect(fives.items.every((review) => review.stars === 5)).toBe(true);
   });
 });

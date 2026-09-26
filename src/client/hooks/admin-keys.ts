@@ -1,4 +1,5 @@
 import { ApiError } from '@/services/api';
+import type { AdminReviewReportListParams } from '@/services/admin-reviews.service';
 import type {
   AdminBlogListParams,
   AdminInquiryListParams,
@@ -38,6 +39,10 @@ export const adminKeys = {
   inquiryList: (params: AdminInquiryListParams) =>
     [...adminKeys.inquiries(), 'list', params] as const,
   inquiry: (id: string) => [...adminKeys.inquiries(), 'detail', id] as const,
+
+  reviews: () => [...adminKeys.all, 'reviews'] as const,
+  reviewList: (params: AdminReviewReportListParams) =>
+    [...adminKeys.reviews(), 'list', params] as const,
 
   audit: () => [...adminKeys.all, 'audit'] as const,
   auditList: (params: AuditListParams) => [...adminKeys.audit(), 'list', params] as const,

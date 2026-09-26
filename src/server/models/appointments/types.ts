@@ -85,6 +85,8 @@ export type AppointmentDocument = {
   decidedAt: Date | null;
   // When the pre-appointment reminder was pushed, so the scanner fires it once and never re-sends after a restart.
   reminderSentAt: Date | null;
+  // When the post-visit review nudge was sent, so the completion sweep prompts the owner once and never again after a restart.
+  reviewPromptSentAt: Date | null;
   // When either party first joined the call, stamped once. Drives the owner's Start/Rejoin row and never resets.
   joinedAt: Date | null;
   // When both accounts were in the call together, stamped once. A virtual booking is only rateable after this, so a no-show the scanner auto-completes cannot be rated.
@@ -96,6 +98,9 @@ export type AppointmentDocument = {
   ratingComment: string | null;
   // When the stars were recorded, so the public review list can date each one. Null until rated, and missing on rows rated before this field, which read back through updatedAt.
   ratedAt: Date | null;
+  // The vet's one public response to this review, and when they posted it. Null until they reply; vet-authored, so it is shown unmasked.
+  reviewReply: string | null;
+  reviewReplyAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -22,6 +22,7 @@ import {
 } from './professional-inquiries';
 import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
+import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
 export { isValidObjectId, toObjectId } from './object-id';
@@ -38,11 +39,14 @@ export {
   APPOINTMENT_STATUSES,
   APPOINTMENTS_COLLECTION,
   averageRatingForProfessional,
+  claimReviewPrompt,
+  clearAppointmentRating,
   findAppointmentById,
   findAppointments,
   findConfirmedCallStartingAt,
   findHeldSlots,
   findProfessionalReviews,
+  ratingBreakdownForProfessional,
   findRemindableAppointments,
   findStartedConfirmed,
   claimReminder,
@@ -56,6 +60,7 @@ export {
   maskName,
   otherPartyId,
   rateAppointment,
+  replyToReview,
   tallyAppointments,
   toAppointmentPage,
   toAppointmentView,
@@ -335,6 +340,24 @@ export {
 } from './refresh-token';
 
 export {
+  REVIEW_REPORTS_COLLECTION,
+  REVIEW_REPORT_INDEXES,
+  REVIEW_REPORT_STATUSES,
+  findReviewReportById,
+  findReviewReports,
+  insertReviewReport,
+  reviewReportsCollection,
+  setReviewReportStatus,
+  toAdminReviewReport,
+  toAdminReviewReportPage,
+  type AdminReviewReport,
+  type AdminReviewReportPage,
+  type ReviewReportDocument,
+  type ReviewReportRow,
+  type ReviewReportStatus,
+} from './review-reports';
+
+export {
   AUTH_PROVIDERS,
   USER_INDEXES,
   USER_ROLES,
@@ -386,6 +409,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
+  { collection: REVIEW_REPORTS_COLLECTION, indexes: REVIEW_REPORT_INDEXES },
 ];
 
 // Mongo refuses to redefine an index whose key already exists with different

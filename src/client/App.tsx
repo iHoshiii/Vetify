@@ -13,6 +13,7 @@ import AdminApplicationStatistics from '@/pages/admin/applications/statistics-ta
 import AdminAuditPage from '@/pages/admin/audit-page';
 import AdminBlogsPage from '@/pages/admin/blogs-page';
 import AdminDashboardPage from '@/pages/admin/dashboard-page';
+import AdminReviewsPage from '@/pages/admin/reviews/reviews-page';
 import AdminAccountsTab from '@/pages/admin/users/accounts-tab';
 import AdminUsersLayout from '@/pages/admin/users/users-layout';
 import AnatomyPage from '@/pages/anatomy/anatomy-page';
@@ -39,6 +40,7 @@ import ProfessionalMapLocationPage from '@/pages/professionals/map-location-page
 import ProfessionalInvitePage from '@/pages/professionals/invite-page';
 import ProfessionalLayout from '@/pages/professionals/professional-layout';
 import ProfessionalProfilePage from '@/pages/professionals/profile-page';
+import ProfessionalReviewsPage from '@/pages/professionals/reviews-page';
 import ProfessionalSettingsPage from '@/pages/professionals/settings-page';
 import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
@@ -112,6 +114,7 @@ export default function App() {
           element={<Navigate to="/admin/applications/application" replace />}
         />
         <Route path="blogs" element={<AdminBlogsPage />} />
+        <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="audit" element={<AdminAuditPage />} />
       </Route>
 
@@ -214,6 +217,7 @@ export default function App() {
         <Route index element={<Navigate to="consultations" replace />} />
         <Route path="consultations" element={<ProfessionalBookingsPage kind="virtual" />} />
         <Route path="clinic-visits" element={<ProfessionalBookingsPage kind="onsite" />} />
+        <Route path="reviews" element={<ProfessionalReviewsPage />} />
         <Route path="conversations" element={<ProfessionalConversationsPage />} />
         <Route path="history" element={<ProfessionalHistoryPage />} />
         <Route path="location" element={<ProfessionalMapLocationPage />} />

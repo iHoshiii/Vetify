@@ -7,14 +7,21 @@ import type { Notification } from '@/services/notifications.service';
 import { CheckCheck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// A reminder opens the vet's Scheduled queue for that booking's kind; a decision opens the owner's bookings; a new request opens the vet's default Request queue.
+// A reminder opens the vet's Scheduled queue for that booking's kind; a new rating opens the vet's History; a decision or a review nudge opens the owner's bookings; a new request opens the vet's default Request queue.
 function routeFor(notification: Notification): string {
-  if (notification.kind === 'booking_confirmed' || notification.kind === 'booking_declined') {
+  if (
+    notification.kind === 'booking_confirmed' ||
+    notification.kind === 'booking_declined' ||
+    notification.kind === 'review_request'
+  ) {
     return '/book-appointment';
   }
   if (notification.kind === 'booking_reminder') {
     const section = notification.appointmentKind === 'onsite' ? 'clinic-visits' : 'consultations';
     return `/professionals/dashboard/${section}?tab=scheduled`;
+  }
+  if (notification.kind === 'appointment_rated') {
+    return '/professionals/dashboard/history';
   }
   return '/professionals/dashboard';
 }

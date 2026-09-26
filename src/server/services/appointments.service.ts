@@ -399,6 +399,20 @@ export async function rateAppointment(
   const summary = await averageRatingForProfessional(rated.professional);
   await setProfessionalRating(rated.professional, summary);
 
+  // The rating is already committed, so a notification failure must not surface as a failed rating; the body carries no comment text, only that a star landed.
+  try {
+    await createNotification({
+      user: rated.professionalUser,
+      kind: 'appointment_rated',
+      appointment: rated._id,
+      appointmentKind: rated.kind,
+      title: `New ${rating}-star rating`,
+      body: `${actor.name || 'A pet owner'} left a rating on their visit.`,
+    });
+  } catch (err) {
+    console.error('[appointments] rating notification failed', err);
+  }
+
   announceAppointment(rated);
 
   return rated;

@@ -22,6 +22,8 @@ const ACTION_LABEL: Record<AuditAction, string> = {
   'professional.verified': 'Verified an application',
   'professional.rejected': 'Rejected an application',
   'professional.suspended': 'Suspended a listing',
+  'review.dismissed': 'Dismissed a reported review',
+  'review.removed': 'Removed a reported review',
   'user.role.changed': 'Changed a role',
   'user.status.changed': 'Changed account access',
   'user.status.expired': 'Suspension ran out',
@@ -36,6 +38,7 @@ const ACTION_TONE: Partial<Record<AuditAction, string>> = {
   'professional.inquiry.declined': 'text-rose-700',
   'professional.rejected': 'text-rose-700',
   'professional.suspended': 'text-rose-700',
+  'review.removed': 'text-rose-700',
 };
 
 function when(date: string): string {

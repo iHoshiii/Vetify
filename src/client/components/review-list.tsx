@@ -1,5 +1,6 @@
-import type { ProfessionalReviewPage } from '@/services/professionals.service';
+import type { ProfessionalReview, ProfessionalReviewPage } from '@/services/professionals.service';
 import { Star } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 // Five stars with the first `value` filled, for one review's whole-number score.
 function Stars({ value }: { value: number }) {
@@ -28,17 +29,21 @@ function when(iso: string): string {
 const PAGER =
   'rounded-md px-3 py-1.5 font-semibold text-teal-800 transition hover:bg-teal-50 disabled:text-slate-300 disabled:hover:bg-transparent';
 
-// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational.
+// The shared body of the card popup and the profile Ratings panel: a page of masked reviews and a pager. The parent owns the page number and the fetch, so this stays presentational. renderFooter lets the vet console hang a reply composer under each review, and onReport hangs a report control for signed-in visitors, without this knowing what either is.
 export default function ReviewList({
   page,
   onPageChange,
   isLoading,
   emptyLabel,
+  renderFooter,
+  onReport,
 }: {
   page?: ProfessionalReviewPage;
   onPageChange: (next: number) => void;
   isLoading: boolean;
   emptyLabel: string;
+  renderFooter?: (review: ProfessionalReview) => ReactNode;
+  onReport?: (review: ProfessionalReview) => void;
 }) {
   if (!page) return <p className="text-sm text-slate-500">{isLoading ? 'Loading…' : emptyLabel}</p>;
   if (page.items.length === 0) return <p className="text-sm text-slate-500">{emptyLabel}</p>;
@@ -57,6 +62,26 @@ export default function ReviewList({
               <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-700">
                 {review.comment}
               </p>
+            )}
+            {review.reply && (
+              <div className="mt-2 rounded-lg border-l-2 border-teal-200 bg-teal-50/60 px-3 py-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-teal-800">
+                  Response from the vet
+                </p>
+                <p className="mt-0.5 whitespace-pre-line text-sm leading-6 text-slate-700">
+                  {review.reply}
+                </p>
+              </div>
+            )}
+            {renderFooter?.(review)}
+            {onReport && (
+              <button
+                type="button"
+                onClick={() => onReport(review)}
+                className="mt-2 text-xs font-semibold text-slate-400 transition hover:text-rose-700"
+              >
+                Report
+              </button>
             )}
           </li>
         ))}

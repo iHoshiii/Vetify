@@ -14,6 +14,7 @@ const SECTIONS: ReadonlyArray<{
 }> = [
   { to: `${ROOT}/consultations`, label: 'Online Consultation', kind: 'virtual' },
   { to: `${ROOT}/clinic-visits`, label: 'Clinic Visit', kind: 'onsite' },
+  { to: `${ROOT}/reviews`, label: 'Reviews' },
   { to: `${ROOT}/conversations`, label: 'Conversations', unread: true },
   { to: `${ROOT}/history`, label: 'History & Logs' },
   { to: `${ROOT}/settings`, label: 'Settings' },
