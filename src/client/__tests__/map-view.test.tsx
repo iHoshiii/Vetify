@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -131,6 +131,10 @@ async function mounted(element: ReactElement) {
 }
 
 describe('a map nobody can drag', () => {
+  it('shows the basemap while clinic data continues loading', async () => {
+    await mounted(<VetMap interactive={false} clinicsLoading userLocation={null} />);
+    expect(screen.getByText('Loading nearby clinics…')).toHaveClass('top-20');
+  });
   it('goes to the reader once they say, however it was built', async () => {
     const { rerender, map } = await mounted(
       <VetMap interactive={false} zoom={15} center={MANILA} userLocation={null} />

@@ -4,6 +4,7 @@ import type { MapUserLocation } from '@/types/vetmap';
 import type { MapVet, OsmClinic } from '@/types/map-prof-vet';
 import { vetLabel } from '../map-prof-vet/vet-label';
 import { createMarkerIcon, OSM_PALETTE, POPUP_ANCHOR, VETIFY_PALETTE } from '../marker-icon';
+import { markerClusterGroup } from './marker-cluster';
 import { clinicPopupHtml, escapeHtml, interceptLinks, vetPopupHtml } from './map-popup';
 
 interface MapMarkerOptions {
@@ -39,31 +40,14 @@ export function useMapMarkers({
 }: MapMarkerOptions) {
   useEffect(() => {
     const L = leafletRef.current;
-    const clinicGroup = clinicLayerRef.current;
     const vetGroup = vetLayerRef.current;
-    if (!ready || !L || !clinicGroup || !vetGroup) return;
+    if (!ready || !L || !vetGroup) return;
 
-    const clinicIcon = createMarkerIcon(L, OSM_PALETTE, 'clinic');
-    // One icon per address kind, so a vet's home pin does not claim to be a clinic.
     const vetIcons = {
       clinic: createMarkerIcon(L, VETIFY_PALETTE, 'clinic'),
       home: createMarkerIcon(L, VETIFY_PALETTE, 'home'),
     };
-    clinicGroup.clearLayers();
     vetGroup.clearLayers();
-
-    visibleClinics.forEach((clinic) => {
-      const marker = L.marker([clinic.latitude, clinic.longitude], { icon: clinicIcon });
-
-      marker.bindTooltip(escapeHtml(clinic.name), {
-        direction: 'top',
-        offset: POPUP_ANCHOR,
-        className: 'vet-label',
-      });
-      marker.bindPopup(clinicPopupHtml(clinic), { maxWidth: 280 });
-
-      clinicGroup.addLayer(marker);
-    });
 
     vets.forEach((vet) => {
       const marker = L.marker([vet.latitude, vet.longitude], {
@@ -84,7 +68,55 @@ export function useMapMarkers({
 
       vetGroup.addLayer(marker);
     });
-  }, [ready, visibleClinics, vets, leafletRef, clinicLayerRef, vetLayerRef, navigateRef]);
+  }, [ready, vets, leafletRef, vetLayerRef, navigateRef]);
+
+  useEffect(() => {
+    const L = leafletRef.current;
+    const map = leafletMapRef.current;
+    if (!ready || !L || !map) return;
+    const leaflet = L;
+    const leafletMap = map;
+
+    let cancelled = false;
+
+    async function drawClinics() {
+      if (!visibleClinics.length) {
+        clinicLayerRef.current?.clearLayers();
+        return;
+      }
+
+      let clinicGroup = clinicLayerRef.current;
+      if (!clinicGroup) {
+        clinicGroup = await markerClusterGroup(leaflet, {
+          chunkedLoading: true,
+          maxClusterRadius: 50,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+        });
+        if (cancelled || leafletMapRef.current !== leafletMap) return;
+        clinicLayerRef.current = clinicGroup;
+        leafletMap.addLayer(clinicGroup);
+      }
+
+      clinicGroup.clearLayers();
+      const clinicIcon = createMarkerIcon(leaflet, OSM_PALETTE, 'clinic');
+      visibleClinics.forEach((clinic) => {
+        const marker = leaflet.marker([clinic.latitude, clinic.longitude], { icon: clinicIcon });
+        marker.bindTooltip(escapeHtml(clinic.name), {
+          direction: 'top',
+          offset: POPUP_ANCHOR,
+          className: 'vet-label',
+        });
+        marker.bindPopup(clinicPopupHtml(clinic), { maxWidth: 280 });
+        clinicGroup.addLayer(marker);
+      });
+    }
+
+    void drawClinics();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, visibleClinics, leafletRef, leafletMapRef, clinicLayerRef]);
   useEffect(() => {
     const L = leafletRef.current;
     const map = leafletMapRef.current;

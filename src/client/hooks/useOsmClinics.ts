@@ -23,9 +23,8 @@ export const osmKeys = {
  * has not should be paying for it — theirs or ours.
  *
  * `staleTime: Infinity` for the session: a clinic mapped in OpenStreetMap this morning
- * does not move this afternoon, and re-asking on every remount would be the one thing a
- * public mirror would be right to rate-limit. `retry: false` because the three mirrors
- * inside `fetchOsmClinics` are already the retry.
+ * does not move this afternoon. The Vetify server owns the persistent cache and mirror
+ * fallback, so the browser only needs one request and does not retry a 503 itself.
  */
 export function useOsmClinics(enabled: boolean) {
   return useQuery<OsmClinic[]>({

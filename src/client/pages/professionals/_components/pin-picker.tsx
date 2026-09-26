@@ -1,7 +1,8 @@
 import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
 import { toMapVets } from '@/components/map-prof-vet/to-map-vets';
 import { vetLabel } from '@/components/map-prof-vet/vet-label';
-import { MapStyles } from '@/components/vetmap/map-styles';
+import '@/components/vetmap/map.css';
+import { markerClusterGroup } from '@/components/vetmap/marker-cluster';
 import {
   createMarkerIcon,
   OSM_PALETTE,
@@ -194,15 +195,10 @@ export default function PinPicker({
     if (!mapReady || !map.current) return;
     let cancelled = false;
     void import('leaflet').then(async ({ default: L }) => {
-      await import('leaflet.markercluster');
       if (cancelled || !map.current) return;
       referenceCluster.current?.remove();
-      const leafletWithClusters = L as typeof L & {
-        markerClusterGroup?: () => import('leaflet').LayerGroup;
-      };
-      const cluster = leafletWithClusters.markerClusterGroup
-        ? leafletWithClusters.markerClusterGroup()
-        : L.layerGroup();
+      const cluster = await markerClusterGroup(L);
+      if (cancelled || !map.current) return;
       cluster.addTo(map.current);
       const clinicIcon = createMarkerIcon(L, OSM_PALETTE, 'clinic');
       const vets = toMapVets(directory.data?.items ?? []);
@@ -239,23 +235,6 @@ export default function PinPicker({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <MapStyles />
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        crossOrigin=""
-      />
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-        crossOrigin=""
-      />
-      <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-        crossOrigin=""
-      />
-
       <div className="relative min-h-[28rem] w-full overflow-hidden rounded-xl border border-slate-200 sm:h-[68vh] sm:min-h-[32rem]">
         <div ref={hostRef} className="absolute inset-0" />
 

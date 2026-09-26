@@ -1,0 +1,35 @@
+@import 'leaflet/dist/leaflet.css';
+
+.vet-label {
+  background: white !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 8px !important;
+  padding: 3px 8px !important;
+  font-family: system-ui, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1e40af !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+  pointer-events: none !important;
+}
+
+.vet-label::before {
+  display: none !important;
+}
+
+.vetify-label {
+  border-color: #99f6e4 !important;
+  color: #0f766e !important;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.18) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
