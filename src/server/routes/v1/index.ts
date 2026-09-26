@@ -6,6 +6,7 @@ import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
 import blogsRoute from './blogs.route';
 import chatRoute from './chat.route';
+import clinicsRoute from './clinics.route';
 import messagesRoute from './messages.route';
 import notificationsRoute from './notifications.route';
 import professionalsRoute from './professionals.route';
@@ -29,6 +30,7 @@ router.get('/health', (_req, res) => {
 });
 
 router.use('/chat', chatRoute);
+router.use('/clinics', clinicsRoute);
 router.use('/auth', authRoute);
 router.use('/blogs', blogsRoute);
 router.use('/appointments', appointmentsRoute);

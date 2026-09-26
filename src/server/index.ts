@@ -5,6 +5,7 @@ import { env, isProduction, isTest } from './config/env';
 import { ensureIndexes } from './models';
 import { attachRealtime } from './realtime/socket';
 import { startCompletionScanner } from './services/appointment-completion.service';
+import { startOsmClinicRefresh } from './services/osm-clinics.service';
 import { startReminderScanner } from './services/reminders.service';
 
 /**
@@ -40,6 +41,8 @@ async function main() {
   // Flips confirmed bookings to completed once their time has passed, same conditions.
   if (dbUp && !isTest) startCompletionScanner();
 
+  const stopOsmClinicRefresh = dbUp && !isTest ? startOsmClinicRefresh() : () => undefined;
+
   const app = createApp();
   const server = app.listen(env.PORT, () => {
     console.log(`[server] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
@@ -53,6 +56,7 @@ async function main() {
   // connection mid-write.
   const shutdown = async (signal: string) => {
     console.log(`\n[server] ${signal} received, shutting down`);
+    stopOsmClinicRefresh();
     await io.close();
     server.close(async () => {
       await disconnectDb();

@@ -74,6 +74,8 @@ export function useMapMarkers({
     const L = leafletRef.current;
     const map = leafletMapRef.current;
     if (!ready || !L || !map) return;
+    const leaflet = L;
+    const leafletMap = map;
 
     let cancelled = false;
 
@@ -85,21 +87,21 @@ export function useMapMarkers({
 
       let clinicGroup = clinicLayerRef.current;
       if (!clinicGroup) {
-        clinicGroup = await markerClusterGroup(L, {
+        clinicGroup = await markerClusterGroup(leaflet, {
           chunkedLoading: true,
           maxClusterRadius: 50,
           spiderfyOnMaxZoom: true,
           showCoverageOnHover: false,
         });
-        if (cancelled || leafletMapRef.current !== map) return;
+        if (cancelled || leafletMapRef.current !== leafletMap) return;
         clinicLayerRef.current = clinicGroup;
-        map.addLayer(clinicGroup);
+        leafletMap.addLayer(clinicGroup);
       }
 
       clinicGroup.clearLayers();
-      const clinicIcon = createMarkerIcon(L, OSM_PALETTE, 'clinic');
+      const clinicIcon = createMarkerIcon(leaflet, OSM_PALETTE, 'clinic');
       visibleClinics.forEach((clinic) => {
-        const marker = L.marker([clinic.latitude, clinic.longitude], { icon: clinicIcon });
+        const marker = leaflet.marker([clinic.latitude, clinic.longitude], { icon: clinicIcon });
         marker.bindTooltip(escapeHtml(clinic.name), {
           direction: 'top',
           offset: POPUP_ANCHOR,
