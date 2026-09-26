@@ -70,29 +70,38 @@ function toClinic(element: OverpassElement): OsmClinic[] {
 }
 
 export async function fetchOsmClinics(fetcher: Fetcher = fetch): Promise<OsmClinic[]> {
+  const failures: string[] = [];
   for (const endpoint of ENDPOINTS) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), OVERPASS_TIMEOUT_MS);
     try {
       const response = await fetcher(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Vetify/1.0 (support.vetify@gmail.com)',
+        },
         body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
         signal: controller.signal,
       });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        failures.push(`${endpoint}: HTTP ${response.status}`);
+        continue;
+      }
 
       const data = (await response.json()) as { elements?: OverpassElement[] };
       return (data.elements ?? []).flatMap(toClinic);
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.warn(`[osm] Overpass fetch failed for ${endpoint}: ${(error as Error).message}`);
-      }
+      const reason =
+        (error as Error).name === 'AbortError' ? 'timed out' : (error as Error).message;
+      failures.push(`${endpoint}: ${reason}`);
     } finally {
       clearTimeout(timeout);
     }
   }
 
+  console.warn(`[osm] all Overpass mirrors failed: ${failures.join('; ')}`);
   throw new AppError(503, 'Clinic data is temporarily unavailable.');
 }
 
