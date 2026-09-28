@@ -39,7 +39,6 @@ export default function NotificationsForm({ notifications }: { notifications: No
         checked={draft.enabled}
         onChange={(v) => setDraft((d) => ({ ...d, enabled: v }))}
         label="Push alerts"
-        desc="Turn every notification on or off."
       />
 
       <div className={`space-y-2 ${dependent}`}>

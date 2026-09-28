@@ -29,7 +29,7 @@ export default function PrivacyForm({ privacy }: { privacy: Privacy }) {
         checked={draft.analyticsOptOut}
         onChange={(v) => setDraft((d) => ({ ...d, analyticsOptOut: v }))}
         label="Opt out of analytics"
-        desc="Stop sharing anonymous usage data that helps improve Vetify."
+        desc="Stop sharing anonymous usage data."
       />
 
       <div className="space-y-2">

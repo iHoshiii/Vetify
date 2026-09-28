@@ -38,12 +38,7 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
-        <div>
-          <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
-          <p className="text-sm text-slate-500">
-            Choose what Vetify tells you and what it keeps private.
-          </p>
-        </div>
+        <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
 
         {isLoading && <p className="px-1 text-sm text-slate-500">Loading your settings…</p>}
         {isError && (
@@ -60,7 +55,7 @@ export default function SettingsPage() {
             <SettingRow label="Privacy" summary={privacySummary} {...row(1)}>
               <PrivacyForm privacy={prefs.privacy} />
             </SettingRow>
-            <SettingRow label="Account" summary="Your name, photo, and password" {...row(2)}>
+            <SettingRow label="Account" summary="" {...row(2)}>
               <div className="space-y-6">
                 <ProfileForm />
                 <div className="border-t border-slate-100 pt-5">
