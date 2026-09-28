@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useAccount';
+import AvatarPicker from './AvatarPicker';
 import { SaveRow } from './controls';
 
 const FIELD =
@@ -11,27 +12,19 @@ export default function ProfileForm() {
   const { user } = useAuth();
   const mutation = useUpdateProfile();
   const [name, setName] = useState(user?.name ?? '');
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? '');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    mutation.mutate({ name: name.trim(), avatarUrl: avatarUrl.trim() });
+    mutation.mutate({ name: name.trim(), avatarUrl });
   };
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <AvatarPicker name={name || user?.name || '?'} value={avatarUrl} onChange={setAvatarUrl} />
       <label className="block space-y-1">
         <span className="text-sm font-bold text-slate-700">Name</span>
         <input value={name} onChange={(e) => setName(e.target.value)} className={FIELD} />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-sm font-bold text-slate-700">Profile picture URL</span>
-        <input
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://…"
-          className={FIELD}
-        />
       </label>
       <SaveRow
         pending={mutation.isPending}
