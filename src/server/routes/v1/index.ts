@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { dbStatus } from '../../config/db';
+import accountRoute from './account.route';
 import adminRoute from './admin';
 import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
@@ -37,6 +38,7 @@ router.use('/appointments', appointmentsRoute);
 router.use('/messages', messagesRoute);
 router.use('/notifications', notificationsRoute);
 router.use('/professionals', professionalsRoute);
+router.use('/account', accountRoute);
 router.use('/admin', adminRoute);
 
 export default router;

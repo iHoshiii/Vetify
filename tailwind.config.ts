@@ -92,6 +92,16 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(20px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        /* Modal backdrop fade */
+        fadeIn: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        /* Modal card pop with a slight overshoot */
+        popIn: {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         'gradient-shift': 'gradientShift 6s ease infinite',
@@ -101,6 +111,8 @@ const config: Config = {
         'scroll-bounce': 'scrollBounce 1.4s ease-in-out infinite',
         shimmer: 'shimmer 0.55s ease-in-out',
         'fade-up': 'fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both',
+        'fade-in': 'fadeIn 0.15s ease-out both',
+        'pop-in': 'popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both',
       },
       // Custom shadow tokens
       boxShadow: {

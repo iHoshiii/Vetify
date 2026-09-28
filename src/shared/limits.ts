@@ -426,3 +426,15 @@ export const NOTIFICATION_PAGE_SIZE_MAX = 50;
 
 // How many messages one network may send in a minute, so a wedged client cannot flood a thread.
 export const MESSAGE_SENDS_PER_IP_PER_MINUTE = 100;
+
+// How many accounts one person may block; high enough to never bind real use, low enough that the list stays a field.
+export const PREFERENCES_MAX_BLOCKED = 200;
+
+// The square edge an uploaded profile photo is scaled to in the browser before it is stored inline on the account.
+export const AVATAR_MAX_EDGE = 256;
+
+// Byte ceiling for that scaled JPEG; the browser steps quality down to fit, so this only backstops a client that skips the scaling.
+export const AVATAR_MAX_BYTES = 150_000;
+
+// Longest the stored data URL may be: the JPEG above is base64 (about four thirds the bytes) plus a short prefix, with headroom.
+export const AVATAR_URL_MAX_CHARS = 220_000;

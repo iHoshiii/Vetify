@@ -45,6 +45,7 @@ import ProfessionalSettingsPage from '@/pages/professionals/settings-page';
 import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
+import SettingsPage from '@/pages/settings/settings-page';
 import SignupPage from '@/pages/signup/signup-page';
 import TermsPage from '@/pages/terms/terms-page';
 
@@ -199,6 +200,14 @@ export default function App() {
          */}
         <Route path="professionals/apply/:token" element={<ProfessionalInvitePage />} />
         <Route path="services" element={<ServicesPage />} />
+        <Route
+          path="settings"
+          element={
+            <RequireAuth>
+              <SettingsPage />
+            </RequireAuth>
+          }
+        />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="*" element={<NotFoundPage />} />

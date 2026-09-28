@@ -3,6 +3,7 @@ import {
   USER_ROLES,
   USER_STATUSES,
   type AuthProvider,
+  type UserPreferences,
   type UserRole,
   type UserStatus,
 } from '@shared/schemas';
@@ -42,6 +43,8 @@ export type UserDocument = {
   // When a suspension runs out. Null on a ban, which never does, and on an account
   // in good standing.
   statusUntil: Date | null;
+  // Notification and privacy settings the account edits from its settings page. Absent on accounts saved before the field; reads fall back to defaults.
+  preferences: UserPreferences;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -46,6 +46,16 @@ describe('the OpenStreetMap clinic cache', () => {
     const first = await getOsmClinics({ fetcher });
 
     expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenNthCalledWith(
+      1,
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/json',
+          'User-Agent': 'Vetify/1.0 (support.vetify@gmail.com)',
+        }),
+      })
+    );
     expect(first).toMatchObject({ stale: false });
     expect(first.items).toEqual([
       expect.objectContaining({ id: 'node/42', name: 'Mabuhay Animal Clinic' }),
