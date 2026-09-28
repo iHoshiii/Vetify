@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useAccount';
+import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import AvatarPicker from './AvatarPicker';
 import { SaveRow } from './controls';
 
@@ -13,6 +14,9 @@ export default function ProfileForm() {
   const mutation = useUpdateProfile();
   const [name, setName] = useState(user?.name ?? '');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
+
+  const dirty = name !== (user?.name ?? '') || avatarUrl !== (user?.avatarUrl ?? null);
+  useUnsavedGuard(dirty);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
