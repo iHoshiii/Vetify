@@ -13,6 +13,7 @@ import {
   REVIEW_REPORT_REASON_MAX,
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
+  AVATAR_URL_MAX_CHARS,
   BLOG_MAX_TAGS,
   BLOG_PAGE_SIZE,
   BLOG_PAGE_SIZE_MAX,
@@ -1573,6 +1574,7 @@ export const accountProfileUpdateSchema = z
     avatarUrl: z
       .string()
       .trim()
+      .max(AVATAR_URL_MAX_CHARS, 'Profile picture is too large')
       .url('Profile picture must be a valid URL')
       .or(z.literal(''))
       .nullish()
