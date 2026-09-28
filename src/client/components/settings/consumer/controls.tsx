@@ -1,37 +1,24 @@
-import { ChevronDown } from 'lucide-react';
-import type { ReactNode } from 'react';
-
-export interface SectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
-}
-
-// The accordion row every settings section shares; children mount only while open, so a form seeds fresh from the latest data each time.
+// A tappable row that opens its settings section in a popup.
 export function SettingRow({
   label,
   summary,
-  isExpanded,
-  onToggle,
-  children,
-}: SectionProps & { label: string; summary: string; children: ReactNode }) {
+  onOpen,
+}: {
+  label: string;
+  summary: string;
+  onOpen: () => void;
+}) {
   return (
-    <div className="border-b border-slate-100 last:border-0">
-      <button
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-slate-50"
-      >
-        <span className="min-w-0">
-          <span className="block text-base font-bold text-slate-800">{label}</span>
-          {summary && <span className="block truncate text-sm text-slate-500">{summary}</span>}
-        </span>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-      {isExpanded && <div className="space-y-4 px-6 pb-5">{children}</div>}
-    </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors last:border-0 hover:bg-slate-50"
+    >
+      <span className="min-w-0">
+        <span className="block text-base font-bold text-slate-800">{label}</span>
+        {summary && <span className="block truncate text-sm text-slate-500">{summary}</span>}
+      </span>
+    </button>
   );
 }
 

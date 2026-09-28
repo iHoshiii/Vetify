@@ -1,4 +1,5 @@
 import { SettingRow } from '@/components/settings/consumer/controls';
+import { SettingsModal } from '@/components/settings/consumer/SettingsModal';
 import NotificationsForm from '@/components/settings/consumer/NotificationsForm';
 import PrivacyForm from '@/components/settings/consumer/PrivacyForm';
 import ProfileForm from '@/components/settings/consumer/ProfileForm';
@@ -12,12 +13,7 @@ export default function SettingsPage() {
   useDocumentTitle('Settings', 'Your notifications and privacy, in one place.');
 
   const { data: prefs, isLoading, isError } = usePreferences();
-  const [expanded, setExpanded] = useState<number | null>(null);
-
-  const row = (index: number) => ({
-    isExpanded: expanded === index,
-    onToggle: () => setExpanded(expanded === index ? null : index),
-  });
+  const [active, setActive] = useState<number | null>(null);
 
   const notif = prefs?.notifications;
   const notifSummary = !notif
@@ -50,24 +46,38 @@ export default function SettingsPage() {
         <div className="-mx-6 border-t border-slate-100">
           {prefs && (
             <>
-              <SettingRow label="Notifications" summary={notifSummary} {...row(0)}>
-                <NotificationsForm notifications={prefs.notifications} />
-              </SettingRow>
-              <SettingRow label="Privacy" summary={privacySummary} {...row(1)}>
-                <PrivacyForm privacy={prefs.privacy} />
-              </SettingRow>
+              <SettingRow
+                label="Notifications"
+                summary={notifSummary}
+                onOpen={() => setActive(0)}
+              />
+              <SettingRow label="Privacy" summary={privacySummary} onOpen={() => setActive(1)} />
             </>
           )}
-          <SettingRow label="Account" summary="" {...row(2)}>
-            <div className="space-y-6">
-              <ProfileForm />
-              <div className="border-t border-slate-100 pt-5">
-                <PasswordForm />
-              </div>
-            </div>
-          </SettingRow>
+          <SettingRow label="Account" summary="" onOpen={() => setActive(2)} />
         </div>
       </div>
+
+      {prefs && active === 0 && (
+        <SettingsModal title="Notifications" onClose={() => setActive(null)}>
+          <NotificationsForm notifications={prefs.notifications} />
+        </SettingsModal>
+      )}
+      {prefs && active === 1 && (
+        <SettingsModal title="Privacy" onClose={() => setActive(null)}>
+          <PrivacyForm privacy={prefs.privacy} />
+        </SettingsModal>
+      )}
+      {active === 2 && (
+        <SettingsModal title="Account" onClose={() => setActive(null)}>
+          <div className="space-y-6">
+            <ProfileForm />
+            <div className="border-t border-slate-100 pt-5">
+              <PasswordForm />
+            </div>
+          </div>
+        </SettingsModal>
+      )}
     </div>
   );
 }
