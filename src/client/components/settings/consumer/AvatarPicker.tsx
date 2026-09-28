@@ -69,7 +69,7 @@ export default function AvatarPicker({
           )}
         </div>
         <p className={`text-xs ${error ? 'font-semibold text-rose-700' : 'text-slate-500'}`}>
-          {error || 'JPG or PNG. We shrink it to a small square.'}
+          {error || 'JPG or PNG.'}
         </p>
       </div>
       <input ref={inputRef} type="file" accept="image/*" onChange={pick} className="hidden" />

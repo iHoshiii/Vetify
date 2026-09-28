@@ -15,6 +15,7 @@ import {
   findUsersByIds,
   findUserWithPasswordById,
   getPreferences,
+  revokeAllRefreshTokensForUser,
   toPublicUser,
   updatePreferences,
   updateUser,
@@ -79,6 +80,8 @@ router.post('/password', validate(passwordChangeSchema), async (req, res) => {
   const matches = await comparePassword(account.password, currentPassword);
   if (!matches) return fail(res, 400, 'Your current password is not correct.');
   await updateUserPassword(account._id, newPassword);
+  // a new password must end every existing session so a stolen refresh token cannot outlive the change
+  await revokeAllRefreshTokensForUser(account._id);
   ok(res, { changed: true });
 });
 

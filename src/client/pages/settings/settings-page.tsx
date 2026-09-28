@@ -1,4 +1,5 @@
 import { SettingRow } from '@/components/settings/consumer/controls';
+import { SettingsModal } from '@/components/settings/consumer/SettingsModal';
 import NotificationsForm from '@/components/settings/consumer/NotificationsForm';
 import PrivacyForm from '@/components/settings/consumer/PrivacyForm';
 import ProfileForm from '@/components/settings/consumer/ProfileForm';
@@ -12,12 +13,7 @@ export default function SettingsPage() {
   useDocumentTitle('Settings', 'Your notifications and privacy, in one place.');
 
   const { data: prefs, isLoading, isError } = usePreferences();
-  const [expanded, setExpanded] = useState<number | null>(null);
-
-  const row = (index: number) => ({
-    isExpanded: expanded === index,
-    onToggle: () => setExpanded(expanded === index ? null : index),
-  });
+  const [active, setActive] = useState<number | null>(null);
 
   const notif = prefs?.notifications;
   const notifSummary = !notif
@@ -38,39 +34,50 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
-        <div>
-          <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
-          <p className="text-sm text-slate-500">
-            Choose what Vetify tells you and what it keeps private.
-          </p>
-        </div>
+        <h1 className="text-base font-black tracking-tight text-slate-900">Settings</h1>
 
         {isLoading && <p className="px-1 text-sm text-slate-500">Loading your settings…</p>}
         {isError && (
           <p className="px-1 text-sm font-semibold text-rose-700">
-            Your settings did not load. Refresh to try again.
+            Your notifications and privacy did not load. Refresh to try again.
           </p>
         )}
 
-        {prefs && (
-          <div className="-mx-6 border-t border-slate-100">
-            <SettingRow label="🔔 Notifications" summary={notifSummary} {...row(0)}>
-              <NotificationsForm notifications={prefs.notifications} />
-            </SettingRow>
-            <SettingRow label="🔒 Privacy" summary={privacySummary} {...row(1)}>
-              <PrivacyForm privacy={prefs.privacy} />
-            </SettingRow>
-            <SettingRow label="👤 Account" summary="Your name, photo, and password" {...row(2)}>
-              <div className="space-y-6">
-                <ProfileForm />
-                <div className="border-t border-slate-100 pt-5">
-                  <PasswordForm />
-                </div>
-              </div>
-            </SettingRow>
-          </div>
-        )}
+        <div className="-mx-6 border-t border-slate-100">
+          {prefs && (
+            <>
+              <SettingRow
+                label="Notifications"
+                summary={notifSummary}
+                onOpen={() => setActive(0)}
+              />
+              <SettingRow label="Privacy" summary={privacySummary} onOpen={() => setActive(1)} />
+            </>
+          )}
+          <SettingRow label="Account" summary="" onOpen={() => setActive(2)} />
+        </div>
       </div>
+
+      {prefs && active === 0 && (
+        <SettingsModal title="Notifications" onClose={() => setActive(null)}>
+          <NotificationsForm notifications={prefs.notifications} />
+        </SettingsModal>
+      )}
+      {prefs && active === 1 && (
+        <SettingsModal title="Privacy" onClose={() => setActive(null)}>
+          <PrivacyForm privacy={prefs.privacy} />
+        </SettingsModal>
+      )}
+      {active === 2 && (
+        <SettingsModal title="Account" onClose={() => setActive(null)}>
+          <div className="space-y-6">
+            <ProfileForm />
+            <div className="border-t border-slate-100 pt-5">
+              <PasswordForm />
+            </div>
+          </div>
+        </SettingsModal>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { SaveRow, Toggle } from './controls';
 import { useSavePreferences } from './save-preferences';
+import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 
 type Notifications = UserPreferences['notifications'];
 type CategoryKey = keyof Notifications['categories'];
@@ -19,6 +20,7 @@ const TIME_FIELD =
 export default function NotificationsForm({ notifications }: { notifications: Notifications }) {
   const { pending, error, saved, save } = useSavePreferences();
   const [draft, setDraft] = useState<Notifications>(notifications);
+  useUnsavedGuard(JSON.stringify(draft) !== JSON.stringify(notifications));
 
   const setCategory = (key: CategoryKey, value: boolean) =>
     setDraft((d) => ({ ...d, categories: { ...d.categories, [key]: value } }));
@@ -39,7 +41,6 @@ export default function NotificationsForm({ notifications }: { notifications: No
         checked={draft.enabled}
         onChange={(v) => setDraft((d) => ({ ...d, enabled: v }))}
         label="Push alerts"
-        desc="Turn every notification on or off."
       />
 
       <div className={`space-y-2 ${dependent}`}>
