@@ -142,6 +142,20 @@ export async function updatePreferences(
   return next;
 }
 
+// The password hash sits off the public projection, so a credential check reads the whole document by id.
+export function findUserWithPasswordById(id: string | ObjectId): Promise<UserDocument | null> {
+  return usersCollection().findOne({ _id: toObjectId(id) });
+}
+
+// Writes a new password hash once the caller has proven the current one.
+export async function updateUserPassword(id: string | ObjectId, plain: string): Promise<boolean> {
+  const result = await usersCollection().updateOne(
+    { _id: toObjectId(id) },
+    { $set: { password: await hashPassword(plain), updatedAt: new Date() } }
+  );
+  return result.matchedCount > 0;
+}
+
 /**
  * How many admins can still sign in. Guards the demote and ban paths so the last
  * one standing cannot remove their own access and leave the dashboard

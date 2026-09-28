@@ -7,10 +7,12 @@ export {
   findUsersByIds,
   findUsersPaginated,
   findUserWithPasswordByEmail,
+  findUserWithPasswordById,
   getPreferences,
   insertUser,
   updatePreferences,
   updateUser,
+  updateUserPassword,
   usersCollection,
   type FindUsersOptions,
 } from './repository';
