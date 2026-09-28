@@ -54,13 +54,13 @@ export default function SettingsPage() {
 
         {prefs && (
           <div className="-mx-6 border-t border-slate-100">
-            <SettingRow label="🔔 Notifications" summary={notifSummary} {...row(0)}>
+            <SettingRow label="Notifications" summary={notifSummary} {...row(0)}>
               <NotificationsForm notifications={prefs.notifications} />
             </SettingRow>
-            <SettingRow label="🔒 Privacy" summary={privacySummary} {...row(1)}>
+            <SettingRow label="Privacy" summary={privacySummary} {...row(1)}>
               <PrivacyForm privacy={prefs.privacy} />
             </SettingRow>
-            <SettingRow label="👤 Account" summary="Your name, photo, and password" {...row(2)}>
+            <SettingRow label="Account" summary="Your name, photo, and password" {...row(2)}>
               <div className="space-y-6">
                 <ProfileForm />
                 <div className="border-t border-slate-100 pt-5">

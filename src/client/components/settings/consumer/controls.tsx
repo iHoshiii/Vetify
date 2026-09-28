@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export interface SectionProps {
@@ -22,7 +22,7 @@ export function SettingRow({
       >
         <span className="min-w-0">
           <span className="block text-base font-bold text-slate-800">{label}</span>
-          <span className="block truncate text-sm text-slate-500">{summary}</span>
+          {summary && <span className="block truncate text-sm text-slate-500">{summary}</span>}
         </span>
         <ChevronDown
           className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 ${
@@ -49,18 +49,8 @@ export function SaveRow({
 }) {
   return (
     <>
-      {error && (
-        <p className="flex items-start gap-1.5 text-xs font-semibold text-rose-700">
-          <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
-          {error}
-        </p>
-      )}
-      {saved && (
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          Saved.
-        </p>
-      )}
+      {error && <p className="text-xs font-semibold text-rose-700">{error}</p>}
+      {saved && <p className="text-xs font-semibold text-emerald-700">Saved.</p>}
       <button
         type="submit"
         disabled={pending}
