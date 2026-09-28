@@ -10,6 +10,7 @@ const FIELD =
 export default function PasswordForm() {
   const { user } = useAuth();
   const mutation = useChangePassword();
+  const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
 
@@ -19,6 +20,19 @@ export default function PasswordForm() {
       <p className="px-1 text-sm text-slate-500">
         You sign in with {user.provider}, so there is no password to change here.
       </p>
+    );
+  }
+
+  // Collapsed by default so the fields are not sitting open every time the section is.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+      >
+        Change password
+      </button>
     );
   }
 
@@ -35,8 +49,24 @@ export default function PasswordForm() {
     );
   };
 
+  const close = () => {
+    setOpen(false);
+    setCurrent('');
+    setNext('');
+  };
+
   return (
     <form onSubmit={submit} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-bold text-slate-700">Change password</span>
+        <button
+          type="button"
+          onClick={close}
+          className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
+        >
+          Cancel
+        </button>
+      </div>
       <label className="block space-y-1">
         <span className="text-sm font-bold text-slate-700">Current password</span>
         <input
@@ -61,7 +91,7 @@ export default function PasswordForm() {
         pending={mutation.isPending}
         error={mutation.error?.message ?? null}
         saved={mutation.isSuccess}
-        label="Change password"
+        label="Update password"
       />
     </form>
   );
