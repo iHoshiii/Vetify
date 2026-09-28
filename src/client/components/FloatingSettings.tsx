@@ -1,10 +1,8 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useState, useRef, useEffect } from 'react';
-import { Settings, LogOut } from 'lucide-react';
-import AccountSection from './settings/sections/AccountSection';
+import { Settings, LogOut, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import PreferencesSection from './settings/sections/PreferencesSection';
-import NotificationsSection from './settings/sections/NotificationsSection';
-import PrivacySection from './settings/sections/PrivacySection';
 import SupportSection from './settings/sections/SupportSection';
 import ConsoleLinks from './settings/console-links';
 import LogoutModal from './settings/LogoutModal';
@@ -52,29 +50,29 @@ export default function FloatingSettings() {
             </div>
           </div>
           <div className="flex flex-col">
-            <AccountSection
+            {/* Account, notifications, and privacy moved to the full /settings page; the tray links there rather than holding those forms in 320px. */}
+            <Link
+              to="/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-3">
+                <SlidersHorizontal size={18} className="text-slate-500" />
+                <span className="text-sm font-semibold text-slate-800">Settings</span>
+              </span>
+              <ChevronRight size={16} className="text-slate-400" />
+            </Link>
+            <PreferencesSection
               isExpanded={expandedSection === 0}
               onToggle={() => setExpandedSection(expandedSection === 0 ? null : 0)}
-            />
-            <PreferencesSection
-              isExpanded={expandedSection === 1}
-              onToggle={() => setExpandedSection(expandedSection === 1 ? null : 1)}
               onOpenLanguageModal={() => {
                 setIsOpen(false);
                 setShowLanguageModal(true);
               }}
             />
-            <NotificationsSection
-              isExpanded={expandedSection === 2}
-              onToggle={() => setExpandedSection(expandedSection === 2 ? null : 2)}
-            />
-            <PrivacySection
-              isExpanded={expandedSection === 3}
-              onToggle={() => setExpandedSection(expandedSection === 3 ? null : 3)}
-            />
             <SupportSection
-              isExpanded={expandedSection === 4}
-              onToggle={() => setExpandedSection(expandedSection === 4 ? null : 4)}
+              isExpanded={expandedSection === 1}
+              onToggle={() => setExpandedSection(expandedSection === 1 ? null : 1)}
             />
           </div>
 
