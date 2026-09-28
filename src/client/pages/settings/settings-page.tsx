@@ -1,6 +1,8 @@
 import { SettingRow } from '@/components/settings/consumer/controls';
 import NotificationsForm from '@/components/settings/consumer/NotificationsForm';
 import PrivacyForm from '@/components/settings/consumer/PrivacyForm';
+import ProfileForm from '@/components/settings/consumer/ProfileForm';
+import PasswordForm from '@/components/settings/consumer/PasswordForm';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useState } from 'react';
@@ -57,6 +59,14 @@ export default function SettingsPage() {
             </SettingRow>
             <SettingRow label="🔒 Privacy" summary={privacySummary} {...row(1)}>
               <PrivacyForm privacy={prefs.privacy} />
+            </SettingRow>
+            <SettingRow label="👤 Account" summary="Your name, photo, and password" {...row(2)}>
+              <div className="space-y-6">
+                <ProfileForm />
+                <div className="border-t border-slate-100 pt-5">
+                  <PasswordForm />
+                </div>
+              </div>
             </SettingRow>
           </div>
         )}
