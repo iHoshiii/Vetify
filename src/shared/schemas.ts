@@ -25,6 +25,7 @@ import {
   MODERATION_REASON_MIN,
   NOTIFICATION_PAGE_SIZE,
   NOTIFICATION_PAGE_SIZE_MAX,
+  PREFERENCES_MAX_BLOCKED,
   THREAD_PAGE_SIZE,
   THREAD_PAGE_SIZE_MAX,
   PROFESSIONAL_AVAILABILITY_STATUSES,
@@ -1508,3 +1509,59 @@ export type MessageSendInput = z.input<typeof messageSendSchema>;
 export type MessageEditInput = z.input<typeof messageEditSchema>;
 export type ThreadListQuery = z.output<typeof threadListQuerySchema>;
 export type MessageListQuery = z.output<typeof messageListQuerySchema>;
+
+// Consumer notification and privacy settings, stored on the user and edited from the account settings page.
+export const NOTIFICATION_CATEGORIES = ['bookings', 'reminders', 'reviews'] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+// Manila-local quiet hours; the flag turns the window on, the two times bound it.
+const quietHoursSchema = z.object({
+  enabled: z.boolean(),
+  start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm'),
+  end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm'),
+});
+
+const notificationPrefsSchema = z.object({
+  enabled: z.boolean(),
+  categories: z.object({
+    bookings: z.boolean(),
+    reminders: z.boolean(),
+    reviews: z.boolean(),
+  }),
+  dnd: quietHoursSchema,
+});
+
+const privacyPrefsSchema = z.object({
+  analyticsOptOut: z.boolean(),
+  blockedUserIds: z.array(objectIdSchema).max(PREFERENCES_MAX_BLOCKED),
+});
+
+// The whole row the GET returns; older accounts read the default below until they first save.
+export const userPreferencesSchema = z.object({
+  notifications: notificationPrefsSchema,
+  privacy: privacyPrefsSchema,
+});
+export type UserPreferences = z.output<typeof userPreferencesSchema>;
+
+// A PATCH replaces whole sections rather than deep-merging, so a present section carries its full contents; at least one section required so an empty body cannot report success.
+export const userPreferencesUpdateSchema = z
+  .object({
+    notifications: notificationPrefsSchema.optional(),
+    privacy: privacyPrefsSchema.optional(),
+  })
+  .refine((patch) => Object.keys(patch).length > 0, {
+    message: 'Include a section to update',
+  });
+export type UserPreferencesUpdate = z.output<typeof userPreferencesUpdateSchema>;
+
+// One source of the starting values for both halves: insert writes this, and reads fall back to it for accounts saved before preferences existed.
+export function defaultUserPreferences(): UserPreferences {
+  return {
+    notifications: {
+      enabled: true,
+      categories: { bookings: true, reminders: true, reviews: true },
+      dnd: { enabled: false, start: '22:00', end: '07:00' },
+    },
+    privacy: { analyticsOptOut: false, blockedUserIds: [] },
+  };
+}
