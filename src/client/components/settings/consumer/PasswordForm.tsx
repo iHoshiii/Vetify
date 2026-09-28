@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { passwordChangeSchema } from '@shared/schemas';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useChangePassword } from '@/hooks/useAccount';
 import { SaveRow } from './controls';
@@ -13,6 +14,8 @@ export default function PasswordForm() {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Provider accounts sign in elsewhere and carry no password, so there is nothing to change here.
   if (user && user.provider !== 'local') {
@@ -38,12 +41,18 @@ export default function PasswordForm() {
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    const check = passwordChangeSchema.shape.newPassword.safeParse(next);
+    if (!check.success)
+      return setFormError(check.error.issues[0]?.message ?? 'Choose a stronger password.');
+    if (next.trim() !== confirm.trim()) return setFormError('The new passwords do not match.');
+    setFormError(null);
     mutation.mutate(
       { currentPassword: current, newPassword: next },
       {
         onSuccess: () => {
           setCurrent('');
           setNext('');
+          setConfirm('');
         },
       }
     );
@@ -53,6 +62,8 @@ export default function PasswordForm() {
     setOpen(false);
     setCurrent('');
     setNext('');
+    setConfirm('');
+    setFormError(null);
   };
 
   return (
