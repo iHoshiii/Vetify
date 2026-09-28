@@ -1587,7 +1587,7 @@ export type AccountProfileUpdate = z.output<typeof accountProfileUpdateSchema>;
 
 // Changing a password proves the current one first; the new one carries the same rules signup enforces.
 export const passwordChangeSchema = z.object({
-  currentPassword: z.string().min(1, 'Enter your current password'),
+  currentPassword: z.string().trim().min(1, 'Enter your current password'),
   newPassword: z
     .string()
     .trim()
