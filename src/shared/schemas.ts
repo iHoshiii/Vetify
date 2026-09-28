@@ -1565,3 +1565,33 @@ export function defaultUserPreferences(): UserPreferences {
     privacy: { analyticsOptOut: false, blockedUserIds: [] },
   };
 }
+
+// A self-service edit of the account's own name and avatar; both optional so one field can move alone, at least one required so an empty body cannot report success.
+export const accountProfileUpdateSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Name must be at least 2 characters').optional(),
+    avatarUrl: z
+      .string()
+      .trim()
+      .url('Profile picture must be a valid URL')
+      .or(z.literal(''))
+      .nullish()
+      .transform((val) => (val === '' ? null : val)),
+  })
+  .refine((patch) => patch.name !== undefined || patch.avatarUrl !== undefined, {
+    message: 'Include a field to update',
+  });
+export type AccountProfileUpdate = z.output<typeof accountProfileUpdateSchema>;
+
+// Changing a password proves the current one first; the new one carries the same rules signup enforces.
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, 'Enter your current password'),
+  newPassword: z
+    .string()
+    .trim()
+    .min(8, 'Password must be at least 8 characters long')
+    .regex(/[A-Z]/, 'Password must include an uppercase letter')
+    .regex(/[0-9]/, 'Password must include a number')
+    .regex(/[^A-Za-z0-9]/, 'Password must include a special character'),
+});
+export type PasswordChange = z.output<typeof passwordChangeSchema>;
