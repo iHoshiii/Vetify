@@ -1,5 +1,6 @@
 import { SettingRow } from '@/components/settings/consumer/controls';
 import NotificationsForm from '@/components/settings/consumer/NotificationsForm';
+import PrivacyForm from '@/components/settings/consumer/PrivacyForm';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useState } from 'react';
@@ -25,6 +26,13 @@ export default function SettingsPage() {
       } alert types`
     : 'Off';
 
+  const privacy = prefs?.privacy;
+  const privacySummary = !privacy
+    ? ''
+    : `${privacy.analyticsOptOut ? 'Analytics off' : 'Analytics on'} · ${
+        privacy.blockedUserIds.length
+      } blocked`;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6">
@@ -46,6 +54,9 @@ export default function SettingsPage() {
           <div className="-mx-6 border-t border-slate-100">
             <SettingRow label="🔔 Notifications" summary={notifSummary} {...row(0)}>
               <NotificationsForm notifications={prefs.notifications} />
+            </SettingRow>
+            <SettingRow label="🔒 Privacy" summary={privacySummary} {...row(1)}>
+              <PrivacyForm privacy={prefs.privacy} />
             </SettingRow>
           </div>
         )}

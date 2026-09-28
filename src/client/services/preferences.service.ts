@@ -18,3 +18,17 @@ export async function updatePreferences(patch: UserPreferencesUpdate): Promise<U
   });
   return preferences;
 }
+
+// The blocked list stores ids; the display needs names, so the server resolves them.
+export interface BlockedUser {
+  id: string;
+  name: string | null;
+  email: string;
+  avatarUrl: string | null;
+}
+
+// GET /api/v1/account/blocked — the caller's blocked accounts, resolved for display.
+export async function getBlockedUsers(signal?: AbortSignal): Promise<BlockedUser[]> {
+  const { blocked } = await apiFetch<{ blocked: BlockedUser[] }>('/account/blocked', { signal });
+  return blocked;
+}
