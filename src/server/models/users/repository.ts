@@ -1,5 +1,10 @@
 import { ADMIN_PAGE_SIZE } from '@shared/limits';
-import type { AdminUserSort } from '@shared/schemas';
+import {
+  defaultUserPreferences,
+  type AdminUserSort,
+  type UserPreferences,
+  type UserPreferencesUpdate,
+} from '@shared/schemas';
 import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
 
 import { getDb } from '../../config/db';
@@ -45,6 +50,7 @@ export async function insertUser(attrs: UserAttrs): Promise<User> {
     statusChangedBy: null,
     statusChangedAt: null,
     statusUntil: null,
+    preferences: defaultUserPreferences(),
     createdAt: now,
     updatedAt: now,
   };
@@ -106,6 +112,34 @@ export async function updateUser(id: string | ObjectId, patch: UserPatch): Promi
     { $set: { ...patch, updatedAt: new Date() } },
     { returnDocument: 'after', projection: WITHOUT_PASSWORD }
   );
+}
+
+// read one account's settings; falls back to defaults for accounts saved before the field existed
+export async function getPreferences(id: string | ObjectId): Promise<UserPreferences | null> {
+  const user = await usersCollection().findOne(
+    { _id: toObjectId(id) },
+    { projection: { preferences: 1 } }
+  );
+  if (!user) return null;
+  return user.preferences ?? defaultUserPreferences();
+}
+
+// replace whole sections over the current settings, so an untouched section survives and a legacy account gains the missing one
+export async function updatePreferences(
+  id: string | ObjectId,
+  patch: UserPreferencesUpdate
+): Promise<UserPreferences | null> {
+  const current = await getPreferences(id);
+  if (!current) return null;
+  const next: UserPreferences = {
+    notifications: patch.notifications ?? current.notifications,
+    privacy: patch.privacy ?? current.privacy,
+  };
+  await usersCollection().updateOne(
+    { _id: toObjectId(id) },
+    { $set: { preferences: next, updatedAt: new Date() } }
+  );
+  return next;
 }
 
 /**
