@@ -3,7 +3,7 @@ import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
-import { getPreferences, updatePreferences } from '../../models';
+import { findUsersByIds, getPreferences, toPublicUser, updatePreferences } from '../../models';
 import { fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
 
@@ -27,6 +27,14 @@ router.patch('/preferences', validate(userPreferencesUpdateSchema), async (req, 
   const preferences = await updatePreferences(actorOf(req)._id, patch);
   if (!preferences) return fail(res, 404, MISSING);
   ok(res, { preferences });
+});
+
+// GET /blocked — the accounts on the caller's block list, resolved to names the client can show.
+router.get('/blocked', async (req, res) => {
+  const preferences = await getPreferences(actorOf(req)._id);
+  if (!preferences) return fail(res, 404, MISSING);
+  const blocked = await findUsersByIds(preferences.privacy.blockedUserIds);
+  ok(res, { blocked: blocked.map(toPublicUser) });
 });
 
 export default router;
