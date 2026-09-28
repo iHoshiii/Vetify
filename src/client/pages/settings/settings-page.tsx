@@ -43,28 +43,30 @@ export default function SettingsPage() {
         {isLoading && <p className="px-1 text-sm text-slate-500">Loading your settings…</p>}
         {isError && (
           <p className="px-1 text-sm font-semibold text-rose-700">
-            Your settings did not load. Refresh to try again.
+            Your notifications and privacy did not load. Refresh to try again.
           </p>
         )}
 
-        {prefs && (
-          <div className="-mx-6 border-t border-slate-100">
-            <SettingRow label="Notifications" summary={notifSummary} {...row(0)}>
-              <NotificationsForm notifications={prefs.notifications} />
-            </SettingRow>
-            <SettingRow label="Privacy" summary={privacySummary} {...row(1)}>
-              <PrivacyForm privacy={prefs.privacy} />
-            </SettingRow>
-            <SettingRow label="Account" summary="" {...row(2)}>
-              <div className="space-y-6">
-                <ProfileForm />
-                <div className="border-t border-slate-100 pt-5">
-                  <PasswordForm />
-                </div>
+        <div className="-mx-6 border-t border-slate-100">
+          {prefs && (
+            <>
+              <SettingRow label="Notifications" summary={notifSummary} {...row(0)}>
+                <NotificationsForm notifications={prefs.notifications} />
+              </SettingRow>
+              <SettingRow label="Privacy" summary={privacySummary} {...row(1)}>
+                <PrivacyForm privacy={prefs.privacy} />
+              </SettingRow>
+            </>
+          )}
+          <SettingRow label="Account" summary="" {...row(2)}>
+            <div className="space-y-6">
+              <ProfileForm />
+              <div className="border-t border-slate-100 pt-5">
+                <PasswordForm />
               </div>
-            </SettingRow>
-          </div>
-        )}
+            </div>
+          </SettingRow>
+        </div>
       </div>
     </div>
   );
