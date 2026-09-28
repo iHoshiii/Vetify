@@ -19,7 +19,7 @@ export function SettingsModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in motion-reduce:animate-none"
     >
       <div
         ref={dialogRef}
@@ -28,7 +28,7 @@ export function SettingsModal({
         aria-label={title}
         tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none animate-pop-in motion-reduce:animate-none"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-base font-black tracking-tight text-slate-900">{title}</h2>
