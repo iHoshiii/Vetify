@@ -1,4 +1,3 @@
-import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -83,9 +82,8 @@ export default function PasswordForm() {
       <button
         type="button"
         onClick={() => setVisible((value) => !value)}
-        className="flex items-center gap-2 text-sm font-bold text-teal-800"
+        className="text-sm font-bold text-teal-800 underline decoration-teal-800/30 underline-offset-4"
       >
-        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         {visible ? 'Hide passwords' : 'Show passwords'}
       </button>
       <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">

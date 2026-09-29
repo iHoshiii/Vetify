@@ -1,5 +1,3 @@
-import { ShieldCheck, UserX } from 'lucide-react';
-
 import { useBlockedUsers, useUnblockUser } from '@/hooks/usePreferences';
 
 export default function PrivacyForm() {
@@ -8,8 +6,7 @@ export default function PrivacyForm() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
         <p className="text-sm leading-6 text-emerald-900">
           Vetify does not currently load a third-party analytics tracker, so there is no analytics
           consent switch to manage.
@@ -34,8 +31,7 @@ export default function PrivacyForm() {
       )}
       {!isLoading && !isError && blocked.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
-          <UserX className="mx-auto h-6 w-6 text-slate-400" />
-          <p className="mt-2 text-sm font-bold text-slate-700">No blocked accounts</p>
+          <p className="text-sm font-bold text-slate-700">No blocked accounts</p>
           <p className="mt-1 text-xs text-slate-500">
             You can block someone from a conversation’s options menu.
           </p>

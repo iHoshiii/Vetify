@@ -1,4 +1,3 @@
-import { Download, LogOut, UserRoundX } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,25 +55,20 @@ export default function AccountForm() {
           type="button"
           disabled={exportMutation.isPending}
           onClick={() => void download()}
-          className="flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="shrink-0 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          <Download className="h-4 w-4" />
           {exportMutation.isPending ? 'Preparing…' : 'Download'}
         </button>
       </div>
       <button
         type="button"
         onClick={() => void logout().then(() => navigate('/', { replace: true }))}
-        className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+        className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
       >
-        <LogOut className="h-4 w-4" />
         Log out
       </button>
       <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4">
-        <h3 className="flex items-center gap-2 text-sm font-black text-rose-900">
-          <UserRoundX className="h-4 w-4" />
-          Deactivate account
-        </h3>
+        <h3 className="text-sm font-black text-rose-900">Deactivate account</h3>
         <p className="mt-1 text-xs leading-5 text-rose-800">
           Blocks sign-in while preserving appointments and records. Contact support to restore the
           account.
