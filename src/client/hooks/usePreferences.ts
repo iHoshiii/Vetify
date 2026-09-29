@@ -1,4 +1,10 @@
-import { getBlockedUsers, getPreferences, updatePreferences } from '@/services/preferences.service';
+import {
+  blockUser,
+  getBlockedUsers,
+  getPreferences,
+  unblockUser,
+  updatePreferences,
+} from '@/services/preferences.service';
 import type { UserPreferences, UserPreferencesUpdate } from '@shared/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -36,5 +42,27 @@ export function useBlockedUsers(enabled = true) {
     queryFn: ({ signal }) => getBlockedUsers(signal),
     enabled,
     staleTime: STALE_TIME,
+  });
+}
+
+export function useBlockUser() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: blockUser,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: preferenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+}
+
+export function useUnblockUser() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: unblockUser,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: preferenceKeys.all });
+      void queryClient.invalidateQueries({ queryKey: preferenceKeys.blocked });
+    },
   });
 }

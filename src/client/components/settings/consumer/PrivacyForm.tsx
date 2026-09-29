@@ -1,66 +1,73 @@
-import type { UserPreferences } from '@shared/schemas';
-import { useState } from 'react';
+import { ShieldCheck, UserX } from 'lucide-react';
 
-import { useBlockedUsers } from '@/hooks/usePreferences';
-import { SaveRow, Toggle } from './controls';
-import { useSavePreferences } from './save-preferences';
+import { useBlockedUsers, useUnblockUser } from '@/hooks/usePreferences';
 
-type Privacy = UserPreferences['privacy'];
-
-export default function PrivacyForm({ privacy }: { privacy: Privacy }) {
-  const { pending, error, saved, save } = useSavePreferences();
-  const [draft, setDraft] = useState<Privacy>(privacy);
-  const { data: blocked = [], isLoading } = useBlockedUsers();
-
-  const unblock = (id: string) =>
-    setDraft((d) => ({ ...d, blockedUserIds: d.blockedUserIds.filter((x) => x !== id) }));
-
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
-    save({ privacy: draft });
-  };
-
-  // Names come from the server; a blocked account it could not resolve (since deleted) simply has no row.
-  const rows = blocked.filter((u) => draft.blockedUserIds.includes(u.id));
+export default function PrivacyForm() {
+  const { data: blocked = [], isLoading, isError, refetch } = useBlockedUsers();
+  const unblock = useUnblockUser();
 
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Toggle
-        checked={draft.analyticsOptOut}
-        onChange={(v) => setDraft((d) => ({ ...d, analyticsOptOut: v }))}
-        label="Opt out of analytics"
-        desc="Stop sharing anonymous usage data."
-      />
-
-      <div className="space-y-2">
-        <span className="block text-sm font-bold text-slate-700">Blocked accounts</span>
-        {isLoading && <p className="px-1 text-xs text-slate-500">Loading blocked accounts…</p>}
-        {!isLoading && rows.length === 0 && (
-          <p className="px-1 text-xs text-slate-500">You have not blocked anyone.</p>
-        )}
-        {rows.map((u) => (
-          <div
-            key={u.id}
-            className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5"
-          >
+    <div className="space-y-5">
+      <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+        <p className="text-sm leading-6 text-emerald-900">
+          Vetify does not currently load a third-party analytics tracker, so there is no analytics
+          consent switch to manage.
+        </p>
+      </div>
+      <div>
+        <h3 className="text-sm font-black text-slate-900">Blocked accounts</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Blocked people cannot start or continue a conversation with you. Appointment history
+          remains available.
+        </p>
+      </div>
+      {isLoading && <div className="h-16 animate-pulse rounded-xl bg-slate-100" />}
+      {isError && (
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700"
+        >
+          Retry blocked accounts
+        </button>
+      )}
+      {!isLoading && !isError && blocked.length === 0 && (
+        <div className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
+          <UserX className="mx-auto h-6 w-6 text-slate-400" />
+          <p className="mt-2 text-sm font-bold text-slate-700">No blocked accounts</p>
+          <p className="mt-1 text-xs text-slate-500">
+            You can block someone from a conversation’s options menu.
+          </p>
+        </div>
+      )}
+      <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+        {blocked.map((user) => (
+          <li key={user.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="min-w-0">
-              <span className="block truncate text-sm font-bold text-slate-700">
-                {u.name ?? u.email}
+              <span className="block truncate text-sm font-bold text-slate-800">
+                {user.name ?? user.email}
               </span>
-              <span className="block truncate text-xs text-slate-500">{u.email}</span>
+              <span className="block truncate text-xs text-slate-500">{user.email}</span>
             </span>
             <button
               type="button"
-              onClick={() => unblock(u.id)}
-              className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors hover:bg-rose-50"
+              disabled={unblock.isPending}
+              onClick={() => {
+                if (window.confirm(`Unblock ${user.name ?? user.email}?`)) unblock.mutate(user.id);
+              }}
+              className="shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
             >
               Unblock
             </button>
-          </div>
+          </li>
         ))}
-      </div>
-
-      <SaveRow pending={pending} error={error} saved={saved} label="Save privacy" />
-    </form>
+      </ul>
+      {unblock.error && (
+        <p aria-live="polite" className="text-sm font-semibold text-rose-700">
+          {unblock.error.message}
+        </p>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,10 @@
-import { changePassword, updateProfile } from '@/services/account.service';
-import type { AccountProfileUpdate, PasswordChange } from '@shared/schemas';
+import {
+  changePassword,
+  deactivateAccount,
+  exportAccount,
+  updateProfile,
+} from '@/services/account.service';
+import type { AccountDeactivation, AccountProfileUpdate, PasswordChange } from '@shared/schemas';
 import { useMutation } from '@tanstack/react-query';
 
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -19,4 +24,12 @@ export function useUpdateProfile() {
 // Nothing to cache; the response only confirms the change.
 export function useChangePassword() {
   return useMutation<void, Error, PasswordChange>({ mutationFn: changePassword });
+}
+
+export function useExportAccount() {
+  return useMutation({ mutationFn: exportAccount });
+}
+
+export function useDeactivateAccount() {
+  return useMutation<void, Error, AccountDeactivation>({ mutationFn: deactivateAccount });
 }

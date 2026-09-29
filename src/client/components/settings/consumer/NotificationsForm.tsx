@@ -1,7 +1,7 @@
 import type { UserPreferences } from '@shared/schemas';
 import { useState } from 'react';
 
-import { SaveRow, Toggle } from './controls';
+import { FIELD, SaveRow, Toggle } from './controls';
 import { useSavePreferences } from './save-preferences';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 
@@ -14,13 +14,17 @@ const CATEGORY_LABEL: Record<CategoryKey, { label: string; desc: string }> = {
   reviews: { label: 'Reviews', desc: 'Requests to rate a visit, and replies.' },
 };
 
-const TIME_FIELD =
-  'rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700';
-
-export default function NotificationsForm({ notifications }: { notifications: Notifications }) {
+export default function NotificationsForm({
+  notifications,
+  timeZone,
+}: {
+  notifications: Notifications;
+  timeZone: string;
+}) {
   const { pending, error, saved, save } = useSavePreferences();
   const [draft, setDraft] = useState<Notifications>(notifications);
-  useUnsavedGuard(JSON.stringify(draft) !== JSON.stringify(notifications));
+  const dirty = JSON.stringify(draft) !== JSON.stringify(notifications);
+  useUnsavedGuard(dirty);
 
   const setCategory = (key: CategoryKey, value: boolean) =>
     setDraft((d) => ({ ...d, categories: { ...d.categories, [key]: value } }));
@@ -32,18 +36,16 @@ export default function NotificationsForm({ notifications }: { notifications: No
     save({ notifications: draft });
   };
 
-  // Categories and quiet hours are moot with the master switch off, so they read as disabled until it is on.
-  const dependent = draft.enabled ? '' : 'pointer-events-none opacity-50';
-
   return (
     <form onSubmit={submit} className="space-y-4">
       <Toggle
         checked={draft.enabled}
         onChange={(v) => setDraft((d) => ({ ...d, enabled: v }))}
-        label="Push alerts"
+        label="In-app notifications"
+        desc="Show booking, reminder, and review updates in Vetify."
       />
 
-      <div className={`space-y-2 ${dependent}`}>
+      <div className="space-y-2">
         <span className="block text-sm font-bold text-slate-700">Which alerts</span>
         {(Object.keys(CATEGORY_LABEL) as CategoryKey[]).map((key) => (
           <Toggle
@@ -52,42 +54,51 @@ export default function NotificationsForm({ notifications }: { notifications: No
             onChange={(v) => setCategory(key, v)}
             label={CATEGORY_LABEL[key].label}
             desc={CATEGORY_LABEL[key].desc}
+            disabled={!draft.enabled}
           />
         ))}
       </div>
 
-      <div className={`space-y-2 ${dependent}`}>
+      <div className="space-y-2">
         <Toggle
           checked={draft.dnd.enabled}
           onChange={(v) => setDnd({ enabled: v })}
           label="Do not disturb"
-          desc="Hold alerts during quiet hours (Manila time)."
+          desc={`Keep notifications in your feed without interrupting you during quiet hours (${timeZone}).`}
+          disabled={!draft.enabled}
         />
         {draft.dnd.enabled && (
-          <div className="flex items-center gap-2 px-1">
-            <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1.5 text-sm font-semibold text-slate-600">
               From
               <input
                 type="time"
                 value={draft.dnd.start}
                 onChange={(e) => setDnd({ start: e.target.value })}
-                className={TIME_FIELD}
+                className={FIELD}
               />
             </label>
-            <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-              to
+            <label className="space-y-1.5 text-sm font-semibold text-slate-600">
+              Until
               <input
                 type="time"
                 value={draft.dnd.end}
                 onChange={(e) => setDnd({ end: e.target.value })}
-                className={TIME_FIELD}
+                className={FIELD}
               />
             </label>
           </div>
         )}
       </div>
 
-      <SaveRow pending={pending} error={error} saved={saved} label="Save notifications" />
+      <SaveRow
+        pending={pending}
+        error={error}
+        saved={saved && !dirty}
+        dirty={dirty}
+        label="Save notifications"
+        onReset={() => setDraft(notifications)}
+      />
     </form>
   );
 }

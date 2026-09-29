@@ -1,12 +1,10 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useState, useRef, useEffect } from 'react';
 import { Settings, LogOut, SlidersHorizontal, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import PreferencesSection from './settings/sections/PreferencesSection';
+import { Link, useLocation } from 'react-router-dom';
 import SupportSection from './settings/sections/SupportSection';
 import ConsoleLinks from './settings/console-links';
 import LogoutModal from './settings/LogoutModal';
-import LanguageModal from './settings/LanguageModal';
 
 // The account tray on the public site. The professional console has no tray: its settings are a section of the console, so a vet changes them where they work rather than in something that hovers.
 export default function FloatingSettings() {
@@ -14,10 +12,10 @@ export default function FloatingSettings() {
   // renders nothing while anonymous, and a bare read gave it no reason to
   // re-render when a session appeared.
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +28,7 @@ export default function FloatingSettings() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (!user) return null;
+  if (!user || pathname.startsWith('/settings')) return null;
 
   return (
     <div ref={menuRef} className="fixed bottom-6 left-6 z-50">
@@ -52,7 +50,7 @@ export default function FloatingSettings() {
           <div className="flex flex-col">
             {/* Account, notifications, and privacy moved to the full /settings page; the tray links there rather than holding those forms in 320px. */}
             <Link
-              to="/settings"
+              to="/settings/profile"
               onClick={() => setIsOpen(false)}
               className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
             >
@@ -62,17 +60,9 @@ export default function FloatingSettings() {
               </span>
               <ChevronRight size={16} className="text-slate-400" />
             </Link>
-            <PreferencesSection
+            <SupportSection
               isExpanded={expandedSection === 0}
               onToggle={() => setExpandedSection(expandedSection === 0 ? null : 0)}
-              onOpenLanguageModal={() => {
-                setIsOpen(false);
-                setShowLanguageModal(true);
-              }}
-            />
-            <SupportSection
-              isExpanded={expandedSection === 1}
-              onToggle={() => setExpandedSection(expandedSection === 1 ? null : 1)}
             />
           </div>
 
@@ -92,7 +82,6 @@ export default function FloatingSettings() {
       </div>
 
       <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
-      <LanguageModal isOpen={showLanguageModal} onClose={() => setShowLanguageModal(false)} />
 
       <button
         onClick={() => setIsOpen((v) => !v)}
