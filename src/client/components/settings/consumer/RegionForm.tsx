@@ -6,10 +6,8 @@ import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import { FIELD, SaveRow } from './controls';
 import { useSavePreferences } from './save-preferences';
 
-const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' });
-
 function labelOf(timeZone: string): string {
-  const zone = formatter
+  const zone = new Intl.DateTimeFormat(undefined, { timeZone, timeZoneName: 'short' })
     .formatToParts(new Date())
     .find((part) => part.type === 'timeZoneName')?.value;
   return `${timeZone.replaceAll('_', ' ')}${zone ? ` (${zone})` : ''}`;
