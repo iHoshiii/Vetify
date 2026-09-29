@@ -130,7 +130,7 @@ export const USER_ROLES = ['user', 'professional', 'admin'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 /** Account standing. 'suspended' is meant to be lifted again, 'banned' is not. */
-export const USER_STATUSES = ['active', 'suspended', 'banned'] as const;
+export const USER_STATUSES = ['active', 'suspended', 'banned', 'deactivated'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 
 /** How the account signs in. */
@@ -1533,14 +1533,29 @@ const notificationPrefsSchema = z.object({
 });
 
 const privacyPrefsSchema = z.object({
-  analyticsOptOut: z.boolean(),
   blockedUserIds: z.array(objectIdSchema).max(PREFERENCES_MAX_BLOCKED),
+});
+
+export const USER_TIME_ZONES = [
+  'Asia/Manila',
+  'Asia/Tokyo',
+  'Asia/Seoul',
+  'Australia/Sydney',
+  'Europe/London',
+  'Europe/Paris',
+  'America/New_York',
+  'America/Los_Angeles',
+] as const;
+
+const regionPrefsSchema = z.object({
+  timeZone: z.enum(USER_TIME_ZONES),
 });
 
 // The whole row the GET returns; older accounts read the default below until they first save.
 export const userPreferencesSchema = z.object({
   notifications: notificationPrefsSchema,
   privacy: privacyPrefsSchema,
+  region: regionPrefsSchema,
 });
 export type UserPreferences = z.output<typeof userPreferencesSchema>;
 
@@ -1549,6 +1564,7 @@ export const userPreferencesUpdateSchema = z
   .object({
     notifications: notificationPrefsSchema.optional(),
     privacy: privacyPrefsSchema.optional(),
+    region: regionPrefsSchema.optional(),
   })
   .refine((patch) => Object.keys(patch).length > 0, {
     message: 'Include a section to update',
@@ -1563,7 +1579,8 @@ export function defaultUserPreferences(): UserPreferences {
       categories: { bookings: true, reminders: true, reviews: true },
       dnd: { enabled: false, start: '22:00', end: '07:00' },
     },
-    privacy: { analyticsOptOut: false, blockedUserIds: [] },
+    privacy: { blockedUserIds: [] },
+    region: { timeZone: 'Asia/Manila' },
   };
 }
 
@@ -1597,3 +1614,9 @@ export const passwordChangeSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Password must include a special character'),
 });
 export type PasswordChange = z.output<typeof passwordChangeSchema>;
+
+export const accountDeactivationSchema = z.object({
+  confirmation: z.literal('DEACTIVATE'),
+  currentPassword: z.string().optional(),
+});
+export type AccountDeactivation = z.output<typeof accountDeactivationSchema>;
