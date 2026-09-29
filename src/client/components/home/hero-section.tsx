@@ -10,12 +10,6 @@ export default function HeroSection() {
     >
       <FloatingBones />
 
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="blob-1 absolute -left-32 top-0 h-[520px] w-[520px] rounded-full bg-teal-300/20 blur-[80px]" />
-        <div className="blob-2 absolute -right-20 bottom-0 h-[440px] w-[440px] rounded-full bg-blue-300/20 blur-[80px]" />
-        <div className="blob-3 absolute left-1/2 top-1/3 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-emerald-200/15 blur-[60px]" />
-      </div>
-
       <div
         className="absolute inset-0"
         style={{
@@ -30,7 +24,7 @@ export default function HeroSection() {
             Everyday pet care
           </span>
 
-          <h1 className="hero-title gradient-text mt-6 text-5xl font-black leading-[0.97] tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 className="hero-title mt-6 text-4xl font-black leading-[1] tracking-tight text-vet-ink sm:text-5xl lg:text-6xl">
             Health guidance
             <br className="hidden sm:block" />
             for pets you love.
@@ -44,24 +38,16 @@ export default function HeroSection() {
           <div className="hero-cta mt-10 flex flex-wrap justify-center gap-3">
             <Link
               to="/chat"
-              className="btn-glow inline-flex h-12 items-center justify-center rounded-xl bg-slate-950 px-8 text-sm font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800"
+              className="inline-flex h-12 items-center justify-center rounded-xl bg-vet-primary px-8 text-sm font-bold text-white transition-colors hover:bg-vet-primary-dark"
             >
-              Ask AI now →
+              Ask AI
             </Link>
             <a
               href="#how-it-works"
-              className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-900/15 bg-white/80 px-8 text-sm font-bold text-slate-700 backdrop-blur-sm shadow-sm transition-all hover:-translate-y-1 hover:border-slate-900/30 hover:shadow-md"
+              className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-900/15 bg-white px-8 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:border-slate-900/30"
             >
-              How it works ↓
+              How it works
             </a>
-          </div>
-
-          <div className="hero-scroll-badge mt-14 flex flex-col items-center gap-1.5 text-slate-400">
-            <div className="scroll-indicator h-5 w-5">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M10 4v12M4 10l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
           </div>
         </div>
       </div>
