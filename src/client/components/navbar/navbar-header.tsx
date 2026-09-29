@@ -34,8 +34,9 @@ export default function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         <NavBrand />
         <NavLinks isAuthenticated={isAuthenticated} />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <NavActions isAuthenticated={isAuthenticated} showAuthActions={showAuthActions} />
+          {isAuthenticated && <div className="hidden h-6 w-px bg-slate-200 md:block" />}
           <HeaderTools />
           <Hamburger isOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
         </div>

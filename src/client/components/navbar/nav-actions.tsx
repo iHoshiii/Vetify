@@ -11,7 +11,7 @@ export function NavActions({ isAuthenticated, showAuthActions }: NavActionsProps
       {isAuthenticated && (
         <Link
           to="/map"
-          className="inline-flex h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 transition-colors hover:border-vet-primary hover:text-vet-primary"
+          className="inline-flex h-9 items-center rounded-lg px-3 text-sm font-semibold text-slate-600 transition-colors hover:text-vet-primary"
         >
           Find Vets
         </Link>
