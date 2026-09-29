@@ -2,7 +2,6 @@ import type { UserPreferences } from '@shared/schemas';
 import { USER_TIME_ZONES } from '@shared/schemas';
 import { useState } from 'react';
 
-import { useLocalePreferences } from '@/components/providers/LocaleProvider';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import { FIELD, SaveRow } from './controls';
 import { useSavePreferences } from './save-preferences';
@@ -13,11 +12,10 @@ function labelOf(timeZone: string): string {
   const zone = formatter
     .formatToParts(new Date())
     .find((part) => part.type === 'timeZoneName')?.value;
-  return `${timeZone.replace('_', ' ')}${zone ? ` (${zone})` : ''}`;
+  return `${timeZone.replaceAll('_', ' ')}${zone ? ` (${zone})` : ''}`;
 }
 
 export default function RegionForm({ region }: { region: UserPreferences['region'] }) {
-  const locale = useLocalePreferences();
   const { pending, error, saved, save } = useSavePreferences();
   const [timeZone, setTimeZone] = useState(region.timeZone);
   const dirty = timeZone !== region.timeZone;
@@ -28,7 +26,6 @@ export default function RegionForm({ region }: { region: UserPreferences['region
       onSubmit={(event) => {
         event.preventDefault();
         save({ region: { timeZone } });
-        locale.save('en', timeZone);
       }}
       className="space-y-5"
     >

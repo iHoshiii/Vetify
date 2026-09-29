@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useDeactivateAccount, useExportAccount } from '@/hooks/useAccount';
+import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import { FIELD } from './controls';
 
 export default function AccountForm() {
@@ -14,6 +15,7 @@ export default function AccountForm() {
   const [confirming, setConfirming] = useState(false);
   const [confirmation, setConfirmation] = useState('');
   const [password, setPassword] = useState('');
+  useUnsavedGuard(confirming && Boolean(confirmation || password));
 
   const download = async () => {
     const data = await exportMutation.mutateAsync().catch(() => null);

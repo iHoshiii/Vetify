@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 export const FIELD =
   'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100 disabled:bg-slate-100 disabled:text-slate-500';
@@ -13,10 +13,13 @@ export function SectionHeading({
   children: ReactNode;
 }) {
   const headingId = `${title.toLowerCase().replace(/\s+/g, '-')}-heading`;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), [title]);
   return (
     <section aria-labelledby={headingId}>
       <div className="border-b border-slate-200 px-5 py-5 sm:px-7">
         <h2
+          ref={headingRef}
           id={headingId}
           tabIndex={-1}
           className="text-xl font-black tracking-tight text-slate-900 outline-none"
