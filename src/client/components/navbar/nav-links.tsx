@@ -13,10 +13,9 @@ export function NavLinks({ isAuthenticated }: NavLinksProps) {
         <SiteLink
           key={item.href}
           to={item.href}
-          className="group relative px-3 py-2 text-sm font-semibold text-slate-600 transition-colors duration-200 hover:text-teal-700"
+          className="px-3 py-2 text-sm font-semibold text-slate-600 transition-colors duration-200 hover:text-vet-primary"
         >
           {item.label}
-          <span className="absolute bottom-1 left-3 right-3 h-0.5 origin-left scale-x-0 rounded-full bg-teal-600 transition-transform duration-300 group-hover:scale-x-100" />
         </SiteLink>
       ))}
       <ToolsDropdown isAuthenticated={isAuthenticated} />
