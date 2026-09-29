@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import NotificationPanel from './NotificationPanel';
 
-// The notification bell, bottom-right beside the chat launcher. Signed-in only, since a feed belongs to one account.
+// The notification bell in the header cluster. Signed-in only, since a feed belongs to one account.
 export default function NotificationLauncher() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -25,21 +25,26 @@ export default function NotificationLauncher() {
   if (!user) return null;
 
   return (
-    <div ref={rootRef} className="fixed bottom-6 right-24 z-50 flex flex-col items-end gap-3">
-      {open && <NotificationPanel onClose={() => setOpen(false)} />}
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((was) => !was)}
         aria-label="Notifications"
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-white text-teal-700 shadow-lg ring-1 ring-slate-200 transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none"
+        aria-expanded={open}
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-vet-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
       >
-        <Bell className="h-6 w-6" />
+        <Bell className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2">
+          <NotificationPanel onClose={() => setOpen(false)} />
+        </div>
+      )}
     </div>
   );
 }

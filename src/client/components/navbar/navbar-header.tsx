@@ -1,6 +1,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useEffect, useState } from 'react';
 import { Hamburger } from './hamburger';
+import { HeaderTools } from './header-tools';
 import { MobileMenu } from './mobile-view';
 import { NavActions } from './nav-actions';
 import { NavBrand } from './nav-brand';
@@ -33,10 +34,11 @@ export default function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5 sm:px-8">
         <NavBrand />
         <NavLinks isAuthenticated={isAuthenticated} />
-        {/* No entry to the console here, on either breakpoint. It lives in the
-            settings tray now, beside the account it belongs to. */}
-        <NavActions isAuthenticated={isAuthenticated} showAuthActions={showAuthActions} />
-        <Hamburger isOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
+        <div className="flex items-center gap-2">
+          <NavActions isAuthenticated={isAuthenticated} showAuthActions={showAuthActions} />
+          <HeaderTools />
+          <Hamburger isOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
+        </div>
       </div>
       <MobileMenu
         isOpen={menuOpen}
