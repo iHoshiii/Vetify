@@ -29,12 +29,12 @@ const FloatingBones = () => {
       },
       particles: {
         number: {
-          value: 22,
+          value: 34,
           density: { enable: true, area: 900 },
         },
         opacity: {
-          value: { min: 0.1, max: 0.4 },
-          animation: { enable: true, speed: 0.3, minimumValue: 0.08, sync: false },
+          value: { min: 0.15, max: 0.55 },
+          animation: { enable: true, speed: 0.3, minimumValue: 0.12, sync: false },
         },
         shape: {
           type: 'image',
