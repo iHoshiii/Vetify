@@ -22,6 +22,7 @@ export type BlockedStatus = Exclude<UserStatus, 'active'>;
 const BLOCKED_MESSAGE: Record<BlockedStatus, string> = {
   suspended: `This account is suspended. A suspension runs ${USER_SUSPENSION_DAYS} days and then lifts on its own.`,
   banned: 'This account is banned. Write to support if you believe that is a mistake.',
+  deactivated: 'This account was deactivated. Write to support if you want to restore it.',
 };
 
 export function blockedMessage(status: BlockedStatus): string {

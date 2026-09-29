@@ -1,11 +1,14 @@
 import {
+  accountDeactivationSchema,
   accountProfileUpdateSchema,
   passwordChangeSchema,
   userPreferencesUpdateSchema,
   type AccountProfileUpdate,
+  type AccountDeactivation,
   type PasswordChange,
   type UserPreferencesUpdate,
 } from '@shared/schemas';
+import { PREFERENCES_MAX_BLOCKED } from '@shared/limits';
 import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
@@ -13,6 +16,8 @@ import { validate } from '../../middleware/validate';
 import {
   comparePassword,
   findUsersByIds,
+  findUserById,
+  isValidObjectId,
   findUserWithPasswordById,
   getPreferences,
   revokeAllRefreshTokensForUser,
@@ -55,6 +60,35 @@ router.get('/blocked', async (req, res) => {
   ok(res, { blocked: blocked.map(toPublicUser) });
 });
 
+router.post('/blocked/:id', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, 'Account not found');
+  const actor = actorOf(req);
+  if (actor._id.toString() === req.params.id) return fail(res, 400, 'You cannot block yourself');
+  if (!(await findUserById(req.params.id))) return fail(res, 404, 'Account not found');
+  const preferences = await getPreferences(actor._id);
+  if (!preferences) return fail(res, 404, MISSING);
+  if (!preferences.privacy.blockedUserIds.includes(req.params.id)) {
+    if (preferences.privacy.blockedUserIds.length >= PREFERENCES_MAX_BLOCKED) {
+      return fail(res, 400, 'Your blocked account list is full');
+    }
+    preferences.privacy.blockedUserIds.push(req.params.id);
+    await updatePreferences(actor._id, { privacy: preferences.privacy });
+  }
+  ok(res, { blocked: true });
+});
+
+router.delete('/blocked/:id', async (req, res) => {
+  if (!isValidObjectId(req.params.id)) return fail(res, 404, 'Account not found');
+  const actor = actorOf(req);
+  const preferences = await getPreferences(actor._id);
+  if (!preferences) return fail(res, 404, MISSING);
+  preferences.privacy.blockedUserIds = preferences.privacy.blockedUserIds.filter(
+    (id) => id !== req.params.id
+  );
+  await updatePreferences(actor._id, { privacy: preferences.privacy });
+  ok(res, { blocked: false });
+});
+
 // PATCH /profile — edit the caller's own name and avatar, returning the refreshed public account.
 router.patch('/profile', validate(accountProfileUpdateSchema), async (req, res) => {
   const patch = req.body as AccountProfileUpdate;
@@ -83,6 +117,40 @@ router.post('/password', validate(passwordChangeSchema), async (req, res) => {
   // a new password must end every existing session so a stolen refresh token cannot outlive the change
   await revokeAllRefreshTokensForUser(account._id);
   ok(res, { changed: true });
+});
+
+router.get('/export', async (req, res) => {
+  const actor = actorOf(req);
+  const preferences = await getPreferences(actor._id);
+  if (!preferences) return fail(res, 404, MISSING);
+  ok(res, {
+    exportedAt: new Date().toISOString(),
+    account: toPublicUser(actor),
+    preferences,
+  });
+});
+
+router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AccountDeactivation;
+  if (actor.provider === 'local') {
+    const account = await findUserWithPasswordById(actor._id);
+    if (!account?.password || !body.currentPassword) {
+      return fail(res, 400, 'Enter your current password');
+    }
+    if (!(await comparePassword(account.password, body.currentPassword))) {
+      return fail(res, 400, 'Your current password is not correct.');
+    }
+  }
+  await updateUser(actor._id, {
+    status: 'deactivated',
+    statusReason: 'Deactivated by account owner',
+    statusChangedBy: actor._id,
+    statusChangedAt: new Date(),
+    statusUntil: null,
+  });
+  await revokeAllRefreshTokensForUser(actor._id);
+  ok(res, { deactivated: true });
 });
 
 export default router;

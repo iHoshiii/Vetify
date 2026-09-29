@@ -32,3 +32,11 @@ export async function getBlockedUsers(signal?: AbortSignal): Promise<BlockedUser
   const { blocked } = await apiFetch<{ blocked: BlockedUser[] }>('/account/blocked', { signal });
   return blocked;
 }
+
+export async function blockUser(userId: string): Promise<void> {
+  await apiFetch(`/account/blocked/${encodeURIComponent(userId)}`, { method: 'POST' });
+}
+
+export async function unblockUser(userId: string): Promise<void> {
+  await apiFetch(`/account/blocked/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+}

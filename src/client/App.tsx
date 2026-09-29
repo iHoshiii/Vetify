@@ -201,7 +201,7 @@ export default function App() {
         <Route path="professionals/apply/:token" element={<ProfessionalInvitePage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route
-          path="settings"
+          path="settings/:section?"
           element={
             <RequireAuth>
               <SettingsPage />

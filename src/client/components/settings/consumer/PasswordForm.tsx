@@ -1,108 +1,102 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { passwordChangeSchema } from '@shared/schemas';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useChangePassword } from '@/hooks/useAccount';
-import { SaveRow } from './controls';
-
-const FIELD =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-900 focus:border-teal-700 focus:outline-none focus:ring-1 focus:ring-teal-700';
+import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
+import { FIELD, SaveRow } from './controls';
 
 export default function PasswordForm() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const mutation = useChangePassword();
-  const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [visible, setVisible] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const dirty = Boolean(current || next || confirm);
+  useUnsavedGuard(dirty);
 
-  // Provider accounts sign in elsewhere and carry no password, so there is nothing to change here.
   if (user && user.provider !== 'local') {
     return (
-      <p className="px-1 text-sm text-slate-500">
-        You sign in with {user.provider}, so there is no password to change here.
-      </p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        You sign in with <strong>{user.provider}</strong>. Your password is managed by that
+        provider.
+      </div>
     );
   }
 
-  // Collapsed by default so the fields are not sitting open every time the section is.
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
-      >
-        Change password
-      </button>
-    );
-  }
-
-  const submit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const check = passwordChangeSchema.shape.newPassword.safeParse(next);
-    if (!check.success)
-      return setFormError(check.error.issues[0]?.message ?? 'Choose a stronger password.');
-    if (next.trim() !== confirm.trim()) return setFormError('The new passwords do not match.');
-    setFormError(null);
-    mutation.mutate(
-      { currentPassword: current, newPassword: next },
-      {
-        onSuccess: () => {
-          setCurrent('');
-          setNext('');
-          setConfirm('');
-        },
-      }
-    );
-  };
-
-  const close = () => {
-    setOpen(false);
+  const reset = () => {
     setCurrent('');
     setNext('');
     setConfirm('');
     setFormError(null);
+    mutation.reset();
   };
 
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const check = passwordChangeSchema.safeParse({ currentPassword: current, newPassword: next });
+    if (!check.success)
+      return setFormError(check.error.issues[0]?.message ?? 'Check your password.');
+    if (next !== confirm) return setFormError('The new passwords do not match.');
+    setFormError(null);
+    try {
+      await mutation.mutateAsync(check.data);
+    } catch {
+      return;
+    }
+    await logout();
+    navigate('/login', {
+      replace: true,
+      state: { message: 'Password updated. Sign in again on this device.' },
+    });
+  };
+
+  const input = (
+    label: string,
+    value: string,
+    onChange: (value: string) => void,
+    autoComplete: string
+  ) => (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-bold text-slate-700">{label}</span>
+      <input
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        autoComplete={autoComplete}
+        required
+        className={FIELD}
+      />
+    </label>
+  );
+
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-slate-700">Change password</span>
-        <button
-          type="button"
-          onClick={close}
-          className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
-        >
-          Cancel
-        </button>
-      </div>
-      <label className="block space-y-1">
-        <span className="text-sm font-bold text-slate-700">Current password</span>
-        <input
-          type="password"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          autoComplete="current-password"
-          className={FIELD}
-        />
-      </label>
-      <label className="block space-y-1">
-        <span className="text-sm font-bold text-slate-700">New password</span>
-        <input
-          type="password"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          autoComplete="new-password"
-          className={FIELD}
-        />
-      </label>
+    <form onSubmit={(event) => void submit(event)} className="space-y-5">
+      {input('Current password', current, setCurrent, 'current-password')}
+      {input('New password', next, setNext, 'new-password')}
+      {input('Confirm new password', confirm, setConfirm, 'new-password')}
+      <button
+        type="button"
+        onClick={() => setVisible((value) => !value)}
+        className="text-sm font-bold text-teal-800 underline decoration-teal-800/30 underline-offset-4"
+      >
+        {visible ? 'Hide passwords' : 'Show passwords'}
+      </button>
+      <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
+        Use at least 8 characters with an uppercase letter, number, and special character. Updating
+        your password signs out every device.
+      </p>
       <SaveRow
         pending={mutation.isPending}
-        error={mutation.error?.message ?? null}
-        saved={mutation.isSuccess}
+        error={formError ?? mutation.error?.message ?? null}
+        saved={false}
+        dirty={dirty}
         label="Update password"
+        onReset={reset}
       />
     </form>
   );

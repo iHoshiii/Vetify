@@ -155,7 +155,7 @@ describe('requireRole reads the stored role, not the token', () => {
 });
 
 describe('requireRole and account standing', () => {
-  it.each(['suspended', 'banned'] as const)('refuses a %s admin', async (status) => {
+  it.each(['suspended', 'banned', 'deactivated'] as const)('refuses a %s admin', async (status) => {
     const admin = await makeUser('admin');
     const token = tokenFor(admin, 'admin');
 

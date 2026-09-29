@@ -121,7 +121,12 @@ export async function getPreferences(id: string | ObjectId): Promise<UserPrefere
     { projection: { preferences: 1 } }
   );
   if (!user) return null;
-  return user.preferences ?? defaultUserPreferences();
+  const defaults = defaultUserPreferences();
+  return {
+    notifications: user.preferences?.notifications ?? defaults.notifications,
+    privacy: user.preferences?.privacy ?? defaults.privacy,
+    region: user.preferences?.region ?? defaults.region,
+  };
 }
 
 // replace whole sections over the current settings, so an untouched section survives and a legacy account gains the missing one
@@ -134,6 +139,7 @@ export async function updatePreferences(
   const next: UserPreferences = {
     notifications: patch.notifications ?? current.notifications,
     privacy: patch.privacy ?? current.privacy,
+    region: patch.region ?? current.region,
   };
   await usersCollection().updateOne(
     { _id: toObjectId(id) },

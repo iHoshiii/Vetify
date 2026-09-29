@@ -1,11 +1,12 @@
 import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { insertUser, type User } from '../../models';
+import { insertUser, updatePreferences, type User } from '../../models';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import {
   countUnread,
   createNotification,
+  isQuietTime,
   listForUser,
   markAllRead,
   markRead,
@@ -40,13 +41,49 @@ async function seed(
 }
 
 describe('notifications.service', () => {
+  it('recognizes overnight quiet hours in the saved timezone', () => {
+    expect(isQuietTime(new Date('2026-09-29T15:00:00.000Z'), 'Asia/Manila', '22:00', '07:00')).toBe(
+      true
+    );
+    expect(isQuietTime(new Date('2026-09-29T05:00:00.000Z'), 'Asia/Manila', '22:00', '07:00')).toBe(
+      false
+    );
+  });
+
   it('records one unread and returns it as a view', async () => {
     const user = await account();
     const view = await seed(user);
 
-    expect(view.read).toBe(false);
-    expect(view.kind).toBe('booking_confirmed');
+    expect(view?.read).toBe(false);
+    expect(view?.kind).toBe('booking_confirmed');
     expect(await countUnread(user._id)).toBe(1);
+  });
+
+  it('does not create notifications when the master preference is off', async () => {
+    const user = await account();
+    await updatePreferences(user._id, {
+      notifications: {
+        enabled: false,
+        categories: { bookings: true, reminders: true, reviews: true },
+        dnd: { enabled: false, start: '22:00', end: '07:00' },
+      },
+    });
+
+    expect(await seed(user)).toBeNull();
+    expect(await countUnread(user._id)).toBe(0);
+  });
+
+  it('does not create a category the account disabled', async () => {
+    const user = await account();
+    await updatePreferences(user._id, {
+      notifications: {
+        enabled: true,
+        categories: { bookings: false, reminders: true, reviews: true },
+        dnd: { enabled: false, start: '22:00', end: '07:00' },
+      },
+    });
+
+    expect(await seed(user)).toBeNull();
   });
 
   it('lists an account newest first, and only its own', async () => {
