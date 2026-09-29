@@ -6,6 +6,7 @@ import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import {
   countUnread,
   createNotification,
+  isQuietTime,
   listForUser,
   markAllRead,
   markRead,
@@ -40,6 +41,15 @@ async function seed(
 }
 
 describe('notifications.service', () => {
+  it('recognizes overnight quiet hours in the saved timezone', () => {
+    expect(isQuietTime(new Date('2026-09-29T15:00:00.000Z'), 'Asia/Manila', '22:00', '07:00')).toBe(
+      true
+    );
+    expect(isQuietTime(new Date('2026-09-29T05:00:00.000Z'), 'Asia/Manila', '22:00', '07:00')).toBe(
+      false
+    );
+  });
+
   it('records one unread and returns it as a view', async () => {
     const user = await account();
     const view = await seed(user);
