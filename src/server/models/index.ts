@@ -12,6 +12,7 @@ import {
   THREAD_INDEXES,
 } from './messages';
 import { NOTIFICATIONS_COLLECTION, NOTIFICATION_INDEXES } from './notifications';
+import { PETS_COLLECTION, PET_INDEXES } from './pets';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
@@ -410,6 +411,7 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
   { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
   { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },
+  { collection: PETS_COLLECTION, indexes: PET_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },

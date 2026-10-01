@@ -75,6 +75,14 @@ Paste the output as the value of `JWT_SECRET` in your `.env`.
 
 ## Database
 
+Pet profiles are stored in the `pets` collection, with one owner account per pet and
+any number of pets per account. The signed-in owner's endpoints are `GET /api/v1/pets`,
+`POST /api/v1/pets`, and `PUT /api/v1/pets/:id`. A profile requires an age in years
+and months and a current weight. Birth month and year are optional. When supplied,
+age advances on the last day of that month. Otherwise, age advances from the date
+the pet was added. The meal planner currently manages pet profiles. Meal generation
+and portion calculations are planned separately.
+
 MongoDB Atlas through the official `mongodb` driver — no ODM. `src/server/config/db.ts`
 owns a single `MongoClient`; each file under `src/server/models/` exports a typed
 collection accessor, a Zod schema for its attributes, and its index list. The

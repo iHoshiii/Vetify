@@ -10,6 +10,7 @@ import chatRoute from './chat.route';
 import clinicsRoute from './clinics.route';
 import messagesRoute from './messages.route';
 import notificationsRoute from './notifications.route';
+import petsRoute from './pets.route';
 import professionalsRoute from './professionals.route';
 
 const router = Router();
@@ -37,6 +38,7 @@ router.use('/blogs', blogsRoute);
 router.use('/appointments', appointmentsRoute);
 router.use('/messages', messagesRoute);
 router.use('/notifications', notificationsRoute);
+router.use('/pets', petsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/account', accountRoute);
 router.use('/admin', adminRoute);
