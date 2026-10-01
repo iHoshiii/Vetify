@@ -1,6 +1,7 @@
 import { isShihTzu, SHIH_TZU_WEIGHT_ENTRY_MAX_KG, type Pet } from './pets';
 import { petAge } from './pet-age';
 import type { MealPlanInput, MealPlanPreview } from './meal-plans';
+import { foodKcalPerGram } from './meal-intake';
 
 function validDay(value: string): number | null {
   const time = Date.parse(`${value}T00:00:00.000Z`);
@@ -38,11 +39,14 @@ export function previewMealPlan(pet: Pet, input: MealPlanInput, today: string): 
       warnings.push('This weight was measured more than 30 days ago.');
     }
     const dailyGrams = input.manualDailyGrams;
+    const density = foodKcalPerGram(input.food);
+    const foodKcal = dailyGrams !== null && density !== null ? dailyGrams * density : null;
     return {
       mode: 'manual',
       dailyGrams,
-      dailyKcal: null,
-      foodKcal: null,
+      dailyKcal:
+        foodKcal !== null && input.extrasKcal !== null ? foodKcal + input.extrasKcal : null,
+      foodKcal,
       factor: null,
       mealGrams: dailyGrams === null ? [] : splitGrams(dailyGrams, input.mealTimes.length),
       warnings: [...warnings, 'This amount was entered by you. Vetify has not calculated it.'],

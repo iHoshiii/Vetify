@@ -44,8 +44,11 @@ export function PlanReview({
         </p>
         {preview.dailyKcal !== null && (
           <p className="mt-1 text-sm text-slate-600">
-            Initial estimate: {preview.dailyKcal} kcal/day, including {input.extrasKcal} kcal of
-            extras. Factor {preview.factor}.
+            {input.mode === 'manual' ? 'Entered daily amount' : 'Starting estimate'}:{' '}
+            {Math.round(preview.dailyKcal)} kcal/day
+            {input.mode === 'estimate'
+              ? `, including ${input.extrasKcal} kcal of extras. Factor ${preview.factor}.`
+              : '.'}
           </p>
         )}
         <p className="mt-1 text-sm text-slate-600">

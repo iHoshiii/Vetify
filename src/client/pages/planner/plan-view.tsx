@@ -1,14 +1,13 @@
 import type { MealPlan } from '@shared/meal-plans';
 import { todayInTimeZone } from '@shared/planner-date';
-import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ClipboardList, RefreshCcw } from 'lucide-react';
 import { useState } from 'react';
 
-import { getFeedingLogs } from '@/services/meal-plans.service';
-
 import { MealLogRow } from './meal-log-row';
+import { DailyBudget } from './daily-budget';
 import { PlanProgress } from './plan-progress';
 import { PlanWeek } from './plan-week';
+import { useDayLogs } from './use-day-logs';
 
 export function PlanView({
   plan,
@@ -23,11 +22,7 @@ export function PlanView({
 }) {
   const [tab, setTab] = useState<'today' | 'week'>('today');
   const today = todayInTimeZone(plan.timeZone);
-  const logs = useQuery({
-    queryKey: ['feeding-logs', plan.id, today],
-    queryFn: () => getFeedingLogs(plan.id, today),
-  });
-  const reportedCount = logs.data?.length ?? 0;
+  const day = useDayLogs(plan, history, today);
   return (
     <div className="space-y-5">
       <button
@@ -56,24 +51,6 @@ export function PlanView({
             >
               <RefreshCcw size={16} /> Review plan
             </button>
-          </div>
-        </div>
-        <div className="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
-          <div className="rounded-xl bg-teal-50 p-4">
-            <p className="text-xs font-bold uppercase text-teal-700">Daily food</p>
-            <p className="mt-1 text-xl font-extrabold text-teal-950">{plan.preview.dailyGrams} g</p>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase text-slate-600">Meals</p>
-            <p className="mt-1 text-xl font-extrabold text-slate-900">
-              {plan.mealTimes.length} per day
-            </p>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase text-slate-600">Today</p>
-            <p className="mt-1 text-xl font-extrabold text-slate-900">
-              {reportedCount} meals logged
-            </p>
           </div>
         </div>
       </div>
@@ -107,11 +84,14 @@ export function PlanView({
       </div>
       {tab === 'today' ? (
         <div className="space-y-3">
-          {logs.isLoading && <p className="text-sm text-slate-600">Loading feeding logs...</p>}
-          {logs.isError && (
+          {day.isLoading && <p className="text-sm text-slate-600">Loading feeding logs...</p>}
+          {day.isError && (
             <p role="alert" className="text-sm text-rose-700">
               Logs could not be loaded.
             </p>
+          )}
+          {!day.isError && !day.isLoading && (
+            <DailyBudget plan={plan} logs={day.logs} earlier={day.earlier} />
           )}
           {plan.mealTimes.map((_, index) => (
             <MealLogRow
@@ -119,7 +99,7 @@ export function PlanView({
               plan={plan}
               date={today}
               index={index}
-              log={logs.data?.find((item) => item.mealIndex === index)}
+              log={day.logs.find((item) => item.mealIndex === index)}
             />
           ))}
         </div>
@@ -147,11 +127,6 @@ export function PlanView({
           </ul>
         </details>
       )}
-      <p className="text-xs text-slate-500">
-        {plan.mode === 'estimate'
-          ? 'This is an initial estimate. Review weight and condition with your veterinarian.'
-          : 'This schedule uses an amount you entered. Vetify has not calculated it.'}
-      </p>
     </div>
   );
 }
