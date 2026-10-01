@@ -65,7 +65,11 @@ export async function createNotification(
 ): Promise<NotificationView | null> {
   const preferences = await getPreferences(input.user);
   const notifications = preferences?.notifications;
-  if (!notifications?.enabled || !notifications.categories[CATEGORY_BY_KIND[input.kind]]) {
+  if (
+    !preferences ||
+    !notifications?.enabled ||
+    !notifications.categories[CATEGORY_BY_KIND[input.kind]]
+  ) {
     return null;
   }
 

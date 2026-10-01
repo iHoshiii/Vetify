@@ -92,6 +92,7 @@ describe('notifications.service', () => {
     const first = await seed(user, 'booking_requested');
     const second = await seed(user);
     await seed(other);
+    if (!first || !second) throw new Error('Expected notifications');
 
     const page = await listForUser({ user: user._id, page: 1, limit: 20 });
 
@@ -102,6 +103,7 @@ describe('notifications.service', () => {
   it('marks one read for its owner and drops the unread count', async () => {
     const user = await account();
     const view = await seed(user);
+    if (!view) throw new Error('Expected notification');
 
     const read = await markRead(view.id, user._id);
 
@@ -113,6 +115,7 @@ describe('notifications.service', () => {
     const user = await account();
     const other = await account();
     const view = await seed(user);
+    if (!view) throw new Error('Expected notification');
 
     expect(await markRead(view.id, other._id)).toBeNull();
     expect(await countUnread(user._id)).toBe(1);
