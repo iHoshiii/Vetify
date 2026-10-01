@@ -37,6 +37,11 @@ export async function listPets(ownerId: ObjectId): Promise<Pet[]> {
   return docs.map(view);
 }
 
+export async function findPet(ownerId: ObjectId, petId: ObjectId): Promise<Pet | null> {
+  const doc = await collection().findOne({ _id: petId, ownerId });
+  return doc ? view(doc) : null;
+}
+
 export async function createPet(
   ownerId: ObjectId,
   input: PetInput,
