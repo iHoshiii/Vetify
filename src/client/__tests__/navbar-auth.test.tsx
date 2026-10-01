@@ -21,6 +21,11 @@ vi.mock('@/hooks/useProfessionals', async (importOriginal) => ({
   useOwnApplication: () => ({ data: null }),
 }));
 
+// The header tool cluster pulls in react-query and the chat context. This file is about the auth links, so it stands the cluster down.
+vi.mock('@/components/navbar/header-tools', () => ({
+  HeaderTools: () => null,
+}));
+
 /** Stands in for the login form, which does exactly this on success. */
 function LoginTrigger({ role = 'user' }: { role?: UserRole }) {
   const { setSession } = useAuth();
@@ -102,21 +107,21 @@ describe('floating settings auth reactivity', () => {
   it('stays hidden while anonymous and appears once a session arrives', () => {
     renderTray();
 
-    expect(screen.queryByLabelText('Settings')).toBeNull();
+    expect(screen.queryByLabelText('Account')).toBeNull();
 
     fireEvent.click(screen.getByText('trigger login'));
 
-    expect(screen.getByLabelText('Settings')).toBeDefined();
+    expect(screen.getByLabelText('Account')).toBeDefined();
     expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
   });
 
   it('offers an admin the console, immediately above the way out', () => {
     renderTray('admin');
     fireEvent.click(screen.getByText('trigger login'));
-    fireEvent.click(screen.getByLabelText('Settings'));
+    fireEvent.click(screen.getByLabelText('Account'));
 
     const link = screen.getByRole('link', { name: 'Admin console' });
-    const logout = screen.getByText('Log Out');
+    const logout = screen.getByText('Log out');
 
     expect(link).toHaveAttribute('href', '/admin');
     // Order matters and was asked for: the two session actions sit together, with
@@ -127,11 +132,11 @@ describe('floating settings auth reactivity', () => {
   it('offers it to nobody else', () => {
     renderTray();
     fireEvent.click(screen.getByText('trigger login'));
-    fireEvent.click(screen.getByLabelText('Settings'));
+    fireEvent.click(screen.getByLabelText('Account'));
 
     // Hiding a link, not a permission: /admin is gated by RequireRole and every
     // endpoint behind it re-reads the stored role.
     expect(screen.queryByText('Admin console')).toBeNull();
-    expect(screen.getByText('Log Out')).toBeInTheDocument();
+    expect(screen.getByText('Log out')).toBeInTheDocument();
   });
 });

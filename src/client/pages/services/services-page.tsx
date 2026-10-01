@@ -4,7 +4,7 @@ import ServicesHero from './_components/services-hero';
 
 export default function ServicesPage() {
   return (
-    <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
+    <main className="min-h-screen bg-vet-bg text-vet-ink">
       <ServicesHero />
       <ServicesGrid />
       <ServicesCta />
