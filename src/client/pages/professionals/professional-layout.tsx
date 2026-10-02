@@ -35,13 +35,15 @@ function Centered({ children }: { children: React.ReactNode }) {
 function Bar({ children }: { children?: React.ReactNode }) {
   return (
     <div className="border-b border-teal-900/10 bg-white">
-      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
         <NavBrand to="/professionals/dashboard" />
         <span className="rounded-md bg-teal-900 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-white">
           Professional
         </span>
 
-        <div className="ml-auto flex items-center gap-2">{children}</div>
+        <div className="ml-auto flex w-full items-center justify-end gap-2 sm:w-auto">
+          {children}
+        </div>
       </div>
     </div>
   );

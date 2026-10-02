@@ -7,6 +7,7 @@ import { attachRealtime } from './realtime/socket';
 import { startCompletionScanner } from './services/appointment-completion.service';
 import { startOsmClinicRefresh } from './services/osm-clinics.service';
 import { startReminderScanner } from './services/reminders.service';
+import { startBookScanner } from './services/book-review.service';
 
 /**
  * Mongoose created indexes on its own the first time each model was used. The
@@ -42,6 +43,7 @@ async function main() {
   if (dbUp && !isTest) startCompletionScanner();
 
   const stopOsmClinicRefresh = dbUp && !isTest ? startOsmClinicRefresh() : () => undefined;
+  const stopBookScanner = dbUp && !isTest ? startBookScanner() : () => undefined;
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
@@ -57,6 +59,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     console.log(`\n[server] ${signal} received, shutting down`);
     stopOsmClinicRefresh();
+    stopBookScanner();
     await io.close();
     server.close(async () => {
       await disconnectDb();
