@@ -12,6 +12,13 @@ import {
   THREAD_INDEXES,
 } from './messages';
 import { NOTIFICATIONS_COLLECTION, NOTIFICATION_INDEXES } from './notifications';
+import { PETS_COLLECTION, PET_INDEXES } from './pets';
+import { MEAL_PLANS_COLLECTION, MEAL_PLAN_INDEXES } from './meal-plans';
+import { FEEDING_LOGS_COLLECTION, FEEDING_LOG_INDEXES } from './feeding-logs';
+import {
+  NUTRITION_OBSERVATIONS_COLLECTION,
+  NUTRITION_OBSERVATION_INDEXES,
+} from './nutrition-observations';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
@@ -410,6 +417,10 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
   { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
   { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },
+  { collection: PETS_COLLECTION, indexes: PET_INDEXES },
+  { collection: MEAL_PLANS_COLLECTION, indexes: MEAL_PLAN_INDEXES },
+  { collection: FEEDING_LOGS_COLLECTION, indexes: FEEDING_LOG_INDEXES },
+  { collection: NUTRITION_OBSERVATIONS_COLLECTION, indexes: NUTRITION_OBSERVATION_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },

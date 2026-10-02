@@ -75,6 +75,7 @@ describe('customer account settings routes', () => {
     expect(response.status).toBe(200);
     expect(response.body.account.email).toBe(owner.user.email);
     expect(response.body.preferences.region.timeZone).toBe('Asia/Manila');
+    expect(response.body.pets).toEqual([]);
     expect(response.body.exportedAt).toBeTruthy();
   });
 

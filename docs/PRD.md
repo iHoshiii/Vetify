@@ -40,8 +40,8 @@
 
 ### 3.5 Personalized Meal Planner
 
-- **Goal:** Make sure your pet eats the right food.
-- **How it works:** You tell the app your pet's age, weight, and any allergies. The app then creates a 7-day meal plan just for them.
+- **Goal:** Help owners follow and review a measured feeding routine for each pet.
+- **How it works:** The owner records the exact food, daily amount, extras, and meal times. Eligible healthy adult dogs and cats can receive a starting portion estimate from label calories. Other pets can schedule an existing amount. The owner reviews before saving, logs actual meals, and tracks weight and body condition.
 
 ### 3.6 Veterinary Blogs
 
@@ -76,12 +76,12 @@
 - **Included in MVP:**
   - AI chat capable of answering common pet health, nutrition, and behavior questions with clear escalation rules.
   - Vet locator (map + list) with clinic details and contact info.
-  - Signup/login, basic user profile (pet type, age, weight), and meal plan generator for a single pet.
+  - Signup/login, multiple pet profiles, feeding plans, meal logging, and weight and body condition records.
   - Basic analytics and instrumentation to capture usage and key events.
 - **Launch Criteria:**
   - Chat accuracy and safety checks in place for top 50 common queries.
   - Vet locator returns relevant nearby clinics in >80% of manual spot checks.
-  - Core user flows (signup, chat question, find vet, generate meal plan) completed end-to-end without critical errors.
+  - Core user flows (signup, chat question, find vet, review and save a feeding plan, log a meal) completed end-to-end without critical errors.
 
 ## 7. AI Safety & Escalation
 

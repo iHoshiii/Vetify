@@ -13,6 +13,7 @@ import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
+import { listPets } from '../../models/pets';
 import {
   comparePassword,
   findUsersByIds,
@@ -121,12 +122,13 @@ router.post('/password', validate(passwordChangeSchema), async (req, res) => {
 
 router.get('/export', async (req, res) => {
   const actor = actorOf(req);
-  const preferences = await getPreferences(actor._id);
+  const [preferences, pets] = await Promise.all([getPreferences(actor._id), listPets(actor._id)]);
   if (!preferences) return fail(res, 404, MISSING);
   ok(res, {
     exportedAt: new Date().toISOString(),
     account: toPublicUser(actor),
     preferences,
+    pets,
   });
 });
 
