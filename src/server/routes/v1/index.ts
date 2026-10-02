@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { dbStatus } from '../../config/db';
+import accountRoute from './account.route';
 import adminRoute from './admin';
 import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
@@ -8,7 +9,10 @@ import blogsRoute from './blogs.route';
 import chatRoute from './chat.route';
 import clinicsRoute from './clinics.route';
 import messagesRoute from './messages.route';
+import mealPlansRoute from './meal-plans.route';
 import notificationsRoute from './notifications.route';
+import nutritionObservationsRoute from './nutrition-observations.route';
+import petsRoute from './pets.route';
 import professionalsRoute from './professionals.route';
 
 const router = Router();
@@ -36,7 +40,11 @@ router.use('/blogs', blogsRoute);
 router.use('/appointments', appointmentsRoute);
 router.use('/messages', messagesRoute);
 router.use('/notifications', notificationsRoute);
+router.use('/pets', petsRoute);
+router.use('/meal-plans', mealPlansRoute);
+router.use('/nutrition-observations', nutritionObservationsRoute);
 router.use('/professionals', professionalsRoute);
+router.use('/account', accountRoute);
 router.use('/admin', adminRoute);
 
 export default router;

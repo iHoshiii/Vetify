@@ -23,6 +23,7 @@ const TONE: Record<string, string> = {
   suspended: 'bg-orange-100 text-orange-900',
   // Acted on, and meant.
   banned: 'bg-rose-100 text-rose-900',
+  deactivated: 'bg-rose-100 text-rose-900',
   removed: 'bg-rose-100 text-rose-900',
   rejected: 'bg-rose-100 text-rose-900',
 };

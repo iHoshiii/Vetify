@@ -95,6 +95,7 @@ const SLOT: Record<string, number> = {
   disconnected: 3,
   // Taken away, reversibly.
   suspended: 4,
+  deactivated: 4,
   hidden: 4,
   // Not yet anything.
   draft: 5,

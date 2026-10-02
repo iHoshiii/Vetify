@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom';
 
-import FloatingSettings from '@/components/FloatingSettings';
 import RevealObserver from '@/components/RevealObserver';
 import ScrollToTop from '@/components/ScrollToTop';
 import SiteHeader from '@/components/navbar';
@@ -16,7 +15,6 @@ export default function RootLayout() {
       <ScrollToTop />
       <RevealObserver />
       <SiteHeader />
-      <FloatingSettings />
       <Outlet />
     </>
   );

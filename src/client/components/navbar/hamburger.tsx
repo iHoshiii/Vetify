@@ -6,7 +6,7 @@ interface HamburgerProps {
 export function Hamburger({ isOpen, onToggle }: HamburgerProps) {
   return (
     <button
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-teal-300 hover:text-teal-700 md:hidden"
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-vet-primary hover:text-vet-primary md:hidden"
       onClick={onToggle}
       aria-label="Toggle menu"
     >

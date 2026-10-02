@@ -37,6 +37,7 @@ const STATUS_REASON: Record<UserStatus, ReasonMode> = {
   active: 'optional',
   suspended: 'required',
   banned: 'required',
+  deactivated: 'required',
 };
 
 const STATUS_COPY: Record<UserStatus, { verb: string; blurb: string }> = {
@@ -48,6 +49,10 @@ const STATUS_COPY: Record<UserStatus, { verb: string; blurb: string }> = {
   banned: {
     verb: 'Ban',
     blurb: 'Signs them out everywhere and blocks sign-in. The account and its data stay.',
+  },
+  deactivated: {
+    verb: 'Deactivate',
+    blurb: 'Blocks sign-in while preserving the account and its related records.',
   },
 };
 
