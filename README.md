@@ -80,8 +80,11 @@ any number of pets per account. The signed-in owner's endpoints are `GET /api/v1
 `POST /api/v1/pets`, and `PUT /api/v1/pets/:id`. A profile requires an age in years
 and months and a current weight. Birth month and year are optional. When supplied,
 age advances on the last day of that month. Otherwise, age advances from the date
-the pet was added. The meal planner currently manages pet profiles. Meal generation
-and portion calculations are planned separately.
+the pet was added. The meal planner can now preview and save a measured feeding
+schedule for each pet, log daily meals and extras, and record weight and 9-point
+body condition observations. For eligible healthy adult dogs and cats it offers a
+starting portion estimate based on a food label. Other pets can schedule an
+existing amount. Plans and feeding logs use separate owner-scoped collections.
 
 MongoDB Atlas through the official `mongodb` driver — no ODM. `src/server/config/db.ts`
 owns a single `MongoClient`; each file under `src/server/models/` exports a typed

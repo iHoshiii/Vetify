@@ -5,27 +5,14 @@ import { ObjectId } from 'mongodb';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
-import { getPreferences } from '../../models';
 import { createPet, listPets, updatePet } from '../../models/pets';
 import { isValidObjectId } from '../../models/object-id';
 import { fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
+import { accountToday } from './account-today';
 
 const router = Router();
 router.use(optionalAuth, signedIn);
-
-async function accountToday(ownerId: ObjectId): Promise<string> {
-  const preferences = await getPreferences(ownerId);
-  const timeZone = preferences?.region.timeZone ?? 'Asia/Manila';
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date());
-  const part = (name: string) => parts.find((item) => item.type === name)?.value ?? '';
-  return `${part('year')}-${part('month')}-${part('day')}`;
-}
 
 router.get('/', async (req, res) => {
   ok(res, { pets: await listPets(actorOf(req)._id) });
