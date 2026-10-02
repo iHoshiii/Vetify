@@ -78,11 +78,13 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       ...rest,
       credentials: 'include',
       headers: {
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined
+          ? { 'Content-Type': body instanceof Blob ? body.type : 'application/json' }
+          : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined ? { body: body instanceof Blob ? body : JSON.stringify(body) } : {}),
     });
 
   let res = await send(readAccessToken());

@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 import ChatPanel from './ChatPanel';
 import { useChatPanel } from './chat-context';
 
-// The owner's messaging button, bottom-right, mirroring the settings tray bottom-left. Signed-in only, since a thread names two accounts.
+// The owner's messaging button in the header cluster. Signed-in only, since a thread names two accounts.
 export default function ChatLauncher() {
   const { user } = useAuth();
   const { pathname } = useLocation();
@@ -35,21 +35,26 @@ export default function ChatLauncher() {
   if (!user || pathname === '/messages') return null;
 
   return (
-    <div ref={rootRef} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      {open && <ChatPanel />}
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => (open ? closePanel() : openPanel())}
         aria-label="Messages"
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-teal-700 text-white shadow-lg transition-all duration-300 hover:scale-105 hover:bg-teal-800 hover:shadow-xl focus:outline-none"
+        aria-expanded={open}
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-vet-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
       >
-        <MessageCircle className="h-6 w-6" />
+        <MessageCircle className="h-5 w-5" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
             {unread > 99 ? '99+' : unread}
           </span>
         )}
       </button>
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2">
+          <ChatPanel />
+        </div>
+      )}
     </div>
   );
 }

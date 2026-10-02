@@ -1,14 +1,10 @@
-import {
-  useMuteThread,
-  useReportThread,
-  useSetThreadRead,
-  useSetThreadState,
-} from '@/hooks/useMessages';
+import { useMuteThread, useSetThreadRead, useSetThreadState } from '@/hooks/useMessages';
 import type { Thread, ThreadState } from '@/services/messages.service';
-import { Archive, Ban, BellOff, Flag, Inbox, Mail, MailOpen, Trash2 } from 'lucide-react';
+import { Archive, Ban, BellOff, Inbox, Mail, MailOpen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import DeleteConfirm from './DeleteConfirm';
+import ThreadSafetyActions from './ThreadSafetyActions';
 
 type MenuVariant = 'header' | 'row';
 
@@ -28,7 +24,6 @@ export default function ThreadMenu({
   const setState = useSetThreadState();
   const setRead = useSetThreadRead();
   const mute = useMuteThread();
-  const report = useReportThread();
   const [error, setError] = useState<string | null>(null);
   // Delete clears the caller's history, so it asks first rather than firing on a single click.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -63,16 +58,6 @@ export default function ThreadMenu({
       onDone();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to mute conversation');
-    }
-  };
-
-  const runReport = async () => {
-    setError(null);
-    try {
-      await report.mutateAsync(thread.id);
-      onDone();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to report conversation');
     }
   };
 
@@ -149,15 +134,13 @@ export default function ThreadMenu({
       </button>
 
       {variant === 'header' && (
-        <button
-          type="button"
-          role="menuitem"
-          onClick={() => void runReport()}
-          className={itemClass}
-        >
-          <Flag className="h-4 w-4" />
-          Report
-        </button>
+        <ThreadSafetyActions
+          thread={thread}
+          itemClass={itemClass}
+          onDone={onDone}
+          onCloseThread={onCloseThread}
+          onError={setError}
+        />
       )}
 
       {error && (

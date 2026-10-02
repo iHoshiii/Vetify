@@ -4,6 +4,7 @@ import type { AppointmentKind } from '@shared/schemas';
 import {
   countUnreadNotifications,
   findNotifications,
+  getPreferences,
   insertNotification,
   markAllNotificationsRead,
   markNotificationRead,
@@ -24,12 +25,64 @@ export type CreateNotificationInput = {
   body: string;
 };
 
+const CATEGORY_BY_KIND: Record<NotificationKind, 'bookings' | 'reminders' | 'reviews'> = {
+  booking_requested: 'bookings',
+  booking_confirmed: 'bookings',
+  booking_declined: 'bookings',
+  booking_reminder: 'reminders',
+  review_request: 'reviews',
+  appointment_rated: 'reviews',
+};
+
+function localMinutes(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value ?? 0);
+  return hour * 60 + minute;
+}
+
+function timeMinutes(value: string): number {
+  const [hour, minute] = value.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+export function isQuietTime(now: Date, timeZone: string, start: string, end: string): boolean {
+  const current = localMinutes(now, timeZone);
+  const from = timeMinutes(start);
+  const to = timeMinutes(end);
+  if (from === to) return false;
+  return from < to ? current >= from && current < to : current >= from || current < to;
+}
+
 // Records a notification and nudges the recipient's open tabs to refetch. The emit is a no-op before the socket server is up.
 export async function createNotification(
   input: CreateNotificationInput
-): Promise<NotificationView> {
+): Promise<NotificationView | null> {
+  const preferences = await getPreferences(input.user);
+  const notifications = preferences?.notifications;
+  if (
+    !preferences ||
+    !notifications?.enabled ||
+    !notifications.categories[CATEGORY_BY_KIND[input.kind]]
+  ) {
+    return null;
+  }
+
   const doc = await insertNotification(input);
-  emitToUser(doc.user.toString(), 'notification:new', { id: doc._id.toString() });
+  const quiet =
+    notifications.dnd.enabled &&
+    isQuietTime(
+      new Date(),
+      preferences.region.timeZone,
+      notifications.dnd.start,
+      notifications.dnd.end
+    );
+  if (!quiet) emitToUser(doc.user.toString(), 'notification:new', { id: doc._id.toString() });
   return toNotificationView(doc);
 }
 

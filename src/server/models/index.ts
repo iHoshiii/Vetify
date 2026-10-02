@@ -12,6 +12,13 @@ import {
   THREAD_INDEXES,
 } from './messages';
 import { NOTIFICATIONS_COLLECTION, NOTIFICATION_INDEXES } from './notifications';
+import { PETS_COLLECTION, PET_INDEXES } from './pets';
+import { MEAL_PLANS_COLLECTION, MEAL_PLAN_INDEXES } from './meal-plans';
+import { FEEDING_LOGS_COLLECTION, FEEDING_LOG_INDEXES } from './feeding-logs';
+import {
+  NUTRITION_OBSERVATIONS_COLLECTION,
+  NUTRITION_OBSERVATION_INDEXES,
+} from './nutrition-observations';
 import {
   PROFESSIONAL_CAPTURES_COLLECTION,
   PROFESSIONAL_CAPTURE_INDEXES,
@@ -372,13 +379,17 @@ export {
   findUsersByIds,
   findUsersPaginated,
   findUserWithPasswordByEmail,
+  findUserWithPasswordById,
+  getPreferences,
   hashPassword,
   insertUser,
   normalizeEmail,
   toAdminUser,
   toAdminUserPage,
   toPublicUser,
+  updatePreferences,
   updateUser,
+  updateUserPassword,
   userAttrsSchema,
   usersCollection,
   type AdminUser,
@@ -406,6 +417,10 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
   { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
   { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },
+  { collection: PETS_COLLECTION, indexes: PET_INDEXES },
+  { collection: MEAL_PLANS_COLLECTION, indexes: MEAL_PLAN_INDEXES },
+  { collection: FEEDING_LOGS_COLLECTION, indexes: FEEDING_LOG_INDEXES },
+  { collection: NUTRITION_OBSERVATIONS_COLLECTION, indexes: NUTRITION_OBSERVATION_INDEXES },
   { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
@@ -463,6 +478,18 @@ async function ensureIndex(db: Db, collection: string, index: IndexDescription):
 // get the database
 export async function ensureIndexes(): Promise<void> {
   const db = getDb();
+  await db.collection('books').createIndex({ createdAt: -1 });
+  await db.collection('books').createIndex({ author: 1, createdAt: -1 });
+  await db.collection('books').createIndex({ status: 1, createdAt: -1 });
+  await db.collection('books').createIndex({ status: 1, 'moderation.nextCheckAt': 1 });
+  await db
+    .collection('books')
+    .createIndex(
+      { contentHash: 1 },
+      { unique: true, partialFilterExpression: { contentHash: { $type: 'string' } } }
+    );
+  await db.collection('book_download_quotas').createIndex({ author: 1, bookId: 1, month: 1 });
+  await db.collection('book_download_quotas').createIndex({ author: 1, 'downloads.at': 1 });
   // create indexes for each collection based on the defined INDEX_PLAN, one at a
   // time so a conflict on one does not abandon the rest
   for (const { collection, indexes } of INDEX_PLAN) {

@@ -1,6 +1,7 @@
 import {
   clearThreadUnread,
   findProfessionalById,
+  getPreferences,
   findThreadByPair,
   insertMessage,
   insertThread,
@@ -27,6 +28,19 @@ function isParty(thread: ThreadDocument, user: User): boolean {
   return thread.client.equals(user._id) || thread.professionalUser.equals(user._id);
 }
 
+async function ensureNotBlocked(first: string, second: string): Promise<void> {
+  const [firstPreferences, secondPreferences] = await Promise.all([
+    getPreferences(first),
+    getPreferences(second),
+  ]);
+  const blocked =
+    firstPreferences?.privacy.blockedUserIds.includes(second) ||
+    secondPreferences?.privacy.blockedUserIds.includes(first);
+  if (blocked) {
+    throw AppError.forbidden('This conversation is unavailable.', 'account-blocked');
+  }
+}
+
 /**
  * Opens the thread between an owner and a vet, or returns the one already open.
  *
@@ -43,6 +57,8 @@ export async function openThread(input: {
   if (application.user.equals(input.user._id)) {
     throw AppError.badRequest('You cannot message yourself');
   }
+
+  await ensureNotBlocked(input.user._id.toString(), application.user.toString());
 
   const existing = await findThreadByPair({
     client: input.user._id,
@@ -86,6 +102,8 @@ export async function sendMessage(input: {
 }): Promise<MessageDocument> {
   const { thread, sender, body } = input;
   const senderIsClient = thread.client.equals(sender._id);
+  const recipient = senderIsClient ? thread.professionalUser : thread.client;
+  await ensureNotBlocked(sender._id.toString(), recipient.toString());
 
   const message = await insertMessage({ thread: thread._id, sender: sender._id, body });
   await touchThreadOnSend({
@@ -99,8 +117,8 @@ export async function sendMessage(input: {
 
   // Signal the recipient to refetch: both sides invalidate the thread and their list.
   const { client, professionalUser } = partiesOf(thread);
-  const recipient = senderIsClient ? professionalUser : client;
-  emitToUser(recipient, 'thread:message', { threadId: thread._id.toString() });
+  const recipientId = senderIsClient ? professionalUser : client;
+  emitToUser(recipientId, 'thread:message', { threadId: thread._id.toString() });
   emitToUser(sender._id.toString(), 'thread:message', { threadId: thread._id.toString() });
 
   return message;

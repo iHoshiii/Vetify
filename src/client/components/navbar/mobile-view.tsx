@@ -21,7 +21,7 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
             key={item.href}
             to={item.href}
             onClick={onClose}
-            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-vet-bg hover:text-vet-primary"
           >
             {item.label}
           </SiteLink>
@@ -35,9 +35,9 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
         <Link
           to="/map"
           onClick={onClose}
-          className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+          className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-vet-bg hover:text-vet-primary"
         >
-          📍 Find Vets
+          Find Vets
         </Link>
 
         {TOOLS_ITEMS.map((item) => (
@@ -45,7 +45,7 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
             key={item.href}
             to={item.href}
             onClick={onClose}
-            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+            className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-vet-bg hover:text-vet-primary"
           >
             {item.label}
           </Link>
@@ -55,7 +55,7 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
 
         <Link
           to="/book-appointment"
-          className="rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-4 py-2.5 text-center text-sm font-bold text-white shadow-md"
+          className="rounded-xl bg-vet-primary px-4 py-2.5 text-center text-sm font-bold text-white transition-colors hover:bg-vet-primary-dark"
           onClick={onClose}
         >
           Book Appointment
@@ -65,14 +65,14 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
           <div className="mt-1 flex gap-2">
             <Link
               to="/login"
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-teal-300"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-vet-primary"
               onClick={onClose}
             >
               Log in
             </Link>
             <Link
               to="/signup"
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-teal-300"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-vet-primary"
               onClick={onClose}
             >
               Sign up

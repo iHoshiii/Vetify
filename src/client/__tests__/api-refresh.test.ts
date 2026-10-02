@@ -25,6 +25,24 @@ beforeEach(() => window.localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe('apiFetch refresh-on-401', () => {
+  it('replays a PDF upload as bytes with the refreshed token', async () => {
+    store('expired');
+    const pdf = new Blob(['%PDF-1.4\n%%EOF'], { type: 'application/pdf' });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(res(401, { error: 'expired' }))
+      .mockResolvedValueOnce(res(200, { accessToken: 'fresh', user }))
+      .mockResolvedValueOnce(res(201, { id: 'book-id' }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(apiFetch('/books', { method: 'POST', body: pdf })).resolves.toEqual({
+      id: 'book-id',
+    });
+    for (const index of [0, 2]) {
+      expect(fetchMock.mock.calls[index][1].body).toBe(pdf);
+      expect(fetchMock.mock.calls[index][1].headers['Content-Type']).toBe('application/pdf');
+    }
+    expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh');
+  });
   it('refreshes once off the cookie and replays the request', async () => {
     store('expired');
     const fetchMock = vi

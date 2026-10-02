@@ -35,16 +35,19 @@ describe('POST /api/v1/auth/login', () => {
     expect(JSON.parse(Buffer.from(payload, 'base64url').toString()).role).toBe('user');
   });
 
-  it.each(['suspended', 'banned'] as const)('refuses a %s account', async (status) => {
-    const user = await makeAccount();
-    await updateUser(user._id, { status });
+  it.each(['suspended', 'banned', 'deactivated'] as const)(
+    'refuses a %s account',
+    async (status) => {
+      const user = await makeAccount();
+      await updateUser(user._id, { status });
 
-    const res = await login(request.agent(app));
+      const res = await login(request.agent(app));
 
-    expect(res.status).toBe(403);
-    expect(res.body.reason).toBe(`account-${status}`);
-    expect(res.body.accessToken).toBeUndefined();
-  });
+      expect(res.status).toBe(403);
+      expect(res.body.reason).toBe(`account-${status}`);
+      expect(res.body.accessToken).toBeUndefined();
+    }
+  );
 
   it('still answers 401 for a wrong password on a suspended account', async () => {
     // Status is checked after the password so the response cannot be used to

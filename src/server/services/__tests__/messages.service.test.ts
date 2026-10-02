@@ -6,6 +6,7 @@ import {
   findThreadById,
   findThreads,
   insertProfessional,
+  updatePreferences,
   type ProfessionalAttrs,
 } from '../../models';
 import { insertUser, type User } from '../../models';
@@ -97,6 +98,16 @@ describe('openThread', () => {
       openThread({ user, professionalId: application._id.toString() })
     ).rejects.toMatchObject({ statusCode: 400 });
   });
+
+  it('refuses to open a conversation when either account blocked the other', async () => {
+    const client = await account();
+    const { user: vetUser, application } = await vet();
+    await updatePreferences(client._id, { privacy: { blockedUserIds: [vetUser._id.toString()] } });
+
+    await expect(
+      openThread({ user: client, professionalId: application._id.toString() })
+    ).rejects.toMatchObject({ statusCode: 403, reason: 'account-blocked' });
+  });
 });
 
 describe('ensureParty', () => {
@@ -145,6 +156,18 @@ describe('sendMessage and readThread', () => {
     const stamped = await findThreadById(thread._id);
     expect(stamped?.professionalReadAt).toBeInstanceOf(Date);
     expect(stamped?.clientReadAt).toBeNull();
+  });
+
+  it('refuses a new message after either participant blocks the other', async () => {
+    const client = await account();
+    const { user: vetUser, application } = await vet();
+    const thread = await openThread({ user: client, professionalId: application._id.toString() });
+    if (!thread) throw new Error('thread not opened');
+    await updatePreferences(vetUser._id, { privacy: { blockedUserIds: [client._id.toString()] } });
+
+    await expect(
+      sendMessage({ thread, sender: client, body: 'Can you see this?' })
+    ).rejects.toMatchObject({ statusCode: 403, reason: 'account-blocked' });
   });
 });
 

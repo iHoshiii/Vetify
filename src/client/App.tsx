@@ -20,6 +20,7 @@ import AnatomyPage from '@/pages/anatomy/anatomy-page';
 import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
 import BlogDetailPage from '@/pages/blogs/blog-detail-page';
 import BlogsPage from '@/pages/blogs/blogs-page';
+import BooksPage from '@/pages/books/books-page';
 import BookAppointmentPage from '@/pages/book-appointment/book-appointment-page';
 import CallPage from '@/pages/call/call-page';
 import ChatPage from '@/pages/chat/chat-page';
@@ -33,6 +34,7 @@ import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import PrivacyPage from '@/pages/privacy/privacy-page';
 import ProfessionalApplyPage from '@/pages/professionals/apply-page';
+import ProfessionalAffiliatePage from '@/pages/professionals/affiliate-page';
 import ProfessionalBookingsPage from '@/pages/professionals/bookings-page';
 import ProfessionalConversationsPage from '@/pages/professionals/conversations-page';
 import ProfessionalHistoryPage from '@/pages/professionals/history-page';
@@ -45,6 +47,7 @@ import ProfessionalSettingsPage from '@/pages/professionals/settings-page';
 import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
 import ProfessionalsPage from '@/pages/professionals/professionals-page';
 import ServicesPage from '@/pages/services/services-page';
+import SettingsPage from '@/pages/settings/settings-page';
 import SignupPage from '@/pages/signup/signup-page';
 import TermsPage from '@/pages/terms/terms-page';
 
@@ -121,6 +124,14 @@ export default function App() {
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route
+          path="books"
+          element={
+            <RequireAuth>
+              <BooksPage />
+            </RequireAuth>
+          }
+        />
         {/* Gated like the other tools it sits beside in the nav. It was the one
             entry in the Tools menu an anonymous visitor could open. */}
         <Route
@@ -199,6 +210,14 @@ export default function App() {
          */}
         <Route path="professionals/apply/:token" element={<ProfessionalInvitePage />} />
         <Route path="services" element={<ServicesPage />} />
+        <Route
+          path="settings/:section?"
+          element={
+            <RequireAuth>
+              <SettingsPage />
+            </RequireAuth>
+          }
+        />
         <Route path="signup" element={<SignupPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="*" element={<NotFoundPage />} />
@@ -218,6 +237,8 @@ export default function App() {
         <Route path="consultations" element={<ProfessionalBookingsPage kind="virtual" />} />
         <Route path="clinic-visits" element={<ProfessionalBookingsPage kind="onsite" />} />
         <Route path="reviews" element={<ProfessionalReviewsPage />} />
+        <Route path="books" element={<BooksPage manage />} />
+        <Route path="affiliate" element={<ProfessionalAffiliatePage />} />
         <Route path="conversations" element={<ProfessionalConversationsPage />} />
         <Route path="history" element={<ProfessionalHistoryPage />} />
         <Route path="location" element={<ProfessionalMapLocationPage />} />
