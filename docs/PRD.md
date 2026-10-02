@@ -6,9 +6,11 @@ Updated: 2 October 2026. This is the current Markdown PRD, aligned with the [bus
 
 Vetify connects Philippine pet owners, verified veterinary professionals, and veterinary students through discovery, appointments, consultations, feeding tools, learning resources, and general AI guidance. Keep professional care, AI information, educational material, and financial records distinct.
 
+Implementation status below refers to inspected development work, including features not yet merged to `main`. This branch changes documentation only. Requirements describe the intended system and do not imply the corresponding code is included here.
+
 The concept note is a proposal, not evidence of deployment. Planned requirements do not authorize immediate charging, service migration, or new access restrictions.
 
-| Capability                                         | Current state                           | Remaining work                                          |
+| Capability                                         | Development state                       | Remaining work                                          |
 | -------------------------------------------------- | --------------------------------------- | ------------------------------------------------------- |
 | Accounts and professional verification             | Implemented                             | Launch credential procedure and lifecycle review        |
 | Directory/map                                      | Implemented                             | Pilot coverage and external-listing provenance          |
@@ -78,7 +80,7 @@ Acceptance: ownership, invalid/missing calorie/weight values, units, and dates a
 
 - Only active verified veterinary professionals upload PDFs with title, description, topic, and sharing-permission confirmation; maximum 10 MB.
 - Original books, articles, guides, research, and case studies qualify. ISBN, publisher, English, and minimum page count are not required.
-- Apply the [versioned screening standard](veterinary-library-screening.md): readable, substantive content primarily about veterinary education, research, animal health, welfare, or practice. Check actual whole-document content, including scans, rather than title/keywords alone.
+- Apply the development screening standard (`vet-relevance-v1`): readable, substantive content primarily about veterinary education, research, animal health, welfare, or practice. Check actual whole-document content, including scans, rather than title/keywords alone.
 - Keep `pending`, `checking`, `rejected`, and `unverified` private. Active authenticated accounts list/download approved resources only.
 - Fail closed for unsupported verdicts, incomplete evidence, unreadable content, or provider failure. Invalid PDFs, scripts, embedded files, and unrelated content must not publish.
 - Show owners concise status/reasons. Owner rechecks use cooldown/submission limits and preserve document identity and earning history.
