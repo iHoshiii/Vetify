@@ -478,6 +478,18 @@ async function ensureIndex(db: Db, collection: string, index: IndexDescription):
 // get the database
 export async function ensureIndexes(): Promise<void> {
   const db = getDb();
+  await db.collection('books').createIndex({ createdAt: -1 });
+  await db.collection('books').createIndex({ author: 1, createdAt: -1 });
+  await db.collection('books').createIndex({ status: 1, createdAt: -1 });
+  await db.collection('books').createIndex({ status: 1, 'moderation.nextCheckAt': 1 });
+  await db
+    .collection('books')
+    .createIndex(
+      { contentHash: 1 },
+      { unique: true, partialFilterExpression: { contentHash: { $type: 'string' } } }
+    );
+  await db.collection('book_download_quotas').createIndex({ author: 1, bookId: 1, month: 1 });
+  await db.collection('book_download_quotas').createIndex({ author: 1, 'downloads.at': 1 });
   // create indexes for each collection based on the defined INDEX_PLAN, one at a
   // time so a conflict on one does not abandon the rest
   for (const { collection, indexes } of INDEX_PLAN) {

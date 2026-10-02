@@ -42,6 +42,8 @@ const envSchema = z.object({
   // is the judgement that decides whether readers see a post, so it should not be
   // made by an older model than the one answering questions about cat food.
   GEMINI_MODERATION_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  // Optional override for PDF relevance screening; otherwise use the moderation model.
+  GEMINI_BOOK_MODEL: z.string().min(1).optional(),
   JWT_SECRET_ACCESS: z.string().min(32, 'JWT_SECRET must be set and at least 32 characters'),
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_DAYS: z.coerce.number().int().positive().default(30),
