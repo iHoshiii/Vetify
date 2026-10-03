@@ -23,6 +23,7 @@ const HelpPage = lazy(() => import('@/pages/help/help-page'));
 const LoginPage = lazy(() => import('@/pages/login/login-page'));
 const ForgotPasswordPage = lazy(() => import('@/pages/password-recovery/forgot-password-page'));
 const ResetPasswordPage = lazy(() => import('@/pages/password-recovery/reset-password-page'));
+const VerifyEmailPage = lazy(() => import('@/pages/email-verification/verify-email-page'));
 const MapPage = lazy(() => import('@/pages/map/map-page'));
 const MessagesPage = lazy(() => import('@/pages/messages/messages-page'));
 const NotFoundPage = lazy(() => import('@/pages/not-found-page'));
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="login" element={<LoginPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="verify-email" element={<VerifyEmailPage />} />
         <Route
           path="map"
           element={
