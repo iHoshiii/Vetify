@@ -79,6 +79,14 @@ Paste the output as the value of `JWT_SECRET_ACCESS` in your `.env`.
 
 ## Database
 
+Removing an active admin through demotion, suspension, banning, or self-deactivation
+requires MongoDB transactions.
+Use Atlas or a replica set. The local `docker-compose.yml` starts a single-node
+replica set automatically. Run `docker compose up -d --wait mongo` and connect from
+the host with `mongodb://127.0.0.1:27017/vetify?replicaSet=rs0&directConnection=true`.
+Standalone MongoDB still supports ordinary account changes, but refuses active-admin
+removals with `admin-protection-unavailable` instead of risking removal of every admin.
+
 Pet profiles are stored in the `pets` collection, with one owner account per pet and
 any number of pets per account. The signed-in owner's endpoints are `GET /api/v1/pets`,
 `POST /api/v1/pets`, and `PUT /api/v1/pets/:id`. A profile requires an age in years

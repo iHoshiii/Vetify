@@ -1,18 +1,16 @@
 import type { ObjectId } from 'mongodb';
 
 import {
-  countActiveAdmins,
   findUserById,
   recordAudit,
   revokeAllRefreshTokensForUser,
-  updateUser,
   type User,
   type UserRole,
   type UserStatus,
 } from '../models';
 import { AppError } from '../utils/AppError';
 import { disconnectUserSessions } from '../realtime/hub';
-import { restrictAccount } from '../models/users/restrict-account';
+import { saveAccountChange } from '../models/users/account-change';
 import { suspensionEnd } from './user-status.service';
 
 export type ModerateUserInput<T> = {
@@ -29,20 +27,6 @@ export type ModerateUserResult<T> = {
   to: T;
   sessionsRevoked: number;
 };
-
-async function assertNotLastAdmin(target: User, stillActiveAdmin: boolean): Promise<void> {
-  const wasActiveAdmin =
-    (target.role ?? 'user') === 'admin' && (target.status ?? 'active') === 'active';
-  if (!wasActiveAdmin || stillActiveAdmin) return;
-
-  const admins = await countActiveAdmins();
-  if (admins <= 1) {
-    throw AppError.conflict(
-      'That is the last active admin. Promote someone else first.',
-      'last-admin'
-    );
-  }
-}
 
 export async function changeUserRole(
   input: ModerateUserInput<UserRole>
@@ -61,9 +45,7 @@ export async function changeUserRole(
     throw AppError.conflict(`That account is already ${to}.`, `already-${to}`);
   }
 
-  await assertNotLastAdmin(target, to === 'admin');
-
-  const user = await updateUser(target._id, { role: to });
+  const user = await saveAccountChange(target._id, { role: to });
   if (!user) return null;
 
   await recordAudit({
@@ -106,17 +88,19 @@ export async function changeUserStatus(
     throw AppError.conflict(`That account is already ${to}.`, `already-${to}`);
   }
 
-  await assertNotLastAdmin(target, to === 'active');
-
-  const user = await (to === 'active' ? updateUser : restrictAccount)(target._id, {
-    status: to,
-    // Cleared on reinstatement: leaving the note behind would describe an account
-    // that is no longer under any sanction. The audit log keeps the history.
-    statusReason: to === 'active' ? null : reason,
-    statusChangedBy: moderator._id,
-    statusChangedAt: new Date(),
-    statusUntil: to === 'suspended' ? suspensionEnd() : null,
-  });
+  const user = await saveAccountChange(
+    target._id,
+    {
+      status: to,
+      // Cleared on reinstatement: leaving the note behind would describe an account
+      // that is no longer under any sanction. The audit log keeps the history.
+      statusReason: to === 'active' ? null : reason,
+      statusChangedBy: moderator._id,
+      statusChangedAt: new Date(),
+      statusUntil: to === 'suspended' ? suspensionEnd() : null,
+    },
+    to !== 'active'
+  );
   if (!user) return null;
 
   if (to !== 'active') disconnectUserSessions(target._id.toString(), user.sessionVersion ?? 0);

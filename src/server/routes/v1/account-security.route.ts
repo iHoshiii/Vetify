@@ -13,7 +13,7 @@ import {
   updateUserPassword,
 } from '../../models';
 import { disconnectUserSessions } from '../../realtime/hub';
-import { restrictAccount } from '../../models/users/restrict-account';
+import { saveAccountChange } from '../../models/users/account-change';
 import { fail, ok } from '../../utils/response';
 import { actorOf } from './caller';
 
@@ -50,13 +50,17 @@ router.post('/deactivate', validate(accountDeactivationSchema), async (req, res)
     if (!(await comparePassword(account.password, body.currentPassword)))
       return fail(res, 400, 'Your current password is not correct.');
   }
-  const restricted = await restrictAccount(actor._id, {
-    status: 'deactivated',
-    statusReason: 'Deactivated by account owner',
-    statusChangedBy: actor._id,
-    statusChangedAt: new Date(),
-    statusUntil: null,
-  });
+  const restricted = await saveAccountChange(
+    actor._id,
+    {
+      status: 'deactivated',
+      statusReason: 'Deactivated by account owner',
+      statusChangedBy: actor._id,
+      statusChangedAt: new Date(),
+      statusUntil: null,
+    },
+    true
+  );
   if (!restricted) return fail(res, 404, 'Account not found');
   disconnectUserSessions(actor._id.toString(), restricted.sessionVersion ?? 0);
   await revokeAllRefreshTokensForUser(actor._id, restricted.sessionVersion ?? 0).catch((error) => {
