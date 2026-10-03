@@ -3,12 +3,14 @@ import type { ObjectId } from 'mongodb';
 import { toObjectId } from '../object-id';
 import { appointmentsCollection } from './collection';
 import type { AppointmentDocument } from './types';
+import type { AppointmentDelivery } from './delivery-types';
 
 // Records the owner's stars and optional note on a consultation that has taken place. Rateable means an onsite booking that completed, a virtual one both parties actually connected on (consultedAt), or a virtual no-show the booker joined for once the grace past its start has passed. The rating:null guard makes the write idempotent, so a second submission cannot overwrite the first.
 export async function rateAppointment(
   id: string | ObjectId,
   rating: number,
-  comment: string | null
+  comment: string | null,
+  delivery?: AppointmentDelivery
 ): Promise<AppointmentDocument | null> {
   const now = new Date();
   const noShowCutoff = new Date(now.getTime() - APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000);
@@ -27,7 +29,10 @@ export async function rateAppointment(
         },
       ],
     },
-    { $set: { rating, ratingComment: comment, ratedAt: now, updatedAt: now } },
+    {
+      $set: { rating, ratingComment: comment, ratedAt: now, updatedAt: now },
+      ...(delivery ? { $push: { deliveries: delivery } } : {}),
+    },
     { returnDocument: 'after' }
   );
 }

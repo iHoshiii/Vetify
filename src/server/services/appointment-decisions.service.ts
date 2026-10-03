@@ -14,6 +14,7 @@ import {
   processAppointmentDelivery,
 } from './appointment-deliveries.service';
 import type { MailDelivery } from './mail.service';
+import { reviewDeliveryFor } from './appointment-review-delivery';
 
 export type AppointmentDecision = 'confirmed' | 'declined' | 'completed';
 const DECIDABLE_FROM: Record<AppointmentDecision, AppointmentStatus[]> = {
@@ -43,7 +44,7 @@ async function moveTo(
 ): Promise<DecideAppointmentResult> {
   const task =
     status === 'completed'
-      ? undefined
+      ? reviewDeliveryFor(current)
       : newAppointmentDelivery(
           status as 'confirmed' | 'declined' | 'cancelled',
           current.startsAt,
@@ -56,6 +57,7 @@ async function moveTo(
       status,
       holdsSlot: holdsSlotFor(status) ? true : null,
       decidedAt: new Date(),
+      ...(task?.action === 'review' ? { reviewPromptSentAt: new Date() } : {}),
       ...extra,
     },
     current,

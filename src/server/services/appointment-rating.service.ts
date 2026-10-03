@@ -1,16 +1,17 @@
 import { APPOINTMENT_NO_SHOW_GRACE_MINUTES } from '@shared/limits';
 import type { ObjectId } from 'mongodb';
 import {
-  averageRatingForProfessional,
   findAppointmentById,
   rateAppointment as recordAppointmentRating,
-  setProfessionalRating,
   type AppointmentDocument,
   type User,
 } from '../models';
 import { AppError } from '../utils/AppError';
-import { createNotification } from './notifications.service';
-import { announceAppointment } from './appointment-deliveries.service';
+import {
+  announceAppointment,
+  newAppointmentDelivery,
+  processAppointmentDelivery,
+} from './appointment-deliveries.service';
 
 export type RateAppointmentInput = {
   id: string | ObjectId;
@@ -45,24 +46,11 @@ export async function rateAppointment(
     throw AppError.conflict('You have already rated this appointment');
   }
 
-  const rated = await recordAppointmentRating(id, rating, comment);
+  const delivery = newAppointmentDelivery('rated', current.startsAt, actor.name || 'A pet owner');
+  const rated = await recordAppointmentRating(id, rating, comment, delivery);
   if (!rated) return null;
 
-  const summary = await averageRatingForProfessional(rated.professional);
-  await setProfessionalRating(rated.professional, summary);
-  try {
-    await createNotification({
-      user: rated.professionalUser,
-      kind: 'appointment_rated',
-      appointment: rated._id,
-      appointmentKind: rated.kind,
-      title: `New ${rating}-star rating`,
-      body: `${actor.name || 'A pet owner'} left a rating on their visit.`,
-    });
-  } catch (err) {
-    console.error('[appointments] rating notification failed', err);
-  }
-
+  await processAppointmentDelivery(rated, delivery.id);
   announceAppointment(rated);
 
   return rated;

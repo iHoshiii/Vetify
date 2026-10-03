@@ -49,7 +49,10 @@ export async function saveDeliveryProgress(
   delivery: ObjectId,
   leaseToken: ObjectId,
   progress: Partial<
-    Pick<AppointmentDelivery, 'notificationPending' | 'mailPending' | 'mailMessage'>
+    Pick<
+      AppointmentDelivery,
+      'notificationPending' | 'mailPending' | 'summaryPending' | 'mailMessage'
+    >
   >
 ): Promise<boolean> {
   const $set = Object.fromEntries(
@@ -71,7 +74,7 @@ export async function releaseAppointmentDelivery(
   leaseToken: ObjectId
 ): Promise<void> {
   const filter = { _id: appointment, deliveries: { $elemMatch: { id: task.id, leaseToken } } };
-  if (!task.notificationPending && !task.mailPending) {
+  if (!task.notificationPending && !task.mailPending && !task.summaryPending) {
     await appointmentsCollection().updateOne(filter, { $pull: { deliveries: { id: task.id } } });
     return;
   }

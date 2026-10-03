@@ -53,5 +53,13 @@ export async function appointmentDeliveryNotification(
       title: 'How was your visit?',
       body: `Rate ${pet}'s visit with ${application?.fullName || task.actorName || 'your vet'}.`,
     });
+  } else if (task.action === 'rated' && appointment.rating != null) {
+    await createNotification({
+      ...shared,
+      user: appointment.professionalUser,
+      kind: 'appointment_rated',
+      title: `New ${appointment.rating}-star rating`,
+      body: `${task.actorName} left a rating on their visit.`,
+    });
   }
 }

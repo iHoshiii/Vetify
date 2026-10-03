@@ -17,6 +17,7 @@ export type AppointmentPatch = Partial<
     | 'cancelledBy'
     | 'decidedAt'
     | 'joinedAt'
+    | 'reviewPromptSentAt'
   >
 >;
 

@@ -7,7 +7,9 @@ export type AppointmentDeliveryAction =
   | 'declined'
   | 'cancelled'
   | 'reminder'
-  | 'review';
+  | 'review'
+  | 'rated'
+  | 'rating_removed';
 
 export type AppointmentDelivery = {
   id: ObjectId;
@@ -17,6 +19,7 @@ export type AppointmentDelivery = {
   actorName: string;
   notificationPending: boolean;
   mailPending: boolean;
+  summaryPending?: boolean;
   mailMessage?: MailMessage;
   availableAt: Date;
   leaseUntil: Date | null;

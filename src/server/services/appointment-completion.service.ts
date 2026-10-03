@@ -1,9 +1,6 @@
 import { completeConfirmed, findStartedConfirmed, type AppointmentDocument } from '../models';
-import {
-  announceAppointment,
-  newAppointmentDelivery,
-  processAppointmentDelivery,
-} from './appointment-deliveries.service';
+import { announceAppointment, processAppointmentDelivery } from './appointment-deliveries.service';
+import { reviewDeliveryFor } from './appointment-review-delivery';
 
 // How often the scanner wakes.
 const SCAN_INTERVAL_MS = 60_000;
@@ -25,13 +22,7 @@ export async function scanCompletions(): Promise<void> {
     const endMs = appointment.startsAt.getTime() + appointment.minutes * 60_000;
     if (endMs > now.getTime()) continue;
 
-    const rateable =
-      appointment.kind === 'onsite' ||
-      appointment.consultedAt != null ||
-      appointment.clientJoinedAt != null;
-    const delivery = rateable
-      ? newAppointmentDelivery('review', appointment.startsAt, '')
-      : undefined;
+    const delivery = reviewDeliveryFor(appointment);
     const done = await completeConfirmed(appointment._id, appointment, delivery);
     if (!done) continue;
     announceCompletion(done);
