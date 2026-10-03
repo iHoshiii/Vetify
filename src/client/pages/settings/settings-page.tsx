@@ -11,6 +11,7 @@ import SettingsNavigation, {
   type CustomerSettingsSection,
 } from '@/components/settings/consumer/SettingsNavigation';
 import { SectionHeading } from '@/components/settings/consumer/controls';
+import UnsavedSettingsProvider from '@/components/settings/consumer/UnsavedSettingsProvider';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { usePreferences } from '@/hooks/usePreferences';
 
@@ -89,12 +90,14 @@ export default function SettingsPage() {
           </p>
         </div>
         <div className="lg:flex lg:items-start lg:gap-8">
-          <SettingsNavigation />
-          <div className="min-h-[32rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <SectionHeading title={COPY[active].title} description={COPY[active].description}>
-              {content()}
-            </SectionHeading>
-          </div>
+          <UnsavedSettingsProvider>
+            <SettingsNavigation />
+            <div className="min-h-[32rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <SectionHeading title={COPY[active].title} description={COPY[active].description}>
+                {content()}
+              </SectionHeading>
+            </div>
+          </UnsavedSettingsProvider>
         </div>
       </div>
     </main>
