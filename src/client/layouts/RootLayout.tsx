@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import RevealObserver from '@/components/RevealObserver';
 import ScrollToTop from '@/components/ScrollToTop';
 import SiteHeader from '@/components/navbar';
+import { PageBoundary } from '@/routes/page-boundary';
 
 /**
  * Port of the former src/app/layout.tsx. The <html>/<body> tags now live in
@@ -15,7 +16,9 @@ export default function RootLayout() {
       <ScrollToTop />
       <RevealObserver />
       <SiteHeader />
-      <Outlet />
+      <PageBoundary>
+        <Outlet />
+      </PageBoundary>
     </>
   );
 }

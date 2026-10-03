@@ -1,37 +1,42 @@
+import { lazy } from 'react';
 import { consoleRoutes } from './routes/console-routes';
+import { PageBoundary } from './routes/page-boundary';
 import { Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
 import { RequireTermsAgreed } from '@/components/providers/RequireTermsAgreed';
 import RootLayout from '@/layouts/RootLayout';
-import AboutPage from '@/pages/about/about-page';
-import AnatomyPage from '@/pages/anatomy/anatomy-page';
-import AuthCallbackPage from '@/pages/auth-callback/auth-callback-page';
-import BlogDetailPage from '@/pages/blogs/blog-detail-page';
-import BlogsPage from '@/pages/blogs/blogs-page';
-import BooksPage from '@/pages/books/books-page';
-import BookAppointmentPage from '@/pages/book-appointment/book-appointment-page';
-import CallPage from '@/pages/call/call-page';
-import ChatPage from '@/pages/chat/chat-page';
-import ContactPage from '@/pages/contact/contact-page';
-import HelpPage from '@/pages/help/help-page';
 import HomePage from '@/pages/home-page';
-import LoginPage from '@/pages/login/login-page';
-import ForgotPasswordPage from '@/pages/password-recovery/forgot-password-page';
-import ResetPasswordPage from '@/pages/password-recovery/reset-password-page';
-import MapPage from '@/pages/map/map-page';
-import MessagesPage from '@/pages/messages/messages-page';
-import NotFoundPage from '@/pages/not-found-page';
 import PlannerPage from '@/pages/planner/planner-page';
-import PrivacyPage from '@/pages/privacy/privacy-page';
-import ProfessionalApplyPage from '@/pages/professionals/apply-page';
-import ProfessionalInvitePage from '@/pages/professionals/invite-page';
-import ProfessionalPublicProfilePage from '@/pages/professionals/public-profile-page';
-import ProfessionalsPage from '@/pages/professionals/professionals-page';
-import ServicesPage from '@/pages/services/services-page';
-import SettingsPage from '@/pages/settings/settings-page';
-import SignupPage from '@/pages/signup/signup-page';
-import TermsPage from '@/pages/terms/terms-page';
+
+const AboutPage = lazy(() => import('@/pages/about/about-page'));
+const AnatomyPage = lazy(() => import('@/pages/anatomy/anatomy-page'));
+const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
+const BlogDetailPage = lazy(() => import('@/pages/blogs/blog-detail-page'));
+const BlogsPage = lazy(() => import('@/pages/blogs/blogs-page'));
+const BooksPage = lazy(() => import('@/pages/books/books-page'));
+const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
+const CallPage = lazy(() => import('@/pages/call/call-page'));
+const ChatPage = lazy(() => import('@/pages/chat/chat-page'));
+const ContactPage = lazy(() => import('@/pages/contact/contact-page'));
+const HelpPage = lazy(() => import('@/pages/help/help-page'));
+const LoginPage = lazy(() => import('@/pages/login/login-page'));
+const ForgotPasswordPage = lazy(() => import('@/pages/password-recovery/forgot-password-page'));
+const ResetPasswordPage = lazy(() => import('@/pages/password-recovery/reset-password-page'));
+const MapPage = lazy(() => import('@/pages/map/map-page'));
+const MessagesPage = lazy(() => import('@/pages/messages/messages-page'));
+const NotFoundPage = lazy(() => import('@/pages/not-found-page'));
+const PrivacyPage = lazy(() => import('@/pages/privacy/privacy-page'));
+const ProfessionalApplyPage = lazy(() => import('@/pages/professionals/apply-page'));
+const ProfessionalInvitePage = lazy(() => import('@/pages/professionals/invite-page'));
+const ProfessionalPublicProfilePage = lazy(
+  () => import('@/pages/professionals/public-profile-page')
+);
+const ProfessionalsPage = lazy(() => import('@/pages/professionals/professionals-page'));
+const ServicesPage = lazy(() => import('@/pages/services/services-page'));
+const SettingsPage = lazy(() => import('@/pages/settings/settings-page'));
+const SignupPage = lazy(() => import('@/pages/signup/signup-page'));
+const TermsPage = lazy(() => import('@/pages/terms/terms-page'));
 
 export default function App() {
   return (
@@ -133,7 +138,9 @@ export default function App() {
         path="call/:appointmentId"
         element={
           <RequireAuth>
-            <CallPage />
+            <PageBoundary>
+              <CallPage />
+            </PageBoundary>
           </RequireAuth>
         }
       />
