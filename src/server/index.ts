@@ -4,10 +4,17 @@ import { applyDnsServers } from './config/dns';
 import { env, isProduction, isTest } from './config/env';
 import { ensureIndexes } from './models';
 import { attachRealtime } from './realtime/socket';
-import { startCompletionScanner } from './services/appointment-completion.service';
+import {
+  startCompletionScanner,
+  stopCompletionScanner,
+} from './services/appointment-completion.service';
 import { startOsmClinicRefresh } from './services/osm-clinics.service';
-import { startReminderScanner } from './services/reminders.service';
+import { startReminderScanner, stopReminderScanner } from './services/reminders.service';
 import { startBookScanner } from './services/book-review.service';
+import {
+  startAppointmentDeliveryScanner,
+  stopAppointmentDeliveryScanner,
+} from './services/appointment-deliveries.service';
 
 /**
  * Mongoose created indexes on its own the first time each model was used. The
@@ -41,6 +48,7 @@ async function main() {
 
   // Flips confirmed bookings to completed once their time has passed, same conditions.
   if (dbUp && !isTest) startCompletionScanner();
+  if (dbUp && !isTest) startAppointmentDeliveryScanner();
 
   const stopOsmClinicRefresh = dbUp && !isTest ? startOsmClinicRefresh() : () => undefined;
   const stopBookScanner = dbUp && !isTest ? startBookScanner() : () => undefined;
@@ -60,6 +68,9 @@ async function main() {
     console.log(`\n[server] ${signal} received, shutting down`);
     stopOsmClinicRefresh();
     stopBookScanner();
+    stopReminderScanner();
+    stopCompletionScanner();
+    stopAppointmentDeliveryScanner();
     await io.close();
     server.close(async () => {
       await disconnectDb();
