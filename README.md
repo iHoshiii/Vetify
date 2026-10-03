@@ -27,7 +27,7 @@ src/
 
 ### Prerequisites
 
-- Node 18+
+- Node 24 (also used by CI and production builds)
 - npm
 
 ### Development
@@ -37,7 +37,7 @@ npm install
 npm run dev        # starts client (Vite) + server (Express) concurrently
 ```
 
-Client runs on `http://localhost:5173`, server on `http://localhost:3000`.
+Client runs on `http://localhost:5173`, server on `http://localhost:8000`.
 
 ### Individual
 
@@ -53,25 +53,29 @@ npm run build        # builds client (dist/) and server (dist/server/)
 npm run start        # runs built server
 ```
 
+The server build creates `dist/server/index.js` and its PDF worker. Keep both
+files together and install runtime dependencies with `npm ci --omit=dev`.
+The server reads environment settings at startup and connects to MongoDB.
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and fill in:
 
 ```
 MONGODB_URI=
-JWT_SECRET=
+JWT_SECRET_ACCESS=
 GEMINI_API_KEY=
 ACCESS_TOKEN_MINUTES=
 REFRESH_TOKEN_DAYS=
 ```
 
-Generate a secure `JWT_SECRET` (must be 32+ characters):
+Generate a secure `JWT_SECRET_ACCESS` (must be 32+ characters):
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Paste the output as the value of `JWT_SECRET` in your `.env`.
+Paste the output as the value of `JWT_SECRET_ACCESS` in your `.env`.
 
 ## Database
 
@@ -100,7 +104,12 @@ npm run test:client       # client tests only
 npm run test:server       # server tests only
 npm run test:coverage     # with coverage report
 npm run test:e2e          # Playwright E2E tests
+npm run test:production   # built server and PDF worker with a temporary local database
 ```
+
+Install browser binaries once with `npx playwright install chromium firefox`.
+Browser tests build the client, preview it on port 5173, and use controlled API replies, so they
+do not contact Gemini, email providers, or your database.
 
 ## Linting & Formatting
 
@@ -114,6 +123,7 @@ Husky runs `prettier` on staged files automatically on every commit.
 
 ## CI
 
-CI lives in `.github/workflows/ci.yml` and runs tests only.
+CI runs on pushes and pull requests to `dev` and `main`. It checks lint, types,
+client/server tests, production builds, startup, the PDF worker, and browser flows.
 
 CD and deployment are not configured yet.

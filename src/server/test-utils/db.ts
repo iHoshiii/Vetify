@@ -14,7 +14,7 @@ let mongo: MongoMemoryServer | null = null;
  * per-model `init()` no longer does it on first use.
  */
 export async function startTestDb(): Promise<void> {
-  mongo = await MongoMemoryServer.create();
+  mongo = await MongoMemoryServer.create({ instance: { launchTimeout: 60_000 } });
   await connectDb(mongo.getUri());
   await ensureIndexes();
 }
