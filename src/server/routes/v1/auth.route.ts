@@ -14,13 +14,8 @@ import {
   revokeAllRefreshTokensForUser,
   revokeRefreshTokenByHash,
 } from '../../models/refresh-token';
-import {
-  comparePassword,
-  findUserByEmail,
-  findUserWithPasswordByEmail,
-  insertUser,
-  toPublicUser,
-} from '../../models/users';
+import { toPublicUser } from '../../models/users';
+import { createNativeSocialGrant } from '../../models/native-social-grant';
 import {
   accessTokenClaimsFor,
   createAuthPayloadFor,
@@ -29,6 +24,11 @@ import {
   setRefreshCookie,
   signAccessToken,
 } from '../../services/auth.service';
+import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
+import {
+  nativeSocialErrorUrl,
+  readNativeSocialContext,
+} from '../../services/native-social.service';
 import {
   OAUTH_STATE_COOKIE,
   sealState,
@@ -56,7 +56,7 @@ const router = Router();
 
 /**
  * Turns away a caller whose account has been suspended or banned, before any
- * token is minted. Login and the OAuth callback both come through here — a block
+ * token is minted. Refresh and the OAuth callback both come through here — a block
  * that only cut existing sessions would let the same person sign straight back
  * in.
  *
@@ -86,17 +86,7 @@ function redirectWithError(res: Response, reason: string): void {
 
 // POST /api/v1/auth/signup
 router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
-  const payload = req.body as SignupInput;
-
-  const existing = await findUserByEmail(payload.email);
-  if (existing) return fail(res, 409, 'User with that email already exists');
-
-  const user = await insertUser({
-    email: payload.email,
-    password: payload.password,
-    name: payload.name,
-    provider: 'local',
-  });
+  const user = await createLocalAccount(req.body as SignupInput);
   const auth = await createAuthPayloadFor(user);
 
   recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
@@ -107,21 +97,7 @@ router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => 
 
 // POST /api/v1/auth/login
 router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
-  const payload = req.body as LoginInput;
-  // The one read in the codebase that returns the stored hash.
-  const user = await findUserWithPasswordByEmail(payload.email);
-  if (!user) return fail(res, 401, 'Invalid credentials');
-
-  const match = await comparePassword(user.password, payload.password);
-  if (!match) return fail(res, 401, 'Invalid credentials');
-
-  // Checked after the password so a wrong guess cannot be used to probe which
-  // addresses belong to suspended accounts.
-  const blocked = await accountBlockReason(user);
-  if (blocked) {
-    return failReason(res, 403, blockedMessage(blocked), `account-${blocked}`);
-  }
-
+  const user = await authenticateLocalAccount(req.body as LoginInput);
   const auth = await createAuthPayloadFor(user);
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
 
@@ -201,16 +177,20 @@ router.get('/:provider', (req, res) => {
     return fail(res, 404, `Unknown auth provider '${req.params.provider}'`);
   }
 
+  const native = readNativeSocialContext(req);
+  if (native) res.setHeader('Cache-Control', 'no-store');
   const config = getProviderConfig(name);
   if (!config) {
     console.warn(`[auth] ${name} login requested but not configured`);
-    return redirectWithError(res, 'unconfigured');
+    return native
+      ? res.redirect(nativeSocialErrorUrl(native, 'unconfigured'))
+      : redirectWithError(res, 'unconfigured');
   }
 
   const state = crypto.randomBytes(16).toString('base64url');
   const { verifier, challenge } = createPkcePair();
 
-  res.cookie(OAUTH_STATE_COOKIE, sealState(name, state, verifier), stateCookieOptions);
+  res.cookie(OAUTH_STATE_COOKIE, sealState(name, state, verifier, native), stateCookieOptions);
   res.redirect(buildAuthorizeUrl(name, config, state, challenge));
 });
 
@@ -231,26 +211,28 @@ router.get('/:provider/callback', async (req, res) => {
   // Single use, whatever happens next.
   res.clearCookie(OAUTH_STATE_COOKIE, { path: stateCookieOptions.path });
 
-  // Set when the user hits "cancel" on the consent screen.
-  if (typeof req.query.error === 'string') {
-    console.warn(`[auth] ${name} consent declined: ${req.query.error}`);
-    return redirectWithError(res, 'denied');
-  }
-
   const sealed = unsealState(
     (req.cookies as Record<string, string> | undefined)?.[OAUTH_STATE_COOKIE]
   );
   if (!sealed || sealed.provider !== name || !statesMatch(sealed.state, req.query.state)) {
-    return redirectWithError(res, 'state');
+    // Only a verified native context may send this browser back into the app.
+    return redirectWithError(res, typeof req.query.error === 'string' ? 'denied' : 'state');
   }
+  const redirectError = (reason: string) =>
+    sealed.native
+      ? res.redirect(nativeSocialErrorUrl(sealed.native, reason))
+      : redirectWithError(res, reason);
+  if (sealed.native) res.setHeader('Cache-Control', 'no-store');
+
+  if (typeof req.query.error === 'string') return redirectError('denied');
 
   const code = req.query.code;
-  if (typeof code !== 'string' || !code) return redirectWithError(res, 'code');
+  if (typeof code !== 'string' || !code) return redirectError('code');
 
   const config = getProviderConfig(name);
   if (!config) {
     console.warn(`[auth] ${name} callback but not configured`);
-    return redirectWithError(res, 'unconfigured');
+    return redirectError('unconfigured');
   }
 
   try {
@@ -259,7 +241,12 @@ router.get('/:provider/callback', async (req, res) => {
 
     // Same block as the password path. Without it, "Continue with Google" is a
     // way around a ban.
-    if (await accountBlockReason(user)) return redirectWithError(res, 'blocked');
+    if (await accountBlockReason(user)) return redirectError('blocked');
+
+    if (sealed.native) {
+      const url = await createNativeSocialGrant(sealed.native, user._id, sealed.state);
+      return res.redirect(url);
+    }
 
     const auth = await createAuthPayloadFor(user);
 
@@ -270,7 +257,9 @@ router.get('/:provider/callback', async (req, res) => {
     return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
   } catch (err) {
     console.error(`[auth] ${name} callback failed:`, (err as Error).message);
-    return redirectWithError(res, err instanceof OAuthError ? 'provider' : 'server');
+    return redirectError(
+      err instanceof OAuthError ? (sealed.native ? err.reason ?? 'provider' : 'provider') : 'server'
+    );
   }
 });
 

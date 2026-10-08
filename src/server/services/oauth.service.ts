@@ -33,7 +33,7 @@ type ProviderConfig = {
 
 /** Thrown for anything the provider hands back that we cannot act on. */
 export class OAuthError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly reason?: 'signup-required') {
     super(message);
     this.name = 'OAuthError';
   }

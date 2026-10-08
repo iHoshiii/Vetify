@@ -113,7 +113,8 @@ export async function findOrCreateOAuthUser(
 
   if (!profile.email) {
     throw new OAuthError(
-      `${provider} does not release an email address, so an account cannot be created from it alone`
+      `${provider} does not release an email address, so an account cannot be created from it alone`,
+      'signup-required'
     );
   }
 

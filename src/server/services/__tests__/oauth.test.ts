@@ -144,6 +144,7 @@ describe('oauth state cookie', () => {
     expect(unsealState('')).toBeNull();
     expect(unsealState(undefined)).toBeNull();
     expect(unsealState(42)).toBeNull();
+    expect(unsealState(`${sealed.split('.')[0]}.${'\u00e9'.repeat(43)}`)).toBeNull();
   });
 
   it('rejects an expired cookie', () => {
@@ -170,5 +171,6 @@ describe('oauth state cookie', () => {
     expect(statesMatch('abcdef', 'abcdeg')).toBe(false);
     expect(statesMatch('abcdef', 'short')).toBe(false);
     expect(statesMatch('abcdef', undefined)).toBe(false);
+    expect(statesMatch('abcdef', '\u00e9'.repeat(6))).toBe(false);
   });
 });

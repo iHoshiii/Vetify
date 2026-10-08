@@ -17,21 +17,14 @@ import {
 import { toPublicUser, type User } from '../models/users';
 import { AppError } from '../utils/AppError';
 import { accessTokenClaimsFor } from './auth.service';
-import { blockedMessage, currentStatus } from './user-status.service';
-
-export async function requireActiveNativeAccount(user: User) {
-  const status = await currentStatus(user);
-  if (status !== 'active') {
-    throw AppError.forbidden(blockedMessage(status), `account-${status}`);
-  }
-}
+import { requireActiveAccount } from './local-auth.service';
 
 export async function requireBrowserSession(tokenHash: string) {
   const token = await findRefreshTokenWithOwner(tokenHash);
   if (!token?.owner || token.nativeClientId || !isRefreshTokenActive(token)) {
     throw AppError.unauthorized('Your main system session expired.', 'login-required');
   }
-  await requireActiveNativeAccount(token.owner);
+  await requireActiveAccount(token.owner);
   return { ...token, owner: token.owner };
 }
 
@@ -68,7 +61,7 @@ async function mintNativeCredentials(user: User, sessionId: string) {
 }
 
 export async function createNativeSession(user: User) {
-  await requireActiveNativeAccount(user);
+  await requireActiveAccount(user);
   const sessionId = new ObjectId();
   await nativeSessionsCollection().insertOne({
     _id: sessionId,
@@ -98,7 +91,7 @@ export async function refreshNativeSession(raw: string) {
     throw AppError.unauthorized('Your mobile session expired.');
   }
   try {
-    await requireActiveNativeAccount(token.owner);
+    await requireActiveAccount(token.owner);
   } catch (error) {
     await revokeNativeSession(sessionId);
     throw error;

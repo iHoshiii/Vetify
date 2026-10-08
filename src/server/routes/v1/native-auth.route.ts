@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { loginSchema, signupSchema, type LoginInput, type SignupInput } from '@shared/schemas';
 import {
   nativeExchangeSchema,
   nativeHandoffSchema,
@@ -8,9 +9,11 @@ import { env } from '../../config/env';
 import { authLimiter } from '../../middleware/auth-limiter';
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
+import { recordActivity } from '../../models/activity-event';
 import { consumeNativeHandoff, createNativeHandoff } from '../../models/native-handoff';
 import { hashToken } from '../../models/refresh-token';
 import { toPublicUser } from '../../models/users';
+import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
 import {
   createNativeSession,
   logoutNativeSession,
@@ -19,11 +22,27 @@ import {
 } from '../../services/native-session.service';
 import { AppError } from '../../utils/AppError';
 import { ok } from '../../utils/response';
+import nativeSocialRouter from './native-social.route';
 
 const router = Router();
 router.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
+});
+router.use('/oauth', nativeSocialRouter);
+
+router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
+  const user = await authenticateLocalAccount(req.body as LoginInput);
+  const session = await createNativeSession(user);
+  recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: 'local' } });
+  ok(res, session);
+});
+
+router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
+  const user = await createLocalAccount(req.body as SignupInput);
+  const session = await createNativeSession(user);
+  recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
+  ok(res, session);
 });
 
 router.post(
