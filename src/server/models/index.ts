@@ -29,6 +29,8 @@ import {
 } from './professional-inquiries';
 import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
+import { NATIVE_HANDOFF_COLLECTION, NATIVE_HANDOFF_INDEXES } from './native-handoff';
+import { NATIVE_SESSION_COLLECTION, NATIVE_SESSION_INDEXES } from './native-session';
 import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 
@@ -410,6 +412,8 @@ const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
   { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
+  { collection: NATIVE_HANDOFF_COLLECTION, indexes: NATIVE_HANDOFF_INDEXES },
+  { collection: NATIVE_SESSION_COLLECTION, indexes: NATIVE_SESSION_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },

@@ -144,6 +144,7 @@ router.post('/refresh', authLimiter, async (req, res) => {
   const tokenHash = hashToken(raw);
   const rt = await findRefreshTokenWithOwner(tokenHash);
   if (!rt) return fail(res, 401, 'Invalid or expired refresh token');
+  if (rt.nativeClientId) return fail(res, 401, 'Use mobile session refresh for this token');
 
   // Reuse detection: a token still on record but already revoked is a replay of one rotation burned, so drop every session for that owner.
   if (rt.revokedAt) {

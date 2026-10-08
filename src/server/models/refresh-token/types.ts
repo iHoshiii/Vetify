@@ -12,6 +12,8 @@ export type RefreshTokenDocument = {
   revokedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  nativeClientId?: string;
+  nativeSessionId?: string;
 };
 
 // refresh token document with the owner user populated or null if the user was deleted
