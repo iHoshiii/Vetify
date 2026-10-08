@@ -32,14 +32,14 @@ router.use((_req, res, next) => {
 router.use('/oauth', nativeSocialRouter);
 
 router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
-  const user = await authenticateLocalAccount(req.body as LoginInput);
+  const user = await authenticateLocalAccount(req.body as LoginInput, { native: true });
   const session = await createNativeSession(user);
   recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: 'local' } });
   ok(res, session);
 });
 
 router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
-  const user = await createLocalAccount(req.body as SignupInput);
+  const user = await createLocalAccount(req.body as SignupInput, { native: true });
   const session = await createNativeSession(user);
   recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
   ok(res, session);

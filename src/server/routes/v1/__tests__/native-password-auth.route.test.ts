@@ -67,7 +67,12 @@ describe('Email and password mobile authentication', () => {
     expect(web.body.user.id).toBe(mobile.body.user.id);
     expect(web.headers['set-cookie']).toBeDefined();
     expect((await introspect(mobile.body.accessToken)).body.user.id).toBe(mobile.body.user.id);
-    expect((await nativeSignup(SIGNUP)).status).toBe(409);
+    const duplicate = await nativeSignup(SIGNUP);
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toEqual({
+      error: 'Account already exist. Please login.',
+      reason: 'account-exists',
+    });
     expect((await request(app).post('/api/v1/auth/signup').send(SIGNUP)).status).toBe(409);
     expect(await usersCollection().countDocuments()).toBe(1);
   });
@@ -78,7 +83,12 @@ describe('Email and password mobile authentication', () => {
     const mobile = await nativeLogin(CREDENTIALS);
     expect(mobile.status).toBe(200);
     expect(mobile.body.user.id).toBe(web.body.user.id);
-    expect((await nativeSignup({ ...SIGNUP, email: 'MOBILE@EXAMPLE.COM' })).status).toBe(409);
+    const duplicate = await nativeSignup({ ...SIGNUP, email: 'MOBILE@EXAMPLE.COM' });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toEqual({
+      error: 'Account already exist. Please login.',
+      reason: 'account-exists',
+    });
     expect(await usersCollection().countDocuments()).toBe(1);
   });
 
@@ -88,11 +98,29 @@ describe('Email and password mobile authentication', () => {
       nativeSignup({ ...SIGNUP, email: 'MOBILE@EXAMPLE.COM' }),
     ]);
     expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    expect(responses.find((response) => response.status === 409)?.body).toEqual({
+      error: 'Account already exist. Please login.',
+      reason: 'account-exists',
+    });
     expect(await usersCollection().countDocuments()).toBe(1);
     expect(await refreshTokensCollection().countDocuments()).toBe(1);
   });
 
-  it('returns the same invalid-credentials error for missing, wrong-password and provider-only accounts', async () => {
+  it('asks unregistered mobile users to create an account and preserves generic website errors', async () => {
+    const credentials = { email: 'missing@example.com', password: 'Wrong!' };
+    const mobile = await nativeLogin(credentials);
+    expect(mobile.status).toBe(401);
+    expect(mobile.body).toEqual({
+      error: 'Create an account first to use the app.',
+      reason: 'account-not-found',
+    });
+    const web = await request(app).post('/api/v1/auth/login').send(credentials);
+    expect(web.status).toBe(401);
+    expect(web.body).toEqual({ error: 'Invalid credentials' });
+    expect(await refreshTokensCollection().countDocuments()).toBe(0);
+  });
+
+  it('keeps wrong-password and provider-only refusals distinct from unregistered accounts', async () => {
     const local = await insertUser({ ...CREDENTIALS, provider: 'local', name: 'Local' });
     await updateUser(local._id, { status: 'banned' });
     await insertUser({
@@ -102,16 +130,31 @@ describe('Email and password mobile authentication', () => {
       name: 'OAuth',
     });
     const responses = await Promise.all([
-      nativeLogin({ email: 'missing@example.com', password: 'Wrong!' }),
       nativeLogin({ ...CREDENTIALS, password: 'Wrong!' }),
       nativeLogin({ email: 'oauth@example.com', password: 'Wrong!' }),
     ]);
-    expect(responses.map((response) => response.status)).toEqual([401, 401, 401]);
+    expect(responses.map((response) => response.status)).toEqual([401, 401]);
     expect(responses.map((response) => response.body)).toEqual([
       { error: 'Invalid credentials' },
       { error: 'Invalid credentials' },
-      { error: 'Invalid credentials' },
     ]);
+    expect(await refreshTokensCollection().countDocuments()).toBe(0);
+  });
+
+  it('asks existing social-account owners to log in instead of creating a second account', async () => {
+    await insertUser({
+      email: CREDENTIALS.email,
+      provider: 'google',
+      providerId: 'google-user',
+      name: 'OAuth',
+    });
+    const duplicate = await nativeSignup({ ...SIGNUP, email: '  MOBILE@EXAMPLE.COM  ' });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toEqual({
+      error: 'Account already exist. Please login.',
+      reason: 'account-exists',
+    });
+    expect(await usersCollection().countDocuments()).toBe(1);
     expect(await refreshTokensCollection().countDocuments()).toBe(0);
   });
 
