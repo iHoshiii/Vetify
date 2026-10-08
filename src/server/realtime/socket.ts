@@ -54,7 +54,11 @@ export function attachRealtime(http: HttpServer): Server {
     if (!token) return next(new Error('unauthorized'));
 
     try {
-      const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as { sub?: string };
+      const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as {
+        sub?: string;
+        nativeSessionId?: unknown;
+      };
+      if (payload.nativeSessionId !== undefined) return next(new Error('unauthorized'));
       if (!payload.sub) return next(new Error('unauthorized'));
       socket.data.userId = payload.sub;
       return next();

@@ -18,6 +18,9 @@ beforeAll(startTestDb, 120_000);
 afterEach(clearTestDb);
 afterAll(stopTestDb);
 
+const mainPets = (accessToken: string) =>
+  request(app).get('/api/v1/pets').set('Authorization', `Bearer ${accessToken}`);
+
 describe('Independent mobile sessions', () => {
   it('rotates native credentials and detects reuse without ending the browser session', async () => {
     const { browser } = await browserSession();
@@ -27,9 +30,11 @@ describe('Independent mobile sessions', () => {
     expect(second.status).toBe(200);
     expect(second.body.refreshToken).not.toBe(first.body.refreshToken);
     expect((await introspect(second.body.accessToken)).status).toBe(200);
+    expect((await mainPets(second.body.accessToken)).status).toBe(200);
     expect((await nativeRefresh(first.body.refreshToken)).status).toBe(401);
     expect((await nativeRefresh(second.body.refreshToken)).status).toBe(401);
     expect((await introspect(second.body.accessToken)).status).toBe(401);
+    expect((await mainPets(second.body.accessToken)).status).toBe(401);
     expect((await browser.post('/api/v1/auth/refresh')).status).toBe(200);
   });
 
@@ -37,10 +42,12 @@ describe('Independent mobile sessions', () => {
     const { browser } = await browserSession();
     const { code } = await connectionCode(browser);
     const native = await exchange(code);
+    expect((await mainPets(native.body.accessToken)).status).toBe(200);
     const logout = await nativeLogout(native.body.refreshToken);
     expect(logout.status).toBe(200);
     expect(logout.headers['set-cookie']).toBeUndefined();
     expect((await introspect(native.body.accessToken)).status).toBe(401);
+    expect((await mainPets(native.body.accessToken)).status).toBe(401);
     expect((await nativeRefresh(native.body.refreshToken)).status).toBe(401);
     expect((await browser.post('/api/v1/auth/refresh')).status).toBe(200);
   });
@@ -87,6 +94,7 @@ describe('Independent mobile sessions', () => {
     await revokeAllRefreshTokensForUser(user._id);
     expect((await introspect(native.body.accessToken)).status).toBe(401);
     expect((await nativeRefresh(native.body.refreshToken)).status).toBe(401);
+    expect((await mainPets(native.body.accessToken)).status).toBe(401);
   });
 
   it('rejects blocked accounts on refresh', async () => {
