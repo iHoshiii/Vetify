@@ -1,6 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 import AccountForm from '@/components/settings/consumer/AccountForm';
+import ConnectMealPlanner from '@/components/settings/consumer/ConnectMealPlanner';
 import NotificationsForm from '@/components/settings/consumer/NotificationsForm';
 import PasswordForm from '@/components/settings/consumer/PasswordForm';
 import PrivacyForm from '@/components/settings/consumer/PrivacyForm';
@@ -33,6 +34,10 @@ const COPY: Record<CustomerSettingsSection, { title: string; description: string
     title: 'Account',
     description: 'Download your account data, sign out, or deactivate access.',
   },
+  'meal-planner': {
+    title: 'Connect meal planner',
+    description: 'Scan a personal QR to use your current Vetify account in the mobile app.',
+  },
 };
 
 export default function SettingsPage() {
@@ -49,6 +54,7 @@ export default function SettingsPage() {
     if (active === 'security') return <PasswordForm />;
     if (active === 'privacy') return <PrivacyForm />;
     if (active === 'account') return <AccountForm />;
+    if (active === 'meal-planner') return <ConnectMealPlanner />;
     if (preferences.isLoading)
       return (
         <div className="space-y-3">

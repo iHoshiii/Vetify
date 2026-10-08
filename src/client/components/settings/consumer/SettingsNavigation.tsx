@@ -11,6 +11,11 @@ export const CUSTOMER_SETTINGS = [
   { id: 'privacy', label: 'Privacy & Safety', description: 'Blocked accounts' },
   { id: 'region', label: 'Region', description: 'Timezone and formatting' },
   { id: 'account', label: 'Account', description: 'Data and account access' },
+  {
+    id: 'meal-planner',
+    label: 'Connect meal planner',
+    description: 'Use your account on your phone',
+  },
 ] as const;
 
 export type CustomerSettingsSection = (typeof CUSTOMER_SETTINGS)[number]['id'];
