@@ -4,6 +4,7 @@ import { introspectionGuard } from '../../middleware/introspection-guard';
 import { activeNativeSession } from '../../models/native-session';
 import { findUserById } from '../../models/users';
 import { currentStatus } from '../../services/user-status.service';
+import { currentSubscription } from '../../services/subscription.service';
 import { AppError } from '../../utils/AppError';
 import { ok } from '../../utils/response';
 
@@ -33,14 +34,19 @@ router.post('/introspect', introspectionGuard, async (req, res) => {
     boundary = Math.min(boundary, session.expiresAt.getTime());
   }
   const status = await currentStatus(user);
+  const now = Date.now();
+  const subscription = await currentSubscription(user._id, now);
+  if (subscription.plan === 'pro' && subscription.expiresAt) {
+    boundary = Math.min(boundary, Date.parse(subscription.expiresAt));
+  }
   ok(res, {
     version: 1,
     user: { id: user._id.toHexString(), role: user.role ?? 'user', status },
     region: accountRegion(user.preferences?.region?.timeZone),
-    subscription: { plan: 'free', status: null, expiresAt: null },
+    subscription,
     entitlements: [],
     tokenExpiresAt: new Date(claims.exp * 1000).toISOString(),
-    validUntil: new Date(Math.min(boundary, Date.now() + 30_000)).toISOString(),
+    validUntil: new Date(Math.min(boundary, now + 30_000)).toISOString(),
   });
 });
 

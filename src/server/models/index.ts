@@ -34,6 +34,7 @@ import { NATIVE_SESSION_COLLECTION, NATIVE_SESSION_INDEXES } from './native-sess
 import { NATIVE_SOCIAL_GRANT_COLLECTION, NATIVE_SOCIAL_GRANT_INDEXES } from './native-social-grant';
 import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
+import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions';
 
 export { isValidObjectId, toObjectId } from './object-id';
 
@@ -411,6 +412,7 @@ export {
 // list of collections and their corresponding indexes to be created in the database
 const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
+  { collection: SUBSCRIPTIONS_COLLECTION, indexes: SUBSCRIPTION_INDEXES },
   { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
   { collection: NATIVE_HANDOFF_COLLECTION, indexes: NATIVE_HANDOFF_INDEXES },
