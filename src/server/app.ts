@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { nativeAuthDiagnostics } from './middleware/native-auth-diagnostics';
 import { applySecurity, generalLimiter, messageLimiter } from './middleware/security';
 import routes from './routes';
 
@@ -16,6 +17,8 @@ export function createApp() {
   // Behind a proxy/load balancer, so rate limiting keys off the real client IP.
   app.set('trust proxy', 1);
 
+  // Trace mobile requests before JSON parsing can wait on an incomplete upload.
+  app.use(nativeAuthDiagnostics);
   applySecurity(app);
 
   // The application carries three JPEGs as base64, so it gets a wider parser than

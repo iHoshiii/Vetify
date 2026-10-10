@@ -70,7 +70,7 @@ describe('Email and password mobile authentication', () => {
     const duplicate = await nativeSignup(SIGNUP);
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toEqual({
-      error: 'Account already exist. Please login.',
+      error: 'Account already exist. Please login',
       reason: 'account-exists',
     });
     expect((await request(app).post('/api/v1/auth/signup').send(SIGNUP)).status).toBe(409);
@@ -86,7 +86,7 @@ describe('Email and password mobile authentication', () => {
     const duplicate = await nativeSignup({ ...SIGNUP, email: 'MOBILE@EXAMPLE.COM' });
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toEqual({
-      error: 'Account already exist. Please login.',
+      error: 'Account already exist. Please login',
       reason: 'account-exists',
     });
     expect(await usersCollection().countDocuments()).toBe(1);
@@ -99,7 +99,7 @@ describe('Email and password mobile authentication', () => {
     ]);
     expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
     expect(responses.find((response) => response.status === 409)?.body).toEqual({
-      error: 'Account already exist. Please login.',
+      error: 'Account already exist. Please login',
       reason: 'account-exists',
     });
     expect(await usersCollection().countDocuments()).toBe(1);
@@ -151,7 +151,7 @@ describe('Email and password mobile authentication', () => {
     const duplicate = await nativeSignup({ ...SIGNUP, email: '  MOBILE@EXAMPLE.COM  ' });
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toEqual({
-      error: 'Account already exist. Please login.',
+      error: 'Account already exist. Please login',
       reason: 'account-exists',
     });
     expect(await usersCollection().countDocuments()).toBe(1);

@@ -22,7 +22,7 @@ type LocalAuthOptions = { native?: boolean };
 
 function accountExistsError(options: LocalAuthOptions) {
   return AppError.conflict(
-    options.native ? 'Account already exist. Please login.' : 'User with that email already exists',
+    options.native ? 'Account already exist. Please login' : 'User with that email already exists',
     options.native ? 'account-exists' : undefined
   );
 }
