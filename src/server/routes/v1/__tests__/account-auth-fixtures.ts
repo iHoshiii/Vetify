@@ -53,6 +53,7 @@ export async function session(
 ) {
   const providerId = email === PROFILE.email ? `${provider}-owner` : `${provider}-${email}`;
   const user = await insertUser({
+    emailVerified: true,
     email,
     name: 'Owner',
     provider,

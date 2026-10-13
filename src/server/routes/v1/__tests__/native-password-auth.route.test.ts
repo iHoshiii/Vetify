@@ -66,6 +66,11 @@ describe('Email and password mobile authentication', () => {
     expect(web.status).toBe(200);
     expect(web.body.user.id).toBe(mobile.body.user.id);
     expect(web.headers['set-cookie']).toBeDefined();
+    expect((await introspect(mobile.body.accessToken)).status).toBe(403);
+    await usersCollection().updateOne(
+      { email: CREDENTIALS.email },
+      { $set: { emailVerified: true } }
+    );
     expect((await introspect(mobile.body.accessToken)).body.user.id).toBe(mobile.body.user.id);
     const duplicate = await nativeSignup(SIGNUP);
     expect(duplicate.status).toBe(409);
@@ -123,9 +128,15 @@ describe('Email and password mobile authentication', () => {
   });
 
   it('keeps wrong-password and provider-only refusals distinct from unregistered accounts', async () => {
-    const local = await insertUser({ ...CREDENTIALS, provider: 'local', name: 'Local' });
+    const local = await insertUser({
+      emailVerified: true,
+      ...CREDENTIALS,
+      provider: 'local',
+      name: 'Local',
+    });
     await updateUser(local._id, { status: 'banned' });
     await insertUser({
+      emailVerified: true,
       email: 'oauth@example.com',
       provider: 'google',
       providerId: 'google-user',
@@ -145,6 +156,7 @@ describe('Email and password mobile authentication', () => {
 
   it('asks existing social-account owners to log in instead of creating a second account', async () => {
     await insertUser({
+      emailVerified: true,
       email: CREDENTIALS.email,
       provider: 'google',
       providerId: 'google-user',
@@ -163,7 +175,12 @@ describe('Email and password mobile authentication', () => {
   it.each(['suspended', 'banned', 'deactivated'] as const)(
     'rejects valid credentials for a %s account',
     async (status) => {
-      const user = await insertUser({ ...CREDENTIALS, provider: 'local', name: 'Owner' });
+      const user = await insertUser({
+        emailVerified: true,
+        ...CREDENTIALS,
+        provider: 'local',
+        name: 'Owner',
+      });
       await updateUser(user._id, { status });
       const response = await nativeLogin(CREDENTIALS);
       expect(response.status).toBe(403);
@@ -192,7 +209,12 @@ describe('Email and password mobile authentication', () => {
   });
 
   it('lifts an expired suspension using the existing policy and records the lift once', async () => {
-    const user = await insertUser({ ...CREDENTIALS, provider: 'local', name: 'Owner' });
+    const user = await insertUser({
+      emailVerified: true,
+      ...CREDENTIALS,
+      provider: 'local',
+      name: 'Owner',
+    });
     await updateUser(user._id, { status: 'suspended', statusUntil: new Date(Date.now() - 1) });
     const mobile = await nativeLogin(CREDENTIALS);
     expect(mobile.status).toBe(200);

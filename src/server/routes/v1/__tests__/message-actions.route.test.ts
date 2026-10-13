@@ -23,6 +23,7 @@ afterAll(stopTestDb);
 async function account() {
   sequence += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `actions${sequence}@example.com`,
     password: 'Sup3rSecret!',
     name: `Pat ${sequence}`,

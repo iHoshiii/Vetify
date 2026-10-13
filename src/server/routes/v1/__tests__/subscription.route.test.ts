@@ -37,6 +37,7 @@ const pro = (expiresAt = new Date(Date.now() + 60_000)) => ({
 async function account(role: UserRole = 'user') {
   sequence += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `subscription-${sequence}@example.com`,
     name: 'Subscription Owner',
     provider: 'google',
@@ -128,6 +129,11 @@ describe('Shared account subscriptions', () => {
           subscription: { ...pro(), expiresAt: pro().expiresAt.toISOString() },
         });
       expect(response.status).toBe(200);
+      expect((await ownSubscription(response.body.accessToken)).status).toBe(403);
+      await usersCollection().updateOne(
+        { email: `paid-signup-${index}@example.com` },
+        { $set: { emailVerified: true } }
+      );
       expect((await ownSubscription(response.body.accessToken)).body.subscription).toEqual(FREE);
       expect((await introspect(response.body.accessToken)).body.subscription).toEqual(FREE);
     }

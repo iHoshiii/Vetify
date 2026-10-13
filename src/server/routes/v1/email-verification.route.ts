@@ -3,7 +3,7 @@ import { Router } from 'express';
 
 import { authLimiter } from '../../middleware/auth-limiter';
 import { optionalAuth } from '../../middleware/optionalAuth';
-import { requireRole } from '../../middleware/requireAuth';
+import { requireVerificationSession } from '../../middleware/requireAuth';
 import { validate } from '../../middleware/validate';
 import { toPublicUser } from '../../models/users';
 import {
@@ -18,7 +18,7 @@ router.use((_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
-router.use(authLimiter, optionalAuth, requireRole('user', 'professional', 'admin'));
+router.use(authLimiter, optionalAuth, requireVerificationSession);
 
 router.post('/verify', validate(emailVerificationSchema), async (req, res) => {
   const { code } = req.body as EmailVerificationInput;

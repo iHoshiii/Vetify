@@ -11,6 +11,7 @@ describe('deactivation for social accounts with passwords', () => {
     'requires the stored password on a Google-origin account (%s)',
     async (currentPassword) => {
       const user = await insertUser({
+        emailVerified: true,
         email: 'google-password@example.com',
         provider: 'google',
         providerId: 'google-password',
@@ -39,6 +40,7 @@ describe('deactivation for social accounts with passwords', () => {
 
   it('preserves deactivation without a password for a social-only account', async () => {
     const user = await insertUser({
+      emailVerified: true,
       email: 'social-only@example.com',
       provider: 'google',
       providerId: 'social-only',

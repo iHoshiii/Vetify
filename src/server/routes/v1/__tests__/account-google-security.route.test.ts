@@ -36,6 +36,7 @@ describe('Google connection callback security', () => {
   it('refuses a stable provider identity that already belongs to another account', async () => {
     const owner = await session();
     await insertUser({
+      emailVerified: true,
       email: 'other@example.com',
       provider: 'google',
       providerId: PROFILE.providerId,

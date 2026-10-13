@@ -10,7 +10,12 @@ export const app = createApp();
 export const CLIENT = { clientId: NATIVE_CLIENT_ID, redirectUri: NATIVE_REDIRECT_URI };
 export const CREDENTIALS = { email: 'mobile@example.com', password: 'Sup3rSecret!' };
 export async function browserSession() {
-  const user = await insertUser({ ...CREDENTIALS, name: 'Mobile Owner', provider: 'local' });
+  const user = await insertUser({
+    emailVerified: true,
+    ...CREDENTIALS,
+    name: 'Mobile Owner',
+    provider: 'local',
+  });
   const browser = request.agent(app);
   const login = await browser.post('/api/v1/auth/login').send(CREDENTIALS);
   const cookies = login.headers['set-cookie'] as unknown as string[];

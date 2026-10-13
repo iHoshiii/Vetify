@@ -2,6 +2,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { findUserById, isValidObjectId, type User, type UserRole } from '../models';
 import { blockedMessage, currentStatus } from '../services/user-status.service';
+import { requireVerifiedEmail } from '../services/email-verification-access';
 import { failReason } from '../utils/response';
 
 declare module 'express-serve-static-core' {
@@ -23,12 +24,16 @@ declare module 'express-serve-static-core' {
  * verifies the signature. This one only reads the annotation optionalAuth left
  * behind, so on its own it would turn every request away.
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!req.auth) {
     failReason(res, 401, 'You need to be signed in to do that.', 'unauthenticated');
     return;
   }
 
+  if (isValidObjectId(req.auth.userId)) {
+    const user = await findUserById(req.auth.userId);
+    if (user) requireVerifiedEmail(user);
+  }
   next();
 }
 
@@ -47,6 +52,10 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
  * second never is.
  */
 export function requireRole(...roles: UserRole[]): RequestHandler {
+  return accountRoleGuard(roles);
+}
+
+function accountRoleGuard(roles: UserRole[], allowUnverified = false): RequestHandler {
   return async (req, res, next) => {
     const auth = req.auth;
     if (!auth) {
@@ -76,6 +85,7 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
       failReason(res, 403, blockedMessage(status), `account-${status}`);
       return;
     }
+    if (!allowUnverified) requireVerifiedEmail(user);
 
     const role = user.role ?? 'user';
     if (!roles.includes(role)) {
@@ -94,3 +104,4 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
 
 /** Convenience for the admin surface, which is the only caller so far. */
 export const requireAdmin = requireRole('admin');
+export const requireVerificationSession = accountRoleGuard(['user', 'professional', 'admin'], true);
