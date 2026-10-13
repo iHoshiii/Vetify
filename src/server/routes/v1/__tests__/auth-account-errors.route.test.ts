@@ -2,6 +2,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import * as users from '../../../models/users';
 import { refreshTokensCollection } from '../../../models/refresh-token';
+import { findOrCreateOAuthUser } from '../../../services/auth.service';
 import { app, CREDENTIALS } from './native-auth-fixtures';
 import { mailFetch, setupVerificationDb, type AuthSurface } from './email-verification-fixtures';
 
@@ -72,27 +73,33 @@ describe.each(['', '/native'] as AuthSurface[])('local account errors on %s auth
     expect(mailFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects signup for an existing social account without changing or linking that account', async () => {
+  it('preserves a Google professional account and its login when local signup is attempted', async () => {
     const owner = await users.insertUser({
       email: CREDENTIALS.email,
       name: 'Social Owner',
       provider: 'google',
       providerId: 'google-owner',
+      emailVerified: true,
+      role: 'professional',
     });
+    const original = await users.findUserWithPasswordByEmail(CREDENTIALS.email);
     const duplicate = await register(surface, '  MOBILE@EXAMPLE.COM  ');
     expect(duplicate.status).toBe(409);
     expect(duplicate.body).toEqual(EXISTS);
     expectNoSession(duplicate);
     const stored = await users.findUserWithPasswordByEmail(CREDENTIALS.email);
-    expect(stored).toMatchObject({
-      _id: owner._id,
-      provider: 'google',
-      providerId: 'google-owner',
-      password: null,
-    });
+    expect(stored).toEqual(original);
     expect(await users.usersCollection().countDocuments()).toBe(1);
     expect(await refreshTokensCollection().countDocuments()).toBe(0);
     expect(mailFetch).not.toHaveBeenCalled();
+    const signedIn = await findOrCreateOAuthUser('google', {
+      providerId: 'google-owner',
+      email: CREDENTIALS.email,
+      emailVerified: true,
+      name: owner.name,
+      avatarUrl: null,
+    });
+    expect(signedIn).toEqual(owner);
   });
 
   it('keeps a wrong password generic and never creates a session', async () => {
