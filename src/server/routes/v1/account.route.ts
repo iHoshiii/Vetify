@@ -135,9 +135,10 @@ router.get('/export', async (req, res) => {
 router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
   const actor = actorOf(req);
   const body = req.body as AccountDeactivation;
-  if (actor.provider === 'local') {
-    const account = await findUserWithPasswordById(actor._id);
-    if (!account?.password || !body.currentPassword) {
+  const account = await findUserWithPasswordById(actor._id);
+  if (!account) return fail(res, 404, MISSING);
+  if (account.password) {
+    if (!body.currentPassword) {
       return fail(res, 400, 'Enter your current password');
     }
     if (!(await comparePassword(account.password, body.currentPassword))) {

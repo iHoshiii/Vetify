@@ -35,6 +35,7 @@ import { NATIVE_SOCIAL_GRANT_COLLECTION, NATIVE_SOCIAL_GRANT_INDEXES } from './n
 import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
 import { EMAIL_VERIFICATIONS_COLLECTION, EMAIL_VERIFICATION_INDEXES } from './email-verification';
+import { AUTH_IDENTITIES_COLLECTION, AUTH_IDENTITY_INDEXES } from './auth-identities';
 import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions';
 
 export { isValidObjectId, toObjectId } from './object-id';
@@ -414,6 +415,7 @@ export {
 const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
   { collection: EMAIL_VERIFICATIONS_COLLECTION, indexes: EMAIL_VERIFICATION_INDEXES },
+  { collection: AUTH_IDENTITIES_COLLECTION, indexes: AUTH_IDENTITY_INDEXES },
   { collection: SUBSCRIPTIONS_COLLECTION, indexes: SUBSCRIPTION_INDEXES },
   { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },

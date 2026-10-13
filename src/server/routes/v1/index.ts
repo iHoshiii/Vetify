@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { dbStatus } from '../../config/db';
 import accountRoute from './account.route';
+import accountAuthRoute from './account-auth.route';
+import accountAuthCallbackRoute from './account-auth-callback.route';
 import adminRoute from './admin';
 import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
@@ -42,6 +44,7 @@ router.use('/clinics', clinicsRoute);
 router.use('/auth/native', nativeAuthRoute);
 router.use('/auth', authIntrospectionRoute);
 router.use('/auth', authSubscriptionRoute);
+router.use('/auth', accountAuthCallbackRoute);
 router.use('/auth', authRoute);
 router.use('/blogs', blogsRoute);
 router.use('/books', booksRoute);
@@ -52,6 +55,7 @@ router.use('/pets', petsRoute);
 router.use('/meal-plans', mealPlansRoute);
 router.use('/nutrition-observations', nutritionObservationsRoute);
 router.use('/professionals', professionalsRoute);
+router.use('/account/login-methods', accountAuthRoute);
 router.use('/account', accountRoute);
 router.use('/admin', adminRoute);
 

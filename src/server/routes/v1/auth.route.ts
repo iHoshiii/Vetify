@@ -26,6 +26,11 @@ import {
 } from '../../services/auth.service';
 import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
 import { requestEmailVerification } from '../../services/email-verification.service';
+import {
+  PASSWORD_PROOF_COOKIE,
+  passwordProofCookieOptions,
+  rotatePasswordProof,
+} from '../../services/account-auth-proof';
 import emailVerificationRoute from './email-verification.route';
 import {
   nativeSocialErrorUrl,
@@ -150,6 +155,17 @@ router.post('/refresh', authLimiter, async (req, res) => {
   const publicUser = toPublicUser(rt.owner);
   const rotated = await createRefreshToken(publicUser.id);
   setRefreshCookie(res, rotated.token, rotated.expiresAt);
+  const proof = rotatePasswordProof(
+    req.cookies?.[PASSWORD_PROOF_COOKIE],
+    publicUser.id,
+    tokenHash,
+    hashToken(rotated.token)
+  );
+  if (proof)
+    res.cookie(PASSWORD_PROOF_COOKIE, proof.cookie, {
+      ...passwordProofCookieOptions,
+      maxAge: proof.expiresAt - Date.now(),
+    });
   const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   ok(res, { accessToken, user: publicUser });
 });
@@ -165,6 +181,7 @@ router.post('/logout', optionalAuth, async (req, res) => {
   res.clearCookie(env.REFRESH_COOKIE_NAME);
 
   if (req.auth) recordActivity({ type: 'user.logged_out', user: req.auth.userId });
+  res.clearCookie(PASSWORD_PROOF_COOKIE, { path: passwordProofCookieOptions.path });
 
   ok(res, { loggedOut: true });
 });
@@ -261,9 +278,7 @@ router.get('/:provider/callback', async (req, res) => {
     return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
   } catch (err) {
     console.error(`[auth] ${name} callback failed:`, (err as Error).message);
-    return redirectError(
-      err instanceof OAuthError ? (sealed.native ? err.reason ?? 'provider' : 'provider') : 'server'
-    );
+    return redirectError(err instanceof OAuthError ? err.reason ?? 'provider' : 'server');
   }
 });
 
