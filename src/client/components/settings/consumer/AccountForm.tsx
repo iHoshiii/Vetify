@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useDeactivateAccount, useExportAccount } from '@/hooks/useAccount';
+import { useAccountLoginMethods } from '@/hooks/useAccountLoginMethods';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import { FIELD } from './controls';
 import SubscriptionStatus from './SubscriptionStatus';
 
 export default function AccountForm() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const loginMethods = useAccountLoginMethods();
   const navigate = useNavigate();
   const exportMutation = useExportAccount();
   const deactivate = useDeactivateAccount();
@@ -93,7 +95,7 @@ export default function AccountForm() {
                 className={FIELD}
               />
             </label>
-            {user?.provider === 'local' && (
+            {loginMethods.data?.hasPassword && (
               <label className="block space-y-1.5">
                 <span className="text-xs font-bold text-rose-900">Current password</span>
                 <input
@@ -108,6 +110,12 @@ export default function AccountForm() {
             {deactivate.error && (
               <p aria-live="polite" className="text-sm font-semibold text-rose-700">
                 {deactivate.error.message}
+              </p>
+            )}
+            {loginMethods.isError && (
+              <p role="alert" className="text-sm font-semibold text-rose-700">
+                Your sign-in methods did not load. Refresh this page before deactivating your
+                account.
               </p>
             )}
             <div className="flex gap-2">
@@ -127,7 +135,8 @@ export default function AccountForm() {
                 disabled={
                   confirmation !== 'DEACTIVATE' ||
                   deactivate.isPending ||
-                  (user?.provider === 'local' && !password)
+                  !loginMethods.data ||
+                  (loginMethods.data.hasPassword && !password)
                 }
                 onClick={() => void runDeactivate()}
                 className="rounded-lg bg-rose-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
