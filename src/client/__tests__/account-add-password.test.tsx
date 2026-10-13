@@ -19,15 +19,17 @@ const fillPassword = (password = 'StrongPassword3!', confirm = password) => {
 };
 
 describe('adding a password in security settings', () => {
-  it('requires the existing provider confirmation before showing password fields', async () => {
+  it('verifies an email code before showing Public Login password fields', async () => {
+    authSettings.verifyCode.mockResolvedValue({ verified: true });
     renderAuthSettings();
     expect(screen.queryByLabelText('New password')).toBeNull();
     expect(screen.queryByLabelText('Current password')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm with Google' }));
-    await waitFor(() => expect(authSettings.reauthenticate).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(authSettings.open).toHaveBeenCalledWith('https://accounts.google.com/confirm')
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Link Public Login' }));
+    await waitFor(() => expect(authSettings.requestCode).toHaveBeenCalledWith('local'));
+    fireEvent.change(await screen.findByLabelText('Digit 1 of 6'), { target: { value: '012345' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify email' }));
+    expect(await screen.findByLabelText('New password')).toBeVisible();
+    expect(authSettings.reauthenticate).not.toHaveBeenCalled();
     expect(authSettings.add).not.toHaveBeenCalled();
   });
 
@@ -68,11 +70,8 @@ describe('adding a password in security settings', () => {
     fillPassword();
     fireEvent.click(screen.getByRole('button', { name: 'Add password' }));
     await waitFor(() => expect(authSettings.refetch).toHaveBeenCalled());
-    expect(
-      screen.getAllByText(
-        'Your confirmation expired. Confirm your sign-in again before adding a password.'
-      ).length
-    ).toBeGreaterThan(0);
+    expect(await screen.findByLabelText('Digit 1 of 6')).toBeVisible();
+    expect(authSettings.requestCode).toHaveBeenCalledWith('local');
     expect(authSettings.logout).not.toHaveBeenCalled();
   });
 });

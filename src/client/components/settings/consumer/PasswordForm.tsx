@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAccountLoginMethods } from '@/hooks/useAccountLoginMethods';
-import { ACCOUNT_AUTH_MESSAGES } from './account-auth-feedback';
-import AddPasswordForm from './AddPasswordForm';
+import { ACCOUNT_AUTH_MESSAGES, PROVIDER_NAMES } from './account-auth-feedback';
 import ChangePasswordForm from './ChangePasswordForm';
 import ConnectedLogins from './ConnectedLogins';
 
@@ -17,7 +16,6 @@ export default function PasswordForm() {
   const methods = useAccountLoginMethods();
   const [params, setParams] = useSearchParams();
   const [notice, setNotice] = useState(() => readNotice(params));
-  const [proofError, setProofError] = useState('');
 
   useEffect(() => {
     if (!params.has('connection') && !params.has('auth') && !params.has('accountAuthError')) return;
@@ -50,16 +48,14 @@ export default function PasswordForm() {
     );
   }
 
-  const error =
-    proofError ||
-    (notice.error ? ACCOUNT_AUTH_MESSAGES[notice.error] ?? ACCOUNT_AUTH_MESSAGES.provider : '');
+  const error = notice.error
+    ? ACCOUNT_AUTH_MESSAGES[notice.error] ?? ACCOUNT_AUTH_MESSAGES.provider
+    : '';
   const linked = methods.data.providers.find(
     (provider) => notice.connection === `${provider}-linked`
   );
   const success = linked
-    ? `${
-        linked === 'google' ? 'Google' : 'Facebook'
-      } sign-in is connected. You can now sign in with this provider or your password.`
+    ? `${PROVIDER_NAMES[linked]} sign-in is linked to your existing Vetify account.`
     : notice.auth === 'password-ready' && methods.data.passwordReady
     ? 'Sign-in confirmed. You can now add a password.'
     : '';
@@ -80,29 +76,19 @@ export default function PasswordForm() {
         <h3 id="connected-logins-heading" className="text-base font-bold text-slate-900">
           Connected sign-in methods
         </h3>
-        <ConnectedLogins methods={methods.data} />
+        <ConnectedLogins methods={methods.data} onRefresh={() => void methods.refetch()} />
       </section>
-      <section
-        aria-labelledby="account-password-heading"
-        className="space-y-4 border-t border-slate-200 pt-6"
-      >
-        <h3 id="account-password-heading" className="text-base font-bold text-slate-900">
-          Password
-        </h3>
-        {methods.data.hasPassword ? (
+      {methods.data.hasPassword && (
+        <section
+          aria-labelledby="account-password-heading"
+          className="space-y-4 border-t border-slate-200 pt-6"
+        >
+          <h3 id="account-password-heading" className="text-base font-bold text-slate-900">
+            Password
+          </h3>
           <ChangePasswordForm />
-        ) : (
-          <AddPasswordForm
-            methods={methods.data}
-            onProofExpired={() => {
-              setProofError(
-                'Your confirmation expired. Confirm your sign-in again before adding a password.'
-              );
-              void methods.refetch();
-            }}
-          />
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }

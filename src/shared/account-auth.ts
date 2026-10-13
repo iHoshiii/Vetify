@@ -4,11 +4,18 @@ import { passwordChangeSchema } from './schemas';
 
 export const ACCOUNT_AUTH_PROVIDERS = ['google', 'facebook', 'tiktok'] as const;
 export type AccountAuthProvider = (typeof ACCOUNT_AUTH_PROVIDERS)[number];
+export const ACCOUNT_LINK_METHODS = ['local', ...ACCOUNT_AUTH_PROVIDERS] as const;
+export type AccountLinkMethod = (typeof ACCOUNT_LINK_METHODS)[number];
+export const requestAccountLinkSchema = z.object({ method: z.enum(ACCOUNT_LINK_METHODS) });
+export const verifyAccountLinkSchema = requestAccountLinkSchema.extend({
+  code: z.string().regex(/^[0-9]{6}$/, 'Enter the six-digit code sent to your email'),
+});
 export type AccountLoginMethods = {
   hasPassword: boolean;
   providers: AccountAuthProvider[];
   googleAvailable: boolean;
-  availableProviders: ('google' | 'facebook')[];
+  availableProviders: AccountAuthProvider[];
+  tiktokHttpsReady?: boolean;
   passwordReady: boolean;
   reauthProvider: AccountAuthProvider | null;
 };
@@ -25,6 +32,7 @@ export const ACCOUNT_AUTH_ERRORS = [
   'identity-in-use',
   'provider',
   'account-changed',
+  'email-link-required',
 ] as const;
 export type AccountAuthError = (typeof ACCOUNT_AUTH_ERRORS)[number];
 
@@ -39,12 +47,17 @@ export const accountAuthContextSchema = z
       .string()
       .length(64)
       .regex(/^[a-f0-9]{64}$/),
+    emailLinkGeneration: z
+      .string()
+      .length(64)
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
   })
   .strict();
 export type AccountAuthContext = z.infer<typeof accountAuthContextSchema>;
 
 export const connectProviderSchema = z.object({
-  currentPassword: z.string().min(1, 'Enter your current password'),
+  currentPassword: z.string().min(1, 'Enter your current password').optional(),
 });
 export type ConnectProviderInput = z.infer<typeof connectProviderSchema>;
 

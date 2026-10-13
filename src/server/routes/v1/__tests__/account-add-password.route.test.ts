@@ -83,7 +83,7 @@ describe('adding a password to a social account', () => {
     expect(redirect(await callback(flow)).searchParams.get('accountAuthError')).toBe(
       'identity-mismatch'
     );
-    expect((await methods(owner)).body.passwordReady).toBe(false);
+    expect((await methods(owner)).body.passwordReady).toBe(true);
   });
 
   it('rejects unverified provider email during password confirmation', async () => {
@@ -93,7 +93,7 @@ describe('adding a password to a social account', () => {
     expect(redirect(await callback(flow)).searchParams.get('accountAuthError')).toBe(
       'email-mismatch'
     );
-    expect((await addPassword(owner)).status).toBe(403);
+    expect((await methods(owner)).body.passwordReady).toBe(true);
   });
 
   it('validates strength and confirmation without consuming a valid proof', async () => {

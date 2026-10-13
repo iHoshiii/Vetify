@@ -27,6 +27,11 @@ import {
 import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
 import { requestEmailVerification } from '../../services/email-verification.service';
 import {
+  ACCOUNT_LINK_PROOF_COOKIE,
+  accountLinkCookieOptions,
+  rotateAccountLinkProof,
+} from '../../services/account-link-proof';
+import {
   PASSWORD_PROOF_COOKIE,
   passwordProofCookieOptions,
   rotatePasswordProof,
@@ -166,6 +171,17 @@ router.post('/refresh', authLimiter, async (req, res) => {
       ...passwordProofCookieOptions,
       maxAge: proof.expiresAt - Date.now(),
     });
+  const emailProof = await rotateAccountLinkProof(
+    req.cookies?.[ACCOUNT_LINK_PROOF_COOKIE],
+    publicUser.id,
+    tokenHash,
+    hashToken(rotated.token)
+  );
+  if (emailProof)
+    res.cookie(ACCOUNT_LINK_PROOF_COOKIE, emailProof.cookie, {
+      ...accountLinkCookieOptions,
+      maxAge: emailProof.expiresAt - Date.now(),
+    });
   const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
   ok(res, { accessToken, user: publicUser });
 });
@@ -182,6 +198,7 @@ router.post('/logout', optionalAuth, async (req, res) => {
 
   if (req.auth) recordActivity({ type: 'user.logged_out', user: req.auth.userId });
   res.clearCookie(PASSWORD_PROOF_COOKIE, { path: passwordProofCookieOptions.path });
+  res.clearCookie(ACCOUNT_LINK_PROOF_COOKIE, { path: accountLinkCookieOptions.path });
 
   ok(res, { loggedOut: true });
 });

@@ -49,7 +49,7 @@ describe('password confirmation proof security', () => {
 
   it('rejects stolen proof for another account, a tampered signature, and a revoked session', async () => {
     const owner = await session('google');
-    const { completed } = await proof(owner);
+    const { completed, flow } = await proof(owner);
     const cookie = cookieOf(completed, PASSWORD_PROOF_COOKIE);
     const other = await session('google', 'other@example.com');
     for (const [actor, proofCookie] of [
@@ -59,7 +59,7 @@ describe('password confirmation proof security', () => {
       const response = await request(app)
         .post(`${BASE}/password`)
         .set('Authorization', `Bearer ${actor.token}`)
-        .set('Cookie', [actor.refreshCookie, proofCookie])
+        .set('Cookie', [actor.refreshCookie, proofCookie, flow.emailCookie])
         .send({ newPassword: NEW_PASSWORD, confirmPassword: NEW_PASSWORD });
       expect(response.status).toBe(403);
       expect(response.body.reason).toBe('reauth-required');
@@ -74,13 +74,13 @@ describe('password confirmation proof security', () => {
 
   it('allows only one concurrent password addition and rejects replay', async () => {
     const owner = await session('google');
-    const { completed } = await proof(owner);
+    const { completed, flow } = await proof(owner);
     const cookie = cookieOf(completed, PASSWORD_PROOF_COOKIE);
     const attempt = (password: string) =>
       request(app)
         .post(`${BASE}/password`)
         .set('Authorization', `Bearer ${owner.token}`)
-        .set('Cookie', [owner.refreshCookie, cookie])
+        .set('Cookie', [owner.refreshCookie, cookie, flow.emailCookie])
         .send({ newPassword: password, confirmPassword: password });
     const passwords = [NEW_PASSWORD, 'AnotherSecure93!'];
     const responses = await Promise.all(passwords.map(attempt));
