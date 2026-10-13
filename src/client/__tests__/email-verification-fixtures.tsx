@@ -22,7 +22,7 @@ export const SESSION: AuthSession = {
 export function delivery(sent = true, cooldown = 60): EmailVerificationDelivery {
   return {
     sent,
-    expiresAt: new Date(Date.now() + 600_000).toISOString(),
+    expiresAt: new Date(Date.now() + 300_000).toISOString(),
     resendAvailableAt: new Date(Date.now() + cooldown * 1000).toISOString(),
   };
 }

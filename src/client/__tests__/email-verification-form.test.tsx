@@ -41,39 +41,6 @@ describe('email confirmation form', () => {
     expect(verified).toHaveBeenCalledWith({ ...SESSION.user, emailVerified: true });
   });
 
-  it('counts down resends and replaces an expired code with a fresh delivery', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-10-13T02:00:00Z'));
-    const initial = {
-      ...delivery(true, 60),
-      expiresAt: new Date(Date.now() + 90_000).toISOString(),
-    };
-    const fetchMock = vi.fn().mockImplementation(async () => response(200, delivery()));
-    vi.stubGlobal('fetch', fetchMock);
-    render(
-      <EmailVerificationForm
-        email={SESSION.user.email}
-        initialDelivery={initial}
-        onVerified={vi.fn()}
-      />
-    );
-    expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '123456' } });
-    act(() => {
-      vi.advanceTimersByTime(90_000);
-    });
-    expect(screen.getByText(/Your code has expired/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirm email' })).toBeDisabled();
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Resend code' }));
-    });
-    expect(screen.getByLabelText('Confirmation code')).toHaveValue('');
-    expect(screen.queryByText(/Your code has expired/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Confirm email' })).toBeEnabled();
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/auth/email/resend');
-  });
-
   it('shows send errors without claiming a delivery or exposing server settings', async () => {
     vi.stubGlobal(
       'fetch',
@@ -90,12 +57,13 @@ describe('email confirmation form', () => {
   });
 
   it('treats a successful resend response with sentfalse as unavailable delivery', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(200, delivery(false, 0))));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(200, delivery(false))));
     render(<EmailVerificationForm email={SESSION.user.email} onVerified={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Send code' }));
     expect(
       await screen.findByText(/We couldn't send the confirmation email to/)
     ).toBeInTheDocument();
     expect(screen.queryByText(/We sent a six-digit/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
   });
 });

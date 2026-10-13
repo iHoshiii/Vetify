@@ -6,6 +6,7 @@ import { sendMail } from '../../../services/mail.service';
 import {
   allowResend,
   challenge,
+  freezeDate,
   lastCode,
   mailFetch,
   postedMail,
@@ -48,20 +49,33 @@ describe('email confirmation delivery and resend', () => {
     expect((await verify(account.body.accessToken, newCode)).status).toBe(200);
   });
 
-  it('keeps the created account when delivery fails and permits an immediate retry', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    mailFetch.mockResolvedValueOnce(new Response('provider unavailable', { status: 503 }));
-    const account = await signup();
-    expect(account.status).toBe(200);
-    expect(account.body.emailVerification.sent).toBe(false);
-    expect((await findUserById(account.body.user.id))?.emailVerified).toBe(false);
-    expect(typeof account.body.accessToken).toBe('string');
-    const response = await resend(account.body.accessToken);
-    expect(response.status).toBe(200);
-    expect(response.body.sent).toBe(true);
-    expect(mailFetch).toHaveBeenCalledTimes(2);
-    expect((await verify(account.body.accessToken, lastCode())).status).toBe(200);
-  });
+  it.each([
+    [503, 'provider unavailable'],
+    [400, 'API key is invalid'],
+  ] as const)(
+    'keeps the account and requires one minute before retrying provider %i failure',
+    async (status, detail) => {
+      const started = freezeDate();
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mailFetch.mockResolvedValueOnce(new Response(detail, { status }));
+      const account = await signup();
+      expect(account.status).toBe(200);
+      expect(account.body.emailVerification.sent).toBe(false);
+      expect((await findUserById(account.body.user.id))?.emailVerified).toBe(false);
+      expect(typeof account.body.accessToken).toBe('string');
+      expect(Date.parse(account.body.emailVerification.resendAvailableAt)).toBe(started + 60_000);
+      expect((await resend(account.body.accessToken)).status).toBe(429);
+      vi.setSystemTime(started + 59_000);
+      expect((await resend(account.body.accessToken)).status).toBe(429);
+      expect(mailFetch).toHaveBeenCalledTimes(1);
+      vi.setSystemTime(started + 60_000);
+      const response = await resend(account.body.accessToken);
+      expect(response.status).toBe(200);
+      expect(response.body.sent).toBe(true);
+      expect(mailFetch).toHaveBeenCalledTimes(2);
+      expect((await verify(account.body.accessToken, lastCode())).status).toBe(200);
+    }
+  );
 
   it('reports a log-only message as unsent and retains the resend cooldown', async () => {
     env.AUTH_MAIL_TRANSPORT = 'log';

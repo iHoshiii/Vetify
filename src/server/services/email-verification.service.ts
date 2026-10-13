@@ -9,7 +9,7 @@ import { AppError } from '../utils/AppError';
 import { deliverAuthMail } from './auth-mail.service';
 import { compose } from './mail-template';
 
-const EXPIRY_MS = 10 * 60 * 1000;
+const EXPIRY_MS = 5 * 60 * 1000;
 const RESEND_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
@@ -45,7 +45,7 @@ export async function requestEmailVerification(user: User): Promise<EmailVerific
   requireLocalUnverified(user);
   const now = new Date();
   const expiresAt = new Date(now.getTime() + EXPIRY_MS);
-  let resendAvailableAt = new Date(now.getTime() + RESEND_MS);
+  const resendAvailableAt = new Date(now.getTime() + RESEND_MS);
   const generation = crypto.randomBytes(32).toString('hex');
   const collection = emailVerificationsCollection();
   const previous = await collection.findOne({ _id: user._id });
@@ -82,14 +82,10 @@ export async function requestEmailVerification(user: User): Promise<EmailVerific
   const text = [
     `Your Vetify email confirmation code is ${code}.`,
     'Enter this six-digit code in Vetify to confirm your email address.',
-    'This code expires in 10 minutes. A new code replaces any previous code.',
+    'This code expires in 5 minutes. A new code replaces any previous code.',
     'If you did not create this account, you can ignore this email.',
   ].join('\n\n');
   const delivery = await deliverAuthMail(compose(user.email, 'Confirm your Vetify email', text));
-  if (!delivery.delivered) {
-    resendAvailableAt = new Date();
-    await collection.updateOne({ _id: user._id, generation }, { $set: { resendAvailableAt } });
-  }
 
   return {
     sent: delivery.delivered && env.AUTH_MAIL_TRANSPORT === 'http',

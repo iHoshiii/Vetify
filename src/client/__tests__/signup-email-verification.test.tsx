@@ -62,16 +62,14 @@ describe('local signup email confirmation', () => {
   it('reports unavailable delivery without claiming the email was sent', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(response(201, { ...SESSION, emailVerification: delivery(false, 0) }))
+      vi.fn().mockResolvedValue(response(201, { ...SESSION, emailVerification: delivery(false) }))
     );
     renderSignup();
     await createAccount();
 
     expect(screen.getByText(/We couldn't send the confirmation email to/)).toBeInTheDocument();
     expect(screen.queryByText(/We sent a six-digit/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Resend code' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
   });
 
   it('lets an existing unverified account request a code and rejects unsafe return paths', async () => {

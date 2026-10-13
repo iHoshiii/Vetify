@@ -48,6 +48,13 @@ export const allowResend = (id: string) =>
     { $set: { resendAvailableAt: new Date(Date.now() - 1) } }
   );
 
+export function freezeDate(): number {
+  const now = Date.now();
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+  return now;
+}
+
 export function setupVerificationDb(): void {
   beforeAll(startTestDb, 120_000);
   beforeEach(() => {
@@ -68,6 +75,7 @@ export function setupVerificationDb(): void {
     vi.stubGlobal('fetch', mailFetch);
   });
   afterEach(async () => {
+    vi.useRealTimers();
     Object.assign(env, originalMail);
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
