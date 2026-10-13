@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useAccount';
@@ -8,6 +9,7 @@ import { FIELD, SaveRow } from './controls';
 
 export default function ProfileForm() {
   const { user } = useAuth();
+  const location = useLocation();
   const mutation = useUpdateProfile();
   const [name, setName] = useState(user?.name ?? '');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
@@ -60,6 +62,15 @@ export default function ProfileForm() {
         >
           {user?.emailVerified ? 'Verified' : 'Verification pending'}
         </span>
+        {user?.provider === 'local' && !user.emailVerified && (
+          <Link
+            to="/signup"
+            state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+            className="mt-2 inline-block text-sm font-semibold text-blue-600 hover:underline"
+          >
+            Verify email
+          </Link>
+        )}
       </div>
       <p className="text-xs leading-5 text-slate-500">
         Contact support if you need to change the email used to sign in.

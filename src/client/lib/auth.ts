@@ -1,4 +1,5 @@
 import { apiFetch } from '@/services/api';
+import type { EmailVerificationDelivery } from '@shared/email-verification';
 
 import {
   writeAuthState,
@@ -34,12 +35,28 @@ export async function signupWithEmail(input: {
   password: string;
   confirmPassword: string;
 }) {
-  const payload = await apiFetch<AuthSession>('/auth/signup', {
+  const payload = await apiFetch<SignupSession>('/auth/signup', {
     method: 'POST',
     body: input,
   });
   writeAuthState(payload);
   return payload;
+}
+
+export type SignupSession = AuthSession & { emailVerification?: EmailVerificationDelivery };
+
+export function verifyEmail(code: string) {
+  return apiFetch<{ user: AuthUser }>('/auth/email/verify', {
+    method: 'POST',
+    body: { code },
+  });
+}
+
+export function resendEmailVerification() {
+  return apiFetch<EmailVerificationDelivery>('/auth/email/resend', {
+    method: 'POST',
+    body: {},
+  });
 }
 
 /**
