@@ -66,7 +66,7 @@ describe('the log transport', () => {
 describe('the http transport', () => {
   beforeEach(() => {
     env.MAIL_TRANSPORT = 'http';
-    env.MAIL_API_KEY = 'key-123';
+    env.MAIL_API_KEY = 're_test_123';
   });
 
   it('posts the provider body shape behind a bearer token', async () => {
@@ -78,7 +78,7 @@ describe('the http transport', () => {
     const [url, init] = postedTo(fetchMock);
     expect(url).toBe(env.MAIL_API_URL);
     expect(init.method).toBe('POST');
-    expect((init.headers as Record<string, string>).authorization).toBe('Bearer key-123');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer re_test_123');
     expect(postedBody(fetchMock)).toEqual({
       from: env.MAIL_FROM,
       to: ['vet@example.com'],

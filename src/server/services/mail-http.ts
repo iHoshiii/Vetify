@@ -1,10 +1,12 @@
 import type { MailMessage } from './mail.service';
+import { z } from 'zod';
 
 export type MailProvider = {
   transport: 'log' | 'http';
   apiUrl: string;
   apiKey?: string;
   from: string;
+  fromName?: string;
   transportName: string;
   keyName: string;
 };
@@ -24,6 +26,17 @@ export async function postMailMessage(message: MailMessage, provider: MailProvid
   }
 
   const host = new URL(provider.apiUrl).host;
+  const sender = provider.from.trim();
+  const address = sender.match(/^[^<>\r\n]+<([^<>\r\n]+)>$/)?.[1]?.trim() ?? sender;
+  if (!z.email().safeParse(address).success) {
+    const setting = provider.fromName ?? provider.transportName.replace(/_TRANSPORT$/, '_FROM');
+    throw new MailError(
+      `${setting} must be an email sender such as Vetify <onboarding@resend.dev>, not an API key`
+    );
+  }
+  if (host === 'api.resend.com' && !provider.apiKey.startsWith('re_')) {
+    throw new MailError(`${provider.keyName} must contain a Resend API key starting with re_`);
+  }
   let response: Response;
   try {
     response = await fetch(provider.apiUrl, {
