@@ -2,7 +2,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import EmailVerificationForm from '@/pages/signup/_components/email-verification-form';
-import { delivery, response, SESSION } from './email-verification-fixtures';
+import {
+  codeInputs,
+  delivery,
+  fillConfirmationCode,
+  response,
+  SESSION,
+} from './email-verification-fixtures';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -38,7 +44,7 @@ describe('email confirmation timing', () => {
     renderForm();
     expect(screen.getByText('Your code expires in 5 minutes.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '123456' } });
+    fillConfirmationCode('123456');
 
     advance(59_000);
     const blocked = screen.getByRole('button', { name: 'Resend code in 1s' });
@@ -59,11 +65,11 @@ describe('email confirmation timing', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Resend code' }));
     });
 
-    expect(screen.getByLabelText('Confirmation code')).toHaveValue('');
+    codeInputs().forEach((input) => expect(input).toHaveValue(''));
     expect(screen.getByText('Your code expires in 5 minutes.')).toBeInTheDocument();
     expect(screen.queryByText(/Your code has expired/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Confirm email' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Confirm email' })).toBeDisabled();
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/auth/email/resend');
   });
 
@@ -74,7 +80,7 @@ describe('email confirmation timing', () => {
     expect(screen.getByText(/We couldn't send the confirmation email to/)).toBeInTheDocument();
     expect(screen.queryByText(/We sent a six-digit/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '012345' } });
+    fillConfirmationCode('012345');
     advance(59_000);
     const blocked = screen.getByRole('button', { name: 'Resend code in 1s' });
     expect(blocked).toBeDisabled();
@@ -86,7 +92,7 @@ describe('email confirmation timing', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Resend code' }));
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('Confirmation code')).toHaveValue('');
+    codeInputs().forEach((input) => expect(input).toHaveValue(''));
     expect(screen.queryByText(/We sent a six-digit/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
   });

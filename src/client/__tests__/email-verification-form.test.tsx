@@ -2,7 +2,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import EmailVerificationForm from '@/pages/signup/_components/email-verification-form';
-import { delivery, response, SESSION } from './email-verification-fixtures';
+import {
+  codeInputs,
+  delivery,
+  fillConfirmationCode,
+  response,
+  SESSION,
+} from './email-verification-fixtures';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -30,11 +36,11 @@ describe('email confirmation form', () => {
         onVerified={verified}
       />
     );
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '111111' } });
+    fillConfirmationCode('111111');
     fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('invalid or expired');
     expect(verified).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '012345' } });
+    fillConfirmationCode('012345');
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }));
     });
@@ -65,5 +71,53 @@ describe('email confirmation form', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/We sent a six-digit/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Resend code in 60s' })).toBeDisabled();
+  });
+
+  it('enables confirmation only after all six boxes are filled and never submits automatically', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    render(
+      <EmailVerificationForm
+        email={SESSION.user.email}
+        initialDelivery={delivery()}
+        onVerified={vi.fn()}
+      />
+    );
+    const confirm = screen.getByRole('button', { name: 'Confirm email' });
+    expect(confirm).toBeDisabled();
+    fillConfirmationCode('01234');
+    expect(confirm).toBeDisabled();
+    fireEvent.change(codeInputs()[5], { target: { value: '5' } });
+    expect(confirm).toBeEnabled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('disables all six boxes while waiting for the confirmation response', async () => {
+    let finish: (result: Response) => void = () => {};
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            finish = resolve;
+          })
+      )
+    );
+    const verified = vi.fn();
+    render(
+      <EmailVerificationForm
+        email={SESSION.user.email}
+        initialDelivery={delivery()}
+        onVerified={verified}
+      />
+    );
+    fillConfirmationCode('012345');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }));
+    codeInputs().forEach((input) => expect(input).toBeDisabled());
+    expect(verified).not.toHaveBeenCalled();
+    await act(async () => {
+      finish(response(200, { user: { ...SESSION.user, emailVerified: true } }));
+    });
+    expect(verified).toHaveBeenCalledWith({ ...SESSION.user, emailVerified: true });
   });
 });

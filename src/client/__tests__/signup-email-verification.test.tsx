@@ -2,7 +2,14 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { readAuthState, writeAuthState } from '@/lib/auth';
-import { delivery, renderSignup, response, SESSION } from './email-verification-fixtures';
+import {
+  codeInputs,
+  delivery,
+  fillConfirmationCode,
+  renderSignup,
+  response,
+  SESSION,
+} from './email-verification-fixtures';
 
 vi.mock('@/pages/signup/_components/password-strength', () => ({
   default: () => null,
@@ -45,10 +52,10 @@ describe('local signup email confirmation', () => {
     expect(screen.queryByLabelText('Full Name')).toBeNull();
     expect(screen.queryByText('Or sign up with')).toBeNull();
     expect(readAuthState()?.user?.emailVerified).toBe(false);
-    const input = screen.getByLabelText('Confirmation code');
+    const input = codeInputs()[0];
     expect(input).toHaveAttribute('autocomplete', 'one-time-code');
     expect(input).toHaveAttribute('inputmode', 'numeric');
-    fireEvent.change(input, { target: { value: '012345' } });
+    fillConfirmationCode('012345');
     fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }));
 
     await screen.findByText('Planner destination');
@@ -84,7 +91,7 @@ describe('local signup email confirmation', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByRole('button', { name: 'Send code' }));
     await screen.findByText(/We sent a six-digit/);
-    fireEvent.change(screen.getByLabelText('Confirmation code'), { target: { value: '234567' } });
+    fillConfirmationCode('234567');
     fireEvent.click(screen.getByRole('button', { name: 'Confirm email' }));
 
     await screen.findByText('Home destination');

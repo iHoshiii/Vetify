@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { EmailVerificationDelivery } from '@shared/email-verification';
 
@@ -29,6 +29,18 @@ export function delivery(sent = true, cooldown = 60): EmailVerificationDelivery 
 
 export function response(status: number, body: unknown): Response {
   return { status, ok: status >= 200 && status < 300, json: async () => body } as Response;
+}
+
+export function codeInputs(): HTMLInputElement[] {
+  return within(screen.getByRole('group', { name: 'Confirmation code' })).getAllByRole(
+    'textbox'
+  ) as HTMLInputElement[];
+}
+
+export function fillConfirmationCode(code: string): void {
+  codeInputs().forEach((input, index) => {
+    fireEvent.change(input, { target: { value: code[index] ?? '' } });
+  });
 }
 
 export function renderSignup(from = '/planner') {

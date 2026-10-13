@@ -2,9 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { EmailVerificationDelivery } from '@shared/email-verification';
 
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { resendEmailVerification, verifyEmail, type AuthUser } from '@/lib/auth';
 import { ApiError } from '@/services/api';
+import VerificationCodeInput from './verification-code-input';
 
 type Props = {
   email: string;
@@ -100,19 +100,11 @@ export default function EmailVerificationForm({ email, initialDelivery, onVerifi
           {error}
         </p>
       )}
-      <Input
-        label="Confirmation code"
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]{6}"
-        minLength={6}
-        maxLength={6}
+      <VerificationCodeInput
         value={code}
-        onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-        aria-describedby="email-code-help"
+        onChange={setCode}
+        describedBy="email-code-help"
         disabled={pending !== null}
-        required
       />
       <p id="email-code-help" className="text-xs text-slate-500">
         Enter all six digits, including any leading zero.
@@ -121,7 +113,7 @@ export default function EmailVerificationForm({ email, initialDelivery, onVerifi
         type="submit"
         className="w-full"
         loading={pending === 'verify'}
-        disabled={pending !== null || expired}
+        disabled={pending !== null || expired || !/^[0-9]{6}$/.test(code)}
       >
         Confirm email
       </Button>
