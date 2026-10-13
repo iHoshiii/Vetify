@@ -25,6 +25,8 @@ import {
   signAccessToken,
 } from '../../services/auth.service';
 import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
+import { requestEmailVerification } from '../../services/email-verification.service';
+import emailVerificationRoute from './email-verification.route';
 import {
   nativeSocialErrorUrl,
   readNativeSocialContext,
@@ -53,6 +55,7 @@ import {
 import { fail, failReason, ok } from '../../utils/response';
 
 const router = Router();
+router.use('/email', emailVerificationRoute);
 
 /**
  * Turns away a caller whose account has been suspended or banned, before any
@@ -88,11 +91,12 @@ function redirectWithError(res: Response, reason: string): void {
 router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
   const user = await createLocalAccount(req.body as SignupInput);
   const auth = await createAuthPayloadFor(user);
+  const emailVerification = await requestEmailVerification(user);
 
   recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
 
   setRefreshCookie(res, auth.refreshToken, auth.expiresAt);
-  ok(res, { accessToken: auth.accessToken, user: auth.user });
+  ok(res, { accessToken: auth.accessToken, user: auth.user, emailVerification });
 });
 
 // POST /api/v1/auth/login
