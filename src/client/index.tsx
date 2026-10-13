@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { ChatProvider } from './components/messaging/ChatProvider';
 import { AuthProvider } from './components/providers/AuthProvider';
+import EmailVerificationGate from './components/providers/EmailVerificationGate';
 import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
 import { LocaleProvider } from './components/providers/LocaleProvider';
 import RealtimeBridge from './components/providers/RealtimeBridge';
@@ -24,13 +25,15 @@ createRoot(container).render(
     <BrowserRouter>
       <LocaleProvider>
         <AuthProvider>
-          <ReactQueryProvider>
-            <PreferenceSync />
-            <RealtimeBridge />
-            <ChatProvider>
-              <App />
-            </ChatProvider>
-          </ReactQueryProvider>
+          <EmailVerificationGate>
+            <ReactQueryProvider>
+              <PreferenceSync />
+              <RealtimeBridge />
+              <ChatProvider>
+                <App />
+              </ChatProvider>
+            </ReactQueryProvider>
+          </EmailVerificationGate>
         </AuthProvider>
       </LocaleProvider>
     </BrowserRouter>

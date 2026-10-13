@@ -1,4 +1,5 @@
 import { readAccessToken, writeAuthState, type AuthSession } from '@/lib/auth-storage';
+import { handleEmailVerificationRequired } from '@/lib/email-verification-access';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
@@ -102,6 +103,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (!res.ok) {
     const err = (payload ?? {}) as ApiErrorBody;
+    if (res.status === 403) handleEmailVerificationRequired(err.reason);
     throw new ApiError(
       res.status,
       err.error ?? err.message ?? `Request failed (${res.status})`,
@@ -144,6 +146,7 @@ export async function apiFetchBlob(path: string, options: RequestOptions = {}): 
 
   if (!res.ok) {
     const err = ((await res.json().catch(() => null)) ?? {}) as ApiErrorBody;
+    if (res.status === 403) handleEmailVerificationRequired(err.reason);
     throw new ApiError(
       res.status,
       err.error ?? err.message ?? `Request failed (${res.status})`,

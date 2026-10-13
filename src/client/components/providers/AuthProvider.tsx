@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '@/services/api';
+import { needsEmailVerification } from '@shared/email-verification';
+import { VERIFICATION_REQUIRED_EVENT } from '@/lib/email-verification-access';
 
 import {
   logoutFromServer,
@@ -55,6 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clear]);
 
+  useEffect(() => {
+    const requireConfirmation = () => {
+      const session = readAuthState();
+      if (session?.user && session.accessToken)
+        setSession({ user: session.user, accessToken: session.accessToken });
+    };
+    window.addEventListener(VERIFICATION_REQUIRED_EVENT, requireConfirmation);
+    return () => window.removeEventListener(VERIFICATION_REQUIRED_EVENT, requireConfirmation);
+  }, [setSession]);
+
   // The stored access token expires long before the refresh cookie does, so a
   // returning visitor is revalidated once on mount rather than trusted outright.
   useEffect(() => {
@@ -88,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // True while a stored session is still being revalidated, so the navbar
       // does not flash "Log in" on every page load for someone already signed
       // in. Revalidation failure clears both fields and flips this to false.
-      isAuthenticated: Boolean(user) && status !== 'anonymous',
+      isAuthenticated: Boolean(user) && status !== 'anonymous' && !needsEmailVerification(user),
       setSession,
       logout,
     }),

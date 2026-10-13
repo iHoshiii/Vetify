@@ -5,9 +5,9 @@ import { useAuth } from './AuthProvider';
 import { useLocalePreferences } from './LocaleProvider';
 
 export default function PreferenceSync() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const locale = useLocalePreferences();
-  const { data } = usePreferences(Boolean(user));
+  const { data } = usePreferences(isAuthenticated);
 
   useEffect(() => {
     if (data?.region.timeZone && data.region.timeZone !== locale.timeZone) {
