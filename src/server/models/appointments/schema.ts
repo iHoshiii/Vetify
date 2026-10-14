@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 
 import { isValidObjectId } from '../object-id';
+import type { AppointmentDelivery } from './delivery-types';
 
 /**
  * What the database needs in order to hold a booking, which is not what the form
@@ -39,4 +40,8 @@ export const appointmentAttrsSchema = z.object({
   clientEmail: z.string().trim().toLowerCase().email().nullish(),
 });
 
-export type AppointmentAttrs = z.input<typeof appointmentAttrsSchema>;
+export type AppointmentAttrs = z.input<typeof appointmentAttrsSchema> & {
+  requestId?: string;
+  requestFingerprint?: string;
+  deliveries?: AppointmentDelivery[];
+};

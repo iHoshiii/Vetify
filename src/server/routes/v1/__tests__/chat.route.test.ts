@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { createApp } from '../../../app';
 import { ANON_ID_COOKIE } from '../../../services/anon-quota';
 import { signAccessToken } from '../../../services/auth.service';
+import { insertUser } from '../../../models/users';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
 // Keeps Gemini out of the test entirely — the point here is the gate in front of
@@ -74,13 +75,9 @@ describe('POST /api/v1/chat anonymous allowance', () => {
 });
 
 describe('POST /api/v1/chat signed in', () => {
-  const token = signAccessToken({
-    sub: '507f1f77bcf86cd799439011',
-    email: 'ada@example.com',
-    role: 'user',
-  });
-
   it('is not subject to the anonymous allowance', async () => {
+    const user = await insertUser({ email: 'ada@example.com', provider: 'google' });
+    const token = signAccessToken({ sub: user._id.toString(), email: user.email, role: 'user' });
     const agent = request.agent(app);
 
     for (let i = 0; i < FREE_ANON_QUERIES + 5; i++) {

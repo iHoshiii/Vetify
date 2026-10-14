@@ -1,4 +1,5 @@
 import { APPOINTMENT_MAX_SLOTS } from '@shared/limits';
+import { activeSessionUser } from '../services/session-access.service';
 
 import {
   findAppointmentById,
@@ -45,6 +46,11 @@ export async function loadJoinableCall(
   const isParty =
     userId === appointment.client.toString() || userId === appointment.professionalUser.toString();
   if (!isParty) return null;
+  try {
+    await activeSessionUser(userId);
+  } catch {
+    return null;
+  }
 
   const start = appointment.startsAt.getTime();
   const now = Date.now();

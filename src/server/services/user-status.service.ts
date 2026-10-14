@@ -1,7 +1,8 @@
 import { USER_SUSPENSION_DAYS } from '@shared/limits';
 import type { ObjectId } from 'mongodb';
 
-import { recordAudit, updateUser, type UserStatus } from '../models';
+import { recordAudit, type UserStatus } from '../models';
+import { findUserById, usersCollection } from '../models/users';
 
 export const SUSPENSION_MS = USER_SUSPENSION_DAYS * 24 * 60 * 60 * 1000;
 
@@ -45,15 +46,24 @@ export async function currentStatus(account: StatusState): Promise<UserStatus> {
   if (status !== 'suspended') return status;
   if (!account.statusUntil || account.statusUntil.getTime() > Date.now()) return status;
 
-  const lifted = await updateUser(account._id, {
-    status: 'active',
-    statusReason: null,
-    statusUntil: null,
-    // The lift is not an admin's doing, so the trail says so: nobody to attribute it
-    // to, and the date is when the sanction ended rather than when it was handed down.
-    statusChangedBy: null,
-    statusChangedAt: new Date(),
-  });
+  const lifted = await usersCollection().findOneAndUpdate(
+    { _id: account._id, status: 'suspended', statusUntil: account.statusUntil },
+    {
+      $set: {
+        status: 'active',
+        statusReason: null,
+        statusUntil: null,
+        statusChangedBy: null,
+        statusChangedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: 'after', projection: { password: 0, passwordReset: 0 } }
+  );
+  if (!lifted) {
+    const fresh = await findUserById(account._id);
+    return fresh ? fresh.status ?? 'active' : 'deactivated';
+  }
 
   await recordAudit({
     action: 'user.status.expired',
@@ -64,5 +74,5 @@ export async function currentStatus(account: StatusState): Promise<UserStatus> {
     metadata: { email: account.email, statusFrom: 'suspended', statusTo: 'active' },
   });
 
-  return lifted ? lifted.status ?? 'active' : 'active';
+  return lifted.status ?? 'active';
 }

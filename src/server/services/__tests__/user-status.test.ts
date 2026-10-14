@@ -74,11 +74,10 @@ describe('currentStatus', () => {
     const moderator = await account('admin');
     await changeUserStatus({ id: target._id, moderator, to: 'suspended', reason: REASON });
     const suspended = await findUserById(target._id);
-    await endSanctionAt(target, new Date(Date.now() - DAY));
+    const expiredAt = new Date(Date.now() - DAY);
+    await endSanctionAt(target, expiredAt);
 
-    expect(await currentStatus({ ...suspended!, statusUntil: new Date(Date.now() - DAY) })).toBe(
-      'active'
-    );
+    expect(await currentStatus({ ...suspended!, statusUntil: expiredAt })).toBe('active');
 
     const after = await findUserById(target._id);
     expect(after?.status).toBe('active');

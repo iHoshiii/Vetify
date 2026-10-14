@@ -37,7 +37,13 @@ export type AuthState = {
 
 export type AuthSession = { accessToken: string; user: AuthUser };
 
-const AUTH_STORAGE_KEY = 'vetify.auth';
+export const AUTH_STORAGE_KEY = 'vetify.auth';
+export const AUTH_LOGOUT_KEY = 'vetify.auth.logout';
+export const AUTH_CHANGE_EVENT = 'vetify.auth.changed';
+
+export function authLogoutMarker(): string | null {
+  return typeof window === 'undefined' ? null : window.localStorage.getItem(AUTH_LOGOUT_KEY);
+}
 
 export function readAuthState(): AuthState | null {
   if (typeof window === 'undefined') return null;
@@ -59,6 +65,8 @@ export function writeAuthState(state: AuthState | null, remember?: boolean) {
   if (!state?.accessToken || !state.user) {
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
     window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.setItem(AUTH_LOGOUT_KEY, `${Date.now()}:${Math.random()}`);
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
     return;
   }
 
@@ -73,6 +81,7 @@ export function writeAuthState(state: AuthState | null, remember?: boolean) {
   const otherStorage = persistent ? window.sessionStorage : window.localStorage;
   otherStorage.removeItem(AUTH_STORAGE_KEY);
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 export function readAccessToken(): string | null {

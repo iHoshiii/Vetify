@@ -4,6 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useAccount';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import AvatarPicker from './AvatarPicker';
+import EmailVerificationStatus from './EmailVerificationStatus';
 import { FIELD, SaveRow } from './controls';
 
 export default function ProfileForm() {
@@ -46,21 +47,7 @@ export default function ProfileForm() {
           className={FIELD}
         />
       </label>
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <span className="block text-xs font-bold uppercase tracking-wide text-slate-500">
-          Email address
-        </span>
-        <span className="mt-1 block break-all text-sm font-semibold text-slate-800">
-          {user?.email}
-        </span>
-        <span
-          className={`mt-1 block text-xs font-bold ${
-            user?.emailVerified ? 'text-emerald-700' : 'text-amber-700'
-          }`}
-        >
-          {user?.emailVerified ? 'Verified' : 'Verification pending'}
-        </span>
-      </div>
+      <EmailVerificationStatus />
       <p className="text-xs leading-5 text-slate-500">
         Contact support if you need to change the email used to sign in.
       </p>

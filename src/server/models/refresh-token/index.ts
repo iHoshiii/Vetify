@@ -12,3 +12,4 @@ export {
   type RefreshTokenWithOwner,
 } from './types';
 export { hashToken, isRefreshTokenActive } from './utils';
+export { rotateRefreshToken, REFRESH_GRACE_MS } from './rotation';
