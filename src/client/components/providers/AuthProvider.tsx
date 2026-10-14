@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '@/services/api';
+import { AUTH_CHANGE_EVENT, AUTH_LOGOUT_KEY, AUTH_STORAGE_KEY } from '@/lib/auth-storage';
 
 import {
   logoutFromServer,
@@ -54,6 +55,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clear();
     }
   }, [clear]);
+
+  useEffect(() => {
+    const adoptStored = (event: Event) => {
+      if (event instanceof StorageEvent) {
+        if (event.key === AUTH_LOGOUT_KEY) {
+          window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        } else if (event.key !== AUTH_STORAGE_KEY) return;
+      }
+      const session = readAuthState();
+      setUser(session?.user ?? null);
+      setAccessToken(session?.accessToken ?? null);
+      setStatus(session?.user ? 'authenticated' : 'anonymous');
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, adoptStored);
+    window.addEventListener('storage', adoptStored);
+    return () => {
+      window.removeEventListener(AUTH_CHANGE_EVENT, adoptStored);
+      window.removeEventListener('storage', adoptStored);
+    };
+  }, []);
 
   // The stored access token expires long before the refresh cookie does, so a
   // returning visitor is revalidated once on mount rather than trusted outright.

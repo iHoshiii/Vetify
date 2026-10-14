@@ -11,7 +11,7 @@ export function AskedNotice({ mail }: { mail: RequestResult['mail'] }) {
         {/* An email follows only when the vet decides, and only if you gave an address. */}
         {mail.professional.delivered
           ? "We have let the vet know. You'll hear back once they confirm or decline."
-          : 'The vet was not reachable by email, so it may be worth ringing them.'}
+          : 'Your appointment is saved. We will retry the email to the vet.'}
       </p>
     </div>
   );

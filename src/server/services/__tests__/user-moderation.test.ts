@@ -8,12 +8,13 @@ import {
   type User,
   type UserRole,
 } from '../../models';
-import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
+import { clearTestDb } from '../../test-utils/db';
+import { startReplicaTestDb, stopReplicaTestDb } from '../../test-utils/repl-db';
 import { changeUserRole, changeUserStatus } from '../user-moderation.service';
 
-beforeAll(startTestDb, 120_000);
+beforeAll(startReplicaTestDb, 120_000);
 afterEach(clearTestDb);
-afterAll(stopTestDb);
+afterAll(stopReplicaTestDb);
 
 let seq = 0;
 

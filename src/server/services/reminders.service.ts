@@ -1,7 +1,10 @@
 import { PROFESSIONAL_BOOKING_NOTIFICATION_TIMES } from '@shared/limits';
 
 import { claimReminder, findProfessionalById, findRemindableAppointments } from '../models';
-import { createNotification } from './notifications.service';
+import {
+  newAppointmentDelivery,
+  processAppointmentDelivery,
+} from './appointment-deliveries.service';
 
 // How often the scanner wakes, and the furthest-ahead lead any vet can set.
 const SCAN_INTERVAL_MS = 60_000;
@@ -23,21 +26,9 @@ export async function scanReminders(): Promise<void> {
     // Not yet inside this vet's own lead: it was only pulled by the widest window above.
     if (now.getTime() < appointment.startsAt.getTime() - lead * 60_000) continue;
 
-    // Claim before sending, so an overlapping tick cannot push the same reminder twice.
-    if (!(await claimReminder(appointment._id))) continue;
-
-    const inMinutes = Math.max(
-      1,
-      Math.round((appointment.startsAt.getTime() - now.getTime()) / 60_000)
-    );
-    await createNotification({
-      user: appointment.professionalUser,
-      kind: 'booking_reminder',
-      appointment: appointment._id,
-      appointmentKind: appointment.kind,
-      title: 'Appointment starting soon',
-      body: `${appointment.petName ?? 'A pet'}'s appointment starts in about ${inMinutes} minutes.`,
-    });
+    const delivery = newAppointmentDelivery('reminder', appointment.startsAt, '');
+    const claimed = await claimReminder(appointment._id, appointment, delivery);
+    if (claimed) await processAppointmentDelivery(claimed, delivery.id);
   }
 }
 

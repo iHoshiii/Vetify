@@ -10,61 +10,50 @@ function addDays(date: Date, days: number): Date {
 
 import { env, isProduction } from '../config/env';
 import { hashToken, insertRefreshToken } from '../models/refresh-token';
-import {
-  findUserByEmail,
-  findUserByProviderId,
-  insertUser,
-  toPublicUser,
-  updateUser,
-  type AuthProvider,
-  type PublicUser,
-  type User,
-  type UserPatch,
-} from '../models/users';
-import { OAuthError, type OAuthProfile } from './oauth.service';
+import { toPublicUser, type PublicUser, type User } from '../models/users';
 
-/**
- * What every access token carries. Named so the two places that mint one — login
- * and refresh — cannot drift apart and leave a token without its role claim.
- *
- * The role here is a hint for the client UI. Authorization reads the stored role
- * instead, because this claim is frozen for the life of the token.
- */
 export type AccessTokenClaims = {
   sub: string;
   email: string;
   role: PublicUser['role'];
+  sessionVersion?: number;
 };
 
-export function accessTokenClaimsFor(user: PublicUser): AccessTokenClaims {
-  return { sub: user.id, email: user.email, role: user.role };
+export function accessTokenClaimsFor(user: PublicUser, sessionVersion = 0): AccessTokenClaims {
+  return { sub: user.id, email: user.email, role: user.role, sessionVersion };
 }
 
 export function signAccessToken(payload: AccessTokenClaims) {
-  return jwt.sign(payload, env.JWT_SECRET_ACCESS, {
-    expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
-  });
+  return jwt.sign(
+    { ...payload, sessionVersion: payload.sessionVersion ?? 0 },
+    env.JWT_SECRET_ACCESS,
+    {
+      expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
+    }
+  );
 }
 
-export async function createRefreshToken(userId: string) {
+export async function createRefreshToken(userId: string, sessionVersion = 0) {
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = hashToken(token);
 
   const expiresAt = addDays(new Date(), env.REFRESH_TOKEN_DAYS);
 
-  await insertRefreshToken({ tokenHash, user: userId, expiresAt });
+  await insertRefreshToken({ tokenHash, user: userId, expiresAt, sessionVersion });
 
   return { token, expiresAt };
 }
 
 export async function createAuthPayloadFor(user: User) {
   const publicUser = toPublicUser(user);
-  const accessToken = signAccessToken(accessTokenClaimsFor(publicUser));
-  const { token: refreshToken, expiresAt } = await createRefreshToken(publicUser.id);
+  const accessToken = signAccessToken(accessTokenClaimsFor(publicUser, user.sessionVersion ?? 0));
+  const { token: refreshToken, expiresAt } = await createRefreshToken(
+    publicUser.id,
+    user.sessionVersion ?? 0
+  );
   return { accessToken, refreshToken, expiresAt, user: publicUser };
 }
 
-/** Single definition of the refresh cookie, so the flags cannot drift per route. */
 export function refreshCookieOptions(expiresAt: Date): CookieOptions {
   return {
     httpOnly: true,

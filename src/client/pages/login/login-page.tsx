@@ -24,6 +24,9 @@ const GATED_PAGES: Record<string, string> = {
 export default function LoginPage() {
   const [params] = useSearchParams();
   const location = useLocation();
+  const state = location.state as { from?: string; message?: unknown } | null;
+  const successMessage =
+    typeof state?.message === 'string' && state.message.trim() ? state.message : null;
 
   const oauthError = params.get('error') === 'oauth' ? params.get('reason') : null;
   const oauthMessage = oauthError ? OAUTH_ERRORS[oauthError] ?? OAUTH_ERRORS.server : null;
@@ -34,7 +37,7 @@ export default function LoginPage() {
       ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
-  const from = (location.state as { from?: string } | null)?.from ?? pendingAuthReturnTo();
+  const from = state?.from ?? pendingAuthReturnTo();
   const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
   const gatedMessage = from
     ? gatedAction
@@ -42,7 +45,8 @@ export default function LoginPage() {
       : 'Please log in to continue.'
     : null;
 
-  const notice = oauthMessage ?? quotaMessage ?? gatedMessage;
+  const notice = oauthMessage ?? successMessage ?? quotaMessage ?? gatedMessage;
+  const success = !oauthMessage && Boolean(successMessage);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
@@ -55,8 +59,12 @@ export default function LoginPage() {
 
         {notice ? (
           <p
-            role="alert"
-            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            role={success ? 'status' : 'alert'}
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              success
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-amber-200 bg-amber-50 text-amber-800'
+            }`}
           >
             {notice}
           </p>

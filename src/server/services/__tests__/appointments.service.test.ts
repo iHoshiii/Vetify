@@ -512,7 +512,7 @@ describe('decideAppointment', () => {
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
-  it('marks a confirmed booking done, and writes to nobody about it', async () => {
+  it('marks a confirmed booking done and invites the owner to review it', async () => {
     const client = await account('owner');
     const { user: vetUser, application } = await vet();
     const booked = await request({ client, professional: application!._id });
@@ -533,9 +533,9 @@ describe('decideAppointment', () => {
     // Still holding the slot: that time was in fact used, and a grid offering it again
     // later would be wrong about the past.
     expect(done?.appointment).toMatchObject({ status: 'completed', holdsSlot: true });
-    // Nothing to send. The owner was there.
-    expect(done?.mail).toBeNull();
-    expect(recentMail()).toHaveLength(0);
+    // The owner receives a review invitation.
+    expect(done?.mail?.delivered).toBe(true);
+    expect(recentMail()).toHaveLength(1);
   });
 
   it('cannot mark a booking done that was never agreed', async () => {
