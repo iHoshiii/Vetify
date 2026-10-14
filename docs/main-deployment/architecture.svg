@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1260" viewBox="0 0 1600 1260" role="img" aria-labelledby="title description">
+  <title id="title">Vetify main deployment and four independent feature applications</title>
+  <desc id="description">Proposed architecture. Deploy main Vetify to S3, CloudFront, API Gateway and Lambda after extraction. Main alone owns accounts in MongoDB Atlas. Meal Planner, Books, Anatomy and Blog are separate future deployments, using central authentication and their own feature data.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#087f78" stroke-width="2"/></marker>
+    <marker id="purple" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#7251aa" stroke-width="2"/></marker>
+    <style>
+      text { font-family: 'Segoe UI', Arial, sans-serif; fill: #173449; }
+      .heading { font-size: 22px; font-weight: 700; }
+      .body { font-size: 18px; }
+      .small { font-size: 16px; fill: #486579; }
+      .box { fill: white; stroke: #c9dde3; stroke-width: 2; }
+      .flow { fill: none; stroke: #087f78; stroke-width: 3; marker-end: url(#arrow); }
+      .signal { fill: none; stroke: #7251aa; stroke-width: 3; marker-end: url(#purple); }
+    </style>
+  </defs>
+  <rect width="1600" height="1260" fill="#f6fafb"/>
+  <text x="40" y="59" font-size="34" font-weight="750">Vetify: one account, independent applications</text>
+  <text x="40" y="95" class="body">Proposed boundaries · current source still needs extraction · no AWS resources deployed by this plan</text>
+  <rect x="40" y="130" width="1060" height="590" rx="20" fill="#eaf7f5" stroke="#087f78" stroke-width="2"/>
+  <text x="70" y="169" class="heading">DEPLOY NOW: main Vetify AWS resources, after release checks</text>
+  <rect x="1130" y="130" width="430" height="590" rx="20" fill="#f0f3f9" stroke="#bdcbdc" stroke-width="2"/>
+  <text x="1160" y="169" class="heading">Main external services</text>
+  <rect x="80" y="205" width="290" height="70" rx="12" class="box"/>
+  <text x="102" y="234" class="heading">Browser / mobile user</text>
+  <text x="102" y="259" class="small">https://vetify.page</text>
+  <path d="M225 275 V330" class="flow"/>
+  <text x="244" y="308" class="small">HTTPS</text>
+  <rect x="80" y="330" width="290" height="80" rx="12" class="box"/>
+  <text x="102" y="364" class="heading">CloudFront + certificate</text>
+  <text x="102" y="390" class="small">Domain + frontend + /api routing</text>
+  <path d="M225 410 V455" class="flow"/>
+  <rect x="80" y="455" width="290" height="110" rx="12" class="box"/>
+  <text x="102" y="490" class="heading">Private frontend S3</text>
+  <text x="102" y="518" class="body">Main React build only</text>
+  <text x="102" y="544" class="small">OAC · no feature UI/assets</text>
+  <path d="M370 370 H480" class="flow"/>
+  <text x="392" y="349" class="small">/api/*</text>
+  <rect x="480" y="330" width="560" height="80" rx="12" class="box"/>
+  <text x="502" y="365" class="heading">API Gateway HTTP API</text>
+  <text x="502" y="392" class="small">No cache for authentication and private responses</text>
+  <path d="M760 410 V455" class="flow"/>
+  <rect x="480" y="455" width="560" height="110" rx="12" fill="#fff" stroke="#087f78" stroke-width="2"/>
+  <text x="502" y="488" class="heading">Main Lambda backend</text>
+  <text x="502" y="516" class="body">Accounts · verification · linked login methods</text>
+  <text x="502" y="543" class="small">Professionals · appointments · messages · AI assistant</text>
+  <path d="M80 240 H60 V630 H80" class="signal"/>
+  <rect x="80" y="590" width="290" height="80" rx="12" class="box"/>
+  <text x="102" y="623" class="heading" style="font-size:20px">WebSocket API + Lambda</text>
+  <text x="102" y="650" class="small">Chat events + call signalling</text>
+  <path d="M370 630 H440 V525 H480" class="signal"/>
+  <rect x="480" y="595" width="260" height="75" rx="12" class="box"/>
+  <text x="500" y="625" class="heading">Scheduled workers</text>
+  <text x="500" y="651" class="small">Cleanup + main durable jobs*</text>
+  <rect x="780" y="595" width="260" height="75" rx="12" class="box" stroke-dasharray="6 5"/>
+  <text x="800" y="625" class="heading">Private upload S3*</text>
+  <text x="800" y="651" class="small">Proof images · signed access</text>
+  <text x="70" y="699" class="small">*Main upload handling and durable appointment jobs need implementation before launch.</text>
+  <rect x="1160" y="205" width="370" height="115" rx="12" class="box"/>
+  <text x="1182" y="240" class="heading">Main MongoDB Atlas</text>
+  <text x="1182" y="268" class="body">One authoritative account store</text>
+  <text x="1182" y="295" class="small">Main sessions, approvals and business data</text>
+  <path d="M1040 485 H1115 V264 H1160" class="flow"/>
+  <rect x="1160" y="350" width="370" height="95" rx="12" class="box"/>
+  <text x="1182" y="385" class="heading">Resend</text>
+  <text x="1182" y="413" class="small">Separate auth / professional mail keys</text>
+  <rect x="1160" y="480" width="370" height="85" rx="12" class="box"/>
+  <text x="1182" y="514" class="heading">Gemini</text>
+  <text x="1182" y="542" class="small">Main AI assistant and main moderation</text>
+  <rect x="1160" y="595" width="370" height="75" rx="12" class="box"/>
+  <text x="1182" y="625" class="heading">TURN + WebRTC</text>
+  <text x="1182" y="651" class="small">Media between devices; relay when needed</text>
+  <rect x="40" y="755" width="1520" height="80" rx="14" fill="#173449"/>
+  <text x="66" y="788" font-size="21" font-weight="700" style="fill:white">Shared authentication through main APIs. No shared passwords, JWT secrets or feature databases.</text>
+  <text x="66" y="816" font-size="17" style="fill:#d4e8ee">Future web SSO: app → main login → single-use code → app session · immutable main user ID links the feature data</text>
+  <text x="40" y="879" class="heading">SEPARATE REPOSITORIES: prepare locally now, deploy independently later</text>
+  <rect x="40" y="902" width="350" height="174" rx="14" class="box"/>
+  <text x="62" y="939" class="heading">Meal Planner</text>
+  <text x="62" y="969" class="body">planner.vetify.page</text>
+  <text x="62" y="1000" class="small">Own UI + API + feature database</text>
+  <text x="62" y="1027" class="small">Pets, plans, feeding, observations</text>
+  <text x="62" y="1053" class="small">No copied users or auth collections</text>
+  <rect x="430" y="902" width="350" height="174" rx="14" class="box"/>
+  <text x="452" y="939" class="heading">Books</text>
+  <text x="452" y="969" class="body">books.vetify.page</text>
+  <text x="452" y="1000" class="small">Own UI + API + DB + private PDFs</text>
+  <text x="452" y="1027" class="small">Uploads, screening, commissions</text>
+  <text x="452" y="1053" class="small">Main confirms professional approval</text>
+  <rect x="820" y="902" width="350" height="174" rx="14" class="box"/>
+  <text x="842" y="939" class="heading">Anatomy</text>
+  <text x="842" y="969" class="body">anatomy.vetify.page</text>
+  <text x="842" y="1000" class="small">Own static viewer + image assets</text>
+  <text x="842" y="1027" class="small">Dog / cat / bird, systems, hotspots</text>
+  <text x="842" y="1053" class="small">No feature database needed initially</text>
+  <rect x="1210" y="902" width="350" height="174" rx="14" class="box"/>
+  <text x="1232" y="939" class="heading">Blog</text>
+  <text x="1232" y="969" class="body">blog.vetify.page</text>
+  <text x="1232" y="1000" class="small">Own UI + API + content database</text>
+  <text x="1232" y="1027" class="small">Posts, authoring, moderation</text>
+  <text x="1232" y="1053" class="small">Main supplies current admin authority</text>
+  <text x="40" y="1132" class="heading">Release order</text>
+  <text x="40" y="1171" class="body">1. Preserve + port feature code → 2. Cut all main imports/DB roots → 3. Test main → 4. Deploy main AWS stack</text>
+  <text x="40" y="1205" class="body">5. Implement and test central web SSO → 6. Launch each feature later → 7. Enable its main navigation link</text>
+  <text x="40" y="1238" class="small">Suggested subdomains are not yet configured. Native account handoff stays in main. Databases are shown as ownership, not separate paid clusters.</text>
+</svg>
