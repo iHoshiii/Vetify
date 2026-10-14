@@ -58,6 +58,13 @@ function accountRoleGuard(roles: UserRole[], allowUnverified = false): RequestHa
       failReason(res, 401, 'Your session is no longer valid. Please sign in again.', 'no-account');
       return;
     }
+    // Read through the lift, so a suspension that ran out overnight stops applying
+    // without an admin having to come back and undo it.
+    const status = await currentStatus(user);
+    if (status !== 'active') {
+      failReason(res, 403, blockedMessage(status), `account-${status}`);
+      return;
+    }
     if ((auth.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)) {
       failReason(
         res,
@@ -65,14 +72,6 @@ function accountRoleGuard(roles: UserRole[], allowUnverified = false): RequestHa
         'Your session is no longer valid. Please sign in again.',
         'session-revoked'
       );
-      return;
-    }
-
-    // Read through the lift, so a suspension that ran out overnight stops applying
-    // without an admin having to come back and undo it.
-    const status = await currentStatus(user);
-    if (status !== 'active') {
-      failReason(res, 403, blockedMessage(status), `account-${status}`);
       return;
     }
     if (!allowUnverified) requireVerifiedEmail(user);

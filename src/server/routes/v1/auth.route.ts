@@ -10,6 +10,7 @@ import { ok } from '../../utils/response';
 import emailVerificationRoute from './email-verification.route';
 import browserSessionRoute from './auth-browser-session.route';
 import socialRoute from './auth-social.route';
+import recoveryRoute from './auth-recovery.route';
 const router = Router();
 router.use('/email', emailVerificationRoute);
 router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
@@ -34,5 +35,6 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
 router.use(browserSessionRoute);
+router.use(recoveryRoute);
 router.use(socialRoute);
 export default router;
