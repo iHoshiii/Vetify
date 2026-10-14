@@ -1,6 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { findUserById, isValidObjectId, type User, type UserRole } from '../models';
+import { findUserById, isValidObjectId, USER_ROLES, type User, type UserRole } from '../models';
 import { blockedMessage, currentStatus } from '../services/user-status.service';
 import { requireVerifiedEmail } from '../services/email-verification-access';
 import { failReason } from '../utils/response';
@@ -18,19 +18,6 @@ declare module 'express-serve-static-core' {
  * verifies the signature. This one only reads the annotation optionalAuth left
  * behind, so on its own it would turn every request away.
  */
-export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (!req.auth) {
-    failReason(res, 401, 'You need to be signed in to do that.', 'unauthenticated');
-    return;
-  }
-
-  if (isValidObjectId(req.auth.userId)) {
-    const user = await findUserById(req.auth.userId);
-    if (user) requireVerifiedEmail(user);
-  }
-  next();
-}
-
 /**
  * Gate for routes that only some roles may reach.
  *
@@ -69,6 +56,15 @@ function accountRoleGuard(roles: UserRole[], allowUnverified = false): RequestHa
     if (!user) {
       // Token still verifies, but the account behind it is gone.
       failReason(res, 401, 'Your session is no longer valid. Please sign in again.', 'no-account');
+      return;
+    }
+    if ((auth.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)) {
+      failReason(
+        res,
+        401,
+        'Your session is no longer valid. Please sign in again.',
+        'session-revoked'
+      );
       return;
     }
 

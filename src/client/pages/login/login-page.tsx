@@ -39,7 +39,6 @@ export default function LoginPage() {
       ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
-  const state = location.state as { from?: string; message?: string } | null;
   const from = state?.from ?? pendingAuthReturnTo();
   const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
   const gatedMessage = from
@@ -48,7 +47,8 @@ export default function LoginPage() {
       : 'Please log in to continue.'
     : null;
 
-  const notice = oauthMessage ?? state?.message ?? quotaMessage ?? gatedMessage;
+  const notice = oauthMessage ?? successMessage ?? quotaMessage ?? gatedMessage;
+  const success = Boolean(successMessage && !oauthMessage);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">

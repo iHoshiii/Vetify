@@ -44,6 +44,7 @@ async function mintNativeCredentials(user: User, sessionId: string) {
     updatedAt: now,
     nativeClientId: NATIVE_CLIENT_ID,
     nativeSessionId: sessionId,
+    sessionVersion: user.sessionVersion ?? 0,
   });
   const updated = await nativeSessionsCollection().updateOne(
     { _id: new ObjectId(sessionId), revokedAt: null },
@@ -55,7 +56,7 @@ async function mintNativeCredentials(user: User, sessionId: string) {
   }
   const publicUser = toPublicUser(user);
   const accessToken = jwt.sign(
-    { ...accessTokenClaimsFor(publicUser), nativeSessionId: sessionId },
+    { ...accessTokenClaimsFor(publicUser, user.sessionVersion ?? 0), nativeSessionId: sessionId },
     env.JWT_SECRET_ACCESS,
     { expiresIn: `${env.ACCESS_TOKEN_MINUTES}m` }
   );

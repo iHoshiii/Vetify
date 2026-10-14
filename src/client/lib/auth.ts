@@ -1,6 +1,12 @@
 import { apiFetch } from '@/services/api';
 import type { EmailVerificationDelivery } from '@shared/email-verification';
 import { needsEmailVerification } from '@shared/email-verification';
+import {
+  withAuthSessionLock,
+  refreshSessionFresh,
+  refreshSessionShared,
+} from '@/services/auth-refresh';
+export { signupWithEmail, type SignupSession } from '@/services/auth-signup';
 
 import {
   writeAuthState,
@@ -31,20 +37,6 @@ export async function loginWithEmail(email: string, password: string, remember =
     return payload;
   });
 }
-
-export async function signupWithEmail(input: {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}) {
-  const payload = await apiFetch<SignupSession>('/auth/signup', {
-    method: 'POST',
-    body: input,
-  });
-}
-
-export type SignupSession = AuthSession & { emailVerification?: EmailVerificationDelivery };
 
 export function verifyEmail(code: string) {
   return apiFetch<{ user: AuthUser }>('/auth/email/verify', {
