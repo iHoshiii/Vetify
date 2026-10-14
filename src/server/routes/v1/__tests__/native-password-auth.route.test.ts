@@ -148,8 +148,8 @@ describe('Email and password mobile authentication', () => {
     ]);
     expect(responses.map((response) => response.status)).toEqual([401, 401]);
     expect(responses.map((response) => response.body)).toEqual([
-      { error: 'Invalid credentials' },
-      { error: 'Invalid credentials' },
+      { error: 'Email or password is incorrect.' },
+      { error: 'Email or password is incorrect.' },
     ]);
     expect(await refreshTokensCollection().countDocuments()).toBe(0);
   });

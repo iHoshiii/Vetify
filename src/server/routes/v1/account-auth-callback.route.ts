@@ -9,6 +9,10 @@ import {
 } from '../../services/account-auth-proof';
 import { requireAccountCallbackSession } from '../../services/account-auth-session';
 import {
+  ACCOUNT_LINK_PROOF_COOKIE,
+  accountLinkCookieOptions,
+} from '../../services/account-link-proof';
+import {
   fetchProfileFromCode,
   getProviderConfig,
   isOAuthProviderName,
@@ -76,11 +80,18 @@ router.get('/:provider/callback', async (req, res, next) => {
       req.query.code,
       state.codeVerifier
     );
-    const proof = await completeAccountAuthorization(user, context, provider, profile);
+    const proof = await completeAccountAuthorization(
+      user,
+      context,
+      provider,
+      profile,
+      req.cookies?.[ACCOUNT_LINK_PROOF_COOKIE]
+    );
     if (context.purpose === 'add-password') {
       res.cookie(PASSWORD_PROOF_COOKIE, proof, passwordProofCookieOptions);
       return res.redirect(settingsUrl('auth', 'password-ready'));
     }
+    res.clearCookie(ACCOUNT_LINK_PROOF_COOKIE, { path: accountLinkCookieOptions.path });
     return res.redirect(settingsUrl('connection', `${provider}-linked`));
   } catch (error) {
     return errorRedirect(callbackError(error));

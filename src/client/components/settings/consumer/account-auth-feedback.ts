@@ -1,6 +1,7 @@
 import { ApiError } from '@/services/api';
 
 export const PROVIDER_NAMES = { google: 'Google', facebook: 'Facebook', tiktok: 'TikTok' };
+export const LOGIN_METHOD_NAMES = { local: 'Public Login', ...PROVIDER_NAMES };
 
 export const ACCOUNT_AUTH_MESSAGES: Record<string, string> = {
   state: 'That confirmation expired or did not match. Please try again.',
@@ -14,6 +15,7 @@ export const ACCOUNT_AUTH_MESSAGES: Record<string, string> = {
   'identity-in-use': 'That provider account is connected to another Vetify account.',
   provider: 'The provider could not complete the confirmation. Please try again.',
   'account-changed': 'Your account changed during confirmation. Please try again.',
+  'email-link-required': 'Verify your email again before linking this sign-in method.',
 };
 
 export function accountAuthError(cause: unknown, fallback: string) {

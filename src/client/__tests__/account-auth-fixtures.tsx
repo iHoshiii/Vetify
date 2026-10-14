@@ -12,12 +12,14 @@ const state = vi.hoisted(() => ({
   logout: vi.fn(),
   open: vi.fn(),
   refetch: vi.fn(),
+  requestCode: vi.fn(),
+  verifyCode: vi.fn(),
 }));
 export const authSettings = state;
 
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({
-    user: { id: 'owner', provider: 'local' },
+    user: { id: 'owner', provider: 'local', email: 'owner@example.com' },
     status: 'authenticated',
     logout: state.logout,
   }),
@@ -50,7 +52,11 @@ vi.mock('@/hooks/useAccount', () => ({
     error: null,
   }),
 }));
-vi.mock('@/services/account-auth.service', () => ({ openAccountAuthUrl: state.open }));
+vi.mock('@/services/account-auth.service', () => ({
+  openAccountAuthUrl: state.open,
+  requestAccountLinkCode: state.requestCode,
+  verifyAccountLinkCode: state.verifyCode,
+}));
 
 export function resetAuthSettings() {
   Object.values(state).forEach((value) => {
@@ -60,7 +66,7 @@ export function resetAuthSettings() {
     hasPassword: true,
     providers: [],
     googleAvailable: true,
-    availableProviders: ['google', 'facebook'],
+    availableProviders: ['google', 'facebook', 'tiktok'],
     passwordReady: false,
     reauthProvider: null,
   };
@@ -68,6 +74,12 @@ export function resetAuthSettings() {
   state.reauthenticate.mockResolvedValue({ url: 'https://accounts.google.com/confirm' });
   state.add.mockResolvedValue({ added: true });
   state.logout.mockResolvedValue(undefined);
+  state.requestCode.mockImplementation(async () => ({
+    sent: true,
+    expiresAt: new Date(Date.now() + 300_000).toISOString(),
+    resendAvailableAt: new Date(Date.now() + 60_000).toISOString(),
+  }));
+  state.verifyCode.mockResolvedValue({ verified: true, url: 'https://provider.example/authorize' });
 }
 
 function Location() {

@@ -11,6 +11,7 @@ function addDays(date: Date, days: number): Date {
 import { env, isProduction } from '../config/env';
 import { hashToken, insertRefreshToken } from '../models/refresh-token';
 import { findAuthIdentity, insertAuthIdentity } from '../models/auth-identities';
+import { findProfessionalByUser } from '../models/professionals';
 import {
   findUserByEmail,
   findUserById,
@@ -96,11 +97,17 @@ export async function findOrCreateOAuthUser(
   if (existing) {
     if (!identity)
       await insertAuthIdentity({ user: existing._id, provider, providerId: profile.providerId });
-    // Let a changed display name or avatar follow the provider. Collecting the
-    // changes into a patch and letting an empty one skip the write is what
-    // `doc.isModified()` used to decide.
+    // A professional uses the approved name on their licence.
+    const application =
+      existing.role === 'professional' ? await findProfessionalByUser(existing._id) : null;
+    const name =
+      existing.role === 'professional'
+        ? application?.status === 'verified'
+          ? application.fullName
+          : existing.name
+        : profile.name;
     const patch: UserPatch = {};
-    if (profile.name && profile.name !== existing.name) patch.name = profile.name;
+    if (name && name !== existing.name) patch.name = name;
     if (profile.avatarUrl && profile.avatarUrl !== existing.avatarUrl) {
       patch.avatarUrl = profile.avatarUrl;
     }

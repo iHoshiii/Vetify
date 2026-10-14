@@ -6,40 +6,34 @@ import { ApiError } from '@/services/api';
 beforeEach(resetAuthSettings);
 
 describe('connected login settings', () => {
-  it.each(['google', 'facebook'] as const)(
-    'confirms the password before connecting %s',
+  it.each(['google', 'facebook', 'tiktok'] as const)(
+    'verifies the email before linking %s',
     async (provider) => {
-      const name = provider === 'google' ? 'Google' : 'Facebook';
+      const name = { google: 'Google', facebook: 'Facebook', tiktok: 'TikTok' }[provider];
       renderAuthSettings();
-      const button = screen.getByRole('button', { name: `Connect ${name}` });
-      expect(button).toBeDisabled();
-      fireEvent.change(screen.getByLabelText(`Password to connect ${name}`), {
-        target: { value: 'CurrentPassword2!' },
+      fireEvent.click(screen.getByRole('button', { name: `Link ${name}` }));
+      await waitFor(() => expect(authSettings.requestCode).toHaveBeenCalledWith(provider));
+      fireEvent.change(await screen.findByLabelText('Digit 1 of 6'), {
+        target: { value: '012345' },
       });
-      fireEvent.click(button);
+      fireEvent.click(screen.getByRole('button', { name: `Verify and continue with ${name}` }));
+      await waitFor(() => expect(authSettings.verifyCode).toHaveBeenCalledWith(provider, '012345'));
       await waitFor(() =>
-        expect(authSettings.connect).toHaveBeenCalledWith({
-          provider,
-          currentPassword: 'CurrentPassword2!',
-        })
+        expect(authSettings.open).toHaveBeenCalledWith('https://provider.example/authorize')
       );
-      await waitFor(() =>
-        expect(authSettings.open).toHaveBeenCalledWith('https://accounts.google.com/authorize')
-      );
-      expect(screen.getByLabelText(`Password to connect ${name}`)).toHaveValue('');
+      expect(authSettings.connect).not.toHaveBeenCalled();
     }
   );
 
-  it('reports a wrong password and keeps the provider navigation closed', async () => {
-    authSettings.connect.mockRejectedValue(new ApiError(400, 'Incorrect', 'password-incorrect'));
+  it('rejects an incorrect email code and keeps provider navigation closed', async () => {
+    authSettings.verifyCode.mockRejectedValue(
+      new ApiError(400, 'The verification code is invalid or expired.', 'email-link-invalid')
+    );
     renderAuthSettings();
-    fireEvent.change(screen.getByLabelText('Password to connect Google'), {
-      target: { value: 'Wrong!' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Connect Google' }));
-    expect(
-      await screen.findByText('Your current password is incorrect. Please try again.')
-    ).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Link Google' }));
+    fireEvent.change(await screen.findByLabelText('Digit 1 of 6'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify and continue with Google' }));
+    expect(await screen.findByText('The verification code is invalid or expired.')).toBeVisible();
     expect(authSettings.open).not.toHaveBeenCalled();
   });
 
@@ -47,8 +41,8 @@ describe('connected login settings', () => {
     authSettings.data.providers = ['google'];
     renderAuthSettings();
     expect(screen.getByText('Google')).toBeVisible();
-    expect(screen.getByText('Connected')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Connect Google' })).toBeNull();
+    expect(screen.getAllByText('Linked')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Link Google' })).toBeNull();
     expect(screen.getByLabelText('Current password')).toBeVisible();
   });
 
@@ -56,15 +50,26 @@ describe('connected login settings', () => {
     authSettings.data.availableProviders = [];
     authSettings.data.googleAvailable = false;
     renderAuthSettings();
-    expect(
-      screen.getByText('Google sign-in is currently unavailable. Please try again later.')
-    ).toBeVisible();
+    expect(screen.getByText('Google sign-in is currently unavailable.')).toBeVisible();
     expect(screen.queryByLabelText('Password to connect Google')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Link Google' })).toBeDisabled();
+  });
+
+  it('explains that TikTok needs HTTPS and disables its Link button', () => {
+    authSettings.data.availableProviders = ['google', 'facebook'];
+    authSettings.data.tiktokHttpsReady = false;
+    renderAuthSettings();
+    expect(
+      screen.getByText('TikTok linking will be available when Vetify uses HTTPS.')
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Link TikTok' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Link Facebook' })).toBeEnabled();
+    expect(authSettings.requestCode).not.toHaveBeenCalled();
   });
 
   it('accepts callback notices only when the connected method is present', async () => {
     renderAuthSettings('/settings/security?connection=google-linked');
-    expect(screen.queryByText(/Google sign-in is connected/)).toBeNull();
+    expect(screen.queryByText(/Google sign-in is linked/)).toBeNull();
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent('/settings/security')
     );
@@ -74,6 +79,6 @@ describe('connected login settings', () => {
   it('explains provider cancellation without showing a successful connection', () => {
     renderAuthSettings('/settings/security?accountAuthError=denied');
     expect(screen.getByRole('alert')).toHaveTextContent('You cancelled the confirmation.');
-    expect(screen.queryByText(/sign-in is connected/)).toBeNull();
+    expect(screen.queryByText(/sign-in is linked/)).toBeNull();
   });
 });

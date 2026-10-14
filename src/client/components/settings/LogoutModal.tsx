@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -34,7 +35,7 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all">
       <div
         ref={dialogRef}
@@ -63,6 +64,7 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

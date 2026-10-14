@@ -6,8 +6,12 @@ import { insertUser } from '../../../models/users';
 import type { OAuthProfile } from '../../../services/oauth.service';
 import { OAUTH_STATE_COOKIE, unsealState } from '../../../services/oauth-state';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
+import { emailLinkProof } from './account-link-code-fixtures';
+import { clearRecentMail } from '../../../services/mail.service';
+import { ACCOUNT_LINK_PROOF_COOKIE } from '../../../services/account-link-proof';
 
 const mocks = vi.hoisted(() => ({ configured: true, profile: vi.fn() }));
+const originalServerUrl = env.SERVER_URL;
 vi.mock('../../../services/oauth.service', async (original) => ({
   ...(await original<typeof import('../../../services/oauth.service')>()),
   getProviderConfig: () =>
@@ -89,6 +93,10 @@ export async function begin(
   owner: BrowserSession,
   purpose: 'google' | 'facebook' | 'reauthenticate' = 'google'
 ) {
+  const emailVerified = await emailLinkProof(
+    owner,
+    purpose === 'reauthenticate' ? 'local' : purpose
+  );
   const response = await post(
     owner,
     purpose,
@@ -98,7 +106,15 @@ export async function begin(
   const url = new URL(response.body.url as string);
   const stateCookie = cookieOf(response, OAUTH_STATE_COOKIE);
   const sealed = unsealState(stateCookie.slice(OAUTH_STATE_COOKIE.length + 1))!;
-  return { owner, response, url, state: url.searchParams.get('state')!, stateCookie, sealed };
+  return {
+    owner,
+    response,
+    url,
+    state: url.searchParams.get('state')!,
+    stateCookie,
+    sealed,
+    emailCookie: cookieOf(emailVerified, ACCOUNT_LINK_PROOF_COOKIE),
+  };
 }
 export const callback = (flow: Awaited<ReturnType<typeof begin>>, query: object = {}) =>
   flow.owner.browser
@@ -117,6 +133,8 @@ export async function proof(owner: BrowserSession) {
 export function setupAccountDb() {
   beforeAll(startTestDb, 120_000);
   beforeEach(() => {
+    env.SERVER_URL = 'https://api.vetify.test';
+    clearRecentMail();
     oauth.configured = true;
     oauth.profile.mockReset().mockResolvedValue(PROFILE);
     vi.stubGlobal(
@@ -127,6 +145,7 @@ export function setupAccountDb() {
     );
   });
   afterEach(async () => {
+    env.SERVER_URL = originalServerUrl;
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();

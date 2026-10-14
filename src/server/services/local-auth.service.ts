@@ -48,7 +48,7 @@ export async function authenticateLocalAccount(input: LoginInput) {
     throw AppError.unauthorized('Create an account first to use the app.', 'account-not-found');
   }
   if (!(await comparePassword(user.password, input.password))) {
-    throw AppError.unauthorized('Invalid credentials');
+    throw AppError.unauthorized('Email or password is incorrect.');
   }
   await requireActiveAccount(user);
   return user;

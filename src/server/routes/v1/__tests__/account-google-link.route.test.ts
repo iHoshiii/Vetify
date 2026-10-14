@@ -47,7 +47,8 @@ describe('explicit Google connection', () => {
       hasPassword: true,
       providers: [],
       googleAvailable: true,
-      availableProviders: ['google', 'facebook'],
+      availableProviders: ['google', 'facebook', 'tiktok'],
+      tiktokHttpsReady: true,
       passwordReady: false,
       reauthProvider: null,
     });
@@ -71,6 +72,7 @@ describe('explicit Google connection', () => {
     expect(flow.url.origin).toBe('https://provider.example');
     expect(flow.sealed.accountAuth).toEqual({
       purpose: 'connect-provider',
+      emailLinkGeneration: expect.stringMatching(/^[a-f0-9]{64}$/),
       userId: owner.user._id.toHexString(),
       sourceTokenHash: hashToken(owner.rawRefresh),
     });

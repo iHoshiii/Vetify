@@ -1,13 +1,27 @@
-import type { AccountLoginMethods } from '@shared/account-auth';
+import type { AccountLinkMethod, AccountLoginMethods } from '@shared/account-auth';
+import type { EmailVerificationDelivery } from '@shared/email-verification';
 import { apiFetch } from './api';
 
 export function getAccountLoginMethods(signal?: AbortSignal) {
   return apiFetch<AccountLoginMethods>('/account/login-methods', { signal });
 }
 
+export function requestAccountLinkCode(method: AccountLinkMethod) {
+  return apiFetch<EmailVerificationDelivery>('/account/login-methods/link/code', {
+    method: 'POST',
+    body: { method },
+  });
+}
+export function verifyAccountLinkCode(method: AccountLinkMethod, code: string) {
+  return apiFetch<{ verified: true; url?: string }>('/account/login-methods/link/verify', {
+    method: 'POST',
+    body: { method, code },
+  });
+}
+
 export function connectAccountProvider(input: {
   provider: 'google' | 'facebook';
-  currentPassword: string;
+  currentPassword?: string;
 }) {
   return apiFetch<{ url: string }>(`/account/login-methods/${input.provider}`, {
     method: 'POST',

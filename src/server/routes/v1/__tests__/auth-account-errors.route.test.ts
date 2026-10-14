@@ -106,7 +106,7 @@ describe.each(['', '/native'] as AuthSurface[])('local account errors on %s auth
     await users.insertUser({ ...CREDENTIALS, name: 'Owner', provider: 'local' });
     const response = await login(surface, { ...CREDENTIALS, password: 'Wrong!' });
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Invalid credentials' });
+    expect(response.body).toEqual({ error: 'Email or password is incorrect.' });
     expectNoSession(response);
     expect(await refreshTokensCollection().countDocuments()).toBe(0);
     expect(mailFetch).not.toHaveBeenCalled();
