@@ -1,20 +1,22 @@
 import { getSocket } from '@/lib/socket';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CallPeer, CallState, JoinAck } from './call-types';
 import { createPeer, type IceServer, type Signal } from './peer';
 import { useCallChat } from './use-call-chat';
 import { useMedia } from './use-media';
+import { useCallControls } from './use-call-controls';
 
-// Ties the camera, the peer connection, and the signalling socket together behind one call state.
 export function useCall(appointmentId: string) {
   const { stream, error: mediaError } = useMedia();
+  const { user } = useAuth();
+  const initialAccount = useRef(user?.id);
+  const controls = useCallControls(stream);
   const chat = useCallChat(appointmentId);
   const [state, setState] = useState<CallState>('waiting');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [peer, setPeer] = useState<CallPeer | null>(null);
-  const [micOn, setMicOn] = useState(true);
-  const [camOn, setCamOn] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const peerRef = useRef<ReturnType<typeof createPeer> | null>(null);
 
@@ -37,14 +39,11 @@ export function useCall(appointmentId: string) {
     let closed = false;
     const send = (signal: Signal) => socket.emit('call:signal', { appointmentId, signal });
 
-    // Signals arriving before the peer exists are held, so an offer racing ahead of our join ack is not dropped.
     const pending: Signal[] = [];
     let config: { iceServers: IceServer[]; polite: boolean } | null = null;
-    // A peer-joined that beats our own join ack sets this, so the ack can start the peer instead of stranding us on waiting.
     let peerArrived = false;
     let endTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Built only once the other side is in the room, so our first offer never goes to an empty room and strands us.
     const startPeer = () => {
       if (closed || peerRef.current || !config) return;
       peerRef.current = createPeer({
@@ -85,6 +84,7 @@ export function useCall(appointmentId: string) {
     socket.on('call:peer-joined', onPeerJoined);
     socket.on('call:peer-left', onPeerLeft);
     socket.on('call:ended', endNow);
+    socket.on('session:ended', endNow);
 
     socket.emit('call:join', { appointmentId }, (ack: JoinAck) => {
       if (closed) return;
@@ -99,9 +99,7 @@ export function useCall(appointmentId: string) {
       }
       config = { iceServers: ack.iceServers, polite: ack.polite };
       setPeer(ack.peer);
-      // Auto-hang at the effective session end, when the server also closes the room.
       endTimer = setTimeout(endNow, new Date(ack.endsAt).getTime() - Date.now());
-      // peerArrived covers a peer-joined that landed before this ack, so a peer already waiting is not missed.
       const peerHere = ack.peerOnline || peerArrived;
       setState(peerHere ? 'connecting' : 'waiting');
       if (peerHere) startPeer();
@@ -113,26 +111,13 @@ export function useCall(appointmentId: string) {
       socket.off('call:peer-joined', onPeerJoined);
       socket.off('call:peer-left', onPeerLeft);
       socket.off('call:ended', endNow);
+      socket.off('session:ended', endNow);
       if (endTimer) clearTimeout(endTimer);
       socket.emit('call:leave', { appointmentId });
       peerRef.current?.close();
       peerRef.current = null;
     };
   }, [stream, appointmentId]);
-
-  const toggleMic = useCallback(() => {
-    if (!stream) return;
-    const next = !micOn;
-    stream.getAudioTracks().forEach((track) => (track.enabled = next));
-    setMicOn(next);
-  }, [stream, micOn]);
-
-  const toggleCam = useCallback(() => {
-    if (!stream) return;
-    const next = !camOn;
-    stream.getVideoTracks().forEach((track) => (track.enabled = next));
-    setCamOn(next);
-  }, [stream, camOn]);
 
   const hangUp = useCallback(() => {
     getSocket()?.emit('call:leave', { appointmentId });
@@ -141,16 +126,19 @@ export function useCall(appointmentId: string) {
     setState('ended');
   }, [appointmentId]);
 
+  useEffect(() => {
+    if (user?.id === initialAccount.current) return;
+    hangUp();
+    stream?.getTracks().forEach((track) => track.stop());
+  }, [user?.id, hangUp, stream]);
+
   return {
     state,
     message,
     localStream: stream,
     remoteStream,
     peer,
-    micOn,
-    camOn,
-    toggleMic,
-    toggleCam,
+    ...controls,
     hangUp,
     messages: chat.messages,
     sendChat: chat.sendChat,

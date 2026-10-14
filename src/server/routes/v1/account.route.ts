@@ -1,11 +1,7 @@
 import {
-  accountDeactivationSchema,
   accountProfileUpdateSchema,
-  passwordChangeSchema,
   userPreferencesUpdateSchema,
   type AccountProfileUpdate,
-  type AccountDeactivation,
-  type PasswordChange,
   type UserPreferencesUpdate,
 } from '@shared/schemas';
 import { PREFERENCES_MAX_BLOCKED } from '@shared/limits';
@@ -15,26 +11,24 @@ import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
 import { listPets } from '../../models/pets';
 import {
-  comparePassword,
   findUsersByIds,
   findUserById,
   isValidObjectId,
-  findUserWithPasswordById,
   getPreferences,
-  revokeAllRefreshTokensForUser,
   toPublicUser,
   updatePreferences,
   updateUser,
-  updateUserPassword,
   type UserPatch,
 } from '../../models';
 import { fail, ok } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
+import accountSecurityRoutes from './account-security.route';
 
 const router = Router();
 
 // Preferences belong to one account, so the gate is on the router and every read and write is scoped to the caller.
 router.use(optionalAuth, signedIn);
+router.use(accountSecurityRoutes);
 
 const MISSING = 'Account not found';
 
@@ -101,25 +95,6 @@ router.patch('/profile', validate(accountProfileUpdateSchema), async (req, res) 
   ok(res, { user: toPublicUser(user) });
 });
 
-// POST /password — change the password after proving the current one; provider accounts have none to change.
-router.post('/password', validate(passwordChangeSchema), async (req, res) => {
-  const { currentPassword, newPassword } = req.body as PasswordChange;
-  const account = await findUserWithPasswordById(actorOf(req)._id);
-  if (!account) return fail(res, 404, MISSING);
-  if (!account.password)
-    return fail(
-      res,
-      400,
-      'This account signs in through a provider, so it has no password to change.'
-    );
-  const matches = await comparePassword(account.password, currentPassword);
-  if (!matches) return fail(res, 400, 'Your current password is not correct.');
-  await updateUserPassword(account._id, newPassword);
-  // a new password must end every existing session so a stolen refresh token cannot outlive the change
-  await revokeAllRefreshTokensForUser(account._id);
-  ok(res, { changed: true });
-});
-
 router.get('/export', async (req, res) => {
   const actor = actorOf(req);
   const [preferences, pets] = await Promise.all([getPreferences(actor._id), listPets(actor._id)]);
@@ -130,29 +105,6 @@ router.get('/export', async (req, res) => {
     preferences,
     pets,
   });
-});
-
-router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
-  const actor = actorOf(req);
-  const body = req.body as AccountDeactivation;
-  if (actor.provider === 'local') {
-    const account = await findUserWithPasswordById(actor._id);
-    if (!account?.password || !body.currentPassword) {
-      return fail(res, 400, 'Enter your current password');
-    }
-    if (!(await comparePassword(account.password, body.currentPassword))) {
-      return fail(res, 400, 'Your current password is not correct.');
-    }
-  }
-  await updateUser(actor._id, {
-    status: 'deactivated',
-    statusReason: 'Deactivated by account owner',
-    statusChangedBy: actor._id,
-    statusChangedAt: new Date(),
-    statusUntil: null,
-  });
-  await revokeAllRefreshTokensForUser(actor._id);
-  ok(res, { deactivated: true });
 });
 
 export default router;

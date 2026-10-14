@@ -1,14 +1,13 @@
 import type { Server as HttpServer } from 'node:http';
 
-import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 
-import { env } from '../config/env';
 import { findThreadById, findUserById, isValidObjectId } from '../models';
 import { notifyTyping } from '../services/messages.service';
 import { registerCall } from './call';
 import { setRealtime } from './hub';
 import { trackPresence } from './presence';
+import { guardSocket, socketSession } from './session';
 
 // Passes a live "typing" ping to the other party, but only from someone actually on the thread.
 async function relayTyping(userId: string, payload: unknown): Promise<boolean> {
@@ -53,18 +52,17 @@ export function attachRealtime(http: HttpServer): Server {
     const token = tokenOf(socket.handshake);
     if (!token) return next(new Error('unauthorized'));
 
-    try {
-      const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as { sub?: string };
-      if (!payload.sub) return next(new Error('unauthorized'));
-      socket.data.userId = payload.sub;
-      return next();
-    } catch {
-      return next(new Error('unauthorized'));
-    }
+    void socketSession(token)
+      .then((session) => {
+        Object.assign(socket.data, session);
+        next();
+      })
+      .catch(() => next(new Error('unauthorized')));
   });
 
   io.on('connection', (socket) => {
     const userId = socket.data.userId as string;
+    guardSocket(socket);
     trackPresence(socket, userId);
     registerCall(socket);
     socket.on(
