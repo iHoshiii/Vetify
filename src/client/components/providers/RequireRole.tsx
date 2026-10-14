@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import type { UserRole } from '@/lib/auth-storage';
 
 import { useAuth } from './AuthProvider';
+import { needsEmailVerification } from '@shared/email-verification';
 
 type RequireRoleProps = {
   /** Roles allowed through. Anything else is redirected. */
@@ -26,6 +27,10 @@ type RequireRoleProps = {
 export function RequireRole({ roles, children }: RequireRoleProps) {
   const { isAuthenticated, user, status } = useAuth();
   const location = useLocation();
+  if (needsEmailVerification(user))
+    return (
+      <Navigate to="/signup" replace state={{ from: `${location.pathname}${location.search}` }} />
+    );
 
   if (!isAuthenticated) {
     return (

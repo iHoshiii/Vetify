@@ -39,6 +39,7 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) =>
     isTest ||
+    (req.method === 'POST' && req.originalUrl.split('?')[0] === '/api/v1/auth/introspect') ||
     (req.method === 'POST' &&
       /^\/api\/v1\/messages\/[^/]+\/messages(?:\?|$)/.test(req.originalUrl)),
 });

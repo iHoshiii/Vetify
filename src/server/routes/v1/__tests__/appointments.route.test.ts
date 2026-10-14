@@ -61,6 +61,7 @@ const slotAt = (minutes: number) =>
 async function account() {
   seq += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `owner${seq}@example.com`,
     password: 'Sup3rSecret!',
     name: `Pat Owner ${seq}`,

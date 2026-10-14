@@ -30,6 +30,7 @@ async function account(role: UserRole = 'admin', email?: string) {
   seq += 1;
   const address = email ?? `staff${seq}@example.com`;
   const user = await insertUser({
+    emailVerified: true,
     email: address,
     password: 'Sup3rSecret!',
     name: `Staff ${seq}`,

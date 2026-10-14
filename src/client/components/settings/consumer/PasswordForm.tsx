@@ -1,103 +1,94 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAccountLoginMethods } from '@/hooks/useAccountLoginMethods';
+import { ACCOUNT_AUTH_MESSAGES, PROVIDER_NAMES } from './account-auth-feedback';
+import ChangePasswordForm from './ChangePasswordForm';
+import ConnectedLogins from './ConnectedLogins';
 
-import { passwordChangeSchema } from '@shared/schemas';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { useChangePassword } from '@/hooks/useAccount';
-import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
-import { FIELD, SaveRow } from './controls';
+type Notice = { connection: string | null; auth: string | null; error: string | null };
+const readNotice = (params: URLSearchParams): Notice => ({
+  connection: params.get('connection'),
+  auth: params.get('auth'),
+  error: params.get('accountAuthError'),
+});
 
 export default function PasswordForm() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const mutation = useChangePassword();
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [visible, setVisible] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const dirty = Boolean(current || next || confirm);
-  useUnsavedGuard(dirty);
+  const methods = useAccountLoginMethods();
+  const [params, setParams] = useSearchParams();
+  const [notice, setNotice] = useState(() => readNotice(params));
 
-  if (user && user.provider !== 'local') {
+  useEffect(() => {
+    if (!params.has('connection') && !params.has('auth') && !params.has('accountAuthError')) return;
+    setNotice(readNotice(params));
+    const clean = new URLSearchParams(params);
+    ['connection', 'auth', 'accountAuthError'].forEach((key) => clean.delete(key));
+    setParams(clean, { replace: true });
+  }, [params, setParams]);
+
+  if (methods.isLoading)
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        You sign in with <strong>{user.provider}</strong>. Your password is managed by that
-        provider.
+      <p role="status" className="text-sm text-slate-600">
+        Loading sign-in methods...
+      </p>
+    );
+  if (methods.isError || !methods.data) {
+    return (
+      <div className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <p role="alert" className="text-sm font-semibold text-rose-800">
+          Your sign-in methods did not load.
+        </p>
+        <button
+          type="button"
+          onClick={() => void methods.refetch()}
+          className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-rose-700 ring-1 ring-rose-200"
+        >
+          Try again
+        </button>
       </div>
     );
   }
 
-  const reset = () => {
-    setCurrent('');
-    setNext('');
-    setConfirm('');
-    setFormError(null);
-    mutation.reset();
-  };
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const check = passwordChangeSchema.safeParse({ currentPassword: current, newPassword: next });
-    if (!check.success)
-      return setFormError(check.error.issues[0]?.message ?? 'Check your password.');
-    if (next !== confirm) return setFormError('The new passwords do not match.');
-    setFormError(null);
-    try {
-      await mutation.mutateAsync(check.data);
-    } catch {
-      return;
-    }
-    await logout();
-    navigate('/login', {
-      replace: true,
-      state: { message: 'Password updated. Sign in again on this device.' },
-    });
-  };
-
-  const input = (
-    label: string,
-    value: string,
-    onChange: (value: string) => void,
-    autoComplete: string
-  ) => (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-bold text-slate-700">{label}</span>
-      <input
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-        required
-        className={FIELD}
-      />
-    </label>
+  const error = notice.error
+    ? ACCOUNT_AUTH_MESSAGES[notice.error] ?? ACCOUNT_AUTH_MESSAGES.provider
+    : '';
+  const linked = methods.data.providers.find(
+    (provider) => notice.connection === `${provider}-linked`
   );
+  const success = linked
+    ? `${PROVIDER_NAMES[linked]} sign-in is linked to your existing Vetify account.`
+    : notice.auth === 'password-ready' && methods.data.passwordReady
+    ? 'Sign-in confirmed. You can now add a password.'
+    : '';
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="space-y-5">
-      {input('Current password', current, setCurrent, 'current-password')}
-      {input('New password', next, setNext, 'new-password')}
-      {input('Confirm new password', confirm, setConfirm, 'new-password')}
-      <button
-        type="button"
-        onClick={() => setVisible((value) => !value)}
-        className="text-sm font-bold text-teal-800 underline decoration-teal-800/30 underline-offset-4"
-      >
-        {visible ? 'Hide passwords' : 'Show passwords'}
-      </button>
-      <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
-        Use at least 8 characters with an uppercase letter, number, and special character. Updating
-        your password signs out every device.
-      </p>
-      <SaveRow
-        pending={mutation.isPending}
-        error={formError ?? mutation.error?.message ?? null}
-        saved={false}
-        dirty={dirty}
-        label="Update password"
-        onReset={reset}
-      />
-    </form>
+    <div className="space-y-8">
+      {error && (
+        <p role="alert" className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          {success}
+        </p>
+      )}
+      <section aria-labelledby="connected-logins-heading" className="space-y-4">
+        <h3 id="connected-logins-heading" className="text-base font-bold text-slate-900">
+          Connected sign-in methods
+        </h3>
+        <ConnectedLogins methods={methods.data} onRefresh={() => void methods.refetch()} />
+      </section>
+      {methods.data.hasPassword && (
+        <section
+          aria-labelledby="account-password-heading"
+          className="space-y-4 border-t border-slate-200 pt-6"
+        >
+          <h3 id="account-password-heading" className="text-base font-bold text-slate-900">
+            Password
+          </h3>
+          <ChangePasswordForm />
+        </section>
+      )}
+    </div>
   );
 }

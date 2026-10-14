@@ -12,6 +12,7 @@ const alias = {
 export default defineWorkspace([
   {
     plugins: [react()],
+    envDir: path.resolve(__dirname, 'node_modules/.cache/vitest-env'),
     resolve: { alias },
     test: {
       name: 'client',
@@ -22,28 +23,18 @@ export default defineWorkspace([
     },
   },
   {
+    envDir: path.resolve(__dirname, 'node_modules/.cache/vitest-env'),
     resolve: { alias },
     test: {
       name: 'server',
       environment: 'node',
-      // A developer's .env decides how this machine mails; the suite must not
-      // follow it. Under MAIL_TRANSPORT=http every test that invites somebody
-      // either posts to a real provider or fails on a key it never needed.
-      // process.loadEnvFile() leaves an already-set variable alone, so this wins.
+      // Tests use synthetic settings and never load a developer's local .env.
       env: {
         NODE_ENV: 'test',
-        GEMINI_API_KEY: 'test-gemini-key',
-        JWT_SECRET_ACCESS: 'test-only-access-secret-at-least-32-characters',
-        MONGODB_URI: 'mongodb://127.0.0.1:27017/vetify_tests',
         MAIL_TRANSPORT: 'log',
-        MAIL_API_KEY: '',
-        DNS_SERVERS: '',
-        GOOGLE_CLIENT_ID: '',
-        GOOGLE_CLIENT_SECRET: '',
-        FACEBOOK_APP_ID: '',
-        FACEBOOK_APP_SECRET: '',
-        TIKTOK_CLIENT_KEY: '',
-        TIKTOK_CLIENT_SECRET: '',
+        AUTH_MAIL_TRANSPORT: 'log',
+        GEMINI_API_KEY: 'synthetic-gemini-api-key',
+        JWT_SECRET_ACCESS: 'synthetic-test-signing-secret-at-least-32-characters',
       },
       globals: true,
       include: ['src/server/**/*.{test,spec}.ts'],

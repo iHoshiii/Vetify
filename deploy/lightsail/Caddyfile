@@ -1,0 +1,18 @@
+www.vetify.page {
+	redir https://vetify.page{uri} permanent
+}
+
+vetify.page {
+	encode gzip
+
+	@backend path /api /api/* /socket.io /socket.io/*
+	handle @backend {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle {
+		root * /opt/vetify/current/public
+		try_files {path} /index.html
+		file_server
+	}
+}

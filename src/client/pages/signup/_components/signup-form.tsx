@@ -1,33 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { clearAuthReturnTo, landingFor, signupWithEmail } from '@/lib/auth';
+import { signupWithEmail, type SignupSession } from '@/lib/auth';
 import { signupSchema } from '@shared/schemas';
 
 import PasswordStrengthMeter, { NO_PASSWORD, evaluatePasswordStrength } from './password-strength';
 import type { PasswordStrength, SignupFormErrors } from '@/types/signup';
 
-export default function SignupForm({ from }: { from?: string | null }) {
+export default function SignupForm({ onSignup }: { onSignup: (session: SignupSession) => void }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [fieldErrors, setFieldErrors] = useState<SignupFormErrors>({});
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>(NO_PASSWORD);
-  const navigate = useNavigate();
-  const { setSession } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
     setFieldErrors({});
 
     const parsed = signupSchema.safeParse({ name, email, password, confirmPassword });
@@ -47,12 +42,9 @@ export default function SignupForm({ from }: { from?: string | null }) {
 
     try {
       const session = await signupWithEmail(parsed.data);
-      setSession(session);
-      clearAuthReturnTo();
-      setSuccess('Account created successfully. Redirecting you to the dashboard...');
       setPassword('');
       setConfirmPassword('');
-      window.setTimeout(() => navigate(landingFor(session.user, from)), 600);
+      onSignup(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {
@@ -60,14 +52,6 @@ export default function SignupForm({ from }: { from?: string | null }) {
     }
   };
 
-  /**
-   * The reading, recomputed as they type.
-   *
-   * An effect rather than a memo because zxcvbn arrives over the network the first
-   * time it is needed. `stale` drops a result that came back after the next
-   * keystroke had already asked for another one — without it, a slow first load
-   * could paint a verdict about a password that has since changed.
-   */
   useEffect(() => {
     let stale = false;
 
@@ -83,13 +67,11 @@ export default function SignupForm({ from }: { from?: string | null }) {
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-4 animate-slideUp delay-200">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm animate-shake">
+        <div
+          role="alert"
+          className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm animate-shake"
+        >
           {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-sm">
-          {success}
         </div>
       )}
       <Input

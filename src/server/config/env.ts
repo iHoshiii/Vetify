@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-// Node 24 loads .env natively, so no dotenv dependency. Throws when the file is
-// absent (CI, containers with real env vars) — that case is fine, not fatal.
-try {
-  process.loadEnvFile();
-} catch {
-  // no .env on disk; rely on the ambient environment
+// Production uses injected values or Node's explicit --env-file, without local fallback.
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  try {
+    process.loadEnvFile();
+  } catch {
+    // Local .env is optional when the shell already supplies configuration.
+  }
 }
 
 const envSchema = z.object({
@@ -90,6 +91,12 @@ const envSchema = z.object({
   // sent, so a developer who never mails anything is not stopped at boot.
   MAIL_API_URL: z.string().url().default('https://api.resend.com/emails'),
   MAIL_API_KEY: z.string().min(1).optional(),
+
+  // Authentication emails require their own API key, separate from professional mail.
+  AUTH_MAIL_TRANSPORT: z.enum(['log', 'http']).default('http'),
+  AUTH_MAIL_API_URL: z.string().url().optional(),
+  AUTH_MAIL_FROM: z.string().min(1).optional(),
+  AUTH_MAIL_API_KEY: z.string().min(1).optional(),
 
   // ---- In-app video call ----
   // Optional TURN relay for calls that cannot hole-punch. All three go together;

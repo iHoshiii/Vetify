@@ -54,6 +54,7 @@ const META = {
 };
 async function account(role: UserRole, email = `${role}@example.com`) {
   const user = await insertUser({
+    emailVerified: true,
     email,
     password: 'Sup3rSecret!',
     name: role,

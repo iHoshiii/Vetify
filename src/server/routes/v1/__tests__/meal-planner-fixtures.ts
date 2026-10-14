@@ -8,6 +8,7 @@ let sequence = 0;
 export async function account() {
   sequence += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `meal${sequence}@example.com`,
     password: 'Sup3rSecret!',
     name: `Owner ${sequence}`,

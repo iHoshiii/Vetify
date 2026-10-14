@@ -16,7 +16,7 @@ afterAll(stopTestDb);
 const CREDENTIALS = { email: 'ada@example.com', password: 'Sup3rSecret!' };
 
 async function makeAccount() {
-  return insertUser({ ...CREDENTIALS, name: 'Ada', provider: 'local' });
+  return insertUser({ emailVerified: true, ...CREDENTIALS, name: 'Ada', provider: 'local' });
 }
 
 const login = (agent: request.Agent) => agent.post('/api/v1/auth/login').send(CREDENTIALS);

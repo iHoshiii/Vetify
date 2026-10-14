@@ -101,6 +101,7 @@ function inquiryForm(overrides: Record<string, unknown> = {}) {
 async function account(role: UserRole = 'user', status: UserStatus = 'active') {
   seq += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `vet${seq}@example.com`,
     password: 'Sup3rSecret!',
     name: `Dr Vet ${seq}`,

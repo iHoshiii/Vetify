@@ -1,9 +1,6 @@
 import { apiFetch } from '@/services/api';
-import {
-  refreshSessionFresh,
-  refreshSessionShared,
-  withAuthSessionLock,
-} from '@/services/auth-refresh';
+import type { EmailVerificationDelivery } from '@shared/email-verification';
+import { needsEmailVerification } from '@shared/email-verification';
 
 import {
   writeAuthState,
@@ -41,13 +38,25 @@ export async function signupWithEmail(input: {
   password: string;
   confirmPassword: string;
 }) {
-  return withAuthSessionLock(async () => {
-    const payload = await apiFetch<AuthSession>('/auth/signup', {
-      method: 'POST',
-      body: input,
-    });
-    writeAuthState(payload);
-    return payload;
+  const payload = await apiFetch<SignupSession>('/auth/signup', {
+    method: 'POST',
+    body: input,
+  });
+}
+
+export type SignupSession = AuthSession & { emailVerification?: EmailVerificationDelivery };
+
+export function verifyEmail(code: string) {
+  return apiFetch<{ user: AuthUser }>('/auth/email/verify', {
+    method: 'POST',
+    body: { code },
+  });
+}
+
+export function resendEmailVerification() {
+  return apiFetch<EmailVerificationDelivery>('/auth/email/resend', {
+    method: 'POST',
+    body: {},
   });
 }
 
@@ -136,6 +145,7 @@ export async function resetPassword(input: {
  * decide what an admin may actually do; this only decides where they arrive.
  */
 export function landingFor(user: AuthUser, from?: string | null): string {
+  if (needsEmailVerification(user)) return '/signup';
   const returnTo = safeInternalPath(from);
   if (returnTo) return returnTo;
   return user.role === 'admin' ? '/admin' : '/';

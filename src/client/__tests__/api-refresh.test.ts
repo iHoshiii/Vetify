@@ -61,7 +61,21 @@ describe('apiFetch refresh-on-401', () => {
     expect(JSON.parse(window.localStorage.getItem(KEY)!).accessToken).toBe('fresh');
   });
 
-  it('does not attempt refresh for an auth route itself', async () => {
+  it('refreshes an expired access token when reading the shared subscription', async () => {
+    store('expired');
+    const subscription = { plan: 'pro', status: 'active', expiresAt: '2030-01-01T00:00:00Z' };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(res(401, { error: 'expired' }))
+      .mockResolvedValueOnce(res(200, { accessToken: 'fresh', user }))
+      .mockResolvedValueOnce(res(200, { subscription }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(apiFetch('/auth/subscription')).resolves.toEqual({ subscription });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh');
+  });
+
+  it('does not attempt refresh for the login route itself', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(res(401, { error: 'bad', reason: 'unauthenticated' }));
@@ -70,6 +84,24 @@ describe('apiFetch refresh-on-401', () => {
     await expect(apiFetch('/auth/login', { method: 'POST', body: {} })).rejects.toThrow();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['/auth/email/verify', '/auth/email/resend'])(
+    'refreshes an expired token before replaying %s',
+    async (path) => {
+      store('expired');
+      const body = path.endsWith('/verify') ? { code: '012345' } : {};
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(res(401, { error: 'expired' }))
+        .mockResolvedValueOnce(res(200, { accessToken: 'fresh', user }))
+        .mockResolvedValueOnce(res(200, { user }));
+      vi.stubGlobal('fetch', fetchMock);
+      await expect(apiFetch(path, { method: 'POST', body })).resolves.toEqual({ user });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh');
+      expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual(body);
+    }
+  );
 
   it('clears the session and surfaces the 401 when refresh fails', async () => {
     store('expired');

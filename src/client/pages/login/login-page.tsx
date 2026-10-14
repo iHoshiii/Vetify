@@ -11,6 +11,8 @@ const OAUTH_ERRORS: Record<string, string> = {
   provider: 'The provider could not complete the sign-in. Please try another way.',
   session: 'We could not start your session. Please try again.',
   server: 'Something went wrong on our side. Please try again.',
+  'account-link-required':
+    'Sign in with your existing method, then connect your social login in Settings > Security.',
 };
 
 /** Friendly phrasing for the pages sitting behind RequireAuth. */
@@ -37,6 +39,7 @@ export default function LoginPage() {
       ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
+  const state = location.state as { from?: string; message?: string } | null;
   const from = state?.from ?? pendingAuthReturnTo();
   const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
   const gatedMessage = from
@@ -45,8 +48,7 @@ export default function LoginPage() {
       : 'Please log in to continue.'
     : null;
 
-  const notice = oauthMessage ?? successMessage ?? quotaMessage ?? gatedMessage;
-  const success = !oauthMessage && Boolean(successMessage);
+  const notice = oauthMessage ?? state?.message ?? quotaMessage ?? gatedMessage;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">

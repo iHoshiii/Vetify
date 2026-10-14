@@ -10,7 +10,21 @@ function addDays(date: Date, days: number): Date {
 
 import { env, isProduction } from '../config/env';
 import { hashToken, insertRefreshToken } from '../models/refresh-token';
-import { toPublicUser, type PublicUser, type User } from '../models/users';
+import { findAuthIdentity, insertAuthIdentity } from '../models/auth-identities';
+import { findProfessionalByUser } from '../models/professionals';
+import {
+  findUserByEmail,
+  findUserById,
+  findUserByProviderId,
+  insertUser,
+  toPublicUser,
+  updateUser,
+  type AuthProvider,
+  type PublicUser,
+  type User,
+  type UserPatch,
+} from '../models/users';
+import { OAuthError, type OAuthProfile } from './oauth.service';
 
 export type AccessTokenClaims = {
   sub: string;
@@ -67,4 +81,63 @@ export function setRefreshCookie(res: Response, token: string, expiresAt: Date):
   res.cookie(env.REFRESH_COOKIE_NAME, token, refreshCookieOptions(expiresAt));
 }
 
-export { findOrCreateOAuthUser } from './oauth-user.service';
+// Resolve connected identities first; an email match requires explicit linking from Settings.
+export async function findOrCreateOAuthUser(
+  provider: Exclude<AuthProvider, 'local'>,
+  profile: OAuthProfile
+): Promise<User> {
+  if (typeof profile.providerId !== 'string' || !profile.providerId.trim()) {
+    throw new OAuthError('The provider did not return a valid account identity.');
+  }
+  const identity = await findAuthIdentity(provider, profile.providerId);
+  const existing = identity
+    ? await findUserById(identity.user)
+    : await findUserByProviderId(provider, profile.providerId);
+  if (identity && !existing) throw new OAuthError('The connected account is no longer available.');
+  if (existing) {
+    if (!identity)
+      await insertAuthIdentity({ user: existing._id, provider, providerId: profile.providerId });
+    // A professional uses the approved name on their licence.
+    const application =
+      existing.role === 'professional' ? await findProfessionalByUser(existing._id) : null;
+    const name =
+      existing.role === 'professional'
+        ? application?.status === 'verified'
+          ? application.fullName
+          : existing.name
+        : profile.name;
+    const patch: UserPatch = {};
+    if (name && name !== existing.name) patch.name = name;
+    if (profile.avatarUrl && profile.avatarUrl !== existing.avatarUrl) {
+      patch.avatarUrl = profile.avatarUrl;
+    }
+
+    return (await updateUser(existing._id, patch)) ?? { ...existing, ...patch };
+  }
+
+  if (!profile.email) {
+    throw new OAuthError(
+      `${provider} does not release an email address, so an account cannot be created from it alone`,
+      'signup-required'
+    );
+  }
+
+  const byEmail = await findUserByEmail(profile.email);
+  if (byEmail) {
+    throw new OAuthError(
+      'Sign in with your existing method, then connect your social login in Settings > Security.',
+      'account-link-required'
+    );
+  }
+
+  const created = await insertUser({
+    email: profile.email,
+    name: profile.name,
+    provider,
+    providerId: profile.providerId,
+    avatarUrl: profile.avatarUrl,
+    emailVerified: profile.emailVerified,
+  });
+  await insertAuthIdentity({ user: created._id, provider, providerId: profile.providerId });
+  return created;
+}

@@ -29,8 +29,15 @@ import {
 } from './professional-inquiries';
 import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
 import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
+import { NATIVE_HANDOFF_COLLECTION, NATIVE_HANDOFF_INDEXES } from './native-handoff';
+import { NATIVE_SESSION_COLLECTION, NATIVE_SESSION_INDEXES } from './native-session';
+import { NATIVE_SOCIAL_GRANT_COLLECTION, NATIVE_SOCIAL_GRANT_INDEXES } from './native-social-grant';
 import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
 import { USERS_COLLECTION, USER_INDEXES } from './users';
+import { EMAIL_VERIFICATIONS_COLLECTION, EMAIL_VERIFICATION_INDEXES } from './email-verification';
+import { AUTH_IDENTITIES_COLLECTION, AUTH_IDENTITY_INDEXES } from './auth-identities';
+import { ACCOUNT_LINK_COLLECTION, ACCOUNT_LINK_INDEXES } from './account-link-verification';
+import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions';
 
 export { isValidObjectId, toObjectId } from './object-id';
 
@@ -408,8 +415,15 @@ export {
 // list of collections and their corresponding indexes to be created in the database
 const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
+  { collection: EMAIL_VERIFICATIONS_COLLECTION, indexes: EMAIL_VERIFICATION_INDEXES },
+  { collection: AUTH_IDENTITIES_COLLECTION, indexes: AUTH_IDENTITY_INDEXES },
+  { collection: ACCOUNT_LINK_COLLECTION, indexes: ACCOUNT_LINK_INDEXES },
+  { collection: SUBSCRIPTIONS_COLLECTION, indexes: SUBSCRIPTION_INDEXES },
   { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
   { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
+  { collection: NATIVE_HANDOFF_COLLECTION, indexes: NATIVE_HANDOFF_INDEXES },
+  { collection: NATIVE_SESSION_COLLECTION, indexes: NATIVE_SESSION_INDEXES },
+  { collection: NATIVE_SOCIAL_GRANT_COLLECTION, indexes: NATIVE_SOCIAL_GRANT_INDEXES },
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },

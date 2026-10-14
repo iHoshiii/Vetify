@@ -47,6 +47,7 @@ const app = makeApp();
 
 function makeUser(role: UserRole = 'user'): Promise<User> {
   return insertUser({
+    emailVerified: true,
     email: `${role}@example.com`,
     password: 'Sup3rSecret!',
     provider: 'local',

@@ -23,6 +23,7 @@ let seq = 0;
 async function account() {
   seq += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `chat${seq}@example.com`,
     password: 'Sup3rSecret!',
     name: `Pat ${seq}`,

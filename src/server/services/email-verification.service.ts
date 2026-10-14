@@ -1,95 +1,132 @@
+import type { EmailVerificationDelivery } from '@shared/email-verification';
+import { MongoServerError } from 'mongodb';
 import crypto from 'node:crypto';
-import type { ObjectId } from 'mongodb';
-import { env, isProduction } from '../config/env';
-import {
-  consumeEmailVerification,
-  findEmailVerification,
-  invalidateEmailVerification,
-  issueEmailVerification,
-} from '../models/email-verifications';
-import { hashToken } from '../models/refresh-token';
-import { findUserById, type User } from '../models/users';
+
+import { env } from '../config/env';
+import { emailVerificationsCollection } from '../models/email-verification';
+import { usersCollection, type User } from '../models/users';
 import { AppError } from '../utils/AppError';
-import { sendMail } from './mail.service';
-import { currentStatus } from './user-status.service';
+import { deliverAuthMail } from './auth-mail.service';
+import { compose } from './mail-template';
 
-export const EMAIL_VERIFICATION_EXPIRY_MS = 24 * 60 * 60 * 1000;
-export const EMAIL_VERIFICATION_MESSAGE =
-  'Verification email sent. Check your inbox and spam folder.';
-const DELIVERY_ERROR = 'We could not send the verification email. Please try again in one minute.';
+const EXPIRY_MS = 5 * 60 * 1000;
+const RESEND_MS = 60 * 1000;
+const MAX_ATTEMPTS = 5;
 
-async function eligibleAccount(user: User | null): Promise<boolean> {
-  return !!(
-    user &&
-    user.provider === 'local' &&
-    !user.emailVerified &&
-    (await currentStatus(user)) === 'active'
+function requireLocalUnverified(user: User): void {
+  if (user.provider !== 'local') {
+    throw AppError.badRequest(
+      'Email confirmation is only available for email/password accounts.',
+      'email-verification-unavailable'
+    );
+  }
+  if (user.emailVerified) {
+    throw AppError.conflict('Your email is already confirmed.', 'email-already-verified');
+  }
+}
+
+function hashCode(user: User, generation: string, code: string): string {
+  return crypto
+    .createHmac('sha256', env.JWT_SECRET_ACCESS)
+    .update(
+      JSON.stringify(['email-verification', user._id.toHexString(), user.email, generation, code])
+    )
+    .digest('hex');
+}
+
+function invalidCode(): AppError {
+  return AppError.badRequest(
+    'The confirmation code is invalid or expired. Request a new code if needed.',
+    'email-verification-invalid'
   );
 }
 
-export async function requestEmailVerification(userId: ObjectId): Promise<void> {
-  const user = await findUserById(userId);
-  if (!(await eligibleAccount(user))) {
-    throw AppError.forbidden(
-      'Email verification is not available for this account.',
-      'verification-unavailable'
+export async function requestEmailVerification(user: User): Promise<EmailVerificationDelivery> {
+  requireLocalUnverified(user);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + EXPIRY_MS);
+  const resendAvailableAt = new Date(now.getTime() + RESEND_MS);
+  const generation = crypto.randomBytes(32).toString('hex');
+  const collection = emailVerificationsCollection();
+  const previous = await collection.findOne({ _id: user._id });
+  let code: string;
+  do {
+    code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0');
+  } while (previous && hashCode(user, previous.generation, code) === previous.codeHash);
+
+  try {
+    await collection.findOneAndUpdate(
+      { _id: user._id, resendAvailableAt: { $lte: now } },
+      {
+        $set: {
+          user: user._id,
+          email: user.email,
+          generation,
+          codeHash: hashCode(user, generation, code),
+          expiresAt,
+          resendAvailableAt,
+          failedAttempts: 0,
+          consumedAt: null,
+        },
+      },
+      { upsert: true, returnDocument: 'after' }
     );
-  }
-  if (isProduction && env.MAIL_TRANSPORT !== 'http') {
-    throw new AppError(503, DELIVERY_ERROR, 'verification-delivery');
-  }
-  const token = crypto.randomBytes(32).toString('hex');
-  const hash = hashToken(token);
-  const issued = await issueEmailVerification(
-    user!._id,
-    user!.email,
-    hash,
-    new Date(Date.now() + EMAIL_VERIFICATION_EXPIRY_MS)
-  );
-  if (!issued) {
+  } catch (err) {
+    if (!(err instanceof MongoServerError) || err.code !== 11000) throw err;
     throw AppError.tooManyRequests(
-      'Please wait one minute before requesting another verification email.',
-      'verification-cooldown'
+      'Please wait one minute before requesting another confirmation code.',
+      'email-verification-cooldown'
     );
   }
-  const link = new URL('/verify-email', env.CLIENT_ORIGIN);
-  link.hash = `token=${token}`;
-  try {
-    const fresh = await findUserById(userId);
-    if (!(await eligibleAccount(fresh)) || fresh?.email !== issued.email) {
-      throw AppError.forbidden(
-        'Email verification is not available for this account.',
-        'verification-unavailable'
-      );
-    }
-    await sendMail({
-      to: issued.email,
-      subject: 'Verify your Vetify email',
-      text: `Verify your email here: ${link.toString()}\n\nThis link expires in 24 hours and works once. If you did not request it, you can ignore this email.`,
-      idempotencyKey: `email-verification/${hash}`,
-    });
-  } catch (error) {
-    await invalidateEmailVerification(userId, hash).catch(() =>
-      console.error('[auth] Undelivered verification link could not be invalidated')
-    );
-    if (error instanceof AppError) throw error;
-    throw new AppError(503, DELIVERY_ERROR, 'verification-delivery');
-  }
+
+  const text = [
+    `Your Vetify email confirmation code is ${code}.`,
+    'Enter this six-digit code in Vetify to confirm your email address.',
+    'This code expires in 5 minutes. A new code replaces any previous code.',
+    'If you did not create this account, you can ignore this email.',
+  ].join('\n\n');
+  const delivery = await deliverAuthMail(compose(user.email, 'Confirm your Vetify email', text));
+
+  return {
+    sent: delivery.delivered && env.AUTH_MAIL_TRANSPORT === 'http',
+    expiresAt: expiresAt.toISOString(),
+    resendAvailableAt: resendAvailableAt.toISOString(),
+  };
 }
 
-export async function sendSignupVerification(user: User): Promise<void> {
-  try {
-    await requestEmailVerification(user._id);
-  } catch {
-    console.error('[auth] Signup was saved but its verification email could not be sent');
+export async function confirmEmailVerification(user: User, code: string): Promise<User> {
+  requireLocalUnverified(user);
+  if (code.length !== 6 || !/^[0-9]{6}$/.test(code)) throw invalidCode();
+  const collection = emailVerificationsCollection();
+  const active = {
+    _id: user._id,
+    user: user._id,
+    email: user.email,
+    expiresAt: { $gt: new Date() },
+    consumedAt: null,
+    failedAttempts: { $lt: MAX_ATTEMPTS },
+  };
+  const verification = await collection.findOne(active);
+  if (!verification) throw invalidCode();
+  const codeHash = hashCode(user, verification.generation, code);
+  const current = { ...active, generation: verification.generation };
+  if (
+    !crypto.timingSafeEqual(Buffer.from(codeHash, 'hex'), Buffer.from(verification.codeHash, 'hex'))
+  ) {
+    await collection.updateOne(current, { $inc: { failedAttempts: 1 } });
+    throw invalidCode();
   }
-}
-
-export async function confirmEmailVerification(token: string): Promise<boolean> {
-  const hash = hashToken(token);
-  const pending = await findEmailVerification(hash);
-  if (!pending) return false;
-  const user = await findUserById(pending._id);
-  if (!(await eligibleAccount(user)) || user?.email !== pending.email) return false;
-  return consumeEmailVerification(hash);
+  const consumed = await collection.findOneAndUpdate(
+    { ...current, codeHash, expiresAt: { $gt: new Date() } },
+    { $set: { consumedAt: new Date() } },
+    { returnDocument: 'after' }
+  );
+  if (!consumed) throw invalidCode();
+  const updated = await usersCollection().findOneAndUpdate(
+    { _id: user._id, email: user.email, provider: 'local', emailVerified: false },
+    { $set: { emailVerified: true, updatedAt: new Date() } },
+    { returnDocument: 'after', projection: { password: 0 } }
+  );
+  if (!updated) throw invalidCode();
+  return updated;
 }

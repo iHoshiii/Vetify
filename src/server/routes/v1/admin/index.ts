@@ -10,6 +10,7 @@ import metricsRoute from './metrics.route';
 import professionalsRoute from './professionals.route';
 import reviewsRoute from './reviews.route';
 import usersRoute from './users.route';
+import subscriptionsRoute from './subscriptions.route';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/metrics', metricsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/reviews', reviewsRoute);
 router.use('/users', usersRoute);
+router.use('/users', subscriptionsRoute);
 
 export default router;
