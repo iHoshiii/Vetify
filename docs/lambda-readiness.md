@@ -35,6 +35,9 @@ No production filesystem writes were found in the reviewed paths. The diagnostic
 
 ## Local and production environment files
 
+- The planned public website is `https://vetify.page`, with CloudFront forwarding `/api/*` and `/socket.io/*` to the backend origin `https://api.vetify.page`. These DNS/HTTPS routes are not yet deployed.
+- For that routing, `CLIENT_ORIGIN` and `SERVER_URL` both use `https://vetify.page`. Provider callbacks use `https://vetify.page/api/v1/auth/<provider>/callback`. The production sample reflects these addresses.
+- Verify `vetify.page` in Resend before enabling the sample sender addresses. Domain registration alone does not configure HTTPS, hosting, or email delivery.
 - Keep local development in `.env`.
 - Copy `env.prod.example` to `env.prod` for a private production reference/build input. The actual production file is ignored by Git.
 - Replace example domains with the real HTTPS website/API addresses. `CLIENT_ORIGIN` is an origin without a path. `SERVER_URL` must match provider callback registration and should not end in a slash.
