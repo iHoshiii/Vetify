@@ -28,8 +28,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   let res = await send(initialSession?.accessToken ?? null);
 
   // A live session whose 15-minute token lapsed: refresh once off the cookie and replay, so the caller never sees a spurious 401.
-  if (res.status === 401 && !path.startsWith('/auth/')) {
-    const refreshed = await refreshAccessToken(initialSession?.user?.id ?? null);
+  if (res.status === 401 && (!path.startsWith('/auth/') || path === '/auth/subscription')) {
+    const refreshed = await refreshAccessToken();
     if (refreshed) res = await send(refreshed);
   }
 

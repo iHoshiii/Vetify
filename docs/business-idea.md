@@ -24,7 +24,9 @@ These are source problem hypotheses, not completed customer-research findings. S
 
 ## 3. Product and implementation status
 
-| Capability                                               | Repository state                                            | Remaining work                                                                                               |
+The table records inspected development work, including features not yet merged to `main`. This documentation branch includes no feature-code changes.
+
+| Capability                                               | Development state                                           | Remaining work                                                                                               |
 | -------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Accounts, professional verification, directory/map       | Implemented                                                 | Launch verification procedures and pilot coverage; distinguish external listings from verified professionals |
 | Appointments, messaging, notifications, virtual calls    | Implemented                                                 | Payment settlement and production call reliability                                                           |
@@ -36,7 +38,7 @@ These are source problem hypotheses, not completed customer-research findings. S
 | Paid plans, consultation settlement, clinic subscription | Proposed                                                    | Provider, entitlements, billing lifecycle, refunds                                                           |
 | Automated administrative support tickets                 | Proposed                                                    | Separate support workflow and care-referral boundaries                                                       |
 
-"Implemented" means code exists on this branch. It does not establish production deployment, clinical validation, collected revenue, or adoption.
+"Implemented" means code exists in the inspected development work, not necessarily on `main` or this documentation branch. It does not establish production deployment, clinical validation, collected revenue, or adoption.
 
 ## 4. Business model
 
@@ -86,7 +88,7 @@ Consultation gross billings are not entirely platform revenue. The source establ
 
 Professional credential verification remains an administrative workflow. **Document relevance approval is automated**, superseding the source's proposed manual learning-resource review.
 
-The [screening standard](veterinary-library-screening.md) checks actual PDF content, including scans, for readable, substantive veterinary education, research, animal health, welfare, or practice. A veterinary cover or isolated keywords cannot qualify unrelated material. Original short articles are allowed; ISBN, publisher, English language, and minimum page count are not prerequisites.
+The development screening standard (`vet-relevance-v1`) checks actual PDF content, including scans, for readable, substantive veterinary education, research, animal health, welfare, or practice. A veterinary cover or isolated keywords cannot qualify unrelated material. Original short articles are allowed; ISBN, publisher, English language, and minimum page count are not prerequisites.
 
 Pending, checking, rejected, and unverified resources stay private. Only approved resources are listed/downloaded. Provider failure never publishes a resource. Owners see concise reasons and can recheck uncertain submissions; there is no admin publication bypass.
 
@@ -110,7 +112,7 @@ Budget for hosting, MongoDB, files/bandwidth, AI chat and PDF classification, pa
 
 The source proposes S3, CloudFront, Lambda, MongoDB Atlas, and Philippine-friendly payment methods such as GCash, cards, and bank transfers. PayMongo and Xendit are examples, not selected providers. These descriptions do not establish deployed infrastructure.
 
-The current runtime is React/Vite with Express/MongoDB; PDFs are private MongoDB binaries. The [migration plan](../MIGRATION_PLAN.md) proposes an AWS main hub, separate feature apps on Vercel, and shared identity/subscription authority. Books now require migration of files, review statuses, ownership, and credit history. Long-lived call signalling and PDF workers need compatible runtime choices; request-only Lambda hosting does not preserve them automatically.
+The inspected development runtime is React/Vite with Express/MongoDB; PDFs are private MongoDB binaries. The [migration plan](../MIGRATION_PLAN.md) proposes an AWS main hub, separate feature apps on Vercel, and shared identity/subscription authority. Books now require migration of files, review statuses, ownership, and credit history. Long-lived call signalling and PDF workers need compatible runtime choices; request-only Lambda hosting does not preserve them automatically.
 
 ## 8. Market evidence and research register
 

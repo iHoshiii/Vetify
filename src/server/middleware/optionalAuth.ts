@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env';
 import type { UserRole } from '../models/users';
+import { activeNativeSession } from '../models/native-session';
 
 export type RequestAuth = {
   userId: string;
@@ -32,7 +33,11 @@ declare module 'express-serve-static-core' {
  * rather than as an error, because the client refreshes on its own schedule and
  * a hard 401 here would break chat for someone mid-conversation.
  */
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return next();
 
@@ -44,9 +49,15 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
       sub?: string;
       email?: string;
       role?: UserRole;
-      sessionVersion?: number;
+      nativeSessionId?: unknown;
     };
     if (payload.sub) {
+      if (
+        payload.nativeSessionId !== undefined &&
+        (typeof payload.nativeSessionId !== 'string' ||
+          !(await activeNativeSession(payload.nativeSessionId, payload.sub)))
+      )
+        return next();
       req.auth = {
         userId: payload.sub,
         email: payload.email ?? '',

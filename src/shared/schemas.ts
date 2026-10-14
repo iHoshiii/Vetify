@@ -162,6 +162,7 @@ export const AUDIT_ACTIONS = [
   'user.role.changed',
   'user.status.changed',
   'user.status.expired',
+  'user.subscription.updated',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

@@ -8,7 +8,9 @@ For new business logic or regressions, write a meaningful failing acceptance tes
 
 Priorities: **P0** authorization, privacy, accounting, payment integrity, unsafe publication; **P1** core journeys, feeding correctness, external-service failures, responsive usability; **P2** supplementary learning and polish. Model relevance and clinical behavior require reviewed evaluations beyond deterministic tests.
 
-## 2. Current architecture
+## 2. Development architecture reference
+
+This design describes inspected development work, including features not yet merged to `main`. This branch contains documentation changes only. Implementation paths, API behavior, and existing-test references describe that development snapshot, not guaranteed availability in this branch.
 
 | Layer      | Implementation                                                                                              |
 | ---------- | ----------------------------------------------------------------------------------------------------------- |
@@ -71,7 +73,7 @@ Preserve binary responses when authentication refresh replays a request. Private
 
 ## 4. Automatic screening design
 
-Relevant files: `src/server/services/book-screening.service.ts`, `book-pdf.worker.ts`, `book-review.service.ts`, `src/server/models/books.ts`, and the [screening standard](veterinary-library-screening.md).
+Relevant files: `src/server/services/book-screening.service.ts`, `book-pdf.worker.ts`, `book-review.service.ts`, `src/server/models/books.ts`, and the development screening policy `vet-relevance-v1`.
 
 1. Check current account/professional eligibility. Validate metadata, confirmation, PDF markers/type, and 10 MB maximum.
 2. Hash original bytes; a unique index prevents exact duplicate races, not universal plagiarism.

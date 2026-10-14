@@ -5,6 +5,9 @@ import accountRoute from './account.route';
 import adminRoute from './admin';
 import appointmentsRoute from './appointments.route';
 import authRoute from './auth.route';
+import authIntrospectionRoute from './auth-introspection.route';
+import authSubscriptionRoute from './auth-subscription.route';
+import nativeAuthRoute from './native-auth.route';
 import blogsRoute from './blogs.route';
 import booksRoute from './books.route';
 import chatRoute from './chat.route';
@@ -36,6 +39,9 @@ router.get('/health', (_req, res) => {
 
 router.use('/chat', chatRoute);
 router.use('/clinics', clinicsRoute);
+router.use('/auth/native', nativeAuthRoute);
+router.use('/auth', authIntrospectionRoute);
+router.use('/auth', authSubscriptionRoute);
 router.use('/auth', authRoute);
 router.use('/blogs', blogsRoute);
 router.use('/books', booksRoute);

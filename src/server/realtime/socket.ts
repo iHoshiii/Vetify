@@ -52,12 +52,18 @@ export function attachRealtime(http: HttpServer): Server {
     const token = tokenOf(socket.handshake);
     if (!token) return next(new Error('unauthorized'));
 
-    void socketSession(token)
-      .then((session) => {
-        Object.assign(socket.data, session);
-        next();
-      })
-      .catch(() => next(new Error('unauthorized')));
+    try {
+      const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as {
+        sub?: string;
+        nativeSessionId?: unknown;
+      };
+      if (payload.nativeSessionId !== undefined) return next(new Error('unauthorized'));
+      if (!payload.sub) return next(new Error('unauthorized'));
+      socket.data.userId = payload.sub;
+      return next();
+    } catch {
+      return next(new Error('unauthorized'));
+    }
   });
 
   io.on('connection', (socket) => {

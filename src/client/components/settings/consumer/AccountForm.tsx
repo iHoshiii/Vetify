@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useDeactivateAccount, useExportAccount } from '@/hooks/useAccount';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import { FIELD } from './controls';
+import SubscriptionStatus from './SubscriptionStatus';
 
 export default function AccountForm() {
   const { user, logout } = useAuth();
@@ -44,6 +45,7 @@ export default function AccountForm() {
 
   return (
     <div className="space-y-6">
+      <SubscriptionStatus />
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
         <span>
           <span className="block text-sm font-black text-slate-900">Download account data</span>

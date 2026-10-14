@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { CookieOptions } from 'express';
 
 import { env, isProduction } from '../config/env';
+import { nativeSocialContextSchema, type NativeSocialContext } from '../../shared/native-auth';
 import type { OAuthProviderName } from './oauth.service';
 
 export const OAUTH_STATE_COOKIE = 'vetify_oauth_state';
@@ -14,6 +15,7 @@ export type OAuthStatePayload = {
   state: string;
   codeVerifier: string;
   expiresAt: number;
+  native?: NativeSocialContext;
 };
 
 // Falls back to the access-token secret so a missing OAUTH_STATE_SECRET degrades
@@ -43,13 +45,15 @@ export const stateCookieOptions: CookieOptions = {
 export function sealState(
   provider: OAuthProviderName,
   state: string,
-  codeVerifier: string
+  codeVerifier: string,
+  native?: NativeSocialContext
 ): string {
   const payload: OAuthStatePayload = {
     provider,
     state,
     codeVerifier,
     expiresAt: Date.now() + STATE_TTL_MS,
+    ...(native ? { native } : {}),
   };
   const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   return `${encoded}.${sign(encoded)}`;
@@ -70,7 +74,7 @@ export function unsealState(raw: unknown): OAuthStatePayload | null {
   const expected = sign(encoded);
 
   // Equal-length check first: timingSafeEqual throws on a length mismatch.
-  if (signature.length !== expected.length) return null;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(signature)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
 
   let parsed: unknown;
@@ -91,6 +95,12 @@ export function unsealState(raw: unknown): OAuthStatePayload | null {
     return null;
   }
   if (payload.expiresAt < Date.now()) return null;
+  if (
+    payload.native !== undefined &&
+    !nativeSocialContextSchema.safeParse(payload.native).success
+  ) {
+    return null;
+  }
 
   return payload as OAuthStatePayload;
 }
@@ -98,5 +108,7 @@ export function unsealState(raw: unknown): OAuthStatePayload | null {
 /** Constant-time compare for the state echoed back by the provider. */
 export function statesMatch(fromCookie: string, fromQuery: unknown): boolean {
   if (typeof fromQuery !== 'string' || fromQuery.length !== fromCookie.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(fromCookie), Buffer.from(fromQuery));
+  const expected = Buffer.from(fromCookie);
+  const actual = Buffer.from(fromQuery);
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
