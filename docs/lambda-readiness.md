@@ -1,5 +1,7 @@
 # Lambda readiness review
 
+The later credit-budget decision uses a single Lightsail server for the initial deployment. Follow [the detailed Lightsail guide](lightsail/README.md); the Lambda findings below remain relevant to a future migration.
+
 Reviewed 2026-10-14 against the current source and `.env.example`. The real `.env` was not read.
 
 The current application is not ready for a conventional API Gateway/Lambda deployment. This review does not deploy or migrate it.
@@ -35,7 +37,7 @@ No production filesystem writes were found in the reviewed paths. The diagnostic
 
 ## Local and production environment files
 
-- The planned public website is `https://vetify.page`, with CloudFront forwarding `/api/*` and `/socket.io/*` to the backend origin `https://api.vetify.page`. These DNS/HTTPS routes are not yet deployed.
+- The planned public website is `https://vetify.page`, with Caddy on Lightsail forwarding `/api/*` and `/socket.io/*` to Node on port 8000. These DNS/HTTPS routes are not yet deployed. A separate `api.vetify.page` origin is unnecessary initially.
 - For that routing, `CLIENT_ORIGIN` and `SERVER_URL` both use `https://vetify.page`. Provider callbacks use `https://vetify.page/api/v1/auth/<provider>/callback`. The production sample reflects these addresses.
 - Verify `vetify.page` in Resend before enabling the sample sender addresses. Domain registration alone does not configure HTTPS, hosting, or email delivery.
 - Keep local development in `.env`.

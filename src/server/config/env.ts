@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-// Node 24 loads .env natively, so no dotenv dependency. Throws when the file is
-// absent (CI, containers with real env vars) — that case is fine, not fatal.
-try {
-  process.loadEnvFile();
-} catch {
-  // no .env on disk; rely on the ambient environment
+// Production uses injected values or Node's explicit --env-file, without local fallback.
+if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  try {
+    process.loadEnvFile();
+  } catch {
+    // Local .env is optional when the shell already supplies configuration.
+  }
 }
 
 const envSchema = z.object({

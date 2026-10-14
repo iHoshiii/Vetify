@@ -12,6 +12,7 @@ const alias = {
 export default defineWorkspace([
   {
     plugins: [react()],
+    envDir: path.resolve(__dirname, 'node_modules/.cache/vitest-env'),
     resolve: { alias },
     test: {
       name: 'client',
@@ -22,15 +23,19 @@ export default defineWorkspace([
     },
   },
   {
+    envDir: path.resolve(__dirname, 'node_modules/.cache/vitest-env'),
     resolve: { alias },
     test: {
       name: 'server',
       environment: 'node',
-      // A developer's .env decides how this machine mails; the suite must not
-      // follow it. Under MAIL_TRANSPORT=http every test that invites somebody
-      // either posts to a real provider or fails on a key it never needed.
-      // process.loadEnvFile() leaves an already-set variable alone, so this wins.
-      env: { MAIL_TRANSPORT: 'log', AUTH_MAIL_TRANSPORT: 'log' },
+      // Tests use synthetic settings and never load a developer's local .env.
+      env: {
+        NODE_ENV: 'test',
+        MAIL_TRANSPORT: 'log',
+        AUTH_MAIL_TRANSPORT: 'log',
+        GEMINI_API_KEY: 'synthetic-gemini-api-key',
+        JWT_SECRET_ACCESS: 'synthetic-test-signing-secret-at-least-32-characters',
+      },
       globals: true,
       include: ['src/server/**/*.{test,spec}.ts'],
       // Spinning up mongodb-memory-server downloads a binary on first run.
