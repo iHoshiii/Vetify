@@ -7,6 +7,9 @@ export const REFRESH_TOKENS_COLLECTION = 'refreshtokens';
 export type RefreshTokenDocument = {
   _id: ObjectId;
   tokenHash: string;
+  previousTokenHash?: string;
+  previousValidUntil?: Date;
+  sessionVersion?: number;
   user: ObjectId;
   expiresAt: Date;
   revokedAt: Date | null;
@@ -22,6 +25,7 @@ export type RefreshTokenWithOwner = RefreshTokenDocument & { owner: User | null 
 // indexes for the refresh tokens collection (incrementing)
 export const REFRESH_TOKEN_INDEXES: IndexDescription[] = [
   { key: { tokenHash: 1 }, unique: true },
+  { key: { previousTokenHash: 1 }, sparse: true },
   { key: { user: 1 } },
   { key: { expiresAt: 1 }, expireAfterSeconds: 0 }, // expire instantly after countdown
 ];

@@ -1,13 +1,11 @@
 import type { ObjectId } from 'mongodb';
 
 import {
-  averageRatingForProfessional,
   clearAppointmentRating,
   findAppointmentById,
   findReviewReportById,
   insertReviewReport,
   recordAudit,
-  setProfessionalRating,
   setReviewReportStatus,
   type AuditAction,
   type ReviewReportDocument,
@@ -15,6 +13,10 @@ import {
   type User,
 } from '../models';
 import { AppError } from '../utils/AppError';
+import {
+  newAppointmentDelivery,
+  processAppointmentDelivery,
+} from './appointment-deliveries.service';
 
 export type ReportReviewInput = {
   appointmentId: string | ObjectId;
@@ -88,10 +90,13 @@ export async function decideReviewReport(
   if (!decided) return null;
 
   if (action === 'remove') {
-    await clearAppointmentRating(current.appointment);
-    // Recomputed from every remaining rated booking rather than nudged, so pulling one review cannot leave the average adrift.
-    const summary = await averageRatingForProfessional(current.professional);
-    await setProfessionalRating(current.professional, summary);
+    const task = newAppointmentDelivery(
+      'rating_removed',
+      new Date(),
+      reviewer.name || reviewer.email
+    );
+    const cleared = await clearAppointmentRating(current.appointment, task);
+    if (cleared) await processAppointmentDelivery(cleared, task.id);
   }
 
   await recordAudit({

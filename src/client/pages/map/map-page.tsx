@@ -1,5 +1,5 @@
 import { rankNearby, toMapVets, type MapVet, type NearbyPlace } from '@/components/map-prof-vet';
-import { useOsmClinics } from '@/hooks/useOsmClinics';
+import { osmKeys, useOsmClinics } from '@/hooks/useOsmClinics';
 import {
   professionalKeys,
   useNearbyProfessionals,
@@ -51,6 +51,7 @@ export default function MapPage() {
   // An unchanged fix keeps the same query key, so the cached answer has to be dropped by hand.
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: professionalKeys.all });
+    void queryClient.invalidateQueries({ queryKey: osmKeys.clinics() });
     ask();
   }
 
@@ -75,7 +76,7 @@ export default function MapPage() {
             status={status}
             onAsk={refresh}
             places={places}
-            loading={(nearby.isPending && Boolean(location)) || clinics.isLoading}
+            loading={(nearby.isFetching && Boolean(location)) || clinics.isFetching}
             vetsFailed={nearby.isError}
             clinicsFailed={clinics.isError}
             radiusKm={nearby.data?.radiusKm}
@@ -94,7 +95,7 @@ export default function MapPage() {
         <InteractiveMap
           vets={vets}
           clinics={clinics.data ?? []}
-          clinicsLoading={clinics.isLoading}
+          clinicsLoading={clinics.isFetching}
           clinicsFailed={clinics.isError}
           userLocation={location}
           expanded={expanded}

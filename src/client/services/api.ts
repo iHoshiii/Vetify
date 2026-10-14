@@ -1,75 +1,12 @@
-import { readAccessToken, writeAuthState, type AuthSession } from '@/lib/auth-storage';
-
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
-
-// One shared refresh so concurrent 401s trade the cookie for a token once, not N times.
-let refreshInFlight: Promise<string | null> | null = null;
-
-// Trade the httpOnly refresh cookie for a new access token. Calls fetch directly, not apiFetch, so a dead cookie cannot recurse.
-async function refreshAccessToken(): Promise<string | null> {
-  refreshInFlight ??= (async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const err = ((await res.json().catch(() => null)) ?? {}) as ApiErrorBody;
-        if (res.status === 401 || res.status === 403) {
-          writeAuthState(null);
-          return null;
-        }
-        throw new ApiError(
-          res.status,
-          err.error ?? err.message ?? `Request failed (${res.status})`,
-          err.reason,
-          err.issues
-        );
-      }
-      const session = (await res.json()) as AuthSession;
-      writeAuthState(session);
-      return session.accessToken;
-    } catch (cause) {
-      if (cause instanceof ApiError) throw cause;
-      return null;
-    } finally {
-      refreshInFlight = null;
-    }
-  })();
-  return refreshInFlight;
-}
-
-export type ApiErrorBody = {
-  error?: string;
-  /** Some middleware uses the conventional `message` response field. */
-  message?: string;
-  /** Machine-readable cause, so callers can branch without matching prose. */
-  reason?: string;
-  issues?: Record<string, string[] | undefined>;
-};
-
-export class ApiError extends Error {
-  readonly status: number;
-  readonly reason?: string;
-  readonly issues?: ApiErrorBody['issues'];
-
-  constructor(status: number, message: string, reason?: string, issues?: ApiErrorBody['issues']) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.reason = reason;
-    this.issues = issues;
-  }
-}
+import { readAuthState } from '@/lib/auth-storage';
+import { refreshAccessToken } from './auth-refresh';
+import { API_BASE_URL } from './api-config';
+import { ApiError, type ApiErrorBody } from './api-errors';
+export { API_BASE_URL } from './api-config';
+export { ApiError, type ApiErrorBody } from './api-errors';
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
-/**
- * Thin fetch wrapper. Sends cookies so the httpOnly auth cookies travel
- * automatically, attaches the access token when there is one so the server can
- * tell a signed-in caller from an anonymous one, and turns a non-2xx response
- * into an ApiError rather than letting callers read fields off an error body.
- */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
 
@@ -87,7 +24,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       ...(body !== undefined ? { body: body instanceof Blob ? body : JSON.stringify(body) } : {}),
     });
 
-  let res = await send(readAccessToken());
+  const initialSession = readAuthState();
+  let res = await send(initialSession?.accessToken ?? null);
 
   // A live session whose 15-minute token lapsed: refresh once off the cookie and replay, so the caller never sees a spurious 401.
   const refreshableAuth = ['/auth/subscription', '/auth/email/verify', '/auth/email/resend'];
@@ -113,14 +51,6 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   return payload as T;
 }
 
-/**
- * The same request, for a response that is bytes rather than JSON.
- *
- * A second function rather than a flag on the first, because the two differ in
- * what they do on the way out and not only on the way back: this one sends no
- * Content-Type, asks for no parse, and still has to read a JSON error body when
- * the answer turns out not to be an image after all.
- */
 export async function apiFetchBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
   const { body: _body, headers, ...rest } = options;
 
@@ -134,11 +64,12 @@ export async function apiFetchBlob(path: string, options: RequestOptions = {}): 
       },
     });
 
-  let res = await send(readAccessToken());
+  const initialSession = readAuthState();
+  let res = await send(initialSession?.accessToken ?? null);
 
   // Same lapsed-token replay as apiFetch: a blob request is often the first out after a token expires.
   if (res.status === 401 && !path.startsWith('/auth/')) {
-    const refreshed = await refreshAccessToken();
+    const refreshed = await refreshAccessToken(initialSession?.user?.id ?? null);
     if (refreshed) res = await send(refreshed);
   }
 

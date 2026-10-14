@@ -6,6 +6,7 @@ import type { AppointmentKind } from '@shared/schemas';
 import {
   findAppointmentById,
   insertAppointment,
+  insertUser,
   updateAppointment,
   type AppointmentStatus,
 } from '../../models';
@@ -24,10 +25,14 @@ async function booking(
   kind: AppointmentKind = 'virtual'
 ) {
   const startsAt = new Date(Date.now() + minutesAhead * 60_000);
+  const owner = await insertUser({
+    email: `owner-${new ObjectId()}@example.com`,
+    password: 'pw12345678',
+  });
   const appointment = await insertAppointment({
     professional: new ObjectId(),
     professionalUser: new ObjectId(),
-    client: new ObjectId(),
+    client: owner._id,
     kind,
     startsAt,
     minutes: 30,

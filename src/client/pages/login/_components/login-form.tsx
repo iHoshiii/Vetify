@@ -4,7 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { loginSchema } from '@shared/schemas';
 import type { LoginFormErrors } from '@/types/login';
 import { clearAuthReturnTo, landingFor, loginWithEmail } from '@/lib/auth';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
 export default function LoginForm({ from }: { from?: string | null }) {
@@ -87,9 +87,12 @@ export default function LoginForm({ from }: { from?: string | null }) {
           />
           Remember me
         </label>
-        <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+        <Link
+          to="/forgot-password"
+          className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+        >
           Forgot password?
-        </a>
+        </Link>
       </div>
 
       <Button

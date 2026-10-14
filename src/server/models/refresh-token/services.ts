@@ -18,12 +18,14 @@ export async function insertRefreshToken(attrs: {
   tokenHash: string;
   user: string | ObjectId;
   expiresAt: Date;
+  sessionVersion?: number;
 }): Promise<RefreshTokenDocument> {
   const now = new Date();
   // create new refresh token document with the provided fields
   const doc: RefreshTokenDocument = {
     _id: new ObjectId(),
     tokenHash: attrs.tokenHash,
+    sessionVersion: attrs.sessionVersion ?? 0,
     user: toObjectId(attrs.user),
     expiresAt: attrs.expiresAt,
     revokedAt: null,
@@ -43,7 +45,7 @@ export async function findRefreshTokenWithOwner(
   //  find the one token hash that matches the provided token hash
   const [result] = await refreshTokensCollection()
     .aggregate<RefreshTokenWithOwner>([
-      { $match: { tokenHash } }, // tokenHash is unique, so this only ever removes work from the join.
+      { $match: { $or: [{ tokenHash }, { previousTokenHash: tokenHash }] } },
       { $limit: 1 },
       {
         $lookup: {
@@ -54,7 +56,7 @@ export async function findRefreshTokenWithOwner(
         },
       },
       { $unwind: { path: '$owner', preserveNullAndEmptyArrays: true } }, // flattens the array
-      { $unset: ['owner.password'] }, // remove the password field from the owner field
+      { $unset: ['owner.password', 'owner.passwordReset'] },
       { $set: { owner: { $ifNull: ['$owner', null] } } }, // if the owner field is null leave it as null, otherwise set it to the owner field
     ])
     .toArray(); // converts the document into standard JS array
@@ -65,7 +67,7 @@ export async function findRefreshTokenWithOwner(
 export async function revokeRefreshTokenByHash(tokenHash: string): Promise<boolean> {
   const now = new Date();
   const result = await refreshTokensCollection().updateOne(
-    { tokenHash },
+    { $or: [{ tokenHash }, { previousTokenHash: tokenHash }] },
     { $set: { revokedAt: now, updatedAt: now } }
   );
   return result.matchedCount > 0;
@@ -82,10 +84,24 @@ export async function revokeRefreshTokenByHash(tokenHash: string): Promise<boole
  * Already-revoked tokens are excluded from the filter so the count reflects
  * sessions actually closed by this call, and re-running it is a no-op.
  */
-export async function revokeAllRefreshTokensForUser(userId: string | ObjectId): Promise<number> {
+export async function revokeAllRefreshTokensForUser(
+  userId: string | ObjectId,
+  beforeSessionVersion?: number
+): Promise<number> {
   const now = new Date();
   const result = await refreshTokensCollection().updateMany(
-    { user: toObjectId(userId), revokedAt: null },
+    {
+      user: toObjectId(userId),
+      revokedAt: null,
+      ...(beforeSessionVersion === undefined
+        ? {}
+        : {
+            $or: [
+              { sessionVersion: { $lt: beforeSessionVersion } },
+              { sessionVersion: { $exists: false } },
+            ],
+          }),
+    },
     { $set: { revokedAt: now, updatedAt: now } }
   );
   return result.modifiedCount;

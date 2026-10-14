@@ -8,6 +8,7 @@
     "outDir": "dist/server",
     "rootDir": "src",
     "composite": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["./src/shared/*"]

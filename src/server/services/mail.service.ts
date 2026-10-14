@@ -18,10 +18,6 @@ export type MailMessage = {
 const OUTBOX_LIMIT = 20;
 const outbox: MailMessage[] = [];
 
-/**
- * The last few messages this process produced, newest last. Tests read it to
- * assert on what an invite actually said without standing up a mail server.
- */
 export function recentMail(): readonly MailMessage[] {
   return outbox;
 }

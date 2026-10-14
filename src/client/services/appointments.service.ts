@@ -1,14 +1,13 @@
 import type { AppointmentKind, AppointmentStatus, AppointmentRequestInput } from '@shared/schemas';
 import { APPOINTMENT_NO_SHOW_GRACE_MINUTES } from '@shared/limits';
 
-import { apiFetch } from './api';
+import { apiFetch, ApiError } from './api';
+import { appointmentRequestId, finishAppointmentRequest } from './appointment-request-id';
 
 export type { AppointmentKind, AppointmentStatus };
 
-/** Whether the message that went with a booking actually left. */
 export type MailOutcome = { delivered: boolean; deliveryError: string | null };
 
-/** The account on the other side of a booking. */
 export type AppointmentParty = {
   id: string;
   name: string | null;
@@ -16,13 +15,6 @@ export type AppointmentParty = {
   avatarUrl: string | null;
 };
 
-/**
- * A booking as either side reads it.
- *
- * One shape for both consoles, which is how the server sends it: the owner and the vet
- * want the same facts, and the only thing that differs is which party is "the other
- * one" — hence a single `with` rather than two fields, one of which is always yourself.
- */
 export type Appointment = {
   id: string;
   kind: AppointmentKind;
@@ -38,18 +30,12 @@ export type Appointment = {
   phone: string | null;
   meetingUrl: string | null;
   refusalReason: string | null;
-  /** True when the caller is the one who called it off. */
   cancelledByYou: boolean;
   with: AppointmentParty | null;
-  /** The listing behind the vet, so a row can link to their profile. */
   professionalId: string;
-  // Set once both sides were in the call together, so a virtual no-show the scanner completes stays unrateable.
   consultedAt: string | null;
-  // Set once the booker themselves joined, so a no-show the booker showed up for turns rateable after the grace.
   clientJoinedAt: string | null;
-  /** The owner's star on a finished booking, null until they leave one. */
   rating: number | null;
-  /** The optional note the owner left with their stars, null when they wrote none. */
   ratingComment: string | null;
   decidedAt: string | null;
   createdAt: string;
@@ -62,33 +48,25 @@ export type AppointmentPage = {
   total: number;
   pages: number;
 };
-
-// Whether the booker may leave stars now: an onsite booking that finished, a virtual call both joined, or a virtual no-show they showed up for once the grace past the start has passed.
 export function canRateBooking(booking: Appointment, now: number): boolean {
   if (booking.kind === 'onsite') return booking.status === 'completed';
   if (booking.consultedAt !== null) return true;
   if (booking.clientJoinedAt === null) return false;
   return now - Date.parse(booking.startsAt) >= APPOINTMENT_NO_SHOW_GRACE_MINUTES * 60_000;
 }
-
-// The vet's email outcome, so the UI can flag a request the vet never heard about.
 export type RequestResult = {
   appointment: Appointment;
   mail: { professional: MailOutcome };
 };
 
-/** One decision, and how the other side was told. Null when nothing was owed. */
 export type DecisionResult = { appointment: Appointment; mail: MailOutcome | null };
 
 export type AppointmentListParams = {
   page?: number;
   limit?: number;
-  // One status, or the several a single tab stands for
   status?: AppointmentStatus | readonly AppointmentStatus[];
   kind?: AppointmentKind;
 };
-
-// Bookings counted by kind and then status, every cell present
 export type AppointmentTally = Record<AppointmentKind, Record<AppointmentStatus, number>>;
 
 function queryOf(params: AppointmentListParams): string {
@@ -102,31 +80,36 @@ function queryOf(params: AppointmentListParams): string {
   return query ? `?${query}` : '';
 }
 
-/**
- * POST /api/v1/appointments — asks for a slot.
- *
- * A 409 with `reason: 'slot-taken'` means somebody else got there first. The caller
- * redraws the grid on that rather than showing a failure: it is a race the user can
- * understand and act on, not a bug.
- */
-export async function requestAppointment(input: AppointmentRequestInput) {
-  return await apiFetch<RequestResult>('/appointments', { method: 'POST', body: input });
+export async function requestAppointment(
+  input: AppointmentRequestInput,
+  suppliedRequestId?: string
+) {
+  const requestId = suppliedRequestId ?? (await appointmentRequestId(input));
+  try {
+    const result = await apiFetch<RequestResult>('/appointments', {
+      method: 'POST',
+      body: input,
+      headers: { 'Idempotency-Key': requestId },
+    });
+    finishAppointmentRequest(input, requestId);
+    return result;
+  } catch (error) {
+    if (error instanceof ApiError && error.status >= 400 && error.status < 500)
+      finishAppointmentRequest(input, requestId);
+    throw error;
+  }
 }
 
-/** GET /api/v1/appointments/mine — what the caller has booked. */
 export async function listMyAppointments(params: AppointmentListParams = {}, signal?: AbortSignal) {
   return await apiFetch<AppointmentPage>(`/appointments/mine${queryOf(params)}`, { signal });
 }
 
-/** GET /api/v1/appointments/incoming — what has been booked with the caller. */
 export async function listIncomingAppointments(
   params: AppointmentListParams = {},
   signal?: AbortSignal
 ) {
   return await apiFetch<AppointmentPage>(`/appointments/incoming${queryOf(params)}`, { signal });
 }
-
-// GET /api/v1/appointments/incoming/counts — every figure the console labels a tab with
 export async function getIncomingCounts(signal?: AbortSignal) {
   const { counts } = await apiFetch<{ counts: AppointmentTally }>('/appointments/incoming/counts', {
     signal,
@@ -134,11 +117,7 @@ export async function getIncomingCounts(signal?: AbortSignal) {
   return counts;
 }
 
-/** What the vet can do to a booking. Cancelling is separate: either side may do that. */
 export type AppointmentDecision = 'confirm' | 'decline' | 'complete';
-
-// PATCH /api/v1/appointments/:id/{confirm,decline,complete} — the vet answering.
-// meetingUrl is legacy and ignored by the server; the ask-for-a-link flow is dropped when the in-app session button lands.
 export async function decideAppointment(input: {
   id: string;
   decision: AppointmentDecision;
@@ -153,15 +132,12 @@ export async function decideAppointment(input: {
   });
 }
 
-/** PATCH /api/v1/appointments/:id/cancel — either side calling one off. */
 export async function cancelAppointment(input: { id: string; reason: string }) {
   return await apiFetch<DecisionResult>(`/appointments/${encodeURIComponent(input.id)}/cancel`, {
     method: 'PATCH',
     body: { reason: input.reason },
   });
 }
-
-// PATCH /api/v1/appointments/:id/rate — the owner's stars and optional note on a finished booking. Owner-only and once-only, both enforced by the server.
 export async function rateAppointment(input: {
   id: string;
   rating: number;
@@ -173,8 +149,6 @@ export async function rateAppointment(input: {
   );
   return appointment;
 }
-
-// POST /api/v1/appointments/:id/reply — the vet's one public response to a rated visit. Vet-only, checked server-side against the stored booking.
 export async function replyToReview(input: { id: string; reply: string }) {
   return await apiFetch<{ reply: string | null; repliedAt: string | null }>(
     `/appointments/${encodeURIComponent(input.id)}/reply`,

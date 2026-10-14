@@ -1,130 +1,31 @@
-import {
-  appointmentListQuerySchema,
-  appointmentRateSchema,
-  appointmentRefuseSchema,
-  appointmentReplySchema,
-  appointmentRequestSchema,
-  type AppointmentListQuery,
-  type AppointmentRate,
-  type AppointmentRefuse,
-  type AppointmentReply,
-  type AppointmentRequest,
-} from '@shared/schemas';
-import { Router, type RequestHandler } from 'express';
-
+import { appointmentRequestSchema, type AppointmentRequest } from '@shared/schemas';
+import { Router } from 'express';
+import { z } from 'zod';
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { bookingLimiter } from '../../middleware/security';
-import { validate, validateQuery } from '../../middleware/validate';
-import {
-  findAppointments,
-  findUsersByIds,
-  findVerifiedProfessionalsByUserIds,
-  isDuplicateSlot,
-  isValidObjectId,
-  otherPartyId,
-  tallyAppointments,
-  toAppointmentPage,
-  toAppointmentView,
-  type AppointmentDocument,
-  type AppointmentParty,
-} from '../../models';
-import {
-  cancelAppointment,
-  decideAppointment,
-  rateAppointment,
-  requestAppointment,
-  type AppointmentDecision,
-} from '../../services/appointments.service';
-import { replyToReview } from '../../services/review-reply.service';
-import { isCallLive } from '../../realtime/hub';
-import { created, fail, failReason, ok } from '../../utils/response';
+import { validate } from '../../middleware/validate';
+import { isDuplicateSlot } from '../../models';
+import { requestAppointment } from '../../services/appointments.service';
+import { created, fail, failReason } from '../../utils/response';
 import { actorOf, signedIn } from './caller';
-
-import type { ObjectId } from 'mongodb';
+import { savedViewOf } from './appointment-presentation';
+import reads from './appointment-reads.route';
+import writes from './appointment-writes.route';
 
 const router = Router();
-
-/**
- * Nothing on this surface is public, so the gate is on the router rather than
- * repeated per route: a booking names two people, an animal and a reason, and none of
- * that is anybody else's.
- *
- * Authorisation beyond "is a real account" is per booking rather than per role, and
- * lives in the service — only the vet a booking is with may confirm it, and only its
- * two parties may cancel it. A role gate could not express either.
- */
 router.use(optionalAuth, signedIn);
+const requestIdSchema = z.string().uuid().optional();
 
-/** Said the same way by every handler here. */
-const MISSING = 'Appointment not found';
-
-/**
- * The accounts on the other side of a page of bookings, in one read.
- *
- * One `$in` rather than a lookup per row, the same shape the admin queue uses for the
- * accounts behind its applications. "The other side" is computed by `otherPartyId` so
- * this and the transform cannot disagree and show somebody their own name.
- */
-async function partiesOf(
-  items: AppointmentDocument[],
-  viewer: ObjectId
-): Promise<Map<string, AppointmentParty>> {
-  const ids = [...new Set(items.map((item) => otherPartyId(item, viewer)))];
-  const [users, vets] = await Promise.all([
-    findUsersByIds(ids),
-    findVerifiedProfessionalsByUserIds(ids),
-  ]);
-
-  // A vet's photo and licence name live on their listing, so they win over the raw account the same way the message threads resolve a face.
-  const vetFaces = new Map(vets.map((vet) => [vet.user.toString(), vet]));
-
-  return new Map(
-    users.map((user) => {
-      const id = user._id.toString();
-      const vet = vetFaces.get(id);
-      return [
-        id,
-        {
-          id,
-          name: vet?.fullName ?? user.name ?? null,
-          email: user.email,
-          avatarUrl: vet?.avatarUrl ?? user.avatarUrl ?? null,
-        },
-      ];
-    })
-  );
-}
-
-/** One booking on its way back out, with whoever is on the other side of it. */
-async function viewOf(appointment: AppointmentDocument, viewer: ObjectId) {
-  const parties = await partiesOf([appointment], viewer);
-
-  return toAppointmentView({
-    appointment,
-    viewer,
-    party: parties.get(otherPartyId(appointment, viewer)) ?? null,
-    callActive: isCallLive(appointment._id.toString()),
-  });
-}
-
-/**
- * POST /api/v1/appointments
- *
- * Asks for a slot. Answers 201 with the booking as a request — nothing is confirmed
- * here, because nobody takes a vet's time without the vet agreeing to it.
- *
- * The 409 is the interesting answer: the unique index refused the insert because
- * somebody else holds that slot. It is reported as its own reason so the page can
- * redraw the grid and say "that one just went" rather than "something went wrong",
- * which is the difference between a race the user understands and a bug they report.
- */
 router.post('/', bookingLimiter, validate(appointmentRequestSchema), async (req, res) => {
   const client = actorOf(req);
   const body = req.body as AppointmentRequest;
+  const requestId = requestIdSchema.safeParse(req.get('Idempotency-Key'));
+  if (!requestId.success) return fail(res, 400, 'Provide a valid booking request ID');
 
   try {
     const result = await requestAppointment({
       client,
+      requestId: requestId.data,
       professionalId: body.professionalId,
       kind: body.kind,
       startsAt: new Date(body.startsAt),
@@ -141,9 +42,7 @@ router.post('/', bookingLimiter, validate(appointmentRequestSchema), async (req,
     if (!result) return fail(res, 404, 'That professional is not in the directory');
 
     created(res, {
-      appointment: await viewOf(result.appointment, client._id),
-      // Both, separately. The vet not hearing is the failure worth acting on: the
-      // booking exists and is holding a slot either way.
+      appointment: await savedViewOf(result.appointment, client._id),
       mail: result.mail,
     });
   } catch (err) {
@@ -159,163 +58,6 @@ router.post('/', bookingLimiter, validate(appointmentRequestSchema), async (req,
   }
 });
 
-/** One page of bookings, for whichever side of them the caller is on. */
-function list(side: 'client' | 'professionalUser'): RequestHandler {
-  return async (req, res) => {
-    const viewer = actorOf(req);
-    const query = req.validatedQuery as AppointmentListQuery;
-
-    const { items, total } = await findAppointments({
-      // Spread rather than a computed key, so the two sides stay two named fields
-      // the repository can type-check instead of one string it has to trust.
-      ...(side === 'client' ? { client: viewer._id } : { professionalUser: viewer._id }),
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.kind ? { kind: query.kind } : {}),
-      page: query.page,
-      limit: query.limit,
-    });
-
-    ok(
-      res,
-      toAppointmentPage({
-        items,
-        viewer: viewer._id,
-        parties: await partiesOf(items, viewer._id),
-        total,
-        page: query.page,
-        limit: query.limit,
-        callActive: (appointment) => isCallLive(appointment._id.toString()),
-      })
-    );
-  };
-}
-
-/**
- * GET /api/v1/appointments/mine
- *
- * What the caller has booked. Scoped by the signed-in account rather than by a
- * parameter, so there is no id anybody could change to read somebody else's.
- */
-router.get('/mine', validateQuery(appointmentListQuerySchema), list('client'));
-
-/**
- * GET /api/v1/appointments/incoming
- *
- * What has been booked with the caller. Scoped the same way, which is also why this
- * needs no professional-role gate: an account that is not a vet simply has none.
- */
-router.get('/incoming', validateQuery(appointmentListQuerySchema), list('professionalUser'));
-
-// The figures the console's nav and tabs are labelled with, before any page of rows is asked for
-router.get('/incoming/counts', async (req, res) => {
-  ok(res, { counts: await tallyAppointments(actorOf(req)._id) });
-});
-
-/**
- * The vet's three answers differ only in their word and in what they owe, so they
- * share a handler. Which statuses each may be reached from lives in the service,
- * where the stored booking is.
- */
-function decision(kind: AppointmentDecision): RequestHandler {
-  return async (req, res) => {
-    const professional = actorOf(req);
-    const body = req.body as Partial<AppointmentRefuse>;
-
-    if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
-
-    const result = await decideAppointment({
-      id: req.params.id,
-      decision: kind,
-      professional,
-      reason: body.reason ?? null,
-    });
-
-    if (!result) return fail(res, 404, MISSING);
-
-    ok(res, {
-      appointment: await viewOf(result.appointment, professional._id),
-      // Null for a completion, which owes the owner nothing: they were there.
-      mail: result.mail,
-    });
-  };
-}
-
-/**
- * PATCH /api/v1/appointments/:id/confirm
- *
- * Yes. Keeps the slot held and emails the booking address, when one was given. No link:
- * a virtual booking is started in-app from the appointments page when its time comes.
- */
-router.patch('/:id/confirm', decision('confirmed'));
-
-/**
- * PATCH /api/v1/appointments/:id/decline
- *
- * No, with a reason the owner is shown. Frees the slot immediately, which is the half
- * that matters: a refusal that kept the time would be a refusal nobody else benefits
- * from.
- */
-router.patch('/:id/decline', validate(appointmentRefuseSchema), decision('declined'));
-
-/**
- * PATCH /api/v1/appointments/:id/complete
- *
- * It happened. Keeps the slot held, because that time was in fact used and a grid
- * that offered it again later would be wrong about the past.
- */
-router.patch('/:id/complete', decision('completed'));
-
-/**
- * PATCH /api/v1/appointments/:id/cancel
- *
- * Either side calling off something still ahead of them. One route for both, because
- * the move is identical and the only difference is which address the email goes to —
- * which the stored `cancelledBy` decides rather than the caller.
- */
-router.patch('/:id/cancel', validate(appointmentRefuseSchema), async (req, res) => {
-  const actor = actorOf(req);
-  const body = req.body as AppointmentRefuse;
-
-  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
-
-  const result = await cancelAppointment({ id: req.params.id, actor, reason: body.reason });
-  if (!result) return fail(res, 404, MISSING);
-
-  ok(res, {
-    appointment: await viewOf(result.appointment, actor._id),
-    mail: result.mail,
-  });
-});
-
-// PATCH /api/v1/appointments/:id/rate: the owner's star on a finished consultation. Owner-only and once-only, both decided against the stored booking in the service rather than here, because neither can be read off the request.
-router.patch('/:id/rate', validate(appointmentRateSchema), async (req, res) => {
-  const actor = actorOf(req);
-  const body = req.body as AppointmentRate;
-
-  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
-
-  const result = await rateAppointment({
-    id: req.params.id,
-    actor,
-    rating: body.rating,
-    comment: body.comment,
-  });
-  if (!result) return fail(res, 404, MISSING);
-
-  ok(res, { appointment: await viewOf(result, actor._id) });
-});
-
-// POST /api/v1/appointments/:id/reply: the vet's one public response to a rated visit. Ownership and the rated guard live in the service against the stored booking, not here.
-router.post('/:id/reply', validate(appointmentReplySchema), async (req, res) => {
-  const actor = actorOf(req);
-  const body = req.body as AppointmentReply;
-
-  if (!isValidObjectId(req.params.id)) return fail(res, 404, MISSING);
-
-  const result = await replyToReview({ id: req.params.id, actor, reply: body.reply });
-  if (!result) return fail(res, 404, MISSING);
-
-  ok(res, { reply: result.reviewReply, repliedAt: result.reviewReplyAt?.toISOString() ?? null });
-});
+router.use(reads, writes);
 
 export default router;
