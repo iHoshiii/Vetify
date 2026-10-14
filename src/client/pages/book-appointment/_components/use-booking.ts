@@ -86,7 +86,7 @@ export function useBooking() {
   }
 
   function confirm(): void {
-    if (!chosen || !kind || !pending || runs.length === 0) return;
+    if (!chosen || !kind || !pending || runs.length === 0 || request.isPending) return;
 
     setTaken(null);
     request.mutate(

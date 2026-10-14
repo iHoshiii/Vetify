@@ -19,6 +19,23 @@ export function emitToUser(userId: string, event: string, payload: unknown): voi
   io?.to(userRoom(userId)).emit(event, payload);
 }
 
+export function disconnectUserSessions(userId: string, beforeSessionVersion?: number): void {
+  if (beforeSessionVersion !== undefined) {
+    for (const socket of io?.sockets.sockets.values() ?? []) {
+      if (
+        socket.data.userId !== userId ||
+        (socket.data.sessionVersion ?? 0) >= beforeSessionVersion
+      )
+        continue;
+      socket.emit('session:ended', { reason: 'restricted' });
+      socket.disconnect(true);
+    }
+    return;
+  }
+  io?.in(userRoom(userId)).emit('session:ended', { reason: 'restricted' });
+  io?.in(userRoom(userId)).disconnectSockets(true);
+}
+
 export function isUserOnline(userId: string): boolean {
   return (io?.sockets.adapter.rooms.get(userRoom(userId))?.size ?? 0) > 0;
 }

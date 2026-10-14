@@ -22,12 +22,14 @@ export {
 } from './auth-storage';
 
 export async function loginWithEmail(email: string, password: string, remember = false) {
-  const payload = await apiFetch<AuthSession>('/auth/login', {
-    method: 'POST',
-    body: { email, password },
+  return withAuthSessionLock(async () => {
+    const payload = await apiFetch<AuthSession>('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    writeAuthState(payload, remember);
+    return payload;
   });
-  writeAuthState(payload, remember);
-  return payload;
 }
 
 export async function signupWithEmail(input: {
@@ -40,8 +42,6 @@ export async function signupWithEmail(input: {
     method: 'POST',
     body: input,
   });
-  writeAuthState(payload);
-  return payload;
 }
 
 export type SignupSession = AuthSession & { emailVerification?: EmailVerificationDelivery };
@@ -66,10 +66,10 @@ export function resendEmailVerification() {
  * who just logged in, and app startup, to revive a session whose 15-minute
  * access token has expired while the 30-day cookie is still good.
  */
-export async function refreshSession(): Promise<AuthSession> {
-  const payload = await apiFetch<AuthSession>('/auth/refresh', { method: 'POST' });
-  writeAuthState(payload);
-  return payload;
+export async function refreshSession({
+  fresh = false,
+}: { fresh?: boolean } = {}): Promise<AuthSession> {
+  return fresh ? refreshSessionFresh() : refreshSessionShared();
 }
 
 /** Server-side redirect start. A full navigation, not fetch — OAuth needs the
@@ -103,11 +103,34 @@ export function startSocialLogin(
 }
 
 export async function logoutFromServer() {
+  writeAuthState(null);
   try {
-    await apiFetch('/auth/logout', { method: 'POST' });
+    await withAuthSessionLock(() => apiFetch('/auth/logout', { method: 'POST' }));
   } finally {
     writeAuthState(null);
   }
+}
+
+export async function requestPasswordRecovery(email: string) {
+  return apiFetch<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+  });
+}
+
+export async function resetPassword(input: {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}) {
+  return withAuthSessionLock(async () => {
+    const payload = await apiFetch<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: input,
+    });
+    writeAuthState(null);
+    return payload;
+  });
 }
 
 /**

@@ -1,15 +1,14 @@
 import type { Server as HttpServer } from 'node:http';
 
-import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 
-import { env } from '../config/env';
 import { findThreadById, findUserById, isValidObjectId } from '../models';
 import { notifyTyping } from '../services/messages.service';
 import { requireVerifiedEmail } from '../services/email-verification-access';
 import { registerCall } from './call';
 import { setRealtime } from './hub';
 import { trackPresence } from './presence';
+import { guardSocket, socketSession } from './session';
 
 // Passes a live "typing" ping to the other party, but only from someone actually on the thread.
 async function relayTyping(userId: string, payload: unknown): Promise<boolean> {
@@ -75,6 +74,7 @@ export function attachRealtime(http: HttpServer): Server {
 
   io.on('connection', (socket) => {
     const userId = socket.data.userId as string;
+    guardSocket(socket);
     trackPresence(socket, userId);
     registerCall(socket);
     socket.on(

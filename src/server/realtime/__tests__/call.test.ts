@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   insertAppointment,
+  insertUser,
   updateAppointment,
   type AppointmentKind,
   type AppointmentStatus,
@@ -21,8 +22,11 @@ async function booking(overrides: {
   status?: AppointmentStatus;
   minutes?: number;
 }) {
-  const client = new ObjectId();
-  const professionalUser = new ObjectId();
+  const client = (await insertUser({ email: `${new ObjectId()}@owner.test`, provider: 'google' }))
+    ._id;
+  const professionalUser = (
+    await insertUser({ email: `${new ObjectId()}@vet.test`, provider: 'google' })
+  )._id;
   const startsAt = new Date(Date.now() + overrides.minutesAhead * 60_000);
   const appointment = await insertAppointment({
     professional: new ObjectId(),
@@ -75,7 +79,7 @@ describe('canJoinCall', () => {
   });
 
   it('keeps the window open across a back-to-back booking with the same two people', async () => {
-    const client = new ObjectId();
+    const client = (await insertUser({ email: 'chain@owner.test', provider: 'google' }))._id;
     const professional = new ObjectId();
     const professionalUser = new ObjectId();
     // First slot ran out ten minutes ago on its own, so alone it would be closed.

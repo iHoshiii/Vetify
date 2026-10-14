@@ -15,7 +15,7 @@ export async function insertNotification(attrs: NotificationAttrs): Promise<Noti
   const parsed = notificationAttrsSchema.parse(attrs);
 
   const doc: NotificationDocument = {
-    _id: new ObjectId(),
+    _id: parsed.id ?? new ObjectId(),
     user: toObjectId(parsed.user),
     kind: parsed.kind,
     appointment: toObjectId(parsed.appointment),
@@ -27,6 +27,14 @@ export async function insertNotification(attrs: NotificationAttrs): Promise<Noti
     createdAt: new Date(),
   };
 
+  if (parsed.id) {
+    const saved = await notificationsCollection().findOneAndUpdate(
+      { _id: doc._id },
+      { $setOnInsert: doc },
+      { upsert: true, returnDocument: 'after' }
+    );
+    return saved!;
+  }
   await notificationsCollection().insertOne(doc);
   return doc;
 }

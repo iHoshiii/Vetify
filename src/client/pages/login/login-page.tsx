@@ -26,6 +26,9 @@ const GATED_PAGES: Record<string, string> = {
 export default function LoginPage() {
   const [params] = useSearchParams();
   const location = useLocation();
+  const state = location.state as { from?: string; message?: unknown } | null;
+  const successMessage =
+    typeof state?.message === 'string' && state.message.trim() ? state.message : null;
 
   const oauthError = params.get('error') === 'oauth' ? params.get('reason') : null;
   const oauthMessage = oauthError ? OAUTH_ERRORS[oauthError] ?? OAUTH_ERRORS.server : null;
@@ -58,8 +61,12 @@ export default function LoginPage() {
 
         {notice ? (
           <p
-            role="alert"
-            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            role={success ? 'status' : 'alert'}
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              success
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                : 'border-amber-200 bg-amber-50 text-amber-800'
+            }`}
           >
             {notice}
           </p>

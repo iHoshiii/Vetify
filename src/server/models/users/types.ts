@@ -33,6 +33,8 @@ export type UserDocument = {
   providerId: string | null;
   avatarUrl: string | null;
   emailVerified: boolean;
+  sessionVersion?: number;
+  passwordReset?: { hash: string; expiresAt: Date; requestedAt: Date };
   role: UserRole;
   status: UserStatus;
   // Moderation trail, written whenever an admin moves the status. Null on an
@@ -50,7 +52,7 @@ export type UserDocument = {
 };
 
 // password should not be seen in the client side
-export type User = Omit<UserDocument, 'password'>;
+export type User = Omit<UserDocument, 'password' | 'passwordReset'>;
 
 // information/document that is displayed in the client side
 export type PublicUser = {
@@ -87,6 +89,7 @@ export type UserPatch = Partial<
 // origanize A-Z
 export const USER_INDEXES: IndexDescription[] = [
   { key: { email: 1 }, unique: true },
+  { key: { 'passwordReset.hash': 1 }, sparse: true },
   // One identity per social account. Scoped with a partial filter rather than
   // `sparse`, which does not do what it looks like it does here: a compound
   // sparse index only skips a document when *every* indexed field is missing,
@@ -103,14 +106,6 @@ export const USER_INDEXES: IndexDescription[] = [
   { key: { status: 1 } },
 ];
 
-/**
- * An account as the admin list shows it.
- *
- * Wider than `PublicUser` — the status, the moderation trail and the dates are
- * the columns a moderator is here for — and still narrower than the document:
- * `providerId` is an identifier at Google's end that nothing on the screen uses,
- * and there is no `password` field to forget about because `User` has none.
- */
 export type AdminUser = {
   id: string;
   email: string;

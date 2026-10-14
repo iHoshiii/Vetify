@@ -1,15 +1,8 @@
-import { ADMIN_PAGE_SIZE } from '@shared/limits';
-import {
-  defaultUserPreferences,
-  type AdminUserSort,
-  type UserPreferences,
-  type UserPreferencesUpdate,
-} from '@shared/schemas';
-import { ObjectId, type Collection, type Filter, type Sort } from 'mongodb';
+import { defaultUserPreferences } from '@shared/schemas';
+import { ObjectId, type Collection } from 'mongodb';
 
 import { getDb } from '../../config/db';
 import { toObjectId } from '../object-id';
-import { escapeRegex } from '../text-search';
 import { hashPassword } from './security';
 import {
   USERS_COLLECTION,
@@ -17,13 +10,11 @@ import {
   type User,
   type UserDocument,
   type UserPatch,
-  type UserRole,
-  type UserStatus,
 } from './types';
 import { normalizeEmail, userAttrsSchema, type UserAttrs } from './validation';
 
 // password is constantly excluded
-const WITHOUT_PASSWORD = { password: 0 } as const;
+const WITHOUT_PASSWORD = { password: 0, passwordReset: 0 } as const;
 
 // get the users collection reference from the database connection
 export function usersCollection(): Collection<UserDocument> {
@@ -44,6 +35,7 @@ export async function insertUser(attrs: UserAttrs): Promise<User> {
     providerId: parsed.providerId ?? null,
     avatarUrl: parsed.avatarUrl ?? null,
     emailVerified: parsed.emailVerified,
+    sessionVersion: 0,
     role: parsed.role,
     status: parsed.status,
     statusReason: null,
@@ -114,175 +106,16 @@ export async function updateUser(id: string | ObjectId, patch: UserPatch): Promi
   );
 }
 
-// read one account's settings; falls back to defaults for accounts saved before the field existed
-export async function getPreferences(id: string | ObjectId): Promise<UserPreferences | null> {
-  const user = await usersCollection().findOne(
-    { _id: toObjectId(id) },
-    { projection: { preferences: 1 } }
-  );
-  if (!user) return null;
-  const defaults = defaultUserPreferences();
-  return {
-    notifications: user.preferences?.notifications ?? defaults.notifications,
-    privacy: user.preferences?.privacy ?? defaults.privacy,
-    region: user.preferences?.region ?? defaults.region,
-  };
-}
-
-// replace whole sections over the current settings, so an untouched section survives and a legacy account gains the missing one
-export async function updatePreferences(
-  id: string | ObjectId,
-  patch: UserPreferencesUpdate
-): Promise<UserPreferences | null> {
-  const current = await getPreferences(id);
-  if (!current) return null;
-  const next: UserPreferences = {
-    notifications: patch.notifications ?? current.notifications,
-    privacy: patch.privacy ?? current.privacy,
-    region: patch.region ?? current.region,
-  };
-  await usersCollection().updateOne(
-    { _id: toObjectId(id) },
-    { $set: { preferences: next, updatedAt: new Date() } }
-  );
-  return next;
-}
-
-// The password hash sits off the public projection, so a credential check reads the whole document by id.
-export function findUserWithPasswordById(id: string | ObjectId): Promise<UserDocument | null> {
-  return usersCollection().findOne({ _id: toObjectId(id) });
-}
-
-// Writes a new password hash once the caller has proven the current one.
-export async function updateUserPassword(id: string | ObjectId, plain: string): Promise<boolean> {
-  const result = await usersCollection().updateOne(
-    { _id: toObjectId(id) },
-    { $set: { password: await hashPassword(plain), updatedAt: new Date() } }
-  );
-  return result.matchedCount > 0;
-}
-
-/**
- * How many admins can still sign in. Guards the demote and ban paths so the last
- * one standing cannot remove their own access and leave the dashboard
- * unreachable — recovering from that needs a database shell.
- */
-export function countActiveAdmins(): Promise<number> {
-  return usersCollection().countDocuments({ role: 'admin', status: 'active' });
-}
-
-/**
- * The accounts behind a page of rows, in one query.
- *
- * Every admin list shows who something belongs to — the author of a post, the
- * applicant behind an application — and doing that with a lookup per row is the
- * classic N+1. One `$in` on the `_id` index answers a whole page instead. Ids that
- * match nothing are simply absent from the result: an account can be gone while
- * the post it wrote is still there.
- */
-export function findUsersByIds(ids: Array<string | ObjectId>): Promise<User[]> {
-  if (ids.length === 0) return Promise.resolve([]);
-
-  return usersCollection()
-    .find<User>({ _id: { $in: ids.map(toObjectId) } }, { projection: WITHOUT_PASSWORD })
-    .toArray();
-}
-
-export type FindUsersOptions = {
-  /** Matches an email from the start, or a name anywhere in it. */
-  q?: string;
-  role?: UserRole;
-  status?: UserStatus;
-  provider?: AuthProvider;
-  sort?: AdminUserSort;
-  page?: number;
-  limit?: number;
-  days?: 7 | 30 | 90;
-};
-
-const USER_SORTS: Record<AdminUserSort, Sort> = {
-  // The default, and the one the `{ role: 1, createdAt: -1 }` index serves.
-  newest: { createdAt: -1 },
-  oldest: { createdAt: 1 },
-  email: { email: 1 },
-};
-
-/**
- * One page of accounts for the admin list, and the total behind it.
- *
- * Always paginated and always without the password, since this is the one read
- * that deliberately returns other people's accounts.
- *
- * The search is honest about what it is: emails are stored normalised, so the
- * email arm is an anchored match on a lowercase term and the name arm is a
- * case-insensitive substring, which is a scan. That is a fair trade for an admin
- * search box on this collection — if it ever stops being one, the fix is a text
- * index rather than a slower page.
- */
-export async function findUsersPaginated(
-  options: FindUsersOptions = {}
-): Promise<{ items: User[]; total: number }> {
-  const {
-    q,
-    role,
-    status,
-    provider,
-    sort = 'newest',
-    page = 1,
-    limit = ADMIN_PAGE_SIZE,
-    days,
-  } = options;
-
-  const filter: Filter<UserDocument> = {};
-  if (role) filter.role = role;
-  if (status) filter.status = status;
-  if (provider) filter.provider = provider;
-  if (days) filter.createdAt = { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) };
-
-  const term = q?.trim();
-  if (term) {
-    const escaped = escapeRegex(term);
-    filter.$or = [
-      { email: { $regex: `^${escaped.toLowerCase()}` } },
-      { name: { $regex: escaped, $options: 'i' } },
-    ];
-  }
-
-  const [items, total] = await Promise.all([
-    usersCollection()
-      .find<User>(filter, { projection: WITHOUT_PASSWORD })
-      .sort(USER_SORTS[sort])
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .toArray(),
-    usersCollection().countDocuments(filter),
-  ]);
-
-  return { items, total };
-}
-
-/**
- * How many accounts sit in each value of one field, for the breakdown charts.
- *
- * Narrow on purpose: the caller names the field, but only from a list the type
- * allows, so a dimension arriving from a query string cannot turn into a group
- * on anything the dashboard was not built to draw.
- */
-export async function countUsersBy(
-  field: 'role' | 'status' | 'provider',
-  where: { role?: UserRole } = {}
-): Promise<Record<string, number>> {
-  const rows = await usersCollection()
-    .aggregate<{ _id: string | null; count: number }>([
-      // Narrowing to one role is what turns "accounts by status" into "users by
-      // status", which is the count that belongs beside a list of one role. The
-      // { role: 1 } index serves the match.
-      ...(where.role ? [{ $match: { role: where.role } }] : []),
-      { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-    ])
-    .toArray();
-
-  // A null bucket is a document written before the field existed; the backfill
-  // script clears those, and until it runs they are counted as the default.
-  return Object.fromEntries(rows.map((row) => [row._id ?? 'unknown', row.count]));
-}
+export {
+  getPreferences,
+  updatePreferences,
+  findUserWithPasswordById,
+  updateUserPassword,
+} from './preferences';
+export {
+  countActiveAdmins,
+  countUsersBy,
+  findUsersByIds,
+  findUsersPaginated,
+  type FindUsersOptions,
+} from './admin-repository';

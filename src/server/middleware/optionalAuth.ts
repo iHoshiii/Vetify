@@ -14,6 +14,7 @@ export type RequestAuth = {
    * for granting access. `requireRole` re-reads the stored role for that.
    */
   role: UserRole;
+  sessionVersion?: number;
 };
 
 declare module 'express-serve-static-core' {
@@ -62,6 +63,7 @@ export async function optionalAuth(
         email: payload.email ?? '',
         // Tokens minted before the role claim existed read as plain users.
         role: payload.role ?? 'user',
+        sessionVersion: payload.sessionVersion ?? 0,
       };
     }
   } catch {

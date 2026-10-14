@@ -4,6 +4,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { chatRequestSchema, type ChatRequest } from '@shared/schemas';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
+import { requireAuth } from '../../middleware/requireAuth';
 import { anonChatLimiter, chatLimiter } from '../../middleware/security';
 import { validate } from '../../middleware/validate';
 import { recordActivity } from '../../models/activity-event';
@@ -54,6 +55,7 @@ async function enforceAnonQuota(req: Request, res: Response, next: NextFunction)
 router.post(
   '/',
   optionalAuth,
+  (req, res, next) => (req.auth ? requireAuth(req, res, next) : next()),
   chatLimiter,
   anonChatLimiter,
   enforceAnonQuota,

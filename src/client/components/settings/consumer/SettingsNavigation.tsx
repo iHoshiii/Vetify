@@ -1,4 +1,6 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { UnsavedChangesContext } from '@/hooks/unsaved-changes-context';
 
 export const CUSTOMER_SETTINGS = [
   { id: 'profile', label: 'Profile', description: 'Photo and display name' },
@@ -23,6 +25,8 @@ export type CustomerSettingsSection = (typeof CUSTOMER_SETTINGS)[number]['id'];
 export default function SettingsNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const guard = useContext(UnsavedChangesContext);
+  const requestNavigation = guard?.requestNavigation ?? navigate;
   const active = location.pathname.split('/').pop() || 'profile';
   return (
     <nav aria-label="Settings sections" className="lg:w-64 lg:shrink-0">
@@ -30,7 +34,7 @@ export default function SettingsNavigation() {
         <span className="sr-only">Settings section</span>
         <select
           value={active}
-          onChange={(event) => navigate(`/settings/${event.target.value}`)}
+          onChange={(event) => requestNavigation(`/settings/${event.target.value}`)}
           className="mb-4 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-800"
         >
           {CUSTOMER_SETTINGS.map((item) => (
@@ -45,6 +49,18 @@ export default function SettingsNavigation() {
           <li key={id}>
             <NavLink
               to={`/settings/${id}`}
+              onClick={(event) => {
+                if (
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                event.preventDefault();
+                requestNavigation(`/settings/${id}`);
+              }}
               className={({ isActive }) =>
                 `block border-l-2 px-4 py-2.5 transition ${
                   isActive

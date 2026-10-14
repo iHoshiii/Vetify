@@ -7,12 +7,6 @@ import { failReason } from '../utils/response';
 
 declare module 'express-serve-static-core' {
   interface Request {
-    /**
-     * The caller as stored right now, attached by `requireRole` after its
-     * database read. Handlers behind that gate use it instead of fetching the
-     * same document again — audit entries need the actor's email, and the
-     * self-action guards need the actor's id and role.
-     */
     currentUser?: User;
   }
 }
@@ -92,16 +86,20 @@ function accountRoleGuard(roles: UserRole[], allowUnverified = false): RequestHa
       failReason(res, 403, 'You do not have permission to do that.', 'forbidden');
       return;
     }
-
-    // Keep the request's view of the caller in step with what was just read, so
-    // a handler cannot act on a stale role claim from the token.
-    req.auth = { userId: user._id.toString(), email: user.email, role };
+    req.auth = {
+      userId: user._id.toString(),
+      email: user.email,
+      role,
+      sessionVersion: user.sessionVersion ?? 0,
+    };
     req.currentUser = user;
-
     next();
   };
 }
 
-/** Convenience for the admin surface, which is the only caller so far. */
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  void Promise.resolve(requireRole(...USER_ROLES)(req, res, next)).catch(next);
+}
+
 export const requireAdmin = requireRole('admin');
 export const requireVerificationSession = accountRoleGuard(['user', 'professional', 'admin'], true);
