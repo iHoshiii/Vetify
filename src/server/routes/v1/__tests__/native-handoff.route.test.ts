@@ -102,6 +102,7 @@ describe('Main system account handoff', () => {
       password: 'Sup3rSecret!',
       confirmPassword: 'Sup3rSecret!',
     });
+    await updateUser(other.body.user.id, { emailVerified: true });
     const response = await browser
       .post('/api/v1/auth/native/handoff')
       .set('Authorization', `Bearer ${other.body.accessToken}`)

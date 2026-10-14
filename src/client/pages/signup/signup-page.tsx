@@ -19,7 +19,7 @@ import SocialLogin from './_components/social-login';
 export default function SignupPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, accessToken, setSession } = useAuth();
+  const { user, accessToken, setSession, logout } = useAuth();
   const [delivery, setDelivery] = useState<{ userId: string; info?: EmailVerificationDelivery }>();
   const from = (location.state as { from?: string } | null)?.from ?? pendingAuthReturnTo();
   const verifying = user?.provider === 'local' && !user.emailVerified;
@@ -53,12 +53,21 @@ export default function SignupPage() {
         </div>
 
         {verifying ? (
-          <EmailVerificationForm
-            key={user.id}
-            email={user.email}
-            initialDelivery={delivery?.userId === user.id ? delivery.info : undefined}
-            onVerified={finish}
-          />
+          <>
+            <EmailVerificationForm
+              key={user.id}
+              email={user.email}
+              initialDelivery={delivery?.userId === user.id ? delivery.info : undefined}
+              onVerified={finish}
+            />
+            <button
+              type="button"
+              onClick={() => void logout().then(() => navigate('/login', { replace: true }))}
+              className="w-full text-sm font-semibold text-slate-600 underline underline-offset-4"
+            >
+              Sign out and use another account
+            </button>
+          </>
         ) : (
           <>
             <SignupForm onSignup={signup} />

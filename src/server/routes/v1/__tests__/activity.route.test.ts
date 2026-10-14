@@ -63,7 +63,7 @@ describe('auth activity', () => {
   });
 
   it('logs a login with the provider it came through', async () => {
-    const user = await insertUser({ ...CREDENTIALS, provider: 'local' });
+    const user = await insertUser({ emailVerified: true, ...CREDENTIALS, provider: 'local' });
 
     await request(app).post('/api/v1/auth/login').send(CREDENTIALS);
 
@@ -73,7 +73,7 @@ describe('auth activity', () => {
   });
 
   it('logs nothing for a login that was refused', async () => {
-    await insertUser({ ...CREDENTIALS, provider: 'local' });
+    await insertUser({ emailVerified: true, ...CREDENTIALS, provider: 'local' });
 
     const res = await request(app)
       .post('/api/v1/auth/login')
@@ -84,7 +84,7 @@ describe('auth activity', () => {
   });
 
   it('attributes a logout to the caller when the access token is still good', async () => {
-    const user = await insertUser({ ...CREDENTIALS, provider: 'local' });
+    const user = await insertUser({ emailVerified: true, ...CREDENTIALS, provider: 'local' });
     const agent = request.agent(app);
     const login = await agent.post('/api/v1/auth/login').send(CREDENTIALS);
 
@@ -127,7 +127,7 @@ describe('chat activity', () => {
   });
 
   it('logs a signed-in question against the user and no anon id', async () => {
-    const user = await insertUser({ ...CREDENTIALS, provider: 'local' });
+    const user = await insertUser({ emailVerified: true, ...CREDENTIALS, provider: 'local' });
     const token = signAccessToken({
       sub: user._id.toString(),
       email: user.email,

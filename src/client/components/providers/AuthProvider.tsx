@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ApiError } from '@/services/api';
-import { AUTH_CHANGE_EVENT, AUTH_LOGOUT_KEY, AUTH_STORAGE_KEY } from '@/lib/auth-storage';
+import { needsEmailVerification } from '@shared/email-verification';
+import { VERIFICATION_REQUIRED_EVENT } from '@/lib/email-verification-access';
 
 import {
   logoutFromServer,
@@ -57,24 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clear]);
 
   useEffect(() => {
-    const adoptStored = (event: Event) => {
-      if (event instanceof StorageEvent) {
-        if (event.key === AUTH_LOGOUT_KEY) {
-          window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-        } else if (event.key !== AUTH_STORAGE_KEY) return;
-      }
+    const requireConfirmation = () => {
       const session = readAuthState();
-      setUser(session?.user ?? null);
-      setAccessToken(session?.accessToken ?? null);
-      setStatus(session?.user ? 'authenticated' : 'anonymous');
+      if (session?.user && session.accessToken)
+        setSession({ user: session.user, accessToken: session.accessToken });
     };
-    window.addEventListener(AUTH_CHANGE_EVENT, adoptStored);
-    window.addEventListener('storage', adoptStored);
-    return () => {
-      window.removeEventListener(AUTH_CHANGE_EVENT, adoptStored);
-      window.removeEventListener('storage', adoptStored);
-    };
-  }, []);
+    window.addEventListener(VERIFICATION_REQUIRED_EVENT, requireConfirmation);
+    return () => window.removeEventListener(VERIFICATION_REQUIRED_EVENT, requireConfirmation);
+  }, [setSession]);
 
   // The stored access token expires long before the refresh cookie does, so a
   // returning visitor is revalidated once on mount rather than trusted outright.
@@ -109,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // True while a stored session is still being revalidated, so the navbar
       // does not flash "Log in" on every page load for someone already signed
       // in. Revalidation failure clears both fields and flips this to false.
-      isAuthenticated: Boolean(user) && status !== 'anonymous',
+      isAuthenticated: Boolean(user) && status !== 'anonymous' && !needsEmailVerification(user),
       setSession,
       logout,
     }),

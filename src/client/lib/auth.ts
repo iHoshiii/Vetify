@@ -1,5 +1,6 @@
 import { apiFetch } from '@/services/api';
 import type { EmailVerificationDelivery } from '@shared/email-verification';
+import { needsEmailVerification } from '@shared/email-verification';
 
 import {
   writeAuthState,
@@ -144,6 +145,7 @@ export async function resetPassword(input: {
  * decide what an admin may actually do; this only decides where they arrive.
  */
 export function landingFor(user: AuthUser, from?: string | null): string {
+  if (needsEmailVerification(user)) return '/signup';
   const returnTo = safeInternalPath(from);
   if (returnTo) return returnTo;
   return user.role === 'admin' ? '/admin' : '/';

@@ -37,6 +37,7 @@ function professionalMailProvider(): MailProvider {
     apiUrl: env.MAIL_API_URL,
     apiKey: env.MAIL_API_KEY,
     from: env.MAIL_FROM,
+    fromName: 'MAIL_FROM',
     transportName: 'MAIL_TRANSPORT',
     keyName: 'MAIL_API_KEY',
   };

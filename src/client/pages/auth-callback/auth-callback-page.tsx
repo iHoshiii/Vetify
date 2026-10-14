@@ -25,7 +25,10 @@ export default function AuthCallbackPage() {
         setSession(session);
         const returnTo = pendingAuthReturnTo();
         clearAuthReturnTo();
-        navigate(landingFor(session.user, returnTo), { replace: true });
+        navigate(landingFor(session.user, returnTo), {
+          replace: true,
+          state: returnTo ? { from: returnTo } : undefined,
+        });
       })
       .catch(() => {
         setFailed(true);

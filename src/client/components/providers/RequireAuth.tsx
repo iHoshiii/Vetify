@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import { useAuth } from './AuthProvider';
+import { needsEmailVerification } from '@shared/email-verification';
 
 /**
  * Gate for routes that need an account. Sends anonymous visitors to /login and
@@ -14,8 +15,12 @@ import { useAuth } from './AuthProvider';
  * fails, this redirects — which is the correct outcome, just deferred.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
+  if (needsEmailVerification(user))
+    return (
+      <Navigate to="/signup" replace state={{ from: `${location.pathname}${location.search}` }} />
+    );
 
   if (!isAuthenticated) {
     return (

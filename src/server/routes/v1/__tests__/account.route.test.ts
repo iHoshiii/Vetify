@@ -15,6 +15,7 @@ let sequence = 0;
 async function account() {
   sequence += 1;
   const user = await insertUser({
+    emailVerified: true,
     email: `settings${sequence}@example.com`,
     password: 'Sup3rSecret!',
     name: `Settings ${sequence}`,

@@ -107,4 +107,28 @@ router.get('/export', async (req, res) => {
   });
 });
 
+router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
+  const actor = actorOf(req);
+  const body = req.body as AccountDeactivation;
+  const account = await findUserWithPasswordById(actor._id);
+  if (!account) return fail(res, 404, MISSING);
+  if (account.password) {
+    if (!body.currentPassword) {
+      return fail(res, 400, 'Enter your current password');
+    }
+    if (!(await comparePassword(account.password, body.currentPassword))) {
+      return fail(res, 400, 'Your current password is not correct.');
+    }
+  }
+  await updateUser(actor._id, {
+    status: 'deactivated',
+    statusReason: 'Deactivated by account owner',
+    statusChangedBy: actor._id,
+    statusChangedAt: new Date(),
+    statusUntil: null,
+  });
+  await revokeAllRefreshTokensForUser(actor._id);
+  ok(res, { deactivated: true });
+});
+
 export default router;

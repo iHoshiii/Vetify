@@ -90,6 +90,7 @@ describe('Native social sign-in', () => {
     async (provider) => {
       if (provider === 'tiktok') {
         await insertUser({
+          emailVerified: true,
           email: profile.email!,
           name: profile.name,
           provider,
@@ -227,6 +228,7 @@ describe('Native social sign-in', () => {
     'refuses a %s account at the provider callback',
     async (status) => {
       const user = await insertUser({
+        emailVerified: true,
         email: profile.email!,
         name: profile.name,
         provider: 'google',

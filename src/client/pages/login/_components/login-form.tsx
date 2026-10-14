@@ -43,7 +43,10 @@ export default function LoginForm({ from }: { from?: string | null }) {
       const session = await loginWithEmail(parsed.data.email, parsed.data.password, remember);
       setSession(session);
       clearAuthReturnTo();
-      navigate(landingFor(session.user, from), { replace: true });
+      navigate(landingFor(session.user, from), {
+        replace: true,
+        state: from ? { from } : undefined,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
     } finally {

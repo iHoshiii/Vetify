@@ -40,6 +40,7 @@ function connectionResult(token: string): Promise<string> {
 describe('Mobile access credentials on main system realtime', () => {
   it('rejects planner session tokens before and after logout', async () => {
     const user = await insertUser({
+      emailVerified: true,
       email: 'native@example.com',
       password: 'Sup3rSecret!',
       provider: 'local',
@@ -53,6 +54,7 @@ describe('Mobile access credentials on main system realtime', () => {
 
   it('still allows the main browser access token', async () => {
     const user = await insertUser({
+      emailVerified: true,
       email: 'browser@example.com',
       password: 'Sup3rSecret!',
       provider: 'local',
@@ -60,5 +62,16 @@ describe('Mobile access credentials on main system realtime', () => {
     });
     const session = await createAuthPayloadFor(user);
     expect(await connectionResult(session.accessToken)).toBe('connected');
+  });
+
+  it('requires a local email to be verified before opening a browser socket', async () => {
+    const user = await insertUser({
+      email: 'pending@example.com',
+      password: 'Sup3rSecret!',
+      provider: 'local',
+      emailVerified: false,
+    });
+    const session = await createAuthPayloadFor(user);
+    expect(await connectionResult(session.accessToken)).toBe('email-verification-required');
   });
 });

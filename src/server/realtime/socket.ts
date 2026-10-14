@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 
 import { findThreadById, findUserById, isValidObjectId } from '../models';
 import { notifyTyping } from '../services/messages.service';
+import { requireVerifiedEmail } from '../services/email-verification-access';
 import { registerCall } from './call';
 import { setRealtime } from './hub';
 import { trackPresence } from './presence';
@@ -48,7 +49,7 @@ function tokenOf(handshake: {
 export function attachRealtime(http: HttpServer): Server {
   const io = new Server(http, { path: '/socket.io', serveClient: false });
 
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = tokenOf(socket.handshake);
     if (!token) return next(new Error('unauthorized'));
 
@@ -59,10 +60,15 @@ export function attachRealtime(http: HttpServer): Server {
       };
       if (payload.nativeSessionId !== undefined) return next(new Error('unauthorized'));
       if (!payload.sub) return next(new Error('unauthorized'));
+      if (!isValidObjectId(payload.sub)) return next(new Error('unauthorized'));
+      const user = await findUserById(payload.sub);
+      if (!user) return next(new Error('unauthorized'));
+      requireVerifiedEmail(user);
       socket.data.userId = payload.sub;
       return next();
-    } catch {
-      return next(new Error('unauthorized'));
+    } catch (error) {
+      const reason = (error as { reason?: string }).reason;
+      return next(new Error(reason === 'email-verification-required' ? reason : 'unauthorized'));
     }
   });
 

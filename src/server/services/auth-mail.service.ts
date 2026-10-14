@@ -13,6 +13,7 @@ function authMailProvider(): MailProvider {
     apiUrl: env.AUTH_MAIL_API_URL ?? env.MAIL_API_URL,
     apiKey: env.AUTH_MAIL_API_KEY,
     from: env.AUTH_MAIL_FROM ?? env.MAIL_FROM,
+    fromName: env.AUTH_MAIL_FROM ? 'AUTH_MAIL_FROM' : 'MAIL_FROM',
     transportName: 'AUTH_MAIL_TRANSPORT',
     keyName: 'AUTH_MAIL_API_KEY',
   };

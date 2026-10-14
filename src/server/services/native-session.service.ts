@@ -18,6 +18,7 @@ import { toPublicUser, type User } from '../models/users';
 import { AppError } from '../utils/AppError';
 import { accessTokenClaimsFor } from './auth.service';
 import { requireActiveAccount } from './local-auth.service';
+import { requireVerifiedEmail } from './email-verification-access';
 
 export async function requireBrowserSession(tokenHash: string) {
   const token = await findRefreshTokenWithOwner(tokenHash);
@@ -25,6 +26,7 @@ export async function requireBrowserSession(tokenHash: string) {
     throw AppError.unauthorized('Your main system session expired.', 'login-required');
   }
   await requireActiveAccount(token.owner);
+  requireVerifiedEmail(token.owner);
   return { ...token, owner: token.owner };
 }
 

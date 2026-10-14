@@ -28,13 +28,13 @@ type PresenceSnapshot = { userIds: string[] };
  * fallback for a dropped socket, so a missed event is a slower update, never a lost one.
  */
 export function useRealtime(): void {
-  const { accessToken, status } = useAuth();
+  const { accessToken, status, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     // A stored session starts in "loading" while its access token is refreshed.
     // Connecting before that finishes can strand Socket.IO on an expired handshake.
-    if (status !== 'authenticated' || !accessToken) {
+    if (status !== 'authenticated' || !accessToken || !isAuthenticated) {
       disconnectSocket();
       clearPresence();
       return;
@@ -114,6 +114,5 @@ export function useRealtime(): void {
       socket.off('disconnect', onDisconnect);
       clearPresence();
     };
-  }, [accessToken, status, queryClient]);
-  useSocketSession(accessToken ?? null);
+  }, [accessToken, status, isAuthenticated, queryClient]);
 }
