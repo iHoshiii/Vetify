@@ -3,6 +3,7 @@ import { connectDb, disconnectDb } from './config/db';
 import { applyDnsServers } from './config/dns';
 import { env, isProduction, isTest } from './config/env';
 import { ensureIndexes } from './models';
+import { ensureEmailVerificationIndexes } from './models/email-verifications';
 import { attachRealtime } from './realtime/socket';
 import {
   startCompletionScanner,
@@ -28,6 +29,7 @@ import {
 async function buildIndexes(): Promise<void> {
   try {
     await ensureIndexes();
+    await ensureEmailVerificationIndexes();
     console.log('[db] indexes ensured');
   } catch (err) {
     if (isProduction) throw err;

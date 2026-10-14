@@ -11,6 +11,7 @@ import {
 } from '../../models/users';
 import { createAuthPayloadFor, setRefreshCookie } from '../../services/auth.service';
 import { blockedMessage } from '../../services/user-status.service';
+import { sendSignupVerification } from '../../services/email-verification.service';
 import { fail, failReason, ok } from '../../utils/response';
 import { accountBlockReason } from './auth-helpers';
 const router = Router();
@@ -29,6 +30,8 @@ router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => 
     provider: 'local',
   });
   const auth = await createAuthPayloadFor(user);
+
+  await sendSignupVerification(user);
 
   recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
 

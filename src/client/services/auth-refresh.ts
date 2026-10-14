@@ -67,6 +67,14 @@ export function refreshSessionShared(): Promise<AuthSession> {
   return refreshInFlight;
 }
 
+export async function refreshSessionFresh(): Promise<AuthSession> {
+  const logoutMarker = authLogoutMarker();
+  const ownerId = readAuthState()?.user?.id ?? null;
+  await refreshInFlight?.catch(() => undefined);
+  assertRefreshContext(logoutMarker, ownerId);
+  return refreshSessionShared();
+}
+
 export async function refreshAccessToken(
   expectedOwnerId: string | null = null
 ): Promise<string | null> {

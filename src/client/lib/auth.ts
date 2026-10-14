@@ -1,5 +1,9 @@
 import { apiFetch } from '@/services/api';
-import { refreshSessionShared, withAuthSessionLock } from '@/services/auth-refresh';
+import {
+  refreshSessionFresh,
+  refreshSessionShared,
+  withAuthSessionLock,
+} from '@/services/auth-refresh';
 
 import {
   writeAuthState,
@@ -53,8 +57,10 @@ export async function signupWithEmail(input: {
  * who just logged in, and app startup, to revive a session whose 15-minute
  * access token has expired while the 30-day cookie is still good.
  */
-export async function refreshSession(): Promise<AuthSession> {
-  return refreshSessionShared();
+export async function refreshSession({
+  fresh = false,
+}: { fresh?: boolean } = {}): Promise<AuthSession> {
+  return fresh ? refreshSessionFresh() : refreshSessionShared();
 }
 
 /** Server-side redirect start. A full navigation, not fetch — OAuth needs the

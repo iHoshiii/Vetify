@@ -7,13 +7,14 @@ import { auditLogsCollection } from '../../../../models/audit-log';
 import { refreshTokensCollection } from '../../../../models/refresh-token';
 import { findUserById, insertUser, type UserRole } from '../../../../models/users';
 import { signAccessToken } from '../../../../services/auth.service';
-import { clearTestDb, startTestDb, stopTestDb } from '../../../../test-utils/db';
+import { clearTestDb } from '../../../../test-utils/db';
+import { startReplicaTestDb, stopReplicaTestDb } from '../../../../test-utils/repl-db';
 
 const app = createApp();
 
-beforeAll(startTestDb, 120_000);
+beforeAll(startReplicaTestDb, 120_000);
 afterEach(clearTestDb);
-afterAll(stopTestDb);
+afterAll(stopReplicaTestDb);
 
 const PASSWORD = 'Sup3rSecret!';
 let seq = 0;
