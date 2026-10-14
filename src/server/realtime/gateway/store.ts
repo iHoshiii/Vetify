@@ -42,15 +42,27 @@ export async function ensureRealtimeIndexes(): Promise<void> {
 }
 
 export async function touchConnection(id: string, session?: SocketSession): Promise<void> {
-  const current = await connections().findOne({ _id: id });
-  if (!current) throw new Error('unauthorized');
-  const expiresAt = session?.expiresAt ?? current.expiresAt;
-  const leaseUntil = lease(expiresAt);
-  await connections().updateOne(
-    { _id: id },
-    { $set: { ...session, expiresOn: new Date(expiresAt), leaseUntil } }
+  const current = await connections().findOneAndUpdate(
+    {
+      _id: id,
+      ...(session ? { userId: session.userId, sessionVersion: session.sessionVersion } : {}),
+    },
+    [
+      { $set: { expiresAt: { $max: ['$expiresAt', session?.expiresAt ?? 0] } } },
+      {
+        $set: {
+          expiresOn: { $toDate: '$expiresAt' },
+          leaseUntil: { $toDate: { $min: ['$expiresAt', Date.now() + 90_000] } },
+        },
+      },
+    ],
+    { returnDocument: 'after' }
   );
-  await memberships().updateMany({ connectionId: id, ...memberFilter() }, { $set: { leaseUntil } });
+  if (!current) throw new Error('unauthorized');
+  await memberships().updateMany(
+    { connectionId: id, ...memberFilter() },
+    { $max: { leaseUntil: current.leaseUntil } }
+  );
 }
 
 export async function acceptEvent(id: string): Promise<boolean> {

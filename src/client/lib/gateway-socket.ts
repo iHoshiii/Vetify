@@ -1,6 +1,6 @@
-import { API_BASE_URL } from '@/services/api';
 import { GatewayEvents } from './gateway-events';
 import { renewalDelay } from './gateway-auth';
+import { fetchGatewayTicket, gatewayAttempt, GatewayTicketError } from './gateway-ticket';
 
 type Ack = (...args: unknown[]) => void;
 
@@ -15,6 +15,7 @@ export class GatewaySocket extends GatewayEvents {
   private heartbeat?: ReturnType<typeof setInterval>;
   private renewal?: ReturnType<typeof setTimeout>;
   private clientId = crypto.randomUUID();
+  private attempt?: ReturnType<typeof gatewayAttempt>;
   constructor(private endpoint: string, token: string) {
     super();
     this.auth = { token };
@@ -28,6 +29,7 @@ export class GatewaySocket extends GatewayEvents {
   disconnect(): this {
     this.wanted = false;
     this.generation++;
+    this.attempt?.cancel();
     clearTimeout(this.retry);
     this.retry = undefined;
     this.clearQueue();
@@ -76,25 +78,19 @@ export class GatewaySocket extends GatewayEvents {
     );
   }
   private async open(generation: number): Promise<void> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/account/realtime-ticket`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { Authorization: `Bearer ${this.auth.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: this.clientId }),
-      });
+    this.attempt?.cancel();
+    const attempt = gatewayAttempt(() => {
       if (!this.wanted || generation !== this.generation) return;
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          this.wanted = false;
-          this.dispatch('session:ended', {
-            reason: response.status === 401 ? 'expired' : 'restricted',
-          });
-          return;
-        }
-        throw new Error('Unable to open realtime connection');
-      }
-      const { ticket } = (await response.json()) as { ticket: string };
+      const retryGeneration = ++this.generation;
+      const ws = this.ws;
+      this.ws = null;
+      ws?.close();
+      this.closed();
+      if (retryGeneration === this.generation) this.reconnect();
+    });
+    this.attempt = attempt;
+    try {
+      const ticket = await fetchGatewayTicket(this.auth.token, this.clientId, attempt.signal);
       if (!this.wanted || generation !== this.generation) return;
       const url = new URL(this.endpoint);
       url.searchParams.set('ticket', ticket);
@@ -115,6 +111,7 @@ export class GatewaySocket extends GatewayEvents {
               return;
             }
             this.connected = true;
+            attempt.finish();
             this.attempts = 0;
             this.scheduleRenewal();
             this.heartbeat = setInterval(() => this.send('connection:heartbeat', {}), 25_000);
@@ -127,11 +124,17 @@ export class GatewaySocket extends GatewayEvents {
       ws.onclose = () => {
         if (this.ws !== ws) return;
         this.ws = null;
+        attempt.cancel();
         this.closed();
-        this.reconnect();
+        if (generation === this.generation) this.reconnect();
       };
-    } catch {
-      if (generation === this.generation) this.reconnect();
+    } catch (error) {
+      attempt.cancel();
+      if (!this.wanted || generation !== this.generation) return;
+      if (error instanceof GatewayTicketError && [401, 403].includes(error.status)) {
+        this.wanted = false;
+        this.dispatch('session:ended', { reason: error.status === 401 ? 'expired' : 'restricted' });
+      } else this.reconnect();
     }
   }
   private closed(): void {
@@ -143,9 +146,11 @@ export class GatewaySocket extends GatewayEvents {
     if (wasConnected) this.dispatch('disconnect');
   }
   private reconnect(): void {
-    if (!this.wanted || this.retry) return;
+    if (!this.wanted || this.retry || this.ws) return;
+    const generation = this.generation;
     this.retry = setTimeout(() => {
       this.retry = undefined;
+      if (!this.wanted || this.ws || generation !== this.generation) return;
       void this.open(++this.generation);
     }, Math.min(30_000, 1000 * 2 ** Math.min(5, this.attempts++)) + Math.random() * 300);
   }

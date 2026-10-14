@@ -64,6 +64,18 @@ beforeEach(() => {
 });
 
 describe('call sign-in termination', () => {
+  it('can join a different appointment after hanging up the previous appointment', async () => {
+    const { result, rerender } = renderHook(({ id }) => useCall(id), {
+      initialProps: { id: 'first' },
+    });
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    act(() => result.current.hangUp());
+    fakes.onConnected = null;
+    rerender({ id: 'second' });
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    act(() => fakes.onConnected?.());
+    expect(result.current.state).toBe('connected');
+  });
   it('does not rejoin after an explicit hang-up followed by reconnect', async () => {
     const { result } = renderHook(() => useCall('appointment'));
     await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));

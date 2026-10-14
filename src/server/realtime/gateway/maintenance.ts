@@ -3,7 +3,6 @@ import { sendConnection } from './delivery';
 import { gatewayTransport } from './transport';
 import { authenticateConnection } from './events';
 import { announceCall, removeConnection } from './calls';
-import { announcePresence } from './presence';
 import { AppError } from '../../utils/AppError';
 
 export async function maintainRealtime(): Promise<void> {
@@ -37,6 +36,5 @@ export async function maintainRealtime(): Promise<void> {
     if (reason) await sendConnection(connection._id, 'session:ended', { reason });
     await gatewayTransport().close(connection._id);
     await removeConnection(connection);
-    await announcePresence(connection.userId);
   }
 }

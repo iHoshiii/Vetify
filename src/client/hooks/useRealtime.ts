@@ -2,7 +2,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import type { MessagePage, ThreadPage } from '@/services/messages.service';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { appointmentKeys } from './useAppointments';
 import { messageKeys } from './useMessages';
@@ -28,10 +28,16 @@ type PresenceSnapshot = { userIds: string[] };
  * fallback for a dropped socket, so a missed event is a slower update, never a lost one.
  */
 export function useRealtime(): void {
-  const { accessToken, status, isAuthenticated } = useAuth();
+  const { accessToken, status, isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
+  const account = useRef(user?.id);
+  useEffect(() => () => clearPresence(), []);
 
   useEffect(() => {
+    if (account.current !== user?.id) {
+      clearPresence();
+      account.current = user?.id;
+    }
     // A stored session starts in "loading" while its access token is refreshed.
     // Connecting before that finishes can strand Socket.IO on an expired handshake.
     if (status !== 'authenticated' || !accessToken || !isAuthenticated) {
@@ -112,8 +118,7 @@ export function useRealtime(): void {
       socket.off('presence:changed', onPresence);
       socket.off('presence:snapshot', onPresenceSnapshot);
       socket.off('disconnect', onDisconnect);
-      clearPresence();
     };
-  }, [accessToken, status, isAuthenticated, queryClient]);
+  }, [accessToken, status, isAuthenticated, queryClient, user?.id]);
   useSocketSession(accessToken);
 }

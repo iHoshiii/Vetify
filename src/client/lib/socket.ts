@@ -68,9 +68,10 @@ export function connectSocket(token: string): Socket {
 }
 
 export function disconnectSocket(): void {
-  socket?.disconnect();
+  const previous = socket;
   socket = null;
   socketToken = null;
+  previous?.disconnect();
 }
 
 export function getSocket(): Socket | null {

@@ -8,7 +8,6 @@ import { authenticateConnection, processEvent } from './events';
 import { gatewayTransport } from './transport';
 import { sendConnection } from './delivery';
 import { removeConnection } from './calls';
-import { announcePresence } from './presence';
 
 export type GatewayEvent = {
   requestContext: { routeKey: string; connectionId: string };
@@ -50,11 +49,18 @@ export async function handleGateway(event: GatewayEvent): Promise<{ statusCode: 
     return { statusCode: 200 };
   }
   const connection = await connections().findOne({ _id: connectionId });
-  if (!connection) return { statusCode: 410 };
+  if (!connection) {
+    if (routeKey !== '$disconnect') await gatewayTransport().close(connectionId);
+    return { statusCode: routeKey === '$disconnect' ? 200 : 410 };
+  }
   if (routeKey === '$disconnect') {
     await removeConnection(connection);
-    await announcePresence(connection.userId);
     return { statusCode: 200 };
+  }
+  if (connection.leaseUntil.getTime() <= Date.now()) {
+    await gatewayTransport().close(connectionId);
+    await removeConnection(connection);
+    return { statusCode: 410 };
   }
   if (event.isBase64Encoded || !event.body || Buffer.byteLength(event.body) > 30_000)
     return { statusCode: 400 };
@@ -88,7 +94,6 @@ export async function handleGateway(event: GatewayEvent): Promise<{ statusCode: 
     await sendConnection(connectionId, 'session:ended', { reason });
     await gatewayTransport().close(connectionId);
     await removeConnection(connection);
-    await announcePresence(connection.userId);
     return { statusCode: 401 };
   }
   try {

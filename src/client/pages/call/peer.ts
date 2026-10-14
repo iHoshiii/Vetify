@@ -22,6 +22,10 @@ export function createPeer(opts: PeerOptions) {
   const pc = new RTCPeerConnection({ iceServers: opts.iceServers });
   let makingOffer = false;
   let ignoreOffer = false;
+  let settingRemoteAnswer = false;
+  let closed = false;
+  let signals = Promise.resolve();
+  const candidates: RTCIceCandidateInit[] = [];
 
   for (const track of opts.stream.getTracks()) pc.addTrack(track, opts.stream);
 
@@ -50,15 +54,30 @@ export function createPeer(opts: PeerOptions) {
     if (['failed', 'closed'].includes(pc.connectionState)) opts.onClosed();
   };
 
-  async function handleSignal(signal: Signal): Promise<void> {
+  async function applySignal(signal: Signal): Promise<void> {
+    if (closed) return;
     try {
       if (signal.description) {
-        const collision =
-          signal.description.type === 'offer' && (makingOffer || pc.signalingState !== 'stable');
+        const readyForOffer =
+          !makingOffer && (pc.signalingState === 'stable' || settingRemoteAnswer);
+        const collision = signal.description.type === 'offer' && !readyForOffer;
         ignoreOffer = !opts.polite && collision;
-        if (ignoreOffer) return;
+        if (ignoreOffer) {
+          candidates.splice(0);
+          return;
+        }
 
+        settingRemoteAnswer = signal.description.type === 'answer';
         await pc.setRemoteDescription(signal.description as RTCSessionDescriptionInit);
+        settingRemoteAnswer = false;
+        if (closed) return;
+        for (const candidate of candidates.splice(0)) {
+          try {
+            await pc.addIceCandidate(candidate);
+          } catch {
+            // Ignore obsolete ICE generations.
+          }
+        }
         if (signal.description.type === 'offer') {
           await pc.setLocalDescription();
           if (pc.localDescription) {
@@ -68,6 +87,11 @@ export function createPeer(opts: PeerOptions) {
           }
         }
       } else if (signal.candidate) {
+        if (ignoreOffer) return;
+        if (!pc.remoteDescription) {
+          if (candidates.length < 100) candidates.push(signal.candidate);
+          return;
+        }
         try {
           await pc.addIceCandidate(signal.candidate);
         } catch (err) {
@@ -77,12 +101,19 @@ export function createPeer(opts: PeerOptions) {
       }
     } catch {
       // Signalling races self-heal on the next event, so a single failed step is not fatal.
+    } finally {
+      settingRemoteAnswer = false;
     }
   }
 
   return {
-    handleSignal,
+    handleSignal: (signal: Signal) => {
+      signals = signals.then(() => applySignal(signal));
+      return signals;
+    },
     close: () => {
+      closed = true;
+      candidates.splice(0);
       pc.ontrack = null;
       pc.onicecandidate = null;
       pc.onnegotiationneeded = null;

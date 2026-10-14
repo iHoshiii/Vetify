@@ -16,6 +16,7 @@ import {
   type Connection,
 } from './store';
 import { deliver, sendUser, validConnection } from './delivery';
+import { announcePresence } from './presence';
 
 export async function announceCall(appointmentId: string): Promise<void> {
   const appointment = await findAppointmentById(appointmentId);
@@ -113,8 +114,9 @@ export async function callEvent(
 }
 export async function removeConnection(connection: Connection): Promise<void> {
   const calls = await memberships().find({ connectionId: connection._id }).toArray();
-  await connections().deleteOne({ _id: connection._id });
+  const deleted = await connections().deleteOne({ _id: connection._id });
   for (const call of calls) await leaveCall(connection, call.appointmentId);
+  if (deleted.deletedCount) await announcePresence(connection.userId);
 }
 export async function callLive(id: string): Promise<boolean> {
   const members = await memberships()

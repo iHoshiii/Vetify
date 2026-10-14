@@ -18,6 +18,7 @@ export function useCall(appointmentId: string) {
   const { user } = useAuth();
   const initialAccount = useRef(user?.id);
   const wantedCall = useRef(true);
+  const wantedAppointment = useRef(appointmentId);
   const controls = useCallControls(stream);
   const chat = useCallChat(appointmentId);
   const [state, setState] = useState<CallState>('waiting');
@@ -29,6 +30,12 @@ export function useCall(appointmentId: string) {
   useCallError(mediaError, setState, setMessage);
 
   useEffect(() => {
+    if (wantedAppointment.current !== appointmentId) {
+      wantedAppointment.current = appointmentId;
+      wantedCall.current = true;
+      setRemoteStream(null);
+      setMessage(null);
+    }
     if (!stream) return;
     const socket = getSocket();
     if (!socket) {

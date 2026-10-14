@@ -3,8 +3,8 @@ import { connections, liveFilter, type Connection } from './store';
 import { sendConnection, sendUser, userOnline } from './delivery';
 
 export async function announcePresence(userId: string): Promise<void> {
-  const online = await userOnline(userId);
   const partners = await findConversationPartnerIds(userId);
+  const online = await userOnline(userId);
   await Promise.all(partners.map((id) => sendUser(id, 'presence:changed', { userId, online })));
 }
 export async function readyConnection(connection: Connection): Promise<void> {
