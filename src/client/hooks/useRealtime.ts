@@ -9,6 +9,7 @@ import { messageKeys } from './useMessages';
 import { notificationKeys } from './useNotifications';
 import { clearPresence, notePresence, replacePresence } from './usePresence';
 import { noteTyping } from './useTyping';
+import { useSocketSession } from './useSocketSession';
 
 // The lightweight events the server pushes. Each carries only an id, so the client refetches rather than trusting a payload.
 type ThreadEvent = { threadId: string };

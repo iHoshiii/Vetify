@@ -1,4 +1,4 @@
-import type { Namespace, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
 import { MESSAGE_MAX_LENGTH } from '@shared/limits';
 
@@ -11,6 +11,7 @@ import {
 import { callPeer, effectiveCallEnd, loadJoinableCall, type CallPeer } from './call-window';
 import { emitToUser, stampCallConnected } from './hub';
 import { iceServers, type IceServer } from './ice';
+import { scheduleAutoStop } from './call-timers';
 
 export { canJoinCall, loadJoinableCall } from './call-window';
 
@@ -26,9 +27,6 @@ type CallJoinAck =
     }
   | { ok: false; error: string };
 
-// Auto-stop timers by appointment id, so a live call closes itself at the session end even if nobody hangs up.
-const stopTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
 function callRoom(appointmentId: string): string {
   return `call:${appointmentId}`;
 }
@@ -40,25 +38,6 @@ function announceChanged(appointment: AppointmentDocument): void {
   emitToUser(appointment.professionalUser.toString(), 'appointment:changed', payload);
 }
 
-// Closes the room once, at the session end. Unref'd so a pending timer never holds the process open.
-function scheduleAutoStop(nsp: Namespace, appointmentId: string, endsAt: Date): void {
-  if (stopTimers.has(appointmentId)) return;
-  const room = callRoom(appointmentId);
-  const fire = () => {
-    stopTimers.delete(appointmentId);
-    nsp.to(room).emit('call:ended', { reason: 'ended' });
-    void nsp.in(room).socketsLeave(room);
-  };
-  const ms = endsAt.getTime() - Date.now();
-  if (ms <= 0) {
-    fire();
-    return;
-  }
-  const timer = setTimeout(fire, ms);
-  timer.unref();
-  stopTimers.set(appointmentId, timer);
-}
-
 async function join(
   socket: Socket,
   userId: string,
@@ -68,7 +47,7 @@ async function join(
   const appointmentId = (payload as { appointmentId?: unknown })?.appointmentId;
   const appointment =
     typeof appointmentId === 'string' ? await loadJoinableCall(userId, appointmentId) : null;
-  if (!appointment || typeof appointmentId !== 'string') {
+  if (!appointment || typeof appointmentId !== 'string' || !socket.connected) {
     ack?.({ ok: false, error: 'not allowed' });
     return;
   }

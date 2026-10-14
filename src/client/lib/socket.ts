@@ -6,16 +6,39 @@ import { sendTyping } from '@/services/messages.service';
 let socket: Socket | null = null;
 let socketToken: string | null = null;
 
+function tokenAccount(token: string | null): string | null {
+  if (!token) return null;
+  try {
+    const encoded = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(encoded)) as { sub?: string };
+    return claims.sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Opens the connection, or re-authorises the existing one when the token rotates.
 export function connectSocket(token: string): Socket {
   if (socket) {
     const accountChanged = socketToken !== token;
+    const sameAccount =
+      tokenAccount(socketToken) !== null && tokenAccount(socketToken) === tokenAccount(token);
     socketToken = token;
     socket.auth = { token };
     // Socket rooms are assigned during the handshake. Updating `auth` alone leaves
     // an existing connection in the previous account's room after an account switch.
     if (accountChanged && socket.connected) {
-      socket.disconnect().connect();
+      if (!sameAccount) {
+        socket.disconnect().connect();
+        return socket;
+      }
+      const currentSocket = socket;
+      currentSocket
+        .timeout(5_000)
+        .emit('session:renew', { token }, (error: Error | null, ack?: { ok: boolean }) => {
+          if ((!error && ack?.ok) || socket !== currentSocket || socketToken !== token) return;
+          currentSocket.disconnect().connect();
+        });
     } else if (!socket.connected) {
       socket.connect();
     }

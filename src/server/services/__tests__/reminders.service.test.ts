@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   findAppointmentById,
   insertAppointment,
+  insertUser,
   updateAppointment,
   type AppointmentStatus,
 } from '../../models';
@@ -17,7 +18,11 @@ afterAll(stopTestDb);
 
 // No professional row is seeded, so the scanner falls back to the 30-minute default lead.
 async function booking(minutesAhead: number, status: AppointmentStatus = 'confirmed') {
-  const professionalUser = new ObjectId();
+  const vet = await insertUser({
+    email: `vet-${new ObjectId()}@example.com`,
+    password: 'pw12345678',
+  });
+  const professionalUser = vet._id;
   const startsAt = new Date(Date.now() + minutesAhead * 60_000);
   const appointment = await insertAppointment({
     professional: new ObjectId(),

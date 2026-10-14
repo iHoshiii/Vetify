@@ -3,6 +3,7 @@ import type { ObjectId } from 'mongodb';
 import { toObjectId } from '../object-id';
 import { appointmentsCollection } from './repository';
 import type { AppointmentDocument } from './types';
+import type { AppointmentDelivery } from './delivery-types';
 
 // Claims a booking's post-visit review nudge atomically, so two ticks or two instances cannot both send it. The null-or-missing guard covers rows made before the field.
 export async function claimReviewPrompt(
@@ -36,12 +37,16 @@ export async function replyToReview(input: {
 
 // Strips the stars and note off a booking when an admin removes an abusive review, leaving the reply untouched so a vet's response is not orphaned onto nothing.
 export async function clearAppointmentRating(
-  id: string | ObjectId
+  id: string | ObjectId,
+  delivery?: AppointmentDelivery
 ): Promise<AppointmentDocument | null> {
   const now = new Date();
   return await appointmentsCollection().findOneAndUpdate(
     { _id: toObjectId(id) },
-    { $set: { rating: null, ratingComment: null, updatedAt: now } },
+    {
+      $set: { rating: null, ratingComment: null, updatedAt: now },
+      ...(delivery ? { $push: { deliveries: delivery } } : {}),
+    },
     { returnDocument: 'after' }
   );
 }

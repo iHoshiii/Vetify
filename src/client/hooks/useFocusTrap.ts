@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 // Moves focus into the panel on open, traps Tab within it, and closes on Escape, so a keyboard user cannot reach the page behind the overlay
 export function useFocusTrap<T extends HTMLElement>(onClose: () => void, active = true) {
   const ref = useRef<T | null>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useLayoutEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const node = ref.current;

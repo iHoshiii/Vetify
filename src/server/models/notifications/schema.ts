@@ -7,6 +7,7 @@ import { NOTIFICATION_KINDS } from './types';
 
 // What the store needs to record one notification. Title and body are composed by the service, never sent by a client.
 export const notificationAttrsSchema = z.object({
+  id: z.instanceof(ObjectId).optional(),
   user: z.custom<string | ObjectId>(isValidObjectId, 'A recipient is required'),
   kind: z.enum(NOTIFICATION_KINDS),
   appointment: z.custom<string | ObjectId>(isValidObjectId, 'An appointment is required'),

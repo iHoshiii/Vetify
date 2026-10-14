@@ -17,6 +17,7 @@ import {
 import { emitToUser } from '../realtime/hub';
 
 export type CreateNotificationInput = {
+  id?: ObjectId;
   user: string | ObjectId;
   kind: NotificationKind;
   appointment: string | ObjectId;

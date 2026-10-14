@@ -65,12 +65,6 @@ export class ApiError extends Error {
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
-/**
- * Thin fetch wrapper. Sends cookies so the httpOnly auth cookies travel
- * automatically, attaches the access token when there is one so the server can
- * tell a signed-in caller from an anonymous one, and turns a non-2xx response
- * into an ApiError rather than letting callers read fields off an error body.
- */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
 
@@ -88,7 +82,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
       ...(body !== undefined ? { body: body instanceof Blob ? body : JSON.stringify(body) } : {}),
     });
 
-  let res = await send(readAccessToken());
+  const initialSession = readAuthState();
+  let res = await send(initialSession?.accessToken ?? null);
 
   // A live session whose 15-minute token lapsed: refresh once off the cookie and replay, so the caller never sees a spurious 401.
   const refreshableAuth = ['/auth/subscription', '/auth/email/verify', '/auth/email/resend'];
@@ -115,14 +110,6 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   return payload as T;
 }
 
-/**
- * The same request, for a response that is bytes rather than JSON.
- *
- * A second function rather than a flag on the first, because the two differ in
- * what they do on the way out and not only on the way back: this one sends no
- * Content-Type, asks for no parse, and still has to read a JSON error body when
- * the answer turns out not to be an image after all.
- */
 export async function apiFetchBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
   const { body: _body, headers, ...rest } = options;
 
@@ -136,11 +123,12 @@ export async function apiFetchBlob(path: string, options: RequestOptions = {}): 
       },
     });
 
-  let res = await send(readAccessToken());
+  const initialSession = readAuthState();
+  let res = await send(initialSession?.accessToken ?? null);
 
   // Same lapsed-token replay as apiFetch: a blob request is often the first out after a token expires.
   if (res.status === 401 && !path.startsWith('/auth/')) {
-    const refreshed = await refreshAccessToken();
+    const refreshed = await refreshAccessToken(initialSession?.user?.id ?? null);
     if (refreshed) res = await send(refreshed);
   }
 

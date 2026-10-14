@@ -3,6 +3,9 @@
   "type": "module",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "^24.0.0"
+  },
   "scripts": {
     "dev": "concurrently -n client,server -c cyan,magenta \"npm:dev:client\" \"npm:dev:server\"",
     "mediapipe:assets": "node scripts/copy-mediapipe.mjs",
@@ -32,7 +35,9 @@
     "test:client": "vitest run --project client",
     "test:server": "vitest run --project server",
     "test:coverage": "vitest run --coverage",
+    "pretest:e2e": "npm run build:client",
     "test:e2e": "playwright test",
+    "test:production": "node scripts/smoke-production.mjs",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -93,6 +98,7 @@
     "concurrently": "^10.0.4",
     "esbuild": "0.28.1",
     "eslint": "^9.39.5",
+    "esbuild": "^0.28.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.9.0",
