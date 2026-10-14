@@ -14,6 +14,8 @@ import { consumeNativeHandoff, createNativeHandoff } from '../../models/native-h
 import { hashToken } from '../../models/refresh-token';
 import { toPublicUser } from '../../models/users';
 import { authenticateLocalAccount, createLocalAccount } from '../../services/local-auth.service';
+import { requestEmailVerification } from '../../services/email-verification.service';
+import emailVerificationRoute from './email-verification.route';
 import {
   createNativeSession,
   logoutNativeSession,
@@ -30,19 +32,21 @@ router.use((_req, res, next) => {
   next();
 });
 router.use('/oauth', nativeSocialRouter);
+router.use('/email', emailVerificationRoute);
 
 router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
-  const user = await authenticateLocalAccount(req.body as LoginInput, { native: true });
+  const user = await authenticateLocalAccount(req.body as LoginInput);
   const session = await createNativeSession(user);
   recordActivity({ type: 'user.logged_in', user: user._id, metadata: { provider: 'local' } });
   ok(res, session);
 });
 
 router.post('/signup', authLimiter, validate(signupSchema), async (req, res) => {
-  const user = await createLocalAccount(req.body as SignupInput, { native: true });
+  const user = await createLocalAccount(req.body as SignupInput);
   const session = await createNativeSession(user);
+  const emailVerification = await requestEmailVerification(user);
   recordActivity({ type: 'user.signed_up', user: user._id, metadata: { provider: 'local' } });
-  ok(res, session);
+  ok(res, { ...session, emailVerification });
 });
 
 router.post(

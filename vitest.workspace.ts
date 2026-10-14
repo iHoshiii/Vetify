@@ -30,21 +30,7 @@ export default defineWorkspace([
       // follow it. Under MAIL_TRANSPORT=http every test that invites somebody
       // either posts to a real provider or fails on a key it never needed.
       // process.loadEnvFile() leaves an already-set variable alone, so this wins.
-      env: {
-        NODE_ENV: 'test',
-        GEMINI_API_KEY: 'test-gemini-key',
-        JWT_SECRET_ACCESS: 'test-only-access-secret-at-least-32-characters',
-        MONGODB_URI: 'mongodb://127.0.0.1:27017/vetify_tests',
-        MAIL_TRANSPORT: 'log',
-        MAIL_API_KEY: '',
-        DNS_SERVERS: '',
-        GOOGLE_CLIENT_ID: '',
-        GOOGLE_CLIENT_SECRET: '',
-        FACEBOOK_APP_ID: '',
-        FACEBOOK_APP_SECRET: '',
-        TIKTOK_CLIENT_KEY: '',
-        TIKTOK_CLIENT_SECRET: '',
-      },
+      env: { MAIL_TRANSPORT: 'log', AUTH_MAIL_TRANSPORT: 'log' },
       globals: true,
       include: ['src/server/**/*.{test,spec}.ts'],
       // Spinning up mongodb-memory-server downloads a binary on first run.

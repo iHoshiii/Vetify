@@ -1,9 +1,16 @@
 import { z } from 'zod';
 
-export const emailVerificationConfirmSchema = z.object({
-  token: z
+export type EmailVerificationDelivery = {
+  sent: boolean;
+  expiresAt: string;
+  resendAvailableAt: string;
+};
+
+export const emailVerificationSchema = z.object({
+  code: z
     .string()
-    .regex(/^[a-f0-9]{64}$/, 'This verification link is invalid. Please request a new one.'),
+    .length(6)
+    .regex(/^[0-9]{6}$/, 'Enter the six-digit code from your email.'),
 });
 
-export type EmailVerificationConfirm = z.infer<typeof emailVerificationConfirmSchema>;
+export type EmailVerificationInput = z.infer<typeof emailVerificationSchema>;

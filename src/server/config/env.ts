@@ -91,6 +91,12 @@ const envSchema = z.object({
   MAIL_API_URL: z.string().url().default('https://api.resend.com/emails'),
   MAIL_API_KEY: z.string().min(1).optional(),
 
+  // Authentication emails require their own API key, separate from professional mail.
+  AUTH_MAIL_TRANSPORT: z.enum(['log', 'http']).default('http'),
+  AUTH_MAIL_API_URL: z.string().url().optional(),
+  AUTH_MAIL_FROM: z.string().min(1).optional(),
+  AUTH_MAIL_API_KEY: z.string().min(1).optional(),
+
   // ---- In-app video call ----
   // Optional TURN relay for calls that cannot hole-punch. All three go together;
   // with none set the call falls back to Google STUN alone, which is enough on most networks.

@@ -73,7 +73,9 @@ describe('Email and password mobile authentication', () => {
       error: 'Account already exist. Please login',
       reason: 'account-exists',
     });
-    expect((await request(app).post('/api/v1/auth/signup').send(SIGNUP)).status).toBe(409);
+    const webDuplicate = await request(app).post('/api/v1/auth/signup').send(SIGNUP);
+    expect(webDuplicate.status).toBe(409);
+    expect(webDuplicate.body).toEqual(duplicate.body);
     expect(await usersCollection().countDocuments()).toBe(1);
   });
 
@@ -106,7 +108,7 @@ describe('Email and password mobile authentication', () => {
     expect(await refreshTokensCollection().countDocuments()).toBe(1);
   });
 
-  it('asks unregistered mobile users to create an account and preserves generic website errors', async () => {
+  it('asks unregistered mobile and website users to create an account', async () => {
     const credentials = { email: 'missing@example.com', password: 'Wrong!' };
     const mobile = await nativeLogin(credentials);
     expect(mobile.status).toBe(401);
@@ -116,7 +118,7 @@ describe('Email and password mobile authentication', () => {
     });
     const web = await request(app).post('/api/v1/auth/login').send(credentials);
     expect(web.status).toBe(401);
-    expect(web.body).toEqual({ error: 'Invalid credentials' });
+    expect(web.body).toEqual(mobile.body);
     expect(await refreshTokensCollection().countDocuments()).toBe(0);
   });
 

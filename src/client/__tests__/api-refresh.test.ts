@@ -85,6 +85,24 @@ describe('apiFetch refresh-on-401', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['/auth/email/verify', '/auth/email/resend'])(
+    'refreshes an expired token before replaying %s',
+    async (path) => {
+      store('expired');
+      const body = path.endsWith('/verify') ? { code: '012345' } : {};
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(res(401, { error: 'expired' }))
+        .mockResolvedValueOnce(res(200, { accessToken: 'fresh', user }))
+        .mockResolvedValueOnce(res(200, { user }));
+      vi.stubGlobal('fetch', fetchMock);
+      await expect(apiFetch(path, { method: 'POST', body })).resolves.toEqual({ user });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh');
+      expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual(body);
+    }
+  );
+
   it('clears the session and surfaces the 401 when refresh fails', async () => {
     store('expired');
     const fetchMock = vi
