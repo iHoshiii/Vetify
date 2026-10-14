@@ -4,7 +4,6 @@ import { Server } from 'socket.io';
 
 import { findThreadById, findUserById, isValidObjectId } from '../models';
 import { notifyTyping } from '../services/messages.service';
-import { requireVerifiedEmail } from '../services/email-verification-access';
 import { registerCall } from './call';
 import { setRealtime } from './hub';
 import { trackPresence } from './presence';
@@ -54,17 +53,7 @@ export function attachRealtime(http: HttpServer): Server {
     if (!token) return next(new Error('unauthorized'));
 
     try {
-      const payload = jwt.verify(token, env.JWT_SECRET_ACCESS) as {
-        sub?: string;
-        nativeSessionId?: unknown;
-      };
-      if (payload.nativeSessionId !== undefined) return next(new Error('unauthorized'));
-      if (!payload.sub) return next(new Error('unauthorized'));
-      if (!isValidObjectId(payload.sub)) return next(new Error('unauthorized'));
-      const user = await findUserById(payload.sub);
-      if (!user) return next(new Error('unauthorized'));
-      requireVerifiedEmail(user);
-      socket.data.userId = payload.sub;
+      Object.assign(socket.data, await socketSession(token));
       return next();
     } catch (error) {
       const reason = (error as { reason?: string }).reason;

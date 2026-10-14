@@ -115,4 +115,5 @@ export function useRealtime(): void {
       clearPresence();
     };
   }, [accessToken, status, isAuthenticated, queryClient]);
+  useSocketSession(accessToken);
 }

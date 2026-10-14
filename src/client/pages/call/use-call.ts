@@ -2,8 +2,13 @@ import { getSocket } from '@/lib/socket';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { CallPeer, CallState, JoinAck } from './call-types';
-import { createPeer, type IceServer, type Signal } from './peer';
+import type { CallPeer, CallState } from './call-types';
+import { joinCallResult } from './join-call';
+import { reconnectCall } from './reconnect-call';
+import { useCallError } from './use-call-error';
+import { listenCall } from './call-listeners';
+import { createPeer, type Signal } from './peer';
+import { callPeerController } from './call-peer-controller';
 import { useCallChat } from './use-call-chat';
 import { useMedia } from './use-media';
 import { useCallControls } from './use-call-controls';
@@ -12,6 +17,7 @@ export function useCall(appointmentId: string) {
   const { stream, error: mediaError } = useMedia();
   const { user } = useAuth();
   const initialAccount = useRef(user?.id);
+  const wantedCall = useRef(true);
   const controls = useCallControls(stream);
   const chat = useCallChat(appointmentId);
   const [state, setState] = useState<CallState>('waiting');
@@ -20,12 +26,7 @@ export function useCall(appointmentId: string) {
   const [message, setMessage] = useState<string | null>(null);
   const peerRef = useRef<ReturnType<typeof createPeer> | null>(null);
 
-  useEffect(() => {
-    if (mediaError) {
-      setState('error');
-      setMessage(mediaError);
-    }
-  }, [mediaError]);
+  useCallError(mediaError, setState, setMessage);
 
   useEffect(() => {
     if (!stream) return;
@@ -39,35 +40,15 @@ export function useCall(appointmentId: string) {
     let closed = false;
     const send = (signal: Signal) => socket.emit('call:signal', { appointmentId, signal });
 
-    const pending: Signal[] = [];
-    let config: { iceServers: IceServer[]; polite: boolean } | null = null;
-    let peerArrived = false;
     let endTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const startPeer = () => {
-      if (closed || peerRef.current || !config) return;
-      peerRef.current = createPeer({
-        iceServers: config.iceServers,
-        polite: config.polite,
-        stream,
-        sendSignal: send,
-        onRemote: setRemoteStream,
-        onConnected: () => !closed && setState('connected'),
-        onClosed: () => !closed && setState((current) => (current === 'ended' ? current : 'ended')),
-      });
-      for (const signal of pending.splice(0)) void peerRef.current.handleSignal(signal);
-    };
-
-    const onSignal = ({ signal }: { signal: Signal }) => {
-      if (peerRef.current) void peerRef.current.handleSignal(signal);
-      else pending.push(signal);
-    };
-    const onPeerJoined = () => {
-      if (closed) return;
-      peerArrived = true;
-      setState((current) => (current === 'connected' ? current : 'connecting'));
-      startPeer();
-    };
+    const controller = callPeerController({
+      peerRef,
+      stream,
+      closed: () => closed || !wantedCall.current,
+      send,
+      setRemote: setRemoteStream,
+      setState,
+    });
     const endNow = () => {
       peerRef.current?.close();
       peerRef.current = null;
@@ -80,38 +61,44 @@ export function useCall(appointmentId: string) {
       setMessage('The other person left the call.');
     };
 
-    socket.on('call:signal', onSignal);
-    socket.on('call:peer-joined', onPeerJoined);
-    socket.on('call:peer-left', onPeerLeft);
-    socket.on('call:ended', endNow);
-    socket.on('session:ended', endNow);
-
-    socket.emit('call:join', { appointmentId }, (ack: JoinAck) => {
-      if (closed) return;
-      if (!ack.ok) {
-        setState('error');
-        setMessage(
-          ack.error === 'call is full'
-            ? 'This call already has two people in it.'
-            : 'This call is not open to you right now.'
-        );
-        return;
-      }
-      config = { iceServers: ack.iceServers, polite: ack.polite };
-      setPeer(ack.peer);
-      endTimer = setTimeout(endNow, new Date(ack.endsAt).getTime() - Date.now());
-      const peerHere = ack.peerOnline || peerArrived;
-      setState(peerHere ? 'connecting' : 'waiting');
-      if (peerHere) startPeer();
+    const unlisten = listenCall(socket, appointmentId, {
+      'call:signal': controller.signal,
+      'call:peer-joined': controller.peerJoined,
+      'call:peer-left': onPeerLeft,
+      'call:ended': endNow,
+      'session:ended': endNow,
     });
+
+    const join = () =>
+      socket.emit(
+        'call:join',
+        { appointmentId },
+        joinCallResult({
+          closed: () => closed || !wantedCall.current,
+          configure: controller.configure,
+          peerHere: controller.peerHere,
+          start: controller.start,
+          end: endNow,
+          setPeer,
+          setState,
+          setMessage,
+          timer: (timer) => {
+            if (endTimer) clearTimeout(endTimer);
+            endTimer = timer;
+          },
+        })
+      );
+    const stopReconnect = reconnectCall(socket, {
+      closed: () => closed || !wantedCall.current,
+      join,
+      reset: controller.reset,
+    });
+    join();
 
     return () => {
       closed = true;
-      socket.off('call:signal', onSignal);
-      socket.off('call:peer-joined', onPeerJoined);
-      socket.off('call:peer-left', onPeerLeft);
-      socket.off('call:ended', endNow);
-      socket.off('session:ended', endNow);
+      unlisten();
+      stopReconnect();
       if (endTimer) clearTimeout(endTimer);
       socket.emit('call:leave', { appointmentId });
       peerRef.current?.close();
@@ -120,6 +107,7 @@ export function useCall(appointmentId: string) {
   }, [stream, appointmentId]);
 
   const hangUp = useCallback(() => {
+    wantedCall.current = false;
     getSocket()?.emit('call:leave', { appointmentId });
     peerRef.current?.close();
     peerRef.current = null;

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { Socket } from 'socket.io';
 import { env } from '../config/env';
 import { activeSessionUser } from '../services/session-access.service';
+import { requireVerifiedEmail } from '../services/email-verification-access';
 
 export type SocketSession = { userId: string; sessionVersion: number; expiresAt: number };
 
@@ -14,9 +15,10 @@ export async function socketSession(token: string): Promise<SocketSession> {
   ) {
     throw new Error('unauthorized');
   }
+  if (payload.nativeSessionId !== undefined) throw new Error('unauthorized');
   const sessionVersion = payload.sessionVersion ?? 0;
   if (!Number.isSafeInteger(sessionVersion) || sessionVersion < 0) throw new Error('unauthorized');
-  await activeSessionUser(payload.sub, sessionVersion);
+  requireVerifiedEmail(await activeSessionUser(payload.sub, sessionVersion));
   return { userId: payload.sub, sessionVersion, expiresAt: payload.exp * 1000 };
 }
 

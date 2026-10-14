@@ -64,6 +64,18 @@ beforeEach(() => {
 });
 
 describe('call sign-in termination', () => {
+  it('does not rejoin after an explicit hang-up followed by reconnect', async () => {
+    const { result } = renderHook(() => useCall('appointment'));
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    const joins = fakes.socket.emit.mock.calls.filter(([event]) => event === 'call:join').length;
+    act(() => result.current.hangUp());
+    act(() => fakes.listeners.get('disconnect')?.forEach((listener) => listener()));
+    act(() => fakes.listeners.get('connect')?.forEach((listener) => listener()));
+    expect(fakes.socket.emit.mock.calls.filter(([event]) => event === 'call:join')).toHaveLength(
+      joins
+    );
+    expect(result.current.state).toBe('ended');
+  });
   it('closes media peer when the server ends the participant sign-in', async () => {
     const { result } = renderHook(() => useCall('appointment'));
     await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));

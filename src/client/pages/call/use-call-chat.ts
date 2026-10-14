@@ -11,8 +11,10 @@ export function useCallChat(appointmentId: string) {
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    const onChat = ({ text }: { text: string }) =>
+    const onChat = ({ text, appointmentId: id }: { text: string; appointmentId?: string }) => {
+      if (id && id !== appointmentId) return;
       setMessages((prev) => [...prev, { id: `p${nextId.current++}`, mine: false, text }]);
+    };
     socket.on('call:chat', onChat);
     return () => {
       socket.off('call:chat', onChat);

@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import { GatewaySocket } from './gateway-socket';
 
 import { sendTyping } from '@/services/messages.service';
 
@@ -46,6 +47,14 @@ export function connectSocket(token: string): Socket {
   }
 
   // Same origin as the API, so the vite proxy and the deployed server both route it without extra config.
+  const gatewayUrl = import.meta.env.VITE_REALTIME_URL;
+  if (gatewayUrl) {
+    if (!gatewayUrl.startsWith('wss://') && !gatewayUrl.startsWith('ws://localhost:'))
+      throw new Error('Invalid realtime URL');
+    socket = new GatewaySocket(gatewayUrl, token).connect() as unknown as Socket;
+    socketToken = token;
+    return socket;
+  }
   socket = io({
     path: '/socket.io',
     auth: { token },

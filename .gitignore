@@ -60,3 +60,5 @@ Thumbs.db
 
 # Misc
 *.pem
+/.aws-sam/
+/samconfig.toml
