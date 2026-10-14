@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  envDir: path.resolve(__dirname, 'node_modules/.cache/vitest-env'),
   plugins: [react()],
   test: {
     environment: 'jsdom',
