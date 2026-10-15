@@ -40,8 +40,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-6 bg-white p-5 sm:space-y-8 sm:p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
+    <div className="flex flex-col items-center bg-slate-50 px-4 py-6 sm:py-8 xl:min-h-screen xl:justify-center xl:py-12">
+      <div className="w-full max-w-md space-y-6 bg-white p-5 sm:space-y-8 sm:p-6 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn xl:p-8">
         <div className="text-center animate-slideDown">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             {verifying ? 'Confirm your email' : 'Create Account'}

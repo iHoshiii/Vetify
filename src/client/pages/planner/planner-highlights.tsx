@@ -50,8 +50,8 @@ export default function PlannerHighlights() {
       aria-labelledby="planner-highlights-title"
       className="scroll-mt-24 bg-white"
     >
-      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
-        <div className="mb-8 flex flex-col justify-between gap-3 sm:mb-10 sm:flex-row sm:items-end">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10 xl:py-20">
+        <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end xl:mb-10">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">
               A closer look

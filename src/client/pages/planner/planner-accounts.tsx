@@ -25,7 +25,7 @@ export default function PlannerAccounts() {
       aria-labelledby="planner-account-title"
       className="border-y border-teal-900/10 bg-[#f2f8f5]"
     >
-      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10 xl:py-20">
         <div className="max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">
             Familiar from the first sign-in

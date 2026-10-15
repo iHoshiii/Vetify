@@ -7,7 +7,7 @@ export default function PlannerDownload() {
       aria-labelledby="planner-title"
       className="relative overflow-hidden border-b border-teal-900/10 bg-gradient-to-br from-[#edf8f5] via-[#f8fbf8] to-[#e5f2ef]"
     >
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[340px_1fr] lg:gap-20 lg:py-20">
+      <div className="mx-auto grid max-w-6xl items-center gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:grid-cols-[340px_1fr] xl:gap-20 xl:py-20">
         <div className="mx-auto w-full max-w-[340px] rounded-[2rem] border border-white bg-white/90 p-7 text-center shadow-[0_16px_60px_-24px_rgba(15,118,110,0.3)]">
           <div className="mx-auto mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50 text-teal-700">
             <Smartphone size={23} aria-hidden="true" />

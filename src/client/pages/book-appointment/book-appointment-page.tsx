@@ -37,7 +37,7 @@ export default function BookAppointmentPage() {
   useBodyScrollLock(at > 1 && Boolean(chosen));
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
       <div className="mx-auto max-w-4xl">
         <BookingHeader
           appointmentsOpen={appointmentsOpen}
