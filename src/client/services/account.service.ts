@@ -4,7 +4,6 @@ import type {
   PasswordChange,
   UserPreferences,
 } from '@shared/schemas';
-import type { Pet } from '@shared/pets';
 
 import type { AuthUser } from '@/lib/auth';
 import { apiFetch } from './api';
@@ -27,7 +26,6 @@ export type AccountExport = {
   exportedAt: string;
   account: AuthUser;
   preferences: UserPreferences;
-  pets: Pet[];
 };
 
 export async function exportAccount(): Promise<AccountExport> {

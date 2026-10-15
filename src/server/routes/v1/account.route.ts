@@ -9,7 +9,6 @@ import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
-import { listPets } from '../../models/pets';
 import {
   findUsersByIds,
   findUserById,
@@ -97,13 +96,12 @@ router.patch('/profile', validate(accountProfileUpdateSchema), async (req, res) 
 
 router.get('/export', async (req, res) => {
   const actor = actorOf(req);
-  const [preferences, pets] = await Promise.all([getPreferences(actor._id), listPets(actor._id)]);
+  const preferences = await getPreferences(actor._id);
   if (!preferences) return fail(res, 404, MISSING);
   ok(res, {
     exportedAt: new Date().toISOString(),
     account: toPublicUser(actor),
     preferences,
-    pets,
   });
 });
 

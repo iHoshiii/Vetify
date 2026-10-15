@@ -7,9 +7,9 @@ const features = [
       'Ask about symptoms and get calm, practical guidance. When things are complex, we immediately direct you to a pro.',
   },
   {
-    title: 'Personalized Meal Plans',
+    title: 'Meal Planner App',
     description:
-      "Build nutrition ideas tailored to your pet's age, weight, breed, and allergies. No more generic advice.",
+      'Meet the mobile app for pet profiles, meal planning and daily feeding records. Keep their routine close at hand.',
   },
   {
     title: 'Find Nearby Vets',
