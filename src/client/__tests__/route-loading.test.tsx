@@ -34,7 +34,6 @@ vi.mock('../components/navbar', () => ({ default: () => <header>Site navigation<
 vi.mock('../components/RevealObserver', () => ({ default: () => null }));
 vi.mock('../components/ScrollToTop', () => ({ default: () => null }));
 vi.mock('../pages/home-page', () => ({ default: () => <h1>Home page</h1> }));
-vi.mock('../pages/planner/planner-page', () => ({ default: () => <h1>Planner page</h1> }));
 vi.mock('../pages/login/login-page', () => ({ default: () => <h1>Login page</h1> }));
 vi.mock('../pages/about/about-page', async () => {
   await state.about;
@@ -141,9 +140,14 @@ describe('deferred routes', () => {
     expect(screen.getByText('Professional navigation')).toBeVisible();
   });
 
-  it('continues to render the planner immediately for a signed-in user', () => {
+  it('shows the Meal Planner app introduction without requiring sign-in', () => {
+    state.auth.isAuthenticated = false;
     renderRoute('/planner');
-    expect(screen.getByRole('heading', { name: 'Planner page' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'A simpler feeding routine.'
+    );
+    expect(screen.getByRole('img', { name: 'App download QR code placeholder' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Login page' })).not.toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

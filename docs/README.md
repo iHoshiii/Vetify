@@ -22,14 +22,15 @@ Feature descriptions and setup prompts are maintained in their own repositories.
 - [Main deployment index and picture](main-deployment/README.md)
 - [Main extraction checklist](main-deployment/extraction-checklist.md)
 - [Completed Books/Anatomy extraction](main-deployment/books-anatomy-extraction.md)
+- [Meal Planner app page and extraction](main-deployment/meal-planner-app-page.md)
 - [Central authentication contract](main-deployment/shared-auth.md)
 - [AWS preparation](main-deployment/aws-prepare.md)
 - [AWS deployment](main-deployment/aws-deploy.md)
 - [Live acceptance](main-deployment/aws-acceptance.md)
 - [Implemented WebSocket design](serverless-realtime.md)
 
-The diagram shows target ownership. The current main build still includes feature
-code. Planner/main auth contract versions differ, and external web SSO is pending.
+The diagram shows target ownership. The current main build still includes Blog
+feature code. Planner/main auth contract versions differ, and external web SSO is pending.
 None of these documents establishes a deployed production service.
 
 ## Historical owner records

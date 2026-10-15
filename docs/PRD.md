@@ -11,7 +11,8 @@ appointments and communications. It is the account authority for separate apps.
 Meal Planner, Books, Anatomy and Blog are independently owned features; main
 retains launch links and their approved authentication/capability interfaces.
 Books/Anatomy are extracted, with protected launch pages remaining in main.
-Planner/Blog still need extraction before a main-only release.
+Planner has a public app introduction with download/photo placeholders and account
+guidance; its feature code is extracted. Blog still needs extraction before a main-only release.
 
 ## Actors
 

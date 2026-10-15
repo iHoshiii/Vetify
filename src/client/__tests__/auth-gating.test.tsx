@@ -59,7 +59,7 @@ function renderGated(path: string) {
 }
 
 describe('RequireAuth', () => {
-  it.each(['/book-appointment', '/map', '/planner', '/anatomy', '/professionals/apply'])(
+  it.each(['/book-appointment', '/map', '/anatomy', '/professionals/apply'])(
     'sends an anonymous visitor from %s to the login page',
     (path) => {
       renderGated(path);
@@ -73,7 +73,7 @@ describe('RequireAuth', () => {
     const { readAuthState } = await import('../lib/auth');
     vi.mocked(readAuthState).mockReturnValue(SESSION);
 
-    renderGated('/planner');
+    renderGated('/book-appointment');
 
     expect(screen.getByText('gated content')).toBeDefined();
     expect(screen.queryByText('login page')).toBeNull();

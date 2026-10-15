@@ -1,8 +1,8 @@
 # Extract features before building a main-only release
 
-Books/Anatomy code extraction is complete; Planner/Blog extraction is pending.
+Planner/Books/Anatomy code extraction is complete; Blog extraction is pending.
 No stored database data was removed. See [the extraction record](books-anatomy-extraction.md).
-The checklist describes the full split; Books/Anatomy actions are already applied.
+The checklist describes the full split; Planner/Books/Anatomy actions are already applied.
 
 ## 1. Preserve the implementations
 
@@ -25,12 +25,12 @@ an application, not an empty web scaffold. Main docs do not own feature setup.
 
 ## 2. Assign ownership
 
-| Feature | Original source roots                                                                                                                         | Main integration that must change                                      |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Planner | `src/client/pages/planner/`, `src/shared/meal-*.ts`, pet/nutrition schemas; `/pets`, `/meal-plans`, `/nutrition-observations` APIs and models | Eager Planner import, account pet export, indexes, dev/seed scripts    |
-| Books   | `src/client/pages/books/`, `src/shared/books.ts`, Books API/model, screening/review/PDF services                                              | Professional Books and affiliate pages, worker build, scanner, indexes |
-| Anatomy | `src/client/pages/anatomy/`, `src/client/types/anatomy.ts`, `public/anatomy/`                                                                 | Frontend route and asset copying                                       |
-| Blog    | `src/client/pages/blogs/`, Blog service/model, public/admin APIs and admin editor                                                             | Admin posts navigation, dashboard counts/charts, indexes               |
+| Feature | Original source roots                                                                            | Main integration that must change                                            |
+| ------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Planner | Feature UI, shared pet/meal/nutrition schemas, data APIs/models removed                          | Public `/planner` app page; retain central auth and dev/seed account helpers |
+| Books   | `src/client/pages/books/`, `src/shared/books.ts`, Books API/model, screening/review/PDF services | Professional Books and affiliate pages, worker build, scanner, indexes       |
+| Anatomy | `src/client/pages/anatomy/`, `src/client/types/anatomy.ts`, `public/anatomy/`                    | Frontend route and asset copying                                             |
+| Blog    | `src/client/pages/blogs/`, Blog service/model, public/admin APIs and admin editor                | Admin posts navigation, dashboard counts/charts, indexes                     |
 
 The feature repositories contain their detailed maps. Shared files contain mixed
 features: extract the needed definitions instead of deleting the whole file.
@@ -62,8 +62,7 @@ features: extract the needed definitions instead of deleting the whole file.
 5. Split indexing in `src/server/models/index.ts`. Main startup/Lambda must not
    create Books, Blog, pet, meal, feeding or nutrition collections/indexes.
    Keep auth/native/subscription/professional/appointment/realtime indexes.
-   Preserve a common calendar/time-zone helper: main `account-today.ts` currently
-   imports `@shared/planner-date` despite that helper's feature-specific name.
+   Planner-only `account-today.ts` and `planner-date.ts` are removed; no main caller used them.
 6. Remove the Books scanner import/start/stop in `src/server/index.ts`.
    Move its durable review scheduling to the Books repository.
 7. Remove the PDF worker entry from `scripts/build-lambda.mjs` and
@@ -71,8 +70,8 @@ features: extract the needed definitions instead of deleting the whole file.
 8. Main `src/server/services/metrics.service.ts` currently reads Blog counts.
    Remove those metrics with matching schema/chart changes, or consume an
    explicit optional Blog aggregate API. Do not query Blog's database directly.
-9. Main `src/server/routes/v1/account.route.ts` exports pets. Replace this with
-   coordinated export across apps, or clearly scope the export to main data.
+9. Main `src/server/routes/v1/account.route.ts` now exports only main account and
+   preferences. Planner data export belongs to the Planner app.
 10. Inventory feature-only libraries with a dependency graph. Remove only those
     no main component needs. Vite copies `public/` even if no route imports it,
     so move Anatomy assets out before building main.

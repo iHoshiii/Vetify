@@ -25,6 +25,22 @@ describe('extracted feature boundary', () => {
     expect(names).toEqual(expect.arrayContaining(['users', 'appointments', 'professionals']));
   });
 
+  it.each(['/pets', '/meal-plans', '/nutrition-observations'])(
+    'no longer mounts mobile Planner data at %s',
+    async (path) => {
+      const response = await request(app).get(`/api/v1${path}`);
+      expect(response.status).toBe(404);
+      expect(response.headers['content-type']).toMatch(/application\/json/);
+    }
+  );
+
+  it('keeps mobile Planner collections out of main startup', async () => {
+    const names = (await getDb().listCollections().toArray()).map(({ name }) => name);
+    for (const name of ['pets', 'meal_plans', 'feeding_logs', 'nutrition_observations']) {
+      expect(names).not.toContain(name);
+    }
+  });
+
   it('preserves the main health API', async () => {
     const response = await request(app).get('/api/v1/health');
     expect(response.status).toBe(200);

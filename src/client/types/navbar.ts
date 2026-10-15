@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
 export const TOOLS_ITEMS: ToolItem[] = [
   { label: 'Chat', href: '/messages', desc: 'Your conversations' },
   { label: 'Ask AI', href: '/chat', desc: 'Chat with the pet assistant' },
-  { label: 'Meal Planner', href: '/planner', desc: 'Custom pet meal plans' },
+  { label: 'Meal Planner app', href: '/planner', desc: 'Explore the mobile meal planner' },
   { label: 'Anatomy', href: '/anatomy', desc: 'Explore pet anatomy' },
   { label: 'FAQs', href: '/help', desc: 'Common questions answered' },
 ];

@@ -29,7 +29,7 @@ Main retains accounts/auth identities, verification/linking challenges, browser
 and native sessions, subscription authority, professional inquiries/profiles,
 clinics, appointments, messages, notifications, admin audits and realtime state.
 Only main knows credentials and provider connections.
-Planner/Blog collections and APIs still mounted today are extraction leftovers,
+Blog collections and APIs still mounted today are extraction leftovers,
 not target main responsibilities. Their removal must also update exports,
 indexes, statistics, navigation, worker builds and shared schema consumers.
 

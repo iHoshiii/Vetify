@@ -96,14 +96,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="planner"
-          element={
-            <RequireAuth>
-              <PlannerPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="planner" element={<PlannerPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
 

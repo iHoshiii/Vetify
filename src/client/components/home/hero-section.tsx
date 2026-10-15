@@ -31,8 +31,8 @@ export default function HeroSection() {
           </h1>
 
           <p className="hero-sub mt-6 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-            Vetify brings symptom triage, meal planning, anatomy education, and nearby veterinary
-            search into one simple place for busy pet owners.
+            Vetify brings veterinary guidance, nearby clinics and professional care together, with
+            connected apps for everyday pet care.
           </p>
 
           <div className="hero-cta mt-10 flex flex-wrap justify-center gap-3">

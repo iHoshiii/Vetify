@@ -32,8 +32,8 @@ Vite proxies `/api` and local `/socket.io`.
 | `npm.cmd run test:lambda`                              | Isolated packaged Lambda smoke check            |
 | `npm.cmd run build:client:prod -- --env-file=env.prod` | Isolated production frontend build              |
 
-Current builds still include Planner/Blog. Books/Anatomy and PDF packaging are
-removed. Verify the remaining extraction
+Current builds still include Blog. Planner feature code, Books/Anatomy and PDF
+packaging are removed. `/planner` is a public app introduction. Verify the remaining extraction
 gate before uploading them as main-only artifacts. Builds do not deploy AWS.
 The broad server type check still includes obsolete auth files/tests with known
 errors; the Lambda check covers its actual runtime import graph.

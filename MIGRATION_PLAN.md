@@ -38,8 +38,9 @@ concurrent-refresh behavior must remain intact.
 
 - Books/Anatomy code and assets are extracted; main retains protected launch pages.
 - Books API, scanner, index creation, PDF worker and PDF.js dependency are removed.
-- Planner/Blog UI, APIs and index initialization remain embedded.
-- Main account export reads Planner pets; admin statistics read Blog records.
+- Planner feature UI, APIs and indexes are removed; `/planner` introduces the app.
+- Main account export contains only main data; admin statistics still read Blog records.
+- Blog UI, APIs and index initialization remain embedded.
 - Professional Books/affiliate links now lead to external launch pages; unset
   destinations show an unavailable state.
 - Planner exists as an Expo/native application with its own API. Its current
