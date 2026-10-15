@@ -23,7 +23,7 @@ export default function MessageMeta({
   return (
     <div
       data-testid="message-meta"
-      className={`absolute top-full whitespace-nowrap pt-0.5 text-[10px] ${
+      className={`static top-full max-w-[calc(100vw-7rem)] whitespace-normal pt-0.5 text-[10px] [overflow-wrap:anywhere] sm:absolute sm:whitespace-nowrap ${
         mine ? 'right-0 text-right' : 'left-0 text-left'
       }`}
     >
