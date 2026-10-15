@@ -4,8 +4,9 @@
 
 1. Refresh nested main routes. Confirm assets, logo and available skeletons load.
 2. Visit a nonexistent API route. It must return JSON 404, not the SPA homepage.
-3. Confirm Meal Planner, Books, Anatomy and Blog show configured external launch
-   or unavailable states. No missing local modules or broken destination links.
+3. Confirm `/planner` shows the public app page with its download QR, six highlights
+   and account guidance. Confirm Books, Anatomy and Blog show configured external
+   launch or unavailable states. No missing modules or broken destination links.
 4. Sign up a test account through main. Receive a six-digit email code, wait
    sixty seconds before resend, expire it at five minutes and reject the old
    code after resend. Confirm unverified access restrictions.

@@ -7,7 +7,8 @@ clinic discovery, appointments, messaging, video-call signalling and AI assistan
 Meal Planner, Books, Anatomy and Blog belong to separate repositories. Main
 provides their account authority and launch links; each owns its feature data.
 Books and Anatomy implementations have been removed from this source tree.
-Meal Planner and Blog remain embedded pending extraction.
+Meal Planner now has a public app introduction at `/planner`; its feature code
+has been removed. Blog remains embedded pending extraction.
 Books/Anatomy entry pages use VITE_BOOKS_ORIGIN and VITE_ANATOMY_ORIGIN;
 blank values show unavailable states. See [the extraction record](docs/main-deployment/books-anatomy-extraction.md).
 Current build output is not yet a verified main-only release.

@@ -2,7 +2,8 @@
 
 This is an inspected deployment plan, not a completed extraction or AWS deployment.
 Books/Anatomy code is removed from main and preserved in independent repositories.
-The current builds still include Planner/Blog code.
+Planner feature code is removed; `/planner` is a public app introduction.
+The current builds still include Blog code.
 Do not upload them as a main-only release until the extraction checks pass.
 
 ## Scope agreed with the owner
@@ -58,9 +59,11 @@ boundary, extraction work and central authentication requirements.
 The plan was checked against the existing frontend routes, API mounts, shared
 schemas, model indexing, Lambda build, authentication introspection, Books
 approval checks, Anatomy rendering and local background scanners.
-Main currently imports Planner/Blog frontends and mounts their APIs. Books and
+Main currently imports the Blog frontend and mounts its APIs. Books and
 Anatomy have external launch pages; the Books worker, scanner and indexes are removed.
 See [the completed extraction record](books-anatomy-extraction.md).
+Planner has a public app page, with its data API/models removed. See
+[the Planner page and extraction record](meal-planner-app-page.md).
 
 Books/Anatomy extraction has targeted main regression and packaged-runtime checks.
 The new shared web sign-in flow and main-only package must receive their own

@@ -61,7 +61,8 @@ The reachable Lambda runtime graph typechecks separately and builds successfully
 
 ## Remaining work
 
-Planner and Blog remain embedded. This is not yet a complete main-only release.
+Blog remains embedded. Planner feature code was subsequently removed and replaced
+by [a public app page](meal-planner-app-page.md). This is not yet a complete main-only release.
 Main shared browser authentication/OIDC and Books professional capabilities are
 still missing, so independent apps cannot yet reuse real accounts completely.
 Stored library documents were not moved or deleted. Review any feature-only data
