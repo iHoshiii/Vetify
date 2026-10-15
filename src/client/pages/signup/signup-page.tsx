@@ -15,6 +15,7 @@ import {
 import EmailVerificationForm from './_components/email-verification-form';
 import SignupForm from './_components/signup-form';
 import SocialLogin from './_components/social-login';
+import SocialSignupNotice from './_components/social-signup-notice';
 
 export default function SignupPage() {
   const location = useLocation();
@@ -70,6 +71,7 @@ export default function SignupPage() {
           </>
         ) : (
           <>
+            <SocialSignupNotice />
             <SignupForm onSignup={signup} />
 
             <div className="relative my-8 animate-fadeIn delay-400">
@@ -81,7 +83,7 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <SocialLogin onLogin={(provider) => startSocialLogin(provider, from)} />
+            <SocialLogin onLogin={(provider) => startSocialLogin(provider, from, 'signup')} />
 
             <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
               Already have an account?{' '}

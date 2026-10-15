@@ -16,8 +16,10 @@ export function readRefreshCookie(req: Request): string | undefined {
   return jar?.[env.REFRESH_COOKIE_NAME] ?? jar?.refresh_token;
 }
 
-export function redirectWithError(res: Response, reason: string): void {
+export function redirectWithError(res: Response, reason: string, signup = false): void {
   const url = new URL(env.OAUTH_FAILURE_REDIRECT);
+  if (signup) url.pathname = '/signup';
+  url.searchParams.set('error', 'oauth');
   url.searchParams.set('reason', reason);
   res.redirect(url.toString());
 }

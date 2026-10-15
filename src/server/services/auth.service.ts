@@ -25,6 +25,7 @@ import {
   type UserPatch,
 } from '../models/users';
 import { OAuthError, type OAuthProfile } from './oauth.service';
+import { AppError } from '../utils/AppError';
 
 export type AccessTokenClaims = {
   sub: string;
@@ -84,7 +85,8 @@ export function setRefreshCookie(res: Response, token: string, expiresAt: Date):
 // Resolve connected identities first; an email match requires explicit linking from Settings.
 export async function findOrCreateOAuthUser(
   provider: Exclude<AuthProvider, 'local'>,
-  profile: OAuthProfile
+  profile: OAuthProfile,
+  signup = false
 ): Promise<User> {
   if (typeof profile.providerId !== 'string' || !profile.providerId.trim()) {
     throw new OAuthError('The provider did not return a valid account identity.');
@@ -95,6 +97,11 @@ export async function findOrCreateOAuthUser(
     : await findUserByProviderId(provider, profile.providerId);
   if (identity && !existing) throw new OAuthError('The connected account is no longer available.');
   if (existing) {
+    if (signup)
+      throw AppError.conflict(
+        'Account already exists. Please log in.',
+        `account-exists-${provider}`
+      );
     if (!identity)
       await insertAuthIdentity({ user: existing._id, provider, providerId: profile.providerId });
     // A professional uses the approved name on their licence.
@@ -124,6 +131,7 @@ export async function findOrCreateOAuthUser(
 
   const byEmail = await findUserByEmail(profile.email);
   if (byEmail) {
+    if (signup) throw AppError.conflict('Account already exists. Please log in.', 'account-exists');
     throw new OAuthError(
       'Sign in with your existing method, then connect your social login in Settings > Security.',
       'account-link-required'

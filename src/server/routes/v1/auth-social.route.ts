@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
+import { MongoServerError } from 'mongodb';
 import { env } from '../../config/env';
 import { recordActivity } from '../../models/activity-event';
 import { createNativeSocialGrant } from '../../models/native-social-grant';
@@ -28,6 +29,7 @@ import {
   isOAuthProviderName,
 } from '../../services/oauth.service';
 import { fail } from '../../utils/response';
+import { AppError } from '../../utils/AppError';
 import { accountBlockReason, redirectWithError } from './auth-helpers';
 const router = Router();
 router.get('/:provider', (req, res) => {
@@ -37,19 +39,24 @@ router.get('/:provider', (req, res) => {
   }
 
   const native = readNativeSocialContext(req);
+  const intent = !native && req.query.intent === 'signup' ? 'signup' : 'login';
   if (native) res.setHeader('Cache-Control', 'no-store');
   const config = getProviderConfig(name);
   if (!config) {
     console.warn(`[auth] ${name} login requested but not configured`);
     return native
       ? res.redirect(nativeSocialErrorUrl(native, 'unconfigured'))
-      : redirectWithError(res, 'unconfigured');
+      : redirectWithError(res, 'unconfigured', intent === 'signup');
   }
 
   const state = crypto.randomBytes(16).toString('base64url');
   const { verifier, challenge } = createPkcePair();
 
-  res.cookie(OAUTH_STATE_COOKIE, sealState(name, state, verifier, native), stateCookieOptions);
+  res.cookie(
+    OAUTH_STATE_COOKIE,
+    sealState(name, state, verifier, native, undefined, intent),
+    stateCookieOptions
+  );
   res.redirect(buildAuthorizeUrl(name, config, state, challenge));
 });
 
@@ -80,7 +87,7 @@ router.get('/:provider/callback', async (req, res) => {
   const redirectError = (reason: string) =>
     sealed.native
       ? res.redirect(nativeSocialErrorUrl(sealed.native, reason))
-      : redirectWithError(res, reason);
+      : redirectWithError(res, reason, sealed.intent === 'signup');
   if (sealed.native) res.setHeader('Cache-Control', 'no-store');
 
   if (typeof req.query.error === 'string') return redirectError('denied');
@@ -96,7 +103,7 @@ router.get('/:provider/callback', async (req, res) => {
 
   try {
     const profile = await fetchProfileFromCode(name, config, code, sealed.codeVerifier);
-    const user = await findOrCreateOAuthUser(name, profile);
+    const user = await findOrCreateOAuthUser(name, profile, sealed.intent === 'signup');
 
     // Same block as the password path. Without it, "Continue with Google" is a
     // way around a ban.
@@ -115,6 +122,12 @@ router.get('/:provider/callback', async (req, res) => {
 
     return res.redirect(env.OAUTH_SUCCESS_REDIRECT);
   } catch (err) {
+    if (sealed.intent === 'signup') {
+      if (err instanceof AppError && err.reason?.startsWith('account-exists'))
+        return redirectError(err.reason);
+      if (err instanceof MongoServerError && err.code === 11000)
+        return redirectError('account-exists');
+    }
     console.error(`[auth] ${name} callback failed:`, (err as Error).message);
     return redirectError(err instanceof OAuthError ? err.reason ?? 'provider' : 'server');
   }

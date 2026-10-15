@@ -18,6 +18,7 @@ export type OAuthStatePayload = {
   expiresAt: number;
   native?: NativeSocialContext;
   accountAuth?: AccountAuthContext;
+  intent?: 'login' | 'signup';
 };
 
 // Falls back to the access-token secret so a missing OAUTH_STATE_SECRET degrades
@@ -49,7 +50,8 @@ export function sealState(
   state: string,
   codeVerifier: string,
   native?: NativeSocialContext,
-  accountAuth?: AccountAuthContext
+  accountAuth?: AccountAuthContext,
+  intent?: 'login' | 'signup'
 ): string {
   const payload: OAuthStatePayload = {
     provider,
@@ -58,6 +60,7 @@ export function sealState(
     expiresAt: Date.now() + STATE_TTL_MS,
     ...(native ? { native } : {}),
     ...(accountAuth ? { accountAuth } : {}),
+    ...(intent ? { intent } : {}),
   };
   const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   return `${encoded}.${sign(encoded)}`;
@@ -100,6 +103,8 @@ export function unsealState(raw: unknown): OAuthStatePayload | null {
     return null;
   }
   if (!Number.isFinite(payload.expiresAt) || payload.expiresAt <= Date.now()) return null;
+  if (payload.intent !== undefined && payload.intent !== 'login' && payload.intent !== 'signup')
+    return null;
   if (
     payload.native !== undefined &&
     !nativeSocialContextSchema.safeParse(payload.native).success
