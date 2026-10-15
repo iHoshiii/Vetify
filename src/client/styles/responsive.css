@@ -82,3 +82,28 @@ section[id] {
     transform: none;
   }
 }
+
+@media (max-width: 639px) {
+  .relative > .message-meta {
+    width: max-content;
+    white-space: normal;
+  }
+
+  .relative:has(> .message-meta) {
+    margin-bottom: 2rem;
+  }
+
+  .relative:has(> .message-meta > p:nth-child(2)) {
+    margin-bottom: 3rem;
+  }
+}
+
+@media (max-width: 319px) {
+  .relative:has(> .message-meta) {
+    margin-bottom: 3rem;
+  }
+
+  .relative:has(> .message-meta > p:nth-child(2)) {
+    margin-bottom: 4rem;
+  }
+}
