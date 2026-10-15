@@ -25,8 +25,7 @@ export default function HeroSection() {
           </span>
 
           <h1 className="hero-title mt-6 text-4xl font-black leading-[1] tracking-tight text-vet-ink sm:text-5xl lg:text-6xl">
-            Health guidance
-            <br className="hidden sm:block" />
+            Health guidance <br className="hidden sm:block" />
             for pets you love.
           </h1>
 
