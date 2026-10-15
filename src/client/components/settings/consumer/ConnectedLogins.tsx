@@ -6,8 +6,8 @@ import {
 } from '@shared/account-auth';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { LOGIN_METHOD_NAMES } from './account-auth-feedback';
-import LinkMethodCodeForm from './LinkMethodCodeForm';
-import AddPasswordForm from './AddPasswordForm';
+import LinkMethodDialog from './LinkMethodDialog';
+import { LINK_METHOD_BUTTON } from './link-method-styles';
 
 export default function ConnectedLogins({
   methods,
@@ -21,6 +21,14 @@ export default function ConnectedLogins({
     methods.passwordReady ? 'local' : null
   );
   const [passwordReady, setPasswordReady] = useState(methods.passwordReady);
+  const selectedLinked =
+    selected === 'local'
+      ? methods.hasPassword
+      : selected !== null && methods.providers.includes(selected);
+  const close = () => {
+    setSelected(null);
+    setPasswordReady(false);
+  };
   return (
     <div className="space-y-3">
       <p className="text-sm leading-6 text-slate-600">
@@ -41,12 +49,12 @@ export default function ConnectedLogins({
                 <button
                   type="button"
                   aria-label={`Link ${LOGIN_METHOD_NAMES[method]}`}
-                  disabled={!available || selected !== null}
+                  disabled={!available}
                   onClick={() => {
                     setSelected(method);
                     setPasswordReady(false);
                   }}
-                  className="rounded-lg bg-teal-800 px-4 py-2 text-sm font-bold text-white disabled:opacity-45"
+                  className={LINK_METHOD_BUTTON}
                 >
                   Link
                 </button>
@@ -59,42 +67,26 @@ export default function ConnectedLogins({
                   : `${LOGIN_METHOD_NAMES[method]} sign-in is currently unavailable.`}
               </p>
             )}
-            {selected === method &&
-              !linked &&
-              (method === 'local' && passwordReady ? (
-                <div className="space-y-3">
-                  <AddPasswordForm
-                    methods={{ ...methods, passwordReady: true }}
-                    onProofExpired={() => {
-                      setPasswordReady(false);
-                      onRefresh();
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelected(null);
-                      setPasswordReady(false);
-                    }}
-                    className="text-sm font-semibold text-slate-600"
-                  >
-                    Cancel linking
-                  </button>
-                </div>
-              ) : (
-                <LinkMethodCodeForm
-                  method={method}
-                  email={user?.email ?? ''}
-                  onClose={() => setSelected(null)}
-                  onVerified={() => {
-                    setPasswordReady(true);
-                    onRefresh();
-                  }}
-                />
-              ))}
           </div>
         );
       })}
+      {selected && !selectedLinked && (
+        <LinkMethodDialog
+          method={selected}
+          methods={methods}
+          email={user?.email ?? ''}
+          passwordReady={passwordReady}
+          onClose={close}
+          onVerified={() => {
+            setPasswordReady(true);
+            onRefresh();
+          }}
+          onProofExpired={() => {
+            setPasswordReady(false);
+            onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }
