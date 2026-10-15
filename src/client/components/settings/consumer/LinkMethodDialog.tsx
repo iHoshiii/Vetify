@@ -29,6 +29,9 @@ export default function LinkMethodDialog({
 }: Props) {
   const titleId = useId();
   const dialogRef = useFocusTrap<HTMLDivElement>(onClose);
+  useLayoutEffect(() => {
+    if (passwordReady) dialogRef.current?.querySelector('input')?.focus();
+  }, [passwordReady, dialogRef]);
   useBodyScrollLock();
   useLayoutEffect(() => {
     const previousFocus = document.activeElement;

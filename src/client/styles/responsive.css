@@ -34,6 +34,7 @@ body {
 }
 
 :where(.fixed.inset-0):has(> [role='dialog'], > [role='alertdialog']) {
+  margin: 0 !important;
   height: var(--viewport-height, 100dvh);
   bottom: auto;
 }
