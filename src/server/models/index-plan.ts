@@ -1,0 +1,66 @@
+import type { IndexDescription } from 'mongodb';
+import { APPOINTMENTS_COLLECTION, APPOINTMENT_INDEXES } from './appointments';
+import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-event';
+import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
+import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
+import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
+import {
+  MESSAGES_COLLECTION,
+  MESSAGE_INDEXES,
+  THREADS_COLLECTION,
+  THREAD_INDEXES,
+} from './messages';
+import { NOTIFICATIONS_COLLECTION, NOTIFICATION_INDEXES } from './notifications';
+import { PETS_COLLECTION, PET_INDEXES } from './pets';
+import { MEAL_PLANS_COLLECTION, MEAL_PLAN_INDEXES } from './meal-plans';
+import { FEEDING_LOGS_COLLECTION, FEEDING_LOG_INDEXES } from './feeding-logs';
+import {
+  NUTRITION_OBSERVATIONS_COLLECTION,
+  NUTRITION_OBSERVATION_INDEXES,
+} from './nutrition-observations';
+import {
+  PROFESSIONAL_CAPTURES_COLLECTION,
+  PROFESSIONAL_CAPTURE_INDEXES,
+} from './professional-captures';
+import {
+  PROFESSIONAL_INQUIRIES_COLLECTION,
+  PROFESSIONAL_INQUIRY_INDEXES,
+} from './professional-inquiries';
+import { PROFESSIONALS_COLLECTION, PROFESSIONAL_INDEXES } from './professionals';
+import { REFRESH_TOKENS_COLLECTION, REFRESH_TOKEN_INDEXES } from './refresh-token';
+import { NATIVE_HANDOFF_COLLECTION, NATIVE_HANDOFF_INDEXES } from './native-handoff';
+import { NATIVE_SESSION_COLLECTION, NATIVE_SESSION_INDEXES } from './native-session';
+import { NATIVE_SOCIAL_GRANT_COLLECTION, NATIVE_SOCIAL_GRANT_INDEXES } from './native-social-grant';
+import { REVIEW_REPORTS_COLLECTION, REVIEW_REPORT_INDEXES } from './review-reports';
+import { USERS_COLLECTION, USER_INDEXES } from './users';
+import { EMAIL_VERIFICATIONS_COLLECTION, EMAIL_VERIFICATION_INDEXES } from './email-verification';
+import { AUTH_IDENTITIES_COLLECTION, AUTH_IDENTITY_INDEXES } from './auth-identities';
+import { ACCOUNT_LINK_COLLECTION, ACCOUNT_LINK_INDEXES } from './account-link-verification';
+import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions';
+export const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
+  { collection: USERS_COLLECTION, indexes: USER_INDEXES },
+  { collection: EMAIL_VERIFICATIONS_COLLECTION, indexes: EMAIL_VERIFICATION_INDEXES },
+  { collection: AUTH_IDENTITIES_COLLECTION, indexes: AUTH_IDENTITY_INDEXES },
+  { collection: ACCOUNT_LINK_COLLECTION, indexes: ACCOUNT_LINK_INDEXES },
+  { collection: SUBSCRIPTIONS_COLLECTION, indexes: SUBSCRIPTION_INDEXES },
+  { collection: APPOINTMENTS_COLLECTION, indexes: APPOINTMENT_INDEXES },
+  { collection: REFRESH_TOKENS_COLLECTION, indexes: REFRESH_TOKEN_INDEXES },
+  { collection: NATIVE_HANDOFF_COLLECTION, indexes: NATIVE_HANDOFF_INDEXES },
+  { collection: NATIVE_SESSION_COLLECTION, indexes: NATIVE_SESSION_INDEXES },
+  { collection: NATIVE_SOCIAL_GRANT_COLLECTION, indexes: NATIVE_SOCIAL_GRANT_INDEXES },
+  { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
+  { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
+  { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
+  { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
+  { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
+  { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
+  { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },
+  { collection: PETS_COLLECTION, indexes: PET_INDEXES },
+  { collection: MEAL_PLANS_COLLECTION, indexes: MEAL_PLAN_INDEXES },
+  { collection: FEEDING_LOGS_COLLECTION, indexes: FEEDING_LOG_INDEXES },
+  { collection: NUTRITION_OBSERVATIONS_COLLECTION, indexes: NUTRITION_OBSERVATION_INDEXES },
+  { collection: PROFESSIONALS_COLLECTION, indexes: PROFESSIONAL_INDEXES },
+  { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
+  { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
+  { collection: REVIEW_REPORTS_COLLECTION, indexes: REVIEW_REPORT_INDEXES },
+];

@@ -15,7 +15,7 @@ fi
 release=$(mktemp -d "/opt/vetify/releases/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")
 chmod 0755 "$release"
 tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$release"
-for required in server/index.js server/book-pdf.worker.js server/package-lock.json public/index.html config/verify.sh config/Caddyfile config/vetify.service; do
+for required in server/index.js server/package-lock.json public/index.html config/verify.sh config/Caddyfile config/vetify.service; do
   [[ -f "$release/$required" ]] || { echo "Release missing $required"; exit 1; }
 done
 chown -R vetify:vetify "$release/server"

@@ -28,6 +28,12 @@ linked login methods and `POST /api/v1/auth/introspect`.
 Introspection returns user ID, role/status, subscription, region and a validity
 window capped at thirty seconds. It checks an attached native session.
 
+The existing `vetify-meal-planner` repository now requires introspection version 2;
+main still returns version 1. Its version 2 contract requires a verified issuer,
+Planner audience and provider/email-verification attributes. Align main and
+Planner configuration and run joint tests before declaring compatibility.
+Preserve existing browser/native flows while adding this versioned boundary.
+
 This does **not** establish a complete web SSO protocol for four external apps.
 In particular, the current introspection payload does not expose professional
 approval or email verification, and the guard does not enforce a distinct

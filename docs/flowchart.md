@@ -1,60 +1,55 @@
+# Main Vetify user and deployment flows
+
+Updated 14 October 2026. Diagrams describe main responsibilities; external-app
+web SSO and main-only extraction remain pending implementation.
+
+## Signup, login and linking
+
+```mermaid
 flowchart TD
-%% Styling Configuration
-classDef startEnd fill:#ECEFF1,stroke:#37474F,stroke-width:2px,color:#000;
-classDef menu fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,color:#000;
-classDef ai fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#000;
-classDef geo fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,color:#000;
-classDef data fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#000;
+    Entry[Main account screen] --> Choice{Signup or login?}
+    Choice -->|Signup| Fields[Name, email, password, confirmation]
+    Fields --> Existing{Identity already registered?}
+    Existing -->|Yes| Duplicate[Account already exist. Please login]
+    Existing -->|No| Send[Send six-digit code]
+    Send --> Verify[Verify within five minutes]
+    Verify --> Verified[Verified main account]
+    Send --> Resend[Resend after sixty seconds]
+    Resend --> Replace[Invalidate old code and send replacement]
+    Replace --> Verify
+    Choice -->|Login| Method[Password or registered social provider]
+    Method --> Known{Known account and linked method?}
+    Known -->|Unknown account| Missing[Create an account first to use the app.]
+    Known -->|Unlinked method| Original[Authenticate with existing method]
+    Original --> Link[Settings: prove ownership and link method]
+    Known -->|Valid credentials| Verified
+    Verified --> Main[Main app]
+```
 
-    Start([User Opens Vetify App]):::startEnd
+Failed code/credential/delivery checks remain on a visible retry/error state.
+Unverified, blocked, revoked or deactivated accounts cannot bypass access checks.
 
-    %% App Features Navigation Hub
-    Start --> NavigationHub{Select Feature / Tab}
+## Main consultations and external launches
 
-    %% Feature 1: AI Vet Chat
-    NavigationHub -->|AI Vet Interface| Chat[User submits pet health question]:::ai
-    Chat --> Router{LangChain AI Agent:<br/>Analyze Query Complexity}:::ai
+```mermaid
+flowchart TD
+    Home[Main website] --> Guidance[AI Vet Assistant]
+    Home --> Directory[Clinic map and professional discovery]
+    Directory --> Booking[Virtual or onsite appointment]
+    Booking --> Decision[Professional confirmation or decline]
+    Decision --> Confirmed[Confirmed appointment]
+    Confirmed --> Reminders[Durable reminder and delivery jobs]
+    Confirmed --> Messages[Participant-only messages]
+    Confirmed --> Room[Authorized call window]
+    Room --> Signals[WebSocket signalling]
+    Signals --> Media[WebRTC media with TURN when needed]
+    Confirmed --> Completion[Completion and review]
+    Home --> External{External feature available?}
+    External -->|No| Unavailable[Clear unavailable state]
+    External -->|Yes, integration verified| Launch[Open independent app]
+    Launch --> Auth[Main identity flow and app-specific session]
+```
 
-    Router -->|Simple Case<br/>e.g., Diet, Habits| RAG[Fetch context from MongoDB]:::ai
-    RAG --> DisplayAnswer[AI displays safe first-aid advice]:::ai
-    DisplayAnswer --> Chat
-
-    Router -->|Complex / Emergency<br/>e.g., Poisoning, Bleeding| Alert[Trigger Critical Safety Warning]:::geo
-    Alert --> GeoLookup[Run PostGIS ST_DWithin Query using User Location]:::geo
-    GeoLookup --> DirectToVet[Display urgent message + Details of Nearest Vet Clinic]:::geo
-    DirectToVet --> MapTab
-
-    %% Feature 2: Map & Professional Search
-    NavigationHub -->|Map / Contact Tab| MapTab[Load Interactive Map Engine]:::geo
-    MapTab --> FetchVets[Query MongoDB for Registered Clinics & Doctors]:::geo
-    FetchVets --> PinVets[Render Location Pins on UI Map]:::geo
-    PinVets --> Interaction{User Interaction}
-    Interaction -->|Click Clinic Pin| GetRoute[Get routing directions to Physical Clinic]:::geo
-    Interaction -->|Click Doctor Profile| ContactDoc[Hire Licensed Veterinary Doctor]:::data
-
-    %% Feature 3: Interactive Anatomy Viewer
-    NavigationHub -->|Anatomy Tab| Anatomy[Select Animal: Dog, Cat, Bird...]:::data
-    Anatomy --> RenderSVG[Render Interactive 2D SVG Layers]:::data
-    RenderSVG --> ClickPart[User Taps Specific Organ/Bone System]:::data
-    ClickPart --> FetchBio[Pull structural health & function data from DB]:::data
-
-    %% Feature 4: Meal Planner
-    NavigationHub -->|Meal Plan Tab| InputPet[Enter Pet Details:<br/>Age, Weight, Species, Allergies]:::data
-    InputPet --> AIChef[LangChain queries Cloud LLM for Structured JSON]:::ai
-    AIChef --> SavePlan[Store dynamic weekly plan to MongoDB]:::data
-    SavePlan --> ShowCalendar[Render structured 7-Day feeding schedule]:::data
-
-    %% Feature 5: Blogs
-    NavigationHub -->|Blogs Tab| LoadBlogs[Fetch veterinary articles & clinic spotlights from DB]:::data
-
-    %% End nodes back to Hub
-    FetchBio --> NavigationHub
-    ShowCalendar --> NavigationHub
-    LoadBlogs --> NavigationHub
-
-    %% Apply Style Classes
-    class Start startEnd;
-    class NavigationHub menu;
-    class Chat,Router,RAG,DisplayAnswer,AIChef ai;
-    class Alert,GeoLookup,DirectToVet,MapTab,FetchVets,PinVets,GetRoute geo;
-    class ContactDoc,Anatomy,RenderSVG,ClickPart,FetchBio,InputPet,SavePlan,ShowCalendar,LoadBlogs data;
+Cancelled/declined appointments follow their allowed transitions and do not gain
+call access. External sites own their feature workflows and data.
+See [architecture](architecture.md) and [central auth](main-deployment/shared-auth.md).

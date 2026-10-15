@@ -1,10 +1,9 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { makeBookPdf } from '../src/server/test-utils/book-pdf.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 if (!process.env.npm_execpath) throw new Error('Run through npm run test:lambda');
@@ -17,13 +16,11 @@ try {
     'http.js',
     'websocket.js',
     'maintenance.js',
-    'book-pdf.worker.js',
     'package.json',
     'package-lock.json',
   ])
     await cp(join(root, 'dist/lambda', file), join(stage, file));
   await cp(join(root, 'scripts/lambda-smoke-runtime.mjs'), join(stage, 'smoke.mjs'));
-  await writeFile(join(stage, 'fixture.pdf'), makeBookPdf([['Veterinary PDF smoke test']]));
   execFileSync(
     process.execPath,
     [process.env.npm_execpath, 'ci', '--omit=dev', '--no-audit', '--no-fund'],
@@ -69,5 +66,5 @@ try {
   await rm(stage, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
 }
 console.log(
-  '[lambda] Isolated runtime install, HTTP signup/ticket, gateway delivery, cleanup and PDF worker passed.'
+  '[lambda] Isolated runtime install, HTTP signup/ticket, gateway delivery and cleanup passed.'
 );

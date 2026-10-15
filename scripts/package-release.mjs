@@ -42,7 +42,7 @@ const stage = resolve(root, 'dist/release');
 if (relative(root, stage) !== join('dist', 'release')) throw new Error('Invalid release directory');
 await rm(stage, { recursive: true, force: true });
 await mkdir(join(stage, 'server'), { recursive: true });
-for (const name of ['index.js', 'book-pdf.worker.js', 'package.json', 'package-lock.json']) {
+for (const name of ['index.js', 'package.json', 'package-lock.json']) {
   await cp(join(server, name), join(stage, 'server', name));
 }
 await cp(join(root, 'dist/client'), join(stage, 'public'), { recursive: true });

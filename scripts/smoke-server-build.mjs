@@ -6,7 +6,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { makeBookPdf } from '../src/server/test-utils/book-pdf.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = join(root, 'dist/server');
@@ -35,32 +34,13 @@ try {
     stdio: 'inherit',
   });
   const manifest = JSON.parse(await readFile(join(temporary, 'package.json'), 'utf8'));
-  assert.ok(manifest.dependencies['pdfjs-dist']);
+  assert.ok(!manifest.dependencies['pdfjs-dist']);
   for (const unwanted of ['react', 'vite', 'typescript', 'esbuild', 'husky'])
     assert.equal(manifest.dependencies[unwanted], undefined);
   await writeFile(
     join(temporary, '.env'),
     'GOOGLE_CLIENT_ID=unexpected-local-id\nGOOGLE_CLIENT_SECRET=unexpected-local-secret\n'
   );
-  const message = 'Vetify release smoke test';
-  await writeFile(join(temporary, 'worker-smoke.pdf'), makeBookPdf([[message]]));
-  const workerCheck = `
-    import {Worker} from 'node:worker_threads';
-    import {readFileSync} from 'node:fs';
-    const worker = new Worker(new URL('./book-pdf.worker.js', import.meta.url), {
-      workerData: new Uint8Array(readFileSync('worker-smoke.pdf')),
-      execArgv: [], resourceLimits: {maxOldGenerationSizeMb: 256}
-    });
-    const timer = setTimeout(()=>{worker.terminate();process.exitCode=1},30000);
-    worker.once('message', async result=>{clearTimeout(timer);console.log(JSON.stringify(result));await worker.terminate()});
-    worker.once('error', error=>{clearTimeout(timer);console.error(error);process.exitCode=1});
-  `;
-  const parsed = execFileSync(process.execPath, ['--input-type=module', '-e', workerCheck], {
-    cwd: temporary,
-    encoding: 'utf8',
-    timeout: 35_000,
-  });
-  assert.deepEqual(JSON.parse(parsed.trim()), { pages: [message] });
   db = await MongoMemoryServer.create();
   const port = await new Promise((resolve, reject) => {
     const server = createServer();
@@ -125,7 +105,7 @@ try {
   assert.equal(login.status, 401);
   assert.equal((await login.json()).reason, 'account-not-found');
   console.log(
-    '[smoke] Isolated runtime install, PDF worker, MongoDB connection, auth route and local-env isolation passed.'
+    '[smoke] Isolated runtime install, MongoDB connection, auth route and local-env isolation passed.'
   );
 } finally {
   if (child && child.exitCode === null) {

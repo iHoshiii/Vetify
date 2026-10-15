@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { Worker } from 'node:worker_threads';
 import { MongoClient, ObjectId } from 'mongodb';
 
 const frames = [];
@@ -23,7 +21,6 @@ const server = createServer((request, response) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 process.env.REALTIME_MANAGEMENT_ENDPOINT = `http://127.0.0.1:${server.address().port}/prod`;
 const dbClient = new MongoClient(process.env.MONGODB_URI);
-let worker;
 try {
   const { handler: http } = await import('./http.js');
   const { handler: websocket } = await import('./websocket.js');
@@ -117,21 +114,14 @@ try {
     .updateOne({ _id: 'smoke-connection' }, { $set: { expiresAt: Date.now() - 1 } });
   await maintenance({}, context());
   assert.ok(frames.some((frame) => frame.method === 'DELETE'));
-  worker = new Worker(new URL('./book-pdf.worker.js', import.meta.url), {
-    workerData: new Uint8Array(await readFile(new URL('./fixture.pdf', import.meta.url))),
-  });
-  const parsed = await new Promise((resolve, reject) => {
-    worker.once('message', resolve);
-    worker.once('error', reject);
-  });
-  assert.match(parsed.pages[0], /Veterinary PDF smoke test/);
-  await worker.terminate();
+  assert.equal((await invoke('/api/v1/books', {}, auth.accessToken)).statusCode, 404);
+  const collections = await dbClient.db().listCollections().toArray();
+  assert.ok(!collections.some(({ name }) => ['books', 'book_download_quotas'].includes(name)));
   await dbClient.close();
   server.close();
   process.exit(0);
 } catch (error) {
   console.error(error);
-  await worker?.terminate();
   await dbClient.close();
   server.close();
   process.exit(1);

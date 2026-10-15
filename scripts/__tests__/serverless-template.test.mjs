@@ -41,14 +41,9 @@ test('durable cleanup is scheduled and deployable code excludes private configur
   assert.equal(template.Globals.Function.Runtime, 'nodejs24.x');
   assert.equal(template.Globals.Function.CodeUri, '../../dist/lambda/');
   assert.equal(template.Resources.AppLogGroup.Properties.RetentionInDays, 7);
-  for (const name of [
-    'http.js',
-    'websocket.js',
-    'maintenance.js',
-    'book-pdf.worker.js',
-    'package-lock.json',
-  ])
+  for (const name of ['http.js', 'websocket.js', 'maintenance.js', 'package-lock.json'])
     assert.ok(existsSync(`dist/lambda/${name}`), name);
+  assert.ok(!existsSync('dist/lambda/book-pdf.worker.js'));
   for (const name of ['.env', 'env.prod', '.env.production'])
     assert.ok(!existsSync(`dist/lambda/${name}`), name);
   assert.match(

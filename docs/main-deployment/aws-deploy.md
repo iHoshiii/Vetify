@@ -104,9 +104,10 @@ VITE_REALTIME_URL=wss://<actual-websocket-api-id>.execute-api.ap-southeast-1.ama
 VITE_CARTO_KEY=
 ```
 
-Use the exact `RealtimeUrl` stack output. Future feature-launch URL variables
-must be explicitly implemented by the extraction work; inventing a VITE variable
-does not make current code use it. Leave future feature links unavailable for now.
+Use the exact `RealtimeUrl` stack output. Main supports `VITE_BOOKS_ORIGIN` and
+`VITE_ANATOMY_ORIGIN` for external launch links. Leave them blank until their
+separate destinations and shared login are ready. Planner/Blog launch settings
+are not yet implemented.
 
 ```powershell
 npm.cmd run build:client:prod -- --env-file=env.prod

@@ -8,13 +8,12 @@ import { RequireTermsAgreed } from '@/components/providers/RequireTermsAgreed';
 import RootLayout from '@/layouts/RootLayout';
 import HomePage from '@/pages/home-page';
 import PlannerPage from '@/pages/planner/planner-page';
+import ExternalAppPage from '@/pages/external-app/external-app-page';
 
 const AboutPage = lazy(() => import('@/pages/about/about-page'));
-const AnatomyPage = lazy(() => import('@/pages/anatomy/anatomy-page'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
 const BlogDetailPage = lazy(() => import('@/pages/blogs/blog-detail-page'));
 const BlogsPage = lazy(() => import('@/pages/blogs/blogs-page'));
-const BooksPage = lazy(() => import('@/pages/books/books-page'));
 const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
 const CallPage = lazy(() => import('@/pages/call/call-page'));
 const ChatPage = lazy(() => import('@/pages/chat/chat-page'));
@@ -50,7 +49,7 @@ export default function App() {
           path="books"
           element={
             <RequireAuth>
-              <BooksPage />
+              <ExternalAppPage feature="books" />
             </RequireAuth>
           }
         />
@@ -59,7 +58,7 @@ export default function App() {
           path="anatomy"
           element={
             <RequireAuth>
-              <AnatomyPage />
+              <ExternalAppPage feature="anatomy" />
             </RequireAuth>
           }
         />

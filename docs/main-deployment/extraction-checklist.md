@@ -1,39 +1,38 @@
 # Extract features before building a main-only release
 
-This checklist is planned work. No implementation or stored data was removed.
+Books/Anatomy code extraction is complete; Planner/Blog extraction is pending.
+No stored database data was removed. See [the extraction record](books-anatomy-extraction.md).
+The checklist describes the full split; Books/Anatomy actions are already applied.
 
 ## 1. Preserve the implementations
 
-Keep a Git checkpoint and create four local repositories. Attach the corresponding
-prompt and grant the coding agent read access to the existing Vetify source.
+The four sibling repositories already exist. Their descriptions and prompts
+belong there. Keep a source checkpoint and use the existing Vetify implementation.
 Copy actual feature code/assets and useful tests. Do not replace working behavior
 with code invented from a prompt. Do not copy `.env`, credentials, users,
 professional approvals or production databases.
 
-PowerShell, after replacing the parent directory if desired:
+Local locations under `C:\Users\Administrator\OneDrive\Desktop`:
 
-```powershell
-Set-Location C:\Users\Administrator\OneDrive\Desktop
-New-Item -ItemType Directory vetify-meal-planner,vetify-books,vetify-anatomy,vetify-blog
-git -C vetify-meal-planner init
-git -C vetify-books init
-git -C vetify-anatomy init
-git -C vetify-blog init
-```
+- `vetify-meal-planner`
+- `vetify-books`
+- `vetify-anatomy`
+- `vetify-blogs`
 
-Open each folder as its own workspace and paste its `PROMPT.md` into the agent.
-The prompt supplies source paths. Do not run scaffold commands in the main folder.
+Open the relevant existing folder as its own workspace and follow its local
+documentation. Preserve the existing native Planner architecture; it is already
+an application, not an empty web scaffold. Main docs do not own feature setup.
 
 ## 2. Assign ownership
 
-| Feature | Existing source roots                                                                                                                         | Main integration that must change                                      |
+| Feature | Original source roots                                                                                                                         | Main integration that must change                                      |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | Planner | `src/client/pages/planner/`, `src/shared/meal-*.ts`, pet/nutrition schemas; `/pets`, `/meal-plans`, `/nutrition-observations` APIs and models | Eager Planner import, account pet export, indexes, dev/seed scripts    |
 | Books   | `src/client/pages/books/`, `src/shared/books.ts`, Books API/model, screening/review/PDF services                                              | Professional Books and affiliate pages, worker build, scanner, indexes |
 | Anatomy | `src/client/pages/anatomy/`, `src/client/types/anatomy.ts`, `public/anatomy/`                                                                 | Frontend route and asset copying                                       |
 | Blog    | `src/client/pages/blogs/`, Blog service/model, public/admin APIs and admin editor                                                             | Admin posts navigation, dashboard counts/charts, indexes               |
 
-The feature prompts contain more detailed maps. Shared files contain mixed
+The feature repositories contain their detailed maps. Shared files contain mixed
 features: extract the needed definitions instead of deleting the whole file.
 
 ## 3. Keep these in main

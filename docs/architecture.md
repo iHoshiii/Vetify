@@ -1,136 +1,86 @@
-# Vetify — Architecture
+# Main Vetify architecture
 
-## Overview
+Updated 14 October 2026. This is main's architecture and its external interfaces.
+Independent feature implementation details live in their own repositories.
 
-Vite + React (client) and Express (server) monorepo under a single `src/` directory. Shared Zod schemas live in `src/shared/` and are imported by both sides.
+![Agreed target architecture](main-deployment/architecture.png)
 
-## Hosting (Planned)
+The picture is a target boundary, not proof of extraction or AWS deployment.
 
-```
-User
- │
- ├──> CloudFront ──> S3  (React static build)
- │
- └──> API Gateway ──> Lambda  (Express app via serverless-express)
-                          │
-                      MongoDB Atlas
-```
+## Main runtime
 
-- Frontend: S3 bucket (no static hosting) + CloudFront distribution
-- Backend: API Gateway (HTTP API) → Lambda wrapping the Express app
-- Database: MongoDB Atlas — same cluster for both the `mongodb` driver (runtime) and Prisma (schema)
-- Custom domains required for httpOnly cookies to work cross-origin (`yourapp.com` + `api.yourapp.com`)
-
-## Directory Map
-
-```
-vetify/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                  # CI — runs tests only
-├── .husky/
-│   └── pre-commit                  # runs lint-staged (prettier)
-├── archive/                        # historical backups
-├── docs/                           # PRD, TDD, architecture, etc.
-├── prisma/
-│   ├── schema.prisma               # MongoDB schema (Pet, User)
-│   └── prisma.config.ts            # loads .env for Prisma 7
-├── public/                         # static assets
-├── src/
-│   ├── client/                     # React + Vite frontend
-│   │   ├── __tests__/
-│   │   ├── components/             # UI components (ChatWindow, etc.)
-│   │   ├── lib/
-│   │   │   └── auth.ts             # readAuthState, loginWithEmail, etc.
-│   │   ├── pages/                  # route-level page components
-│   │   └── services/
-│   │       ├── api.ts              # apiFetch wrapper + ApiError
-│   │       └── chat.service.ts     # sendMessage → POST /api/v1/chat
-│   ├── server/                     # Express backend
-│   │   ├── config/
-│   │   │   ├── db.ts               # MongoClient singleton + connection state
-│   │   │   └── env.ts              # Zod-validated env schema
-│   │   ├── middleware/
-│   │   │   ├── errorHandler.ts
-│   │   │   ├── security.ts         # helmet, cors, rate-limit
-│   │   │   └── validate.ts         # Zod request validation middleware
-│   │   ├── models/
-│   │   │   ├── index.ts            # barrel + ensureIndexes() called at boot
-│   │   │   ├── object-id.ts        # toObjectId / isValidObjectId helpers
-│   │   │   ├── User.ts             # bcrypt hashing, password kept out of reads
-│   │   │   ├── Pet.ts
-│   │   │   ├── AnonUsage.ts        # anonymous chat allowance, TTL on expiresAt
-│   │   │   └── RefreshToken.ts     # hashed token + revocation
-│   │   ├── routes/v1/
-│   │   │   ├── auth.route.ts       # signup, login, refresh, logout
-│   │   │   └── chat.route.ts       # POST /api/v1/chat
-│   │   └── services/
-│   │       ├── auth.service.ts     # JWT signing, refresh token lifecycle
-│   │       └── chat.service.ts     # Gemini generateReply + LangSmith
-│   └── shared/
-│       └── schemas.ts              # Zod schemas used by client + server
-├── tests/
-│   └── e2e/                        # Playwright E2E tests
-├── types/
-│   └── global-css.d.ts
-├── .eslintrc.json
-├── .prettierrc
-├── nodemon.json
-├── package.json
-├── tailwind.config.ts
-├── tsconfig.base.json
-├── tsconfig.client.json
-├── tsconfig.server.json
-├── vite.config.ts
-└── vitest.config.ts
+```mermaid
+flowchart LR
+    Browser[Main browser] --> CF[CloudFront]
+    CF --> S3[Private main frontend S3]
+    CF --> HTTP[HTTP API Gateway]
+    HTTP --> API[Main Express Lambda]
+    Browser <--> WS[WebSocket API and Lambda]
+    API --> DB[(Main MongoDB Atlas)]
+    WS --> DB
+    Jobs[Scheduled main jobs] --> DB
+    API --> Mail[Resend]
+    API --> AI[Gemini]
+    Browser <--> Peer[WebRTC peer or TURN relay]
 ```
 
-## Auth Flow
+Only signalling/presence/message events travel through the WebSocket API.
+WebRTC media uses the peer/relay connection. Scheduled main appointment jobs
+and private upload handling are required additions to the current template.
+Local development uses Vite's proxy and persistent Socket.IO instead of gateways.
 
-```
-Signup / Login
-  → server returns accessToken (response body) + refreshToken (httpOnly cookie)
-  → client stores { accessToken, user } in localStorage (vetify.auth)
+## Ownership
 
-Authenticated request
-  → client sends Authorization: Bearer <accessToken>
+| Main component        | Owns                                                                 |
+| --------------------- | -------------------------------------------------------------------- |
+| Identity              | Users, passwords, provider links, verification/recovery and sessions |
+| Professional services | Applications, proof, approval, profiles and discovery                |
+| Consultations         | Appointment state, slots, reminders, reviews and call rights         |
+| Communications        | Conversations, messages, notifications and realtime leases           |
+| AI guidance           | Main assistant validation, allowance, provider and moderation        |
+| Administration        | Account controls, application decisions, main audits/metrics         |
 
-Token refresh
-  → client hits POST /api/v1/auth/refresh
-  → server reads httpOnly cookie, verifies hash against DB, issues new accessToken
+External Planner, Books, Anatomy and Blog have separate feature data and hosting.
+They receive identity/capabilities via main APIs, not direct main database access.
+The actual Blog sibling folder is `vetify-blogs`; its proposed public host is
+`blog.vetify.page`. Future destinations are not yet DNS or deployment facts.
 
-Logout
-  → server revokes refresh token in MongoDB
-  → client clears localStorage
-```
+## Key source locations
 
-## Shared Schemas (`src/shared/schemas.ts`)
+- `src/client/App.tsx`: main and currently embedded feature routes.
+- `src/client/routes/console-routes.tsx`: professional/admin console routes.
+- `src/server/app.ts`: Express composition and request middleware.
+- `src/server/index.ts`: local listen/startup and interval jobs.
+- `src/server/routes/v1/`: versioned main HTTP API composition.
+- `src/server/models/`: typed Mongo collections, queries and indexes.
+- `src/server/realtime/`: local events, Gateway delivery, durable sessions/calls.
+- `src/server/lambda/`: HTTP, WebSocket and maintenance adapters.
+- `src/shared/`: shared validation/contracts, including mixed legacy feature definitions.
+- `deploy/serverless/template.yaml`: main backend SAM resources.
+- `scripts/build-lambda.mjs`: bundled handlers and runtime dependency lockfile.
 
-Single source of truth for validation rules used by both sides:
+## Authentication boundary
 
-- `loginSchema` — email + password
-- `signupSchema` — name, email, password with strength rules, confirmPassword match
-- `chatRequestSchema` — message, history, session_id, model (whitelisted)
+Main browser refresh credentials remain host-only and HttpOnly. Native/Planner
+session handoff and account QR also belong to main. Matching provider emails do
+not automatically merge accounts; linking authenticates ownership explicitly.
+External web sign-in requires registered callbacks and authorization-code/PKCE
+integration with app-specific sessions. Keep main signing/social secrets private.
+Current main introspection is version 1; Planner's required version 2 is pending.
+See [the central contract](main-deployment/shared-auth.md).
 
-## Key Dependencies
+## Main-only deployment boundary
 
-| Package                 | Purpose                       |
-| ----------------------- | ----------------------------- |
-| `express`               | HTTP server                   |
-| `mongodb`               | MongoDB driver                |
-| `@google/genai`         | Gemini AI                     |
-| `langsmith`             | AI tracing                    |
-| `jsonwebtoken`          | JWT signing/verification      |
-| `bcryptjs`              | Password hashing              |
-| `zod`                   | Schema validation (shared)    |
-| `react-router-dom`      | Client-side routing           |
-| `react-markdown`        | Render AI markdown responses  |
-| `@tanstack/react-query` | Server state management       |
-| `vite`                  | Frontend build tool           |
-| `vitest`                | Unit testing                  |
-| `playwright`            | E2E testing                   |
-| `prisma`                | Schema management for MongoDB |
+Books/Anatomy code and assets are removed. Main retains protected launch pages.
+Main still bundles Planner/Blog and mounts their data APIs.
+Deleting only navigation or documentation does not separate them.
+Main account export and dashboard metrics read feature data; indexes and the
+Books worker/scanner are removed. Preserve shared native auth, region
+helpers and professional MediaPipe proof while removing feature-specific roots.
+See [the extraction checklist](main-deployment/extraction-checklist.md).
 
-## Omitted from map
+Main should remain usable while external features are down. Missing destinations
+show unavailable states; optional feature aggregates cannot block admin pages.
+Retain immutable main user IDs during any reviewed feature-data migration.
 
-- `.git/`, `node_modules/`, `dist/`, `.venv/`
+For the exact AWS order, use [the deployment guide](main-deployment/README.md).

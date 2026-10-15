@@ -1,68 +1,69 @@
-# Vetify — Command Reference
+# Main Vetify command reference
 
-## General
+Run from the main repository with Node 24 and npm. On Windows use `npm.cmd` and
+`npx.cmd` to avoid a blocked PowerShell script wrapper.
+Configure local `.env` privately; production instructions are separate.
 
-| Command              | Description                                          |
-| -------------------- | ---------------------------------------------------- |
-| `npm install`        | Install all dependencies                             |
-| `npm run dev`        | Start client (Vite) + server (Express) concurrently  |
-| `npm run dev:client` | Start Vite dev server only (http://localhost:5173)   |
-| `npm run dev:server` | Start Express + nodemon only (http://localhost:3000) |
-| `npm run build`      | Build client and server                              |
-| `npm run start`      | Run the built server (`dist/server/index.js`)        |
-| `npm run preview`    | Preview the Vite production build                    |
+## Development
 
-## Linting & Types
+| Command                  | Purpose                                        |
+| ------------------------ | ---------------------------------------------- |
+| `npm.cmd ci`             | Install exact lockfile dependencies            |
+| `npm.cmd run dev`        | Vite client and nodemon server                 |
+| `npm.cmd run dev:client` | Client on localhost:5173                       |
+| `npm.cmd run dev:server` | API on localhost:8000                          |
+| `npm.cmd run preview`    | Preview a built client, not the production API |
 
-| Command             | Description                              |
-| ------------------- | ---------------------------------------- |
-| `npm run lint`      | Run ESLint across `.ts` and `.tsx` files |
-| `npm run lint:fix`  | Run ESLint with auto-fix                 |
-| `npm run typecheck` | Run TypeScript type check (`tsc -b`)     |
+`dev:server` explicitly uses `tsconfig.server.json` for server/shared aliases.
+Vite proxies `/api` and local `/socket.io`.
 
-## Database (mongodb driver + MongoDB Atlas)
+## Build and validation
 
-Vetify talks to MongoDB Atlas through the official `mongodb` driver — there is no ODM. Each file under `src/server/models/` exports a typed collection accessor, a Zod schema for the attributes it accepts, and the indexes that collection needs. There are no migration CLI commands.
+| Command                                                | Purpose                                         |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| `npm.cmd run typecheck:client:runtime`                 | Client runtime type check                       |
+| `npm.cmd run typecheck`                                | Full configured TypeScript projects             |
+| `npm.cmd run lint`                                     | Repository ESLint checks                        |
+| `npm.cmd run build:client`                             | Client output in dist/client                    |
+| `npm.cmd run build:server`                             | Bundled persistent server in dist/server        |
+| `npm.cmd run build`                                    | Client and persistent-server build              |
+| `npm.cmd run start`                                    | Run persistent server, not Lambda               |
+| `npm.cmd run build:lambda`                             | Lambda type check, bundles and runtime lockfile |
+| `npm.cmd run test:lambda`                              | Isolated packaged Lambda smoke check            |
+| `npm.cmd run build:client:prod -- --env-file=env.prod` | Isolated production frontend build              |
 
-### How it works
+Current builds still include Planner/Blog. Books/Anatomy and PDF packaging are
+removed. Verify the remaining extraction
+gate before uploading them as main-only artifacts. Builds do not deploy AWS.
+The broad server type check still includes obsolete auth files/tests with known
+errors; the Lambda check covers its actual runtime import graph.
 
-| Concept        | How it's done with the driver                                                     |
-| -------------- | --------------------------------------------------------------------------------- |
-| Define a shape | Edit the document type and Zod schema in `src/server/models/`                     |
-| Apply changes  | Just save and restart the server — nothing is pushed to Mongo                     |
-| Add a field    | Add it to the document type and Zod schema; existing docs won't have it (null)    |
-| Remove a field | Remove it from both; existing docs retain the field in MongoDB                    |
-| Rename a field | Manual: write a script to update existing documents                               |
-| Add an index   | Add it to that model's `*_INDEXES` array — `ensureIndexes()` creates it at boot   |
-| Validation     | Zod, at the model boundary; a bad write raises `ZodError`, which the handler 400s |
-| Seed data      | Write a script in `src/server/scripts/` and run with `tsx`                        |
-| Inspect data   | Use MongoDB Atlas UI or MongoDB Compass                                           |
+## Tests
 
-### Useful one-off commands
+| Command                     | Purpose                                    |
+| --------------------------- | ------------------------------------------ |
+| `npm.cmd run test`          | All Vitest tests                           |
+| `npm.cmd run test:client`   | Client project tests                       |
+| `npm.cmd run test:server`   | Server project tests                       |
+| `npm.cmd run test:watch`    | Vitest watch mode                          |
+| `npm.cmd run test:coverage` | Coverage run                               |
+| `npm.cmd run test:e2e`      | Playwright with its configured build/setup |
 
-```bash
-# Run a seed or migration script manually
-npx tsx src/server/scripts/<script>.ts
+Use isolated MongoDB fixtures. Do not run seeds or account resets against a
+production database as part of verification. Earlier focused checks passed,
+but the full suite has known failures; inspect results instead of assuming green.
 
-# Connect to your Atlas cluster via mongosh
-mongosh "<MONGODB_URI>"
+## Database and deployment
+
+The official MongoDB driver uses explicit model indexes; there is no Prisma
+push/migration requirement. Schema changes do not automatically transform old
+documents. Review and back up any needed data migration separately.
+When an authorized development script needs server aliases, select the config:
+
+```powershell
+npx.cmd tsx --tsconfig tsconfig.server.json src/server/scripts/<script>.ts
 ```
 
-## Testing
-
-| Command                 | Description                            |
-| ----------------------- | -------------------------------------- |
-| `npm run test`          | Run all Vitest unit tests (single run) |
-| `npm run test:watch`    | Run Vitest in watch mode               |
-| `npm run test:client`   | Client tests only                      |
-| `npm run test:server`   | Server tests only                      |
-| `npm run test:coverage` | Run tests with coverage report         |
-| `npm run test:e2e`      | Run Playwright E2E tests               |
-
-## Git / CI
-
-| Command                    | Description                         |
-| -------------------------- | ----------------------------------- |
-| `git push origin <branch>` | Push branch (CI currently disabled) |
-
-> Re-enable CI: remove `branches-ignore: ['**']` from `.github/workflows/ci.yml`
+See [AWS preparation](main-deployment/aws-prepare.md),
+[deployment commands](main-deployment/aws-deploy.md) and
+[release acceptance](main-deployment/aws-acceptance.md).

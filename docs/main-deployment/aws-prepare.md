@@ -1,7 +1,7 @@
 # AWS preparation, from the beginning
 
-Only main Vetify is being deployed. Four feature repositories are prepared
-locally and deployed separately later. Read [the extraction gate](extraction-checklist.md)
+Only main Vetify is being deployed. Four feature repositories already exist
+locally and deploy separately later. Read [the extraction gate](extraction-checklist.md)
 first; current output is not yet main-only.
 
 ## 1. Protect the account and set a budget
@@ -64,8 +64,9 @@ account ID before deploying. Do not paste access keys into code or chat.
 6. Configure/test TURN for real video calls across networks. API Gateway carries
    signalling, not the media stream. A relay/provider is a separate cost.
 
-Main can launch while future feature links are unavailable. Complete shared
-web SSO before enabling those external apps; no need to deploy them now.
+Main can launch while future feature links are unavailable. Coordinate the
+Planner/main introspection version mismatch and complete shared web SSO before
+enabling the respective integrations; no need to deploy the feature apps now.
 
 ## 4. Configure the domain's DNS
 
