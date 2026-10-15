@@ -150,7 +150,7 @@ export default function ConversationView({
       <MessageComposer
         onSend={(body) => send.mutate(body)}
         onType={onType}
-        sending={send.isPending}
+        sending={send.isPending || isLoading}
       />
     </div>
   );

@@ -30,15 +30,15 @@ export function FilterSelect({
   const id = useId();
 
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor={id} className={LABEL}>
+    <div className="flex min-w-0 max-w-full items-center gap-2">
+      <label htmlFor={id} className={`${LABEL} shrink-0`}>
         {label}
       </label>
       <select
         id={id}
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value || undefined)}
-        className={CONTROL}
+        className={`${CONTROL} min-w-0 flex-1`}
       >
         {allLabel !== null && <option value="">{allLabel}</option>}
         {options.map((option) => (
@@ -93,7 +93,7 @@ export function SearchBox({
 
   return (
     <form
-      className="flex min-w-0 flex-1 items-center gap-2"
+      className="flex min-w-0 flex-1 basis-full items-center gap-2 sm:basis-64"
       onSubmit={(event) => {
         event.preventDefault();
         onSearch(text.trim() || undefined);
