@@ -24,7 +24,7 @@ export default function ContactInfo() {
           </p>
           <a
             href="mailto:support.vetify@gmail.com"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-teal-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-900"
+            className="mt-4 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-lg bg-teal-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-900"
           >
             support.vetify@gmail.com
           </a>
@@ -41,7 +41,7 @@ export default function ContactInfo() {
           </p>
           <Link
             to="/professionals"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50"
+            className="mt-4 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50"
           >
             Request Application
           </Link>
