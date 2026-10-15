@@ -50,3 +50,12 @@
 .hero-cta {
   animation: heroCta 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.1s both;
 }
+
+@media (max-width: 639px) {
+  .hero-tag,
+  .hero-title,
+  .hero-sub,
+  .hero-cta {
+    animation: none;
+  }
+}
