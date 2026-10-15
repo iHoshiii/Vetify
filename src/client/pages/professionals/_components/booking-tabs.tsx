@@ -11,7 +11,7 @@ export const BOOKING_TABS: readonly BookingTab[] = [
 ];
 
 const TAB =
-  'flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1 font-bold transition-colors';
+  'flex min-h-11 min-w-0 flex-1 basis-24 items-center justify-center gap-1.5 whitespace-normal rounded px-2.5 py-1 font-bold transition-colors xl:min-h-0 xl:flex-initial xl:basis-auto xl:justify-start xl:whitespace-nowrap';
 const TAB_ON = 'bg-white text-slate-900 shadow-xs';
 const TAB_OFF = 'text-slate-600 hover:text-slate-900';
 const BADGE = 'rounded-full px-1.5 text-[10px] font-black';
@@ -31,7 +31,7 @@ export default function BookingTabs({
   onPick: (tab: BookingTab) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 text-xs">
+    <div className="flex max-w-full flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 text-xs xl:flex-nowrap">
       {BOOKING_TABS.map((tab) => {
         const on = tab.key === active.key;
         const count = tabCount(tab, counts);

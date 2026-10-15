@@ -3,8 +3,8 @@ import { nextSort, sortStateOf, type Column, type DataTableProps } from './data-
 import TablePagination from './table-pagination';
 export type { Column, SortOption } from './data-table-types';
 const PANEL = `overflow-hidden ${FRAME}`;
-const TH = `px-4 py-3 text-left ${LABEL}`;
-const TD = 'px-4 py-3 text-sm text-slate-700';
+const TH = `px-2 py-3 text-left xl:px-4 ${LABEL}`;
+const TD = 'px-2 py-3 text-xs text-slate-700 sm:text-sm xl:px-4';
 
 export function DataTable<T>({
   caption,
@@ -39,8 +39,8 @@ export function DataTable<T>({
 
   return (
     <div className={PANEL}>
-      <div className={`overflow-x-auto ${isFetching && !isPending ? 'opacity-60' : ''}`}>
-        <table className="w-full border-collapse">
+      <div className={`min-w-0 ${isFetching && !isPending ? 'opacity-60' : ''}`}>
+        <table className="admin-data-table w-full table-fixed border-collapse xl:table-auto">
           <caption className="sr-only">{caption}</caption>
 
           <thead className={`border-b border-forest-200 ${HEADER_WASH}`}>
@@ -62,7 +62,7 @@ export function DataTable<T>({
                       <button
                         type="button"
                         onClick={() => onSort?.(target)}
-                        className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-forest-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
+                        className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1 whitespace-normal text-left uppercase tracking-wider transition-colors hover:text-forest-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 xl:min-h-0"
                       >
                         {column.header}
 
@@ -92,7 +92,7 @@ export function DataTable<T>({
                       key={column.header}
                       className={`${TD} ${column.secondary ? 'hidden sm:table-cell' : ''}`}
                     >
-                      <div className="h-3 w-24 rounded bg-forest-100" />
+                      <div className="h-3 w-24 max-w-full rounded bg-forest-100" />
                     </td>
                   ))}
                 </tr>

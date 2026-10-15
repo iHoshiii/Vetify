@@ -23,7 +23,7 @@ const SECTIONS: ReadonlyArray<{
 ];
 
 const LINK =
-  'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-bold transition-colors hover:bg-teal-900/5 hover:text-teal-900';
+  'flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-md px-2 py-2 text-xs font-bold transition-colors hover:bg-teal-900/5 hover:text-teal-900 sm:px-3 sm:text-sm xl:min-h-0';
 const ACTIVE = 'bg-teal-900 text-white hover:bg-teal-900 hover:text-white';
 const IDLE = 'text-slate-600';
 const COUNT = 'rounded-full bg-amber-500 px-1.5 text-[10px] font-black text-white';
@@ -35,7 +35,7 @@ export default function ConsoleNav() {
   return (
     <nav aria-label="Console sections" className="lg:w-48 lg:shrink-0">
       {/* Scrolls sideways under lg, stacks above it. */}
-      <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
+      <ul className="grid grid-cols-2 gap-1 pb-2 sm:grid-cols-3 lg:flex lg:flex-col lg:pb-0">
         {SECTIONS.map((section) => {
           const waiting = section.unread
             ? unread
@@ -44,12 +44,14 @@ export default function ConsoleNav() {
             : 0;
 
           return (
-            <li key={section.to} className="shrink-0 lg:shrink">
+            <li key={section.to} className="min-w-0 lg:shrink">
               <NavLink
                 to={section.to}
                 className={({ isActive }) => `${LINK} ${isActive ? ACTIVE : IDLE}`}
               >
-                <span className="whitespace-nowrap">{section.label}</span>
+                <span className="min-w-0 whitespace-normal xl:whitespace-nowrap">
+                  {section.label}
+                </span>
                 {waiting > 0 && (
                   <span className={COUNT} aria-label={`${waiting} waiting on you`}>
                     {waiting}
