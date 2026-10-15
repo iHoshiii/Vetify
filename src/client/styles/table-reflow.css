@@ -1,0 +1,48 @@
+@media (max-width: 1279px) {
+  .admin-data-table :is(th, td) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .admin-data-table :is(th, td) :is(div, p, span, a, button) {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-data-table .truncate {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .admin-data-table td .flex {
+    flex-wrap: wrap;
+  }
+
+  .admin-data-table :is(th, td) button {
+    min-height: 2.75rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .admin-data-table th {
+    font-size: 0.625rem;
+    letter-spacing: 0.025em;
+  }
+
+  .admin-data-table th button {
+    padding-left: 0;
+    padding-right: 0;
+    column-gap: 0.125rem;
+    letter-spacing: 0.025em;
+  }
+
+  .admin-data-table :is(th, td) {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}

@@ -14,7 +14,7 @@ export function BlogCard({ post }: { post: BlogSummary }) {
           src={post.coverUrl}
           alt=""
           loading="lazy"
-          className="mb-4 aspect-[16/9] w-full rounded-md object-cover"
+          className="mb-4 h-auto max-h-[calc(var(--viewport-height)-var(--site-header-height)-2rem)] w-full rounded-md object-contain xl:aspect-[16/9] xl:max-h-none xl:object-cover"
         />
       )}
 

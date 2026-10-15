@@ -59,7 +59,7 @@ export default function BlogDetailPage() {
               <img
                 src={post.coverUrl}
                 alt=""
-                className="mt-8 aspect-[16/9] w-full rounded-lg object-cover"
+                className="mt-8 h-auto max-h-[calc(var(--viewport-height)-var(--site-header-height)-2rem)] w-full rounded-lg object-contain xl:aspect-[16/9] xl:max-h-none xl:object-cover"
               />
             )}
 

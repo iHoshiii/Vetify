@@ -1,0 +1,25 @@
+@media (max-width: 1279px) {
+  section.home-hero {
+    --hero-photo-height: min(
+      56.25vw,
+      max(1px, calc(var(--viewport-height) - var(--site-header-height) - 2rem))
+    );
+    min-height: 0;
+    background-color: #65bdc8;
+  }
+
+  .home-hero-backdrop {
+    display: block;
+    background-size: auto var(--hero-photo-height);
+    background-position: center bottom;
+    background-repeat: no-repeat;
+  }
+
+  .home-hero-shade {
+    display: block;
+  }
+
+  .home-hero .home-hero-content {
+    padding-bottom: calc(var(--hero-photo-height) * 0.6 + 2rem);
+  }
+}
