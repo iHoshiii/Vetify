@@ -6,9 +6,12 @@ interface HamburgerProps {
 export function Hamburger({ isOpen, onToggle }: HamburgerProps) {
   return (
     <button
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-vet-primary hover:text-vet-primary md:hidden"
+      type="button"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-vet-primary hover:text-vet-primary xl:hidden"
       onClick={onToggle}
       aria-label="Toggle menu"
+      aria-expanded={isOpen}
+      aria-controls="mobile-navigation"
     >
       <svg
         viewBox="0 0 24 24"

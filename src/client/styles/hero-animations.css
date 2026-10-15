@@ -1,0 +1,52 @@
+@keyframes heroTag {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes heroTitle {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes heroSub {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes heroCta {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hero-tag {
+  animation: heroTag 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+.hero-title {
+  animation: heroTitle 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+.hero-sub {
+  animation: heroSub 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
+}
+.hero-cta {
+  animation: heroCta 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.1s both;
+}

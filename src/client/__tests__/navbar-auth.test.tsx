@@ -78,7 +78,7 @@ describe('navbar auth reactivity', () => {
     // mount, so these stayed on screen until the page was reloaded.
     expect(screen.queryByText('Log in')).toBeNull();
     expect(screen.queryByText('Sign up')).toBeNull();
-    expect(container.querySelectorAll('a[href="/map"]')).toHaveLength(2);
+    expect(container.querySelectorAll('a[href="/map"]')).toHaveLength(1);
   });
 
   it('keeps the console out of the header, even for an admin', () => {
@@ -112,6 +112,7 @@ describe('floating settings auth reactivity', () => {
     fireEvent.click(screen.getByText('trigger login'));
 
     expect(screen.getByLabelText('Account')).toBeDefined();
+    fireEvent.click(screen.getByLabelText('Account'));
     expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
   });
 

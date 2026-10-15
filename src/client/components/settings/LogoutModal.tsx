@@ -43,7 +43,7 @@ export default function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
         aria-modal="true"
         aria-label="Log out"
         tabIndex={-1}
-        className="w-full max-w-sm scale-100 rounded-2xl bg-white p-6 shadow-2xl outline-none transition-transform"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none"
       >
         <h3 className="mb-2 text-xl font-bold text-slate-800">Log Out</h3>
         <p className="mb-6 text-sm text-slate-600">Are you sure you want to log out?</p>
