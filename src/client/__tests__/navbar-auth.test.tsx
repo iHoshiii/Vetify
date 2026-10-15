@@ -78,7 +78,7 @@ describe('navbar auth reactivity', () => {
     // mount, so these stayed on screen until the page was reloaded.
     expect(screen.queryByText('Log in')).toBeNull();
     expect(screen.queryByText('Sign up')).toBeNull();
-    expect(container.querySelectorAll('a[href="/map"]')).toHaveLength(1);
+    expect(container.querySelectorAll('a[href="/map"]')).toHaveLength(2);
   });
 
   it('keeps the console out of the header, even for an admin', () => {

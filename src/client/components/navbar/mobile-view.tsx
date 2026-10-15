@@ -24,7 +24,7 @@ export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps
   return (
     <div
       id="mobile-navigation"
-      className="absolute inset-x-0 top-full max-h-[calc(var(--viewport-height,100dvh)-68px)] overflow-y-auto overscroll-contain border-t border-slate-200 bg-white shadow-lg xl:hidden"
+      className="absolute inset-x-0 top-full max-h-[calc(var(--viewport-height,100dvh)-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-slate-200 bg-white shadow-lg xl:hidden"
     >
       <nav
         aria-label="Mobile navigation"

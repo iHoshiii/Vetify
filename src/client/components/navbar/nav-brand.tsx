@@ -9,8 +9,8 @@ import { BrandLogo } from '@/components/common/brand-logo';
 export function NavBrand({ to = '/' }: { to?: string }) {
   return (
     <Link to={to} className="group flex shrink-0 items-center gap-2">
-      <BrandLogo className="h-9 w-9 rounded-xl shadow-md shadow-teal-500/30 transition-transform duration-300 group-hover:rotate-3 group-hover:scale-105" />
-      <span className="text-xl font-black tracking-tight text-slate-900">Vetify</span>
+      <BrandLogo className="h-8 w-8 rounded-lg shadow-sm transition-transform duration-300 group-hover:rotate-3 sm:h-9 sm:w-9 sm:rounded-xl" />
+      <span className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">Vetify</span>
     </Link>
   );
 }

@@ -41,7 +41,7 @@ export default function NotificationLauncher() {
         )}
       </button>
       {open && (
-        <div className="fixed inset-x-4 top-[76px] z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2">
+        <div className="fixed inset-x-4 top-[calc(var(--site-header-height)+8px)] z-50 sm:left-auto sm:w-96 xl:absolute xl:inset-x-auto xl:right-0 xl:top-full xl:mt-2">
           <NotificationPanel onClose={() => setOpen(false)} />
         </div>
       )}

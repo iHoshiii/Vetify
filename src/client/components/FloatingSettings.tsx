@@ -42,9 +42,9 @@ export default function FloatingSettings() {
         <div
           role="region"
           aria-label="Account menu"
-          className="fixed inset-x-4 top-[76px] z-50 rounded-2xl border border-slate-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80"
+          className="fixed inset-x-4 top-[calc(var(--site-header-height)+8px)] z-50 rounded-2xl border border-slate-200 bg-white shadow-xl sm:left-auto sm:w-80 xl:absolute xl:inset-x-auto xl:right-0 xl:top-full xl:mt-2"
         >
-          <div className="max-h-[calc(var(--viewport-height,100dvh)-92px)] overflow-y-auto overscroll-contain p-2">
+          <div className="max-h-[calc(var(--viewport-height,100dvh)-var(--site-header-height)-24px)] overflow-y-auto overscroll-contain p-2">
             <div className="mb-2 flex items-center gap-3 border-b border-slate-100 p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-vet-primary/10 text-lg font-bold text-vet-primary ring-1 ring-vet-primary/20">
                 {user.name?.charAt(0).toUpperCase() ?? 'U'}

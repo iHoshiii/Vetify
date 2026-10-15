@@ -66,7 +66,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div
       role="region"
       aria-label="Messages panel"
-      className="flex h-[min(36rem,calc(var(--viewport-height,100dvh)-92px))] w-full sm:w-96 sm:max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10"
+      className="flex h-[min(36rem,calc(var(--viewport-height,100dvh)-var(--site-header-height)-24px))] w-full sm:w-96 sm:max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10"
     >
       {children}
     </div>

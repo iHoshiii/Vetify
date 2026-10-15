@@ -55,7 +55,7 @@ export default function NotificationPanel({ onClose }: { onClose: () => void }) 
     <div
       role="region"
       aria-label="Notifications panel"
-      className="flex h-[min(32rem,calc(var(--viewport-height,100dvh)-92px))] w-full sm:w-96 sm:max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10"
+      className="flex h-[min(32rem,calc(var(--viewport-height,100dvh)-var(--site-header-height)-24px))] w-full sm:w-96 sm:max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10"
     >
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
         <span className="text-sm font-black text-slate-900">Notifications</span>

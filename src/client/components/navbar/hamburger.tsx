@@ -7,7 +7,7 @@ export function Hamburger({ isOpen, onToggle }: HamburgerProps) {
   return (
     <button
       type="button"
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-vet-primary hover:text-vet-primary xl:hidden"
+      className="flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-slate-200 text-slate-700 transition hover:border-vet-primary hover:text-vet-primary xl:hidden"
       onClick={onToggle}
       aria-label="Toggle menu"
       aria-expanded={isOpen}
@@ -19,6 +19,7 @@ export function Hamburger({ isOpen, onToggle }: HamburgerProps) {
         stroke="currentColor"
         strokeWidth="2"
         className="h-5 w-5"
+        aria-hidden="true"
       >
         {isOpen ? (
           <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -26,6 +27,7 @@ export function Hamburger({ isOpen, onToggle }: HamburgerProps) {
           <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round" />
         )}
       </svg>
+      <span className="text-[10px] font-semibold leading-none">{isOpen ? 'Close' : 'Menu'}</span>
     </button>
   );
 }
