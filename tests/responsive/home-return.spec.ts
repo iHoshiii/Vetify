@@ -9,9 +9,7 @@ test('Home returns to the complete hero after scrolling down the same page', asy
   await installApi(context, 'user');
   await page.goto('/');
   await page.getByRole('heading', { level: 1 }).waitFor();
-  await page.evaluate(() =>
-    window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' })
-  );
+  await page.locator('#about').scrollIntoViewIfNeeded();
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
   const nav = page.getByRole('navigation', {
     name: page.viewportSize()!.width >= 1280 ? 'Main navigation' : 'Quick navigation',
