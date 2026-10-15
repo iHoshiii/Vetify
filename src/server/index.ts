@@ -11,7 +11,6 @@ import {
 } from './services/appointment-completion.service';
 import { startOsmClinicRefresh } from './services/osm-clinics.service';
 import { startReminderScanner, stopReminderScanner } from './services/reminders.service';
-import { startBookScanner } from './services/book-review.service';
 import {
   startAppointmentDeliveryScanner,
   stopAppointmentDeliveryScanner,
@@ -53,7 +52,6 @@ async function main() {
   if (dbUp && !isTest) startAppointmentDeliveryScanner();
 
   const stopOsmClinicRefresh = dbUp && !isTest ? startOsmClinicRefresh() : () => undefined;
-  const stopBookScanner = dbUp && !isTest ? startBookScanner() : () => undefined;
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
@@ -69,7 +67,6 @@ async function main() {
   const shutdown = async (signal: string) => {
     console.log(`\n[server] ${signal} received, shutting down`);
     stopOsmClinicRefresh();
-    stopBookScanner();
     stopReminderScanner();
     stopCompletionScanner();
     stopAppointmentDeliveryScanner();

@@ -16,7 +16,6 @@ const result = await build({
     http: 'src/server/lambda/http.ts',
     websocket: 'src/server/lambda/websocket.ts',
     maintenance: 'src/server/lambda/maintenance.ts',
-    'book-pdf.worker': 'src/server/services/book-pdf.worker.ts',
   },
   outdir: output,
   bundle: true,
@@ -72,6 +71,4 @@ execFileSync(
   ],
   { cwd: output, stdio: 'inherit' }
 );
-console.log(
-  '[lambda] Built HTTP, WebSocket, maintenance handlers and PDF worker without private env files.'
-);
+console.log('[lambda] Built HTTP, WebSocket and maintenance handlers without private env files.');

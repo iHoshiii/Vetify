@@ -32,6 +32,25 @@ if (realtimeUrl) {
 if (apiUrl !== '/api/v1' && !apiUrl.startsWith('https://')) {
   throw new Error('VITE_API_URL must be /api/v1 or an HTTPS production API URL.');
 }
+const featureOrigins = {};
+for (const name of ['VITE_BOOKS_ORIGIN', 'VITE_ANATOMY_ORIGIN']) {
+  const value = settings[name]?.trim() || '';
+  if (value) {
+    const origin = new URL(value);
+    if (
+      origin.protocol !== 'https:' ||
+      origin.username ||
+      origin.password ||
+      origin.search ||
+      origin.hash ||
+      origin.pathname !== '/'
+    )
+      throw new Error(`${name} must be a clean HTTPS origin.`);
+    featureOrigins[`import.meta.env.${name}`] = JSON.stringify(origin.origin);
+  } else {
+    featureOrigins[`import.meta.env.${name}`] = JSON.stringify('');
+  }
+}
 const isolatedEnvDir = await mkdtemp(join(tmpdir(), 'vetify-vite-env-'));
 if (
   dirname(isolatedEnvDir) !== tmpdir() ||
@@ -55,6 +74,7 @@ try {
       'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
       'import.meta.env.VITE_CARTO_KEY': JSON.stringify(settings.VITE_CARTO_KEY || ''),
       'import.meta.env.VITE_REALTIME_URL': JSON.stringify(realtimeUrl),
+      ...featureOrigins,
     },
   });
 } finally {

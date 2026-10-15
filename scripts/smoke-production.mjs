@@ -6,10 +6,8 @@ import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Worker } from 'node:worker_threads';
 import { MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { makeBookPdf } from '../src/server/test-utils/book-pdf.ts';
 
 async function availablePort() {
   const listener = createServer();
@@ -22,24 +20,6 @@ async function availablePort() {
     listener.close((error) => (error ? reject(error) : resolve()))
   );
   return port;
-}
-
-async function inspectPdf(data) {
-  const worker = new Worker(new URL('../dist/server/book-pdf.worker.js', import.meta.url), {
-    workerData: new Uint8Array(data),
-  });
-  let timer;
-  try {
-    return await new Promise((resolve, reject) => {
-      timer = setTimeout(() => reject(new Error('Built PDF worker timed out')), 30_000);
-      worker.once('message', resolve);
-      worker.once('error', reject);
-      worker.once('exit', () => reject(new Error('Built PDF worker exited before replying')));
-    });
-  } finally {
-    clearTimeout(timer);
-    await worker.terminate();
-  }
 }
 
 async function waitForHealth(server, port, output) {
@@ -111,11 +91,9 @@ try {
     output += data.toString();
   });
   await waitForHealth(server, port, () => output);
-  const inspection = await inspectPdf(makeBookPdf([['Veterinary nutrition smoke check']]));
-  assert.deepEqual(inspection, { pages: ['Veterinary nutrition smoke check'] });
-  assert.deepEqual(await inspectPdf(Buffer.from('not a PDF')), { error: 'invalid' });
+  assert.equal((await fetch(`http://127.0.0.1:${port}/api/v1/books`)).status, 404);
   console.log(
-    'Production server starts with a connected temporary database. Built PDF worker reads valid PDFs and rejects invalid files.'
+    'Production server starts with a connected temporary database; Books API is no longer mounted.'
   );
 } finally {
   if (server && server.exitCode === null) {
