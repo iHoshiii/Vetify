@@ -21,6 +21,14 @@ body,
   }
 }
 
+html:has(#mobile-navigation) {
+  overflow-y: hidden;
+}
+
+body:has(#mobile-navigation) {
+  overflow: clip !important;
+}
+
 body {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
