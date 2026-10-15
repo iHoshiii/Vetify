@@ -43,9 +43,10 @@ router.post('/password', validate(passwordChangeSchema), async (req, res) => {
 router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
   const actor = actorOf(req);
   const body = req.body as AccountDeactivation;
-  if (actor.provider === 'local') {
-    const account = await findUserWithPasswordById(actor._id);
-    if (!account?.password || !body.currentPassword)
+  const account = await findUserWithPasswordById(actor._id);
+  if (!account) return fail(res, 404, 'Account not found');
+  if (account.password || actor.provider === 'local') {
+    if (!account.password || !body.currentPassword)
       return fail(res, 400, 'Enter your current password');
     if (!(await comparePassword(account.password, body.currentPassword)))
       return fail(res, 400, 'Your current password is not correct.');

@@ -1,6 +1,6 @@
 # Lambda readiness review
 
-The later credit-budget decision uses a single Lightsail server for the initial deployment. Follow [the detailed Lightsail guide](lightsail/README.md); the Lambda findings below remain relevant to a future migration.
+The selected target is S3/CloudFront plus API Gateway/Lambda. The realtime migration now supplies HTTP/WebSocket handlers, durable connections/call membership, scheduled realtime cleanup and a SAM template. Follow [the current implementation and deployment guide](serverless-realtime.md) for validation and the remaining work. The findings below are the earlier audit, before that migration.
 
 Reviewed 2026-10-14 against the current source and `.env.example`. The real `.env` was not read.
 

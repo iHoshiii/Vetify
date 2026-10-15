@@ -46,7 +46,7 @@ export async function viewOf(appointment: AppointmentDocument, viewer: ObjectId)
     appointment,
     viewer,
     party: parties.get(otherPartyId(appointment, viewer)) ?? null,
-    callActive: isCallLive(appointment._id.toString()),
+    callActive: await isCallLive(appointment._id.toString()),
   });
 }
 

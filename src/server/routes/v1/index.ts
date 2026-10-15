@@ -21,6 +21,7 @@ import notificationsRoute from './notifications.route';
 import nutritionObservationsRoute from './nutrition-observations.route';
 import petsRoute from './pets.route';
 import professionalsRoute from './professionals.route';
+import realtimeRoute from './realtime.route';
 
 const router = Router();
 router.use(enforceEmailVerification);
@@ -59,6 +60,7 @@ router.use('/nutrition-observations', nutritionObservationsRoute);
 router.use('/professionals', professionalsRoute);
 router.use('/account/login-methods', accountAuthRoute);
 router.use('/account', accountRoute);
+router.use('/account', realtimeRoute);
 router.use('/admin', adminRoute);
 
 export default router;

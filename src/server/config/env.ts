@@ -12,6 +12,7 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8000),
+  REALTIME_MANAGEMENT_ENDPOINT: z.string().url().optional(),
 
   MONGODB_URI: z.string().min(1).default('mongodb://localhost:27017/vetify'),
 

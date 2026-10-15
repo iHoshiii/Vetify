@@ -5,7 +5,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useAccount';
 import { useUnsavedGuard } from '@/hooks/useUnsavedGuard';
 import AvatarPicker from './AvatarPicker';
-import EmailVerificationStatus from './EmailVerificationStatus';
 import { FIELD, SaveRow } from './controls';
 
 export default function ProfileForm() {

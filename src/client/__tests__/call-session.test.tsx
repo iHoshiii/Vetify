@@ -64,6 +64,30 @@ beforeEach(() => {
 });
 
 describe('call sign-in termination', () => {
+  it('can join a different appointment after hanging up the previous appointment', async () => {
+    const { result, rerender } = renderHook(({ id }) => useCall(id), {
+      initialProps: { id: 'first' },
+    });
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    act(() => result.current.hangUp());
+    fakes.onConnected = null;
+    rerender({ id: 'second' });
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    act(() => fakes.onConnected?.());
+    expect(result.current.state).toBe('connected');
+  });
+  it('does not rejoin after an explicit hang-up followed by reconnect', async () => {
+    const { result } = renderHook(() => useCall('appointment'));
+    await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));
+    const joins = fakes.socket.emit.mock.calls.filter(([event]) => event === 'call:join').length;
+    act(() => result.current.hangUp());
+    act(() => fakes.listeners.get('disconnect')?.forEach((listener) => listener()));
+    act(() => fakes.listeners.get('connect')?.forEach((listener) => listener()));
+    expect(fakes.socket.emit.mock.calls.filter(([event]) => event === 'call:join')).toHaveLength(
+      joins
+    );
+    expect(result.current.state).toBe('ended');
+  });
   it('closes media peer when the server ends the participant sign-in', async () => {
     const { result } = renderHook(() => useCall('appointment'));
     await waitFor(() => expect(fakes.onConnected).toBeTypeOf('function'));

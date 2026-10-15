@@ -1,6 +1,6 @@
-# Vetify first deployment: Lightsail
+# Alternative deployment: Lightsail
 
-For `vetify.page`, one Ubuntu server runs the Node API, Socket.IO and existing scanners. Caddy serves React and manages HTTPS. MongoDB remains in your existing Atlas project. This replaces the earlier Fargate/CloudFront proposal for this budget.
+The selected deployment target is [S3/CloudFront and API Gateway/Lambda](../serverless-realtime.md). This guide remains an alternative: one Ubuntu server runs the API, Socket.IO and existing scanners, while Caddy serves React and HTTPS. MongoDB stays in Atlas.
 
 The 2 GB IPv4 Linux plan is currently $12/month, or $72 for six full months before extras. The $200 maximum credit balance includes credits that must first be earned. Check your account's credit eligibility and expiry. A free account plan can end after six months even with credits remaining.
 
@@ -42,7 +42,7 @@ The archive layout is `server/`, `public/`, and `config/`. Dependencies are inst
 
 - These files prepare deployment; they do not create AWS resources or edit DNS.
 - Local `.env` stays local. `NODE_ENV=production` disables the server's automatic local-file fallback.
-- `env.prod` is ignored by Git. Only its `VITE_API_URL` and `VITE_CARTO_KEY` are used to build the frontend.
+- `env.prod` is ignored by Git. Only its public VITE_API_URL, VITE_CARTO_KEY and VITE_REALTIME_URL are used to build the frontend. Leave VITE_REALTIME_URL blank for Lightsail.
 - Credentials for MongoDB, Gemini, mail and OAuth stay on the server, outside the public website directory.
 - S3, Lambda, ECR, a load balancer, NAT gateway and Route 53 are unnecessary for this initial single-server setup.
 - Your existing upload storage and Mongo-backed job claims remain in use. Large uploads do not pass through Lambda.
