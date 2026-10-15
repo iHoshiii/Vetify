@@ -29,7 +29,7 @@ export default function RatePopup({
         aria-modal="true"
         aria-label="Rate your experience"
         tabIndex={-1}
-        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl outline-none"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl outline-none"
       >
         <button
           type="button"

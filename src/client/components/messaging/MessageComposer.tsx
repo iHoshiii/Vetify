@@ -42,14 +42,14 @@ export default function MessageComposer({
         onBlur={() => onType?.(false)}
         onKeyDown={onKeyDown}
         placeholder="Write a message…"
-        className="max-h-28 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20"
+        className="max-h-28 min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20"
       />
       <button
         type="button"
         onClick={submit}
         disabled={!trimmed || sending}
         aria-label="Send message"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <SendHorizonal className="h-4 w-4" />
       </button>

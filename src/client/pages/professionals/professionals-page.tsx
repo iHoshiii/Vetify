@@ -20,7 +20,7 @@ export default function ProfessionalsPage() {
 
   // The dialogs reset every time they open, so a cancelled attempt leaves nothing behind
   return (
-    <main className="flex h-[calc(100vh-57px)] flex-col overflow-hidden bg-[#f6fbfb]">
+    <main className="flex min-h-[calc(100dvh-var(--site-header-height,68px))] flex-col bg-[#f6fbfb]">
       <HeroSection onApply={() => setStep('eligibility')} />
 
       <EligibilityDialog
