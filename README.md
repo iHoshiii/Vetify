@@ -1,137 +1,68 @@
-# Vetify
+# Vetify main system
 
-A pet care web app — AI chat assistant, vet locator, meal planner, and anatomy viewer.
+Vetify connects pet owners with veterinary guidance and verified professionals.
+This repository owns the main website, central accounts, professional onboarding,
+clinic discovery, appointments, messaging, video-call signalling and AI assistant.
 
-## Tech Stack
+Meal Planner, Books, Anatomy and Blog belong to separate repositories. Main
+provides their account authority and launch links; each owns its feature data.
+Books and Anatomy implementations have been removed from this source tree.
+Meal Planner and Blog remain embedded pending extraction.
+Books/Anatomy entry pages use VITE_BOOKS_ORIGIN and VITE_ANATOMY_ORIGIN;
+blank values show unavailable states. See [the extraction record](docs/main-deployment/books-anatomy-extraction.md).
+Current build output is not yet a verified main-only release.
 
-- Frontend: React, Vite, TypeScript, Tailwind CSS, React Router
-- Frontend hosting: S3 + CloudFront
-- Backend: Express (Node.js, TypeScript)
-- Backend hosting: API Gateway + Lambda
-- Database: MongoDB Atlas (official `mongodb` Node.js driver)
-- Auth: Custom JWT — access token + httpOnly refresh cookie
-- AI: Google Gemini (`@google/genai`), LangSmith tracing
-- Validation: Zod (shared between client and server)
-- Testing: Vitest, Playwright
+## Local development
 
-## Project Structure
+Use Node 24 and npm. On Windows, use `npm.cmd` if PowerShell blocks npm.ps1.
+Configure local `.env` using `.env.example`; keep credentials private.
 
-```
-src/
-├── client/       # React + Vite frontend
-├── server/       # Express backend
-└── shared/       # Zod schemas shared by both
-```
-
-## Quick Start
-
-### Prerequisites
-
-- Node 24 (also used by CI and production builds)
-- npm
-
-### Development
-
-```bash
-npm install
-npm run dev        # starts client (Vite) + server (Express) concurrently
+```powershell
+npm.cmd ci
+npm.cmd run dev
 ```
 
-Client runs on `http://localhost:5173`, server on `http://localhost:8000`.
+Client: `http://localhost:5173`. API: `http://localhost:8000/api/v1`.
+Vite proxies `/api` and local Socket.IO. The server command explicitly selects
+the server TypeScript config so shared imports resolve correctly.
 
-### Individual
+## Architecture and deployment
 
-```bash
-npm run dev:client   # Vite only
-npm run dev:server   # Express + nodemon only
+- React/Vite/TypeScript/Tailwind client and Express/TypeScript API.
+- Official MongoDB driver and shared Zod contracts.
+- Central password/social authentication, email codes and explicit account linking.
+- Local Socket.IO; production API Gateway WebSockets with Lambda handlers.
+- WebRTC media, with TURN where direct connectivity fails.
+- Selected main hosting: private S3/CloudFront and API Gateway/Lambda.
+- `.env` is local; ignored `env.prod` supplies public frontend build settings.
+  Production server secrets come from Secrets Manager through the SAM template.
+
+Private main uploads, durable appointment jobs and subsystem extraction need
+completion before production launch. Shared external web sign-in is also pending.
+Preparing or building code does not establish a live AWS deployment.
+
+## Useful checks
+
+```powershell
+npm.cmd run typecheck:client:runtime
+npm.cmd run test
+npm.cmd run build:lambda
+npm.cmd run test:lambda
 ```
 
-### Build
+Focused auth/realtime checks passed earlier. The full test suite still has known
+failures; report current results and resolve release-relevant failures.
+See [commands](docs/commands.md) for frontend/server build and test commands.
 
-```bash
-npm run build        # builds client (dist/) and server (dist/server/)
-npm run start        # runs built server
-```
+## Main documentation
 
-The server build creates `dist/server/index.js` and its PDF worker. Keep both
-files together and install runtime dependencies with `npm ci --omit=dev`.
-The server reads environment settings at startup and connects to MongoDB.
+- [Documentation index](docs/README.md)
+- [Product requirements](docs/PRD.md) and [technical design](docs/TDD.md)
+- [Architecture](docs/architecture.md) and [user flows](docs/flowchart.md)
+- [Delivery plan](docs/masterplan.md) and [main business scope](docs/business-idea.md)
+- [Extraction and integration plan](MIGRATION_PLAN.md)
+- [Main AWS deployment guide](docs/main-deployment/README.md)
+- [Implemented realtime design](docs/serverless-realtime.md)
 
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in:
-
-```
-MONGODB_URI=
-JWT_SECRET_ACCESS=
-GEMINI_API_KEY=
-ACCESS_TOKEN_MINUTES=
-REFRESH_TOKEN_DAYS=
-```
-
-Generate a secure `JWT_SECRET_ACCESS` (must be 32+ characters):
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Paste the output as the value of `JWT_SECRET_ACCESS` in your `.env`.
-
-## Database
-
-Removing an active admin through demotion, suspension, banning, or self-deactivation
-requires MongoDB transactions.
-Use Atlas or a replica set. The local `docker-compose.yml` starts a single-node
-replica set automatically. Run `docker compose up -d --wait mongo` and connect from
-the host with `mongodb://127.0.0.1:27017/vetify?replicaSet=rs0&directConnection=true`.
-Standalone MongoDB still supports ordinary account changes, but refuses active-admin
-removals with `admin-protection-unavailable` instead of risking removal of every admin.
-
-Pet profiles are stored in the `pets` collection, with one owner account per pet and
-any number of pets per account. The signed-in owner's endpoints are `GET /api/v1/pets`,
-`POST /api/v1/pets`, and `PUT /api/v1/pets/:id`. A profile requires an age in years
-and months and a current weight. Birth month and year are optional. When supplied,
-age advances on the last day of that month. Otherwise, age advances from the date
-the pet was added. The meal planner can now preview and save a measured feeding
-schedule for each pet, log daily meals and extras, and record weight and 9-point
-body condition observations. For eligible healthy adult dogs and cats it offers a
-starting portion estimate based on a food label. Other pets can schedule an
-existing amount. Plans and feeding logs use separate owner-scoped collections.
-
-MongoDB Atlas through the official `mongodb` driver — no ODM. `src/server/config/db.ts`
-owns a single `MongoClient`; each file under `src/server/models/` exports a typed
-collection accessor, a Zod schema for its attributes, and its index list. The
-server calls `ensureIndexes()` once at boot, so indexes are created explicitly
-rather than lazily.
-
-## Testing
-
-```bash
-npm run test              # all Vitest unit tests
-npm run test:client       # client tests only
-npm run test:server       # server tests only
-npm run test:coverage     # with coverage report
-npm run test:e2e          # Playwright E2E tests
-npm run test:production   # built server and PDF worker with a temporary local database
-```
-
-Install browser binaries once with `npx playwright install chromium firefox`.
-Browser tests build the client, preview it on port 5173, and use controlled API replies, so they
-do not contact Gemini, email providers, or your database.
-
-## Linting & Formatting
-
-```bash
-npm run lint         # ESLint
-npm run lint:fix     # ESLint with auto-fix
-npm run typecheck    # TypeScript type check
-```
-
-Husky runs `prettier` on staged files automatically on every commit.
-
-## CI
-
-CI runs on pushes and pull requests to `dev` and `main`. It checks lint, types,
-client/server tests, production builds, startup, the PDF worker, and browser flows.
-
-CD and deployment are not configured yet.
+Feature descriptions and setup prompts live in each feature repository. Main
+documentation records only their boundaries and interfaces needed by this app.

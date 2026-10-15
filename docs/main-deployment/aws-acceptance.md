@@ -65,8 +65,9 @@ a later private database networking decision can change that cost picture.
 
 ## Later feature launches
 
-Prepare each independent repository using its prompt. Implement central web SSO
-and authorization first, then validate account reuse in both directions.
+Use each existing repository's local documentation. Coordinate Planner's version
+2 introspection requirement with main. Implement central web SSO and required
+capabilities before enabling browser integrations, then validate account reuse.
 Create that feature's own hosting, database/storage and callback registration.
 Do not automatically deploy all four with main's stack or share MongoDB users.
 Enable a main launch link only after its destination and auth integration work.

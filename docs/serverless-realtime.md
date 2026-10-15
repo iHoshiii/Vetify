@@ -84,7 +84,7 @@ Rebuild with `npm.cmd run build:client:prod`. Upload dist/client to the private 
 
 The browser connects directly to the wss gateway endpoint. No `/socket.io` CloudFront behavior is used for this transport. REALTIME_MANAGEMENT_ENDPOINT is injected by SAM and must match that API/stage; do not put server credentials in VITE settings.
 
-Atlas access must allow the Lambda network. Lambda does not have one predictable outbound IP by default. Choose an Atlas-supported network access arrangement before deployment; a NAT/static-IP architecture has additional ongoing costs. Do not assume the Lightsail static-IP instructions apply.
+Atlas access must allow the Lambda network. Lambda does not have one predictable outbound IP by default. Choose an Atlas-supported network access arrangement before deployment; a NAT/static-IP architecture has additional ongoing costs.
 
 ## Production acceptance checks
 
