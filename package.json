@@ -40,6 +40,9 @@
     "test:coverage": "vitest run --coverage",
     "pretest:e2e": "npm run build:client",
     "test:e2e": "playwright test",
+    "typecheck:responsive": "tsc -p tsconfig.responsive.json --noEmit",
+    "pretest:responsive": "npm run typecheck:responsive && npm run build:client:prod -- --env-file=tests/responsive/build.env",
+    "test:responsive": "playwright test -c playwright.responsive.config.ts",
     "test:production": "node scripts/smoke-production.mjs",
     "prepare": "husky install"
   },
