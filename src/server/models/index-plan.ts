@@ -30,9 +30,15 @@ import { AUTH_IDENTITIES_COLLECTION, AUTH_IDENTITY_INDEXES } from './auth-identi
 import { ACCOUNT_LINK_COLLECTION, ACCOUNT_LINK_INDEXES } from './account-link-verification';
 import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions';
 import { CAPTURE_UPLOADS_COLLECTION, CAPTURE_UPLOAD_INDEXES } from './professional-capture-uploads';
+import { RATE_LIMITS_COLLECTION, RATE_LIMIT_INDEXES } from './rate-limit';
+import {
+  EMAIL_VERIFICATIONS_COLLECTION as EMAIL_LINK_VERIFICATIONS_COLLECTION,
+  EMAIL_VERIFICATION_INDEXES as EMAIL_LINK_VERIFICATION_INDEXES,
+} from './email-verifications';
 export const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
   { collection: EMAIL_VERIFICATIONS_COLLECTION, indexes: EMAIL_VERIFICATION_INDEXES },
+  { collection: EMAIL_LINK_VERIFICATIONS_COLLECTION, indexes: EMAIL_LINK_VERIFICATION_INDEXES },
   { collection: AUTH_IDENTITIES_COLLECTION, indexes: AUTH_IDENTITY_INDEXES },
   { collection: ACCOUNT_LINK_COLLECTION, indexes: ACCOUNT_LINK_INDEXES },
   { collection: SUBSCRIPTIONS_COLLECTION, indexes: SUBSCRIPTION_INDEXES },
@@ -51,5 +57,6 @@ export const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[]
   { collection: PROFESSIONAL_INQUIRIES_COLLECTION, indexes: PROFESSIONAL_INQUIRY_INDEXES },
   { collection: PROFESSIONAL_CAPTURES_COLLECTION, indexes: PROFESSIONAL_CAPTURE_INDEXES },
   { collection: CAPTURE_UPLOADS_COLLECTION, indexes: CAPTURE_UPLOAD_INDEXES },
+  { collection: RATE_LIMITS_COLLECTION, indexes: RATE_LIMIT_INDEXES },
   { collection: REVIEW_REPORTS_COLLECTION, indexes: REVIEW_REPORT_INDEXES },
 ];
