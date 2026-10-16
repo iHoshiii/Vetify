@@ -11,6 +11,8 @@ const OAUTH_ERRORS: Record<string, string> = {
   provider: 'The provider could not complete the sign-in. Please try another way.',
   session: 'We could not start your session. Please try again.',
   server: 'Something went wrong on our side. Please try again.',
+  'signup-required':
+    'This social account is not connected to Vetify. Sign in with your existing method and link it in Settings > Security. If you are new, create an account first to use the app.',
   'account-link-required':
     'Sign in with your existing method, then connect your social login in Settings > Security.',
 };

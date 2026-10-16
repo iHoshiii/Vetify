@@ -25,8 +25,9 @@ flowchart LR
 ```
 
 Only signalling/presence/message events travel through the WebSocket API.
-WebRTC media uses the peer/relay connection. Scheduled main appointment jobs
-and private upload handling are required additions to the current template.
+WebRTC media uses the peer/relay connection. Scheduled Lambda maintenance runs
+appointment jobs. Professional proof photos upload separately to private MongoDB
+drafts before application submission, keeping individual requests below Lambda's limit.
 Local development uses Vite's proxy and persistent Socket.IO instead of gateways.
 
 ## Ownership

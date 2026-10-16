@@ -16,6 +16,7 @@ const result = await build({
     http: 'src/server/lambda/http.ts',
     websocket: 'src/server/lambda/websocket.ts',
     maintenance: 'src/server/lambda/maintenance.ts',
+    'clinic-refresh': 'src/server/lambda/clinic-refresh.ts',
   },
   outdir: output,
   bundle: true,
@@ -71,4 +72,4 @@ execFileSync(
   ],
   { cwd: output, stdio: 'inherit' }
 );
-console.log('[lambda] Built HTTP, WebSocket and maintenance handlers without private env files.');
+console.log('[lambda] Built HTTP, WebSocket and scheduled handlers without private env files.');

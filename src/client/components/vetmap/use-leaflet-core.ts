@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { BASEMAP_ATTRIBUTION, basemapUrl } from '../basemap';
+import { basemapAttribution, basemapUrl } from '../basemap';
 
 interface LeafletCoreOptions {
   mapRef: React.RefObject<HTMLDivElement | null>;
@@ -61,17 +61,19 @@ export function useLeafletCore({ mapRef, center, zoom, interactive, onReady }: L
       L.control.attribution({ prefix: false }).addTo(map);
 
       L.tileLayer(basemapUrl('land'), {
-        attribution: BASEMAP_ATTRIBUTION,
+        attribution: basemapAttribution(),
         subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(map);
 
-      L.tileLayer(basemapUrl('labels'), {
-        attribution: '',
-        subdomains: 'abcd',
-        maxZoom: 19,
-        pane: 'overlayPane',
-      }).addTo(map);
+      const labels = basemapUrl('labels');
+      if (labels)
+        L.tileLayer(labels, {
+          attribution: '',
+          subdomains: 'abcd',
+          maxZoom: 19,
+          pane: 'overlayPane',
+        }).addTo(map);
 
       vetLayerRef.current = L.layerGroup().addTo(map);
       youLayerRef.current = L.layerGroup().addTo(map);

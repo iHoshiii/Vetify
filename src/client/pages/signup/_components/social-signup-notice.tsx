@@ -8,6 +8,8 @@ const messages: Record<string, string> = {
   'account-exists-tiktok':
     'This TikTok account is already connected to Vetify. Please log in with TikTok.',
   'account-exists': 'Account already exists. Please log in using your existing sign-in method.',
+  'signup-required':
+    'This provider did not share an email address. Create an account using email and password, then connect this sign-in method in Settings > Security.',
   denied: 'You cancelled signup before it finished. Please try again.',
   state: 'That signup link expired or did not match. Please try again.',
   unconfigured: 'This sign-up method is not available yet. Please try another way.',

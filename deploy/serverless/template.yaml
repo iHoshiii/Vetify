@@ -8,6 +8,9 @@ Parameters:
   ClientOrigin:
     Type: String
     Default: https://vetify.page
+  ConfigRevision:
+    Type: String
+    Default: '1'
 Globals:
   Function:
     Runtime: nodejs24.x
@@ -19,6 +22,7 @@ Globals:
     Environment:
       Variables:
         NODE_ENV: production
+        APP_CONFIG_REVISION: !Ref ConfigRevision
         CLIENT_ORIGIN: !Ref ClientOrigin
         SERVER_URL: !Ref ClientOrigin
         OAUTH_SUCCESS_REDIRECT: !Sub '${ClientOrigin}/auth/callback'
@@ -134,8 +138,19 @@ Resources:
         Sweep:
           Type: Schedule
           Properties: { Schedule: 'rate(1 minute)' }
+  ClinicRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: clinic-refresh.handler
+      Timeout: 120
+      Events:
+        Refresh:
+          Type: Schedule
+          Properties: { Schedule: 'rate(1 hour)' }
 Outputs:
   HttpApiUrl:
     Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
   RealtimeUrl:
     Value: !Sub 'wss://${RealtimeApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/prod'
+  ClinicRefreshFunctionName:
+    Value: !Ref ClinicRefreshFunction

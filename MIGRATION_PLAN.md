@@ -61,7 +61,7 @@ for exact import, indexing, packaging and navigation work.
    common date helpers and professional MediaPipe proof.
 4. Make main launch links unavailable until their destinations are operational.
 5. Test main in isolation, including account export and admin statistics.
-6. Finish main private uploads and durable appointment jobs, then deploy main.
+6. Validate individual private photo transfers and scheduled appointment jobs, then deploy main.
 7. Coordinate main/Planner introspection version 2 and joint native tests.
 8. Implement/test independent web SSO and verified-professional/admin capability.
 9. Enable each external app only after its own deployment/integration checks.
