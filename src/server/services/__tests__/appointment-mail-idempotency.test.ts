@@ -13,7 +13,7 @@ it('passes the stable delivery key in the provider header and keeps it out of th
   const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
   vi.stubGlobal('fetch', fetch);
   env.MAIL_TRANSPORT = 'http';
-  env.MAIL_API_KEY = 'test-key';
+  env.MAIL_API_KEY = 're_synthetic_test_key';
   await sendMail({
     to: 'vet@example.com',
     subject: 'Appointment',

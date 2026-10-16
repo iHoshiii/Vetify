@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 test('a private page redirects anonymous visitors to sign in', async ({ page }) => {
-  await page.goto('/planner');
+  await page.goto('/settings/profile');
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByLabel('Email address')).toBeVisible();
   await expect(page.getByLabel('Password', { exact: true })).toBeVisible();

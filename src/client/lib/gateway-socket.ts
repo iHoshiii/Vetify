@@ -54,7 +54,9 @@ export class GatewaySocket extends GatewayEvents {
     );
     return this;
   }
-  timeout(milliseconds: number) {
+  timeout(milliseconds: number): {
+    emit: (event: string, payload: unknown, callback: Ack) => GatewaySocket;
+  } {
     return {
       emit: (event: string, payload: unknown, callback: Ack) => {
         if (!this.connected) {

@@ -169,7 +169,7 @@ describe('the phase rail', () => {
     // The complaint this fixes: content-width tabs left most of the rail empty on a
     // console-width screen. Each tab is at least as wide as its label and they share
     // whatever is left, so the strip ends where the table below it ends.
-    for (const item of items) expect(item.className).toContain('sm:flex-1');
+    for (const item of items) expect(item).toHaveClass('flex-1');
   });
 
   it('keeps statistics out of the application phase rail', () => {

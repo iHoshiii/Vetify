@@ -7,6 +7,7 @@ import {
   verifyLinkCode,
 } from './account-link-code-fixtures';
 import { accountLinkVerifications } from '../../../models/account-link-verification';
+import { REFRESH_GRACE_MS } from '../../../models/refresh-token/rotation';
 import {
   ACCOUNT_LINK_PROOF_COOKIE,
   unsealAccountLinkProof,
@@ -61,13 +62,16 @@ describe('email linking timing and resend', () => {
 
   it('rotates a pending code and verified grant with the browser session without extending expiry', async () => {
     const owner = await session('google');
+    vi.useFakeTimers({ toFake: ['Date'] });
     await requestLinkCode(owner, 'local');
     const code = latestLinkCode();
+    vi.setSystemTime(Date.now() + REFRESH_GRACE_MS + 1);
     expect((await owner.browser.post('/api/v1/auth/refresh')).status).toBe(200);
     const verified = await verifyLinkCode(owner, 'local', code);
     expect(verified.status).toBe(200);
     const cookie = cookieOf(verified, ACCOUNT_LINK_PROOF_COOKIE);
     const original = unsealAccountLinkProof(cookie.slice(ACCOUNT_LINK_PROOF_COOKIE.length + 1))!;
+    vi.setSystemTime(Date.now() + REFRESH_GRACE_MS + 1);
     const refresh = await owner.browser.post('/api/v1/auth/refresh');
     const rotated = unsealAccountLinkProof(
       cookieOf(refresh, ACCOUNT_LINK_PROOF_COOKIE).slice(ACCOUNT_LINK_PROOF_COOKIE.length + 1)

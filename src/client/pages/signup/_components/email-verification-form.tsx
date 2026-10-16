@@ -20,6 +20,10 @@ export default function EmailVerificationForm({ email, initialDelivery, onVerifi
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
+    if (initialDelivery) setDelivery(initialDelivery);
+  }, [initialDelivery]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);

@@ -13,6 +13,20 @@ vi.mock('@/components/providers/AuthProvider', () => ({
 vi.mock('@/hooks/useAccount', () => ({
   useChangePassword: () => ({ mutateAsync, reset: vi.fn(), isPending: false }),
 }));
+vi.mock('@/hooks/useAccountLoginMethods', () => ({
+  useAccountLoginMethods: () => ({
+    data: {
+      hasPassword: true,
+      providers: [],
+      availableProviders: [],
+      googleAvailable: false,
+      passwordReady: false,
+      reauthProvider: null,
+    },
+    isLoading: false,
+    isError: false,
+  }),
+}));
 vi.mock('@/pages/login/_components/login-form', () => ({ default: () => <div>Sign-in form</div> }));
 vi.mock('@/pages/login/_components/social-login', () => ({ default: () => null }));
 
