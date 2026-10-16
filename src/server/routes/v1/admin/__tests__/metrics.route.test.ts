@@ -3,7 +3,6 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { activityEventsCollection, type ActivityType } from '../../../../models/activity-event';
-import { blogsCollection, insertBlog, type BlogStatus } from '../../../../models/blogs';
 import { insertProfessional } from '../../../../models/professionals';
 import { insertUser, type UserRole, type UserStatus } from '../../../../models/users';
 import { createApp } from '../../../../app';
@@ -79,29 +78,6 @@ async function events(type: ActivityType, days: number[]) {
   );
 }
 
-/** A post of the given status, written that many days ago. */
-async function post(status: BlogStatus = 'published', offset = 0) {
-  seq += 1;
-  const blog = await insertBlog({
-    title: `Caring for a senior cat ${seq}`,
-    excerpt: 'What changes in the last few years, and what to watch for at home.',
-    body: 'Older cats hide pain well, so the signs worth watching are the small ones.',
-    tags: ['cats'],
-    author: new ObjectId(),
-    status: status === 'draft' ? 'draft' : 'published',
-  });
-
-  // Straight to the collection: `createdAt` is set by the repository and the
-  // moderated statuses are only reachable through a decision, neither of which
-  // this fixture is testing.
-  await blogsCollection().updateOne(
-    { _id: blog._id },
-    { $set: { status, createdAt: daysAgo(offset) } }
-  );
-
-  return blog;
-}
-
 /** An application on file for a fresh account. */
 async function application(status: 'pending' | 'verified' | 'rejected' = 'pending') {
   const { user } = await account();
@@ -154,9 +130,6 @@ describe('GET /api/v1/admin/metrics/overview', () => {
     const { token } = await account('admin');
     await account('professional');
     await account();
-    await post('published', 200);
-    await post('draft');
-    await post('removed');
     await application('pending');
     await application('verified');
 
@@ -171,10 +144,6 @@ describe('GET /api/v1/admin/metrics/overview', () => {
       admins: 1,
       professionals: 1,
       pendingApplications: 1,
-      blogs: 3,
-      // The published post is 200 days old and still counted: a total is not a window.
-      publishedBlogs: 1,
-      moderatedBlogs: 1,
     });
     expect(typeof res.body.generatedAt).toBe('string');
   });
@@ -217,23 +186,19 @@ describe('GET /api/v1/admin/metrics/overview', () => {
 
     expect(res.body.trend.chats).toEqual({ current: 2, previous: 0, change: null });
   });
-
-  it('draws the blogs trend from the posts themselves, not from events', async () => {
-    const { token } = await account('admin');
-    await post('published', 3);
-    await post('draft', 40);
-
-    const res = await request(app)
-      .get('/api/v1/admin/metrics/overview?days=7')
-      .set('Authorization', `Bearer ${token}`);
-
-    // No activity type is recorded for writing a post, so a count of one here can
-    // only have come from the blogs collection. The draft is far outside both windows.
-    expect(res.body.trend.blogs).toEqual({ current: 1, previous: 0, change: null });
-  });
 });
 
 describe('GET /api/v1/admin/metrics/timeseries', () => {
+  it('rejects Blog metrics after extraction', async () => {
+    const { token } = await account('admin');
+    for (const path of ['/timeseries?metric=blogs', '/breakdown?dimension=blogStatus']) {
+      await request(app)
+        .get(`/api/v1/admin/metrics${path}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+    }
+  });
+
   it('returns one point per day, oldest first, gaps filled', async () => {
     const { token } = await account('admin');
     await events('user.signed_up', [0, 2, 2]);
@@ -279,24 +244,6 @@ describe('GET /api/v1/admin/metrics/timeseries', () => {
     expect(
       res.body.points.reduce((total: number, point: { count: number }) => total + point.count, 0)
     ).toBe(1);
-  });
-
-  it('buckets the blogs line from the posts', async () => {
-    const { token } = await account('admin');
-    await post('published', 1);
-    await post('hidden', 1);
-
-    const res = await request(app)
-      .get('/api/v1/admin/metrics/timeseries?metric=blogs&days=3')
-      .set('Authorization', `Bearer ${token}`);
-
-    // Every status counts: this line is writing that happened, and a post being
-    // taken down later does not mean it was never written.
-    expect(res.body.points).toEqual([
-      { date: isoDay(daysAgo(2)), count: 0 },
-      { date: isoDay(daysAgo(1)), count: 2 },
-      { date: isoDay(daysAgo(0)), count: 0 },
-    ]);
   });
 
   it('refuses a metric it does not plot', async () => {
@@ -353,25 +300,6 @@ describe('GET /api/v1/admin/metrics/breakdown', () => {
       { label: 'admin', count: 1 },
       { label: 'professional', count: 1 },
     ]);
-  });
-
-  it('slices the posts by status, leaving out the statuses nothing is in', async () => {
-    const { token } = await account('admin');
-    await post('published');
-    await post('published');
-    await post('removed');
-
-    const res = await request(app)
-      .get('/api/v1/admin/metrics/breakdown?dimension=blogStatus')
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(res.body.slices).toEqual([
-      { label: 'published', count: 2 },
-      { label: 'removed', count: 1 },
-    ]);
-    // No 'draft: 0' and no 'hidden: 0': an empty slice is a legend entry
-    // pretending to be data.
-    expect(res.body.slices).toHaveLength(2);
   });
 
   it('slices the applications by status', async () => {

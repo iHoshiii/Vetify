@@ -13,7 +13,6 @@ const AdminApplicationsLayout = lazy(
 const AdminRequestTab = lazy(() => import('@/pages/admin/applications/request-tab'));
 const AdminApplicationStatistics = lazy(() => import('@/pages/admin/applications/statistics-tab'));
 const AdminAuditPage = lazy(() => import('@/pages/admin/audit-page'));
-const AdminBlogsPage = lazy(() => import('@/pages/admin/blogs-page'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/dashboard-page'));
 const AdminReviewsPage = lazy(() => import('@/pages/admin/reviews/reviews-page'));
 const AdminAccountsTab = lazy(() => import('@/pages/admin/users/accounts-tab'));
@@ -85,7 +84,7 @@ export function consoleRoutes() {
             path="professionals"
             element={<Navigate to="/admin/applications/application" replace />}
           />
-          <Route path="blogs" element={<AdminBlogsPage />} />
+          <Route path="blogs" element={<ExternalAppPage feature="blogs" destination="/admin" />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="audit" element={<AdminAuditPage />} />
         </Route>

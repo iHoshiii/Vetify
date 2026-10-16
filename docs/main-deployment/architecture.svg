@@ -16,7 +16,7 @@
   </defs>
   <rect width="1600" height="1260" fill="#f6fafb"/>
   <text x="40" y="59" font-size="34" font-weight="750">Vetify: one account, independent applications</text>
-  <text x="40" y="95" class="body">Target hosting boundary · Planner/Books/Anatomy code extracted · Blog pending · no AWS deployment by this change</text>
+  <text x="40" y="95" class="body">Target hosting boundary · Planner/Books/Anatomy/Blog code extracted · no AWS deployment by this change</text>
   <rect x="40" y="130" width="1060" height="590" rx="20" fill="#eaf7f5" stroke="#087f78" stroke-width="2"/>
   <text x="70" y="169" class="heading">DEPLOY NOW: main Vetify AWS resources, after release checks</text>
   <rect x="1130" y="130" width="430" height="590" rx="20" fill="#f0f3f9" stroke="#bdcbdc" stroke-width="2"/>

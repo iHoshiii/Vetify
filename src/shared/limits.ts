@@ -30,19 +30,6 @@ export const ANON_COOKIE_DAYS = 365;
 export const ANON_CHAT_PER_IP_PER_HOUR = 30;
 
 /**
- * Posts per page on the public blog list, and the ceiling a caller may ask for.
- *
- * Shared because both halves have to agree on it: the client renders a pager
- * from `pages` in the response, and the server refuses anything above the max so
- * `?limit=100000` cannot turn a paginated endpoint back into an unbounded scan.
- */
-export const BLOG_PAGE_SIZE = 9;
-export const BLOG_PAGE_SIZE_MAX = 50;
-
-/** Tags allowed on one post. Enough to categorise, few enough to stay a filter. */
-export const BLOG_MAX_TAGS = 8;
-
-/**
  * How long a suspension lasts before the account lets itself back in.
  *
  * A suspension is a fixed term and a ban is not, which is the whole difference
@@ -50,11 +37,7 @@ export const BLOG_MAX_TAGS = 8;
  * term has to be part of the record.
  */
 export const USER_SUSPENSION_DAYS = 30;
-/**
- * Directory page size, and the ceiling a caller may ask for. Same reasoning as
- * the blog pager: the client draws its pages from the response, and the server
- * refuses anything larger, so `?limit=100000` cannot un-paginate the endpoint.
- */
+// Directory pagination is capped to prevent unbounded scans.
 export const PROFESSIONAL_PAGE_SIZE = 12;
 export const PROFESSIONAL_PAGE_SIZE_MAX = 50;
 

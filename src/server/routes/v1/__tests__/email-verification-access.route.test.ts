@@ -124,6 +124,6 @@ describe('mandatory local email verification', () => {
     });
     const token = (await createAuthPayloadFor(social)).accessToken;
     expect((await readPreferences(token)).status).toBe(200);
-    expect((await request(app).get('/api/v1/blogs')).status).toBe(200);
+    expect((await request(app).get('/api/v1/professionals')).status).toBe(200);
   });
 });

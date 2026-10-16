@@ -3,11 +3,8 @@ import type {
   AuditAction,
   AuditTargetType,
   AuthProvider,
-  BlogStatus,
   BreakdownDimension,
   MetricSeries,
-  ModerationCategory,
-  ModerationOutcome,
   ProfessionalInquiryStatus,
   ProfessionalStatus,
   UserRole,
@@ -15,7 +12,6 @@ import type {
 } from '@shared/schemas';
 
 import { apiFetch } from './api';
-import type { BlogSummary } from './blogs.service';
 import type { OwnProfessional } from './professionals.service';
 
 /**
@@ -142,109 +138,6 @@ export function updateUserStatus(input: {
   return apiFetch(`/admin/users/${encodeURIComponent(input.id)}/status`, {
     method: 'PATCH',
     body: { status: input.status, reason: input.reason },
-  });
-}
-
-/* -------------------------------------------------------------------------- *
- * Posts
- * -------------------------------------------------------------------------- */
-
-export type AdminBlogAuthor = { id: string; email: string; name: string | null };
-
-/**
- * What the automatic screen made of a post, and whether a human has answered it.
- *
- * `severity` is what orders the queue, so the server sorts on it and this is only
- * for showing the number. `reviewedAt` is null until somebody has decided either
- * way — approving and taking down both count as deciding.
- */
-export type AdminBlogModeration = {
-  outcome: ModerationOutcome;
-  categories: ModerationCategory[];
-  severity: number;
-  terms: string[];
-  notes: string | null;
-  model: string | null;
-  checkedAt: string;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-};
-
-/**
- * A post with its moderation trail and the account behind it.
- *
- * `author` is null when that account is gone — a real state rather than an error,
- * since the post outlives the account that wrote it.
- */
-export type AdminBlogSummary = BlogSummary & {
-  author: AdminBlogAuthor | null;
-  removedBy: string | null;
-  removedReason: string | null;
-  removedAt: string | null;
-  /** Null on a post the screen never saw, which is not the same as a clean pass. */
-  moderation: AdminBlogModeration | null;
-};
-
-/** The same with the body: nobody can judge a post they cannot read. */
-export type AdminBlogDetail = AdminBlogSummary & { body: string };
-
-export type AdminBlogListParams = Paged & {
-  status?: BlogStatus;
-  author?: string;
-  tag?: string;
-  q?: string;
-};
-
-export type BlogDecisionResult = {
-  blog: AdminBlogDetail;
-  statusFrom: BlogStatus;
-  statusTo: BlogStatus;
-};
-
-export function listAdminBlogs(
-  params: AdminBlogListParams = {},
-  signal?: AbortSignal
-): Promise<AdminPage<AdminBlogSummary>> {
-  return apiFetch(`/admin/blogs${queryOf({ ...params })}`, { signal });
-}
-
-export function getAdminBlog(id: string, signal?: AbortSignal): Promise<AdminBlogDetail> {
-  return apiFetch(`/admin/blogs/${encodeURIComponent(id)}`, { signal });
-}
-
-/**
- * Approve, hide, take down, or put back.
- *
- * One function for the four because they are one decision with four verdicts, and
- * the server treats them the same way — same audit entry, same guards. The reason
- * is optional in the type and required by the server for a takedown, which is
- * where that rule belongs: it is the string somebody will be asked to defend.
- */
-export function moderateBlog(input: {
-  id: string;
-  decision: 'approve' | 'hide' | 'remove' | 'restore';
-  reason?: string;
-}): Promise<BlogDecisionResult> {
-  return apiFetch(`/admin/blogs/${encodeURIComponent(input.id)}/${input.decision}`, {
-    method: 'PATCH',
-    body: { reason: input.reason },
-  });
-}
-
-/** Enough to name the post that is no longer there. */
-export type PurgeBlogResult = { id: string; title: string; slug: string; authorId: string };
-
-/**
- * Deletes a post for good.
- *
- * Separate from moderateBlog because it is not one of the verdicts: it destroys the
- * row rather than moving its status, and the server refuses it on anything that has
- * not already been taken down. The reason is required by both.
- */
-export function purgeBlog(input: { id: string; reason: string }): Promise<PurgeBlogResult> {
-  return apiFetch(`/admin/blogs/${encodeURIComponent(input.id)}`, {
-    method: 'DELETE',
-    body: { reason: input.reason },
   });
 }
 
@@ -491,11 +384,6 @@ export type MetricsOverview = {
     admins: number;
     professionals: number;
     pendingApplications: number;
-    blogs: number;
-    publishedBlogs: number;
-    /** Held by the screen, waiting on a human. The one blog figure that is a queue. */
-    flaggedBlogs: number;
-    moderatedBlogs: number;
   };
   trend: Record<MetricSeries, MetricTrend>;
 };

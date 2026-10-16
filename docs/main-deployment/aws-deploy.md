@@ -105,9 +105,9 @@ VITE_CARTO_KEY=
 ```
 
 Use the exact `RealtimeUrl` stack output. Main supports `VITE_BOOKS_ORIGIN` and
-`VITE_ANATOMY_ORIGIN` for external launch links. Leave them blank until their
+`VITE_ANATOMY_ORIGIN` and `VITE_BLOGS_ORIGIN` for external launch links. Leave them blank until their
 separate destinations and shared login are ready. Planner's public app page uses
-local content settings for its download QR/photos; Blog launch settings are not yet implemented.
+local content settings for its download QR/photos. Blog launch links use the separate app origin.
 
 ```powershell
 npm.cmd run build:client:prod -- --env-file=env.prod

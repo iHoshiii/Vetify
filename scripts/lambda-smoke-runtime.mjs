@@ -114,11 +114,12 @@ try {
     .updateOne({ _id: 'smoke-connection' }, { $set: { expiresAt: Date.now() - 1 } });
   await maintenance({}, context());
   assert.ok(frames.some((frame) => frame.method === 'DELETE'));
-  for (const path of ['books', 'pets', 'meal-plans', 'nutrition-observations'])
+  for (const path of ['books', 'blogs', 'pets', 'meal-plans', 'nutrition-observations'])
     assert.equal((await invoke(`/api/v1/${path}`, {}, auth.accessToken)).statusCode, 404);
   const collections = await dbClient.db().listCollections().toArray();
   const extracted = [
     'books',
+    'blogs',
     'book_download_quotas',
     'pets',
     'meal_plans',

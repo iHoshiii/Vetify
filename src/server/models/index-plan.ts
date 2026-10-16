@@ -3,7 +3,6 @@ import { APPOINTMENTS_COLLECTION, APPOINTMENT_INDEXES } from './appointments';
 import { ACTIVITY_EVENTS_COLLECTION, ACTIVITY_EVENT_INDEXES } from './activity-event';
 import { ANON_USAGES_COLLECTION, ANON_USAGE_INDEXES } from './AnonUsage';
 import { AUDIT_LOGS_COLLECTION, AUDIT_LOG_INDEXES } from './audit-log';
-import { BLOGS_COLLECTION, BLOG_INDEXES } from './blogs';
 import {
   MESSAGES_COLLECTION,
   MESSAGE_INDEXES,
@@ -44,7 +43,6 @@ export const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[]
   { collection: ANON_USAGES_COLLECTION, indexes: ANON_USAGE_INDEXES },
   { collection: ACTIVITY_EVENTS_COLLECTION, indexes: ACTIVITY_EVENT_INDEXES },
   { collection: AUDIT_LOGS_COLLECTION, indexes: AUDIT_LOG_INDEXES },
-  { collection: BLOGS_COLLECTION, indexes: BLOG_INDEXES },
   { collection: THREADS_COLLECTION, indexes: THREAD_INDEXES },
   { collection: MESSAGES_COLLECTION, indexes: MESSAGE_INDEXES },
   { collection: NOTIFICATIONS_COLLECTION, indexes: NOTIFICATION_INDEXES },

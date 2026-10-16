@@ -1,8 +1,8 @@
 # Extract features before building a main-only release
 
-Planner/Books/Anatomy code extraction is complete; Blog extraction is pending.
+Planner/Books/Anatomy/Blog code extraction is complete.
 No stored database data was removed. See [the extraction record](books-anatomy-extraction.md).
-The checklist describes the full split; Planner/Books/Anatomy actions are already applied.
+The checklist records the full split; stored-data migration and deployment remain separate.
 
 ## 1. Preserve the implementations
 
@@ -43,7 +43,7 @@ features: extract the needed definitions instead of deleting the whole file.
   The existing native client registration is not a generic client for all apps.
 - Professional inquiries/approval/profiles, clinic directory/map, appointments,
   messages, notifications, moderation of main accounts, audits and realtime.
-- AI Vet Assistant and its required Gemini/moderation code.
+- AI Vet Assistant and its required Gemini code. Blog moderation is removed.
 - Professional selfie/identity proof: it still uses MediaPipe.
   Anatomy is not a reason to remove `@mediapipe/tasks-vision` or its assets.
 - Main branding, home/help/about/legal/contact pages and shared layout.
@@ -67,9 +67,9 @@ features: extract the needed definitions instead of deleting the whole file.
    Move its durable review scheduling to the Books repository.
 7. Remove the PDF worker entry from `scripts/build-lambda.mjs` and
    `scripts/build-server.mjs`. Update Lambda packaging/smoke/template checks.
-8. Main `src/server/services/metrics.service.ts` currently reads Blog counts.
-   Remove those metrics with matching schema/chart changes, or consume an
-   explicit optional Blog aggregate API. Do not query Blog's database directly.
+8. Main `src/server/services/metrics.service.ts` no longer reads Blog counts.
+   Matching schema/chart changes remove those metrics. Historical audit entries
+   remain readable without querying Blog's database.
 9. Main `src/server/routes/v1/account.route.ts` now exports only main account and
    preferences. Planner data export belongs to the Planner app.
 10. Inventory feature-only libraries with a dependency graph. Remove only those

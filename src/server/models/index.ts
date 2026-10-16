@@ -5,5 +5,4 @@ export * from './exports/consultations';
 export * from './exports/communications';
 export * from './exports/professionals';
 export * from './exports/accounts';
-export * from './exports/publishing';
 export { ensureIndexes } from './indexes';

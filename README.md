@@ -8,9 +8,12 @@ Meal Planner, Books, Anatomy and Blog belong to separate repositories. Main
 provides their account authority and launch links; each owns its feature data.
 Books and Anatomy implementations have been removed from this source tree.
 Meal Planner now has a public app introduction at `/planner`; its feature code
-has been removed. Blog remains embedded pending extraction.
-Books/Anatomy entry pages use VITE_BOOKS_ORIGIN and VITE_ANATOMY_ORIGIN;
+has been removed. Blog UI, APIs, moderation and database indexing are also extracted.
+External entry pages use VITE_BOOKS_ORIGIN, VITE_ANATOMY_ORIGIN and VITE_BLOGS_ORIGIN;
 blank values show unavailable states. See [the extraction record](docs/main-deployment/books-anatomy-extraction.md).
+Set `VITE_BLOGS_ORIGIN` to the separate Blog app's origin, without a path.
+Main `/blogs`, `/blogs/:slug` and `/admin/blogs` open its feed, article and moderation pages.
+Blog account authentication is handled by that app. Main passes no credentials in launch URLs.
 Current build output is not yet a verified main-only release.
 
 ## Local development

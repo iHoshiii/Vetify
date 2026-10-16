@@ -29,9 +29,8 @@ Main retains accounts/auth identities, verification/linking challenges, browser
 and native sessions, subscription authority, professional inquiries/profiles,
 clinics, appointments, messages, notifications, admin audits and realtime state.
 Only main knows credentials and provider connections.
-Blog collections and APIs still mounted today are extraction leftovers,
-not target main responsibilities. Their removal must also update exports,
-indexes, statistics, navigation, worker builds and shared schema consumers.
+Blog UI, APIs, moderation, model exports and indexes are removed from main.
+Main metrics no longer query Blog data. Historical Blog audit entries remain readable.
 
 ## Authentication
 

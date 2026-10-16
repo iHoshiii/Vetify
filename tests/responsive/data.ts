@@ -98,23 +98,6 @@ export const inquiry = {
   createdAt: DATE,
   updatedAt: DATE,
 };
-export const post = {
-  id: VET_ID,
-  title: 'Healthy routines for your pets',
-  slug: 'responsive-care',
-  excerpt: 'Practical advice for everyday pet care.',
-  body: 'Care advice. '.repeat(80),
-  coverUrl: null,
-  tags: ['care'],
-  authorId: OTHER_ID,
-  author: account,
-  status: 'published',
-  publishedAt: DATE,
-  createdAt: DATE,
-  updatedAt: DATE,
-  removedBy: null,
-  moderation: null,
-};
 export const thread = {
   id: 'thread-responsive',
   professionalId: VET_ID,

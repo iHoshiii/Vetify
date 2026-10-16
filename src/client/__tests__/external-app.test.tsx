@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { externalAppOrigin } from '../lib/external-app';
 import ExternalAppPage from '../pages/external-app/external-app-page';
+import BlogsLaunchPage from '../pages/external-app/blogs-launch-page';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -35,11 +36,12 @@ describe('external feature destinations', () => {
 });
 
 describe('feature launch pages', () => {
-  it.each(['books', 'anatomy'] as const)(
+  it.each(['books', 'anatomy', 'blogs'] as const)(
     'shows %s unavailable without a destination',
     (feature) => {
       vi.stubEnv('VITE_BOOKS_ORIGIN', '');
       vi.stubEnv('VITE_ANATOMY_ORIGIN', '');
+      vi.stubEnv('VITE_BLOGS_ORIGIN', '');
       render(
         <MemoryRouter>
           <ExternalAppPage feature={feature} />
@@ -77,6 +79,38 @@ describe('feature launch pages', () => {
     expect(screen.getByRole('link', { name: 'Open Vetify Anatomy' })).toHaveAttribute(
       'href',
       'https://anatomy.example.test/'
+    );
+  });
+
+  it.each([
+    ['/blogs', '/blogs'],
+    ['/blogs/pet-care', '/blogs/pet-care'],
+    ['/blogs/a%2Fb', '/blogs/a%2Fb'],
+  ])('preserves the Blog destination from %s', (entry, destination) => {
+    vi.stubEnv('VITE_BLOGS_ORIGIN', 'https://blog.example.test');
+    render(
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path="/blogs/:slug?" element={<BlogsLaunchPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'Open Vetify Blogs' })).toHaveAttribute(
+      'href',
+      `https://blog.example.test${destination}`
+    );
+  });
+
+  it('opens Blog moderation in the separate application', () => {
+    vi.stubEnv('VITE_BLOGS_ORIGIN', 'https://blog.example.test');
+    render(
+      <MemoryRouter>
+        <ExternalAppPage feature="blogs" destination="/admin" />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('link', { name: 'Open Vetify Blogs' })).toHaveAttribute(
+      'href',
+      'https://blog.example.test/admin'
     );
   });
 });

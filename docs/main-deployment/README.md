@@ -1,9 +1,9 @@
 # Deploy main Vetify, extract four separate applications
 
-This is an inspected deployment plan, not a completed extraction or AWS deployment.
+This is an inspected deployment plan. Feature code extraction is complete; AWS deployment is separate.
 Books/Anatomy code is removed from main and preserved in independent repositories.
 Planner feature code is removed; `/planner` is a public app introduction.
-The current builds still include Blog code.
+Blog UI, APIs, moderation, local metrics and indexes are removed.
 Do not upload them as a main-only release until the extraction checks pass.
 
 ## Scope agreed with the owner
@@ -59,8 +59,8 @@ boundary, extraction work and central authentication requirements.
 The plan was checked against the existing frontend routes, API mounts, shared
 schemas, model indexing, Lambda build, authentication introspection, Books
 approval checks, Anatomy rendering and local background scanners.
-Main currently imports the Blog frontend and mounts its APIs. Books and
-Anatomy have external launch pages; the Books worker, scanner and indexes are removed.
+Blog, Books and Anatomy have external launch pages. Their embedded UI/APIs are
+removed, together with Blog indexing/metrics and the Books worker/scanner.
 See [the completed extraction record](books-anatomy-extraction.md).
 Planner has a public app page, with its data API/models removed. See
 [the Planner page and extraction record](meal-planner-app-page.md).

@@ -1,6 +1,5 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import { useAdminBlogs } from '@/hooks/useAdminBlogs';
 import { useAdminInquiries } from '@/hooks/useAdminInquiries';
 import { useAdminProfessionals } from '@/hooks/useAdminProfessionals';
 import { useAdminReviewReports } from '@/hooks/useAdminReviews';
@@ -70,12 +69,10 @@ export default function AdminLayout() {
   // altogether — that tab is a queue too, and the sidebar covers both.
   const requests = useAdminInquiries({ status: 'pending', limit: 1 }).data?.total ?? 0;
   const applications = useAdminProfessionals({ status: 'pending', limit: 1 }).data?.total ?? 0;
-  const held = useAdminBlogs({ status: 'flagged', limit: 1 }).data?.total ?? 0;
   const reports = useAdminReviewReports({ status: 'pending', limit: 1 }).data?.total ?? 0;
 
   const WAITING: Record<string, number> = {
     '/admin/applications': requests + applications,
-    '/admin/blogs': held,
     '/admin/reviews': reports,
   };
 

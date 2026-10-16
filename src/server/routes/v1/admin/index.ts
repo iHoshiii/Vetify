@@ -4,7 +4,6 @@ import { optionalAuth } from '../../../middleware/optionalAuth';
 import { requireAdmin } from '../../../middleware/requireAuth';
 import { adminLimiter } from '../../../middleware/security';
 import auditRoute from './audit.route';
-import blogsRoute from './blogs.route';
 import inquiriesRoute from './inquiries.route';
 import metricsRoute from './metrics.route';
 import professionalsRoute from './professionals.route';
@@ -30,7 +29,6 @@ const router = Router();
 router.use(adminLimiter, optionalAuth, requireAdmin);
 
 router.use('/audit', auditRoute);
-router.use('/blogs', blogsRoute);
 router.use('/inquiries', inquiriesRoute);
 router.use('/metrics', metricsRoute);
 router.use('/professionals', professionalsRoute);

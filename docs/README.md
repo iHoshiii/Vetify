@@ -29,8 +29,8 @@ Feature descriptions and setup prompts are maintained in their own repositories.
 - [Live acceptance](main-deployment/aws-acceptance.md)
 - [Implemented WebSocket design](serverless-realtime.md)
 
-The diagram shows target ownership. The current main build still includes Blog
-feature code. Planner/main auth contract versions differ, and external web SSO is pending.
+The diagram shows target ownership. All four feature implementations are extracted.
+Planner/main auth contract versions differ, and external web SSO is pending.
 None of these documents establishes a deployed production service.
 
 ## Historical owner records

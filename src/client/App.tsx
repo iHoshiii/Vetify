@@ -10,11 +10,10 @@ import RootLayout from '@/layouts/RootLayout';
 import HomePage from '@/pages/home-page';
 import PlannerPage from '@/pages/planner/planner-page';
 import ExternalAppPage from '@/pages/external-app/external-app-page';
+import BlogsLaunchPage from '@/pages/external-app/blogs-launch-page';
 
 const AboutPage = lazy(() => import('@/pages/about/about-page'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
-const BlogDetailPage = lazy(() => import('@/pages/blogs/blog-detail-page'));
-const BlogsPage = lazy(() => import('@/pages/blogs/blogs-page'));
 const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
 const CallPage = lazy(() => import('@/pages/call/call-page'));
 const ChatPage = lazy(() => import('@/pages/chat/chat-page'));
@@ -65,8 +64,8 @@ export default function App() {
           }
         />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
-        <Route path="blogs" element={<BlogsPage />} />
-        <Route path="blogs/:slug" element={<BlogDetailPage />} />
+        <Route path="blogs" element={<BlogsLaunchPage />} />
+        <Route path="blogs/:slug" element={<BlogsLaunchPage />} />
         <Route
           path="book-appointment"
           element={
