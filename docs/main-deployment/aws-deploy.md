@@ -14,8 +14,8 @@ npm.cmd run typecheck:client:runtime
 npm.cmd run build:lambda
 npm.cmd run test:lambda
 sam validate --lint --template-file deploy/serverless/template.yaml
-sam build --use-container --template-file deploy/serverless/template.yaml
-sam deploy --guided --template-file .aws-sam/build/template.yaml --stack-name vetify-backend --region ap-southeast-1 --profile vetify-deploy
+sam build --template-file deploy/serverless/template.yaml --region ap-southeast-2
+sam deploy --guided --template-file .aws-sam/build/template.yaml --stack-name vetify-backend --region ap-southeast-2 --profile vetify-deploy
 ```
 
 Supply `AppSecretArn` from preparation and `ClientOrigin=https://vetify.page`.
@@ -23,20 +23,23 @@ Review the change set, acknowledge required IAM capabilities and save SAM config
 locally. Reauthenticate the CLI if its temporary credentials expire.
 Do not manually recreate WebSocket APIs in parallel with the SAM-managed stack.
 Save the output values `HttpApiUrl` and `RealtimeUrl`; do not invent their IDs.
-The current stack creates HTTP, WebSocket and maintenance Lambdas. The scheduled
-maintenance invocation runs appointment reminders, completion, delivery retries and realtime cleanup.
+The stack creates HTTP, WebSocket, maintenance and clinic refresh Lambdas.
+Minute maintenance runs appointment reminders, completion, delivery retries and
+realtime cleanup. An hourly job refreshes clinic data when its daily cache expires.
+After deployment, invoke the `ClinicRefreshFunctionName` output once to warm the
+directory before publishing the frontend. Check that invocation succeeds.
 
 ## 10. Create the private frontend S3 bucket
 
-In Singapore: S3 > Create bucket. Choose a globally unique name, such as
+In Sydney: S3 > Create bucket. Choose a globally unique name, such as
 `vetify-main-web-<your-account-id>`. Keep Block Public Access enabled, ACLs
 disabled/Bucket owner enforced and default encryption. Leave static website
 hosting disabled. CloudFront uses the regular S3 origin with OAC.
 Choose versioning/retention deliberately; stored versions incur storage cost.
 
-If main upload storage was implemented, create its **separate private bucket**
-with the permissions, CORS and signed operations required by that implementation.
-Do not mix identity proof images with publicly served frontend files.
+Professional proof photos stay in private MongoDB storage. The client sends each
+photo separately to stay below Lambda's request limit, then submits references.
+Do not upload proof photos to the publicly served frontend bucket.
 
 ## 11. Create the CloudFront distribution
 
@@ -50,7 +53,7 @@ CloudFront plan does not cover all backend or external-service costs.
 [OAC guidance](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html).
 
 Add a second origin using only the hostname from `HttpApiUrl`:
-`<actual-id>.execute-api.ap-southeast-1.amazonaws.com`.
+`<actual-id>.execute-api.ap-southeast-2.amazonaws.com`.
 Use HTTPS to origin, no `/api` origin path and no stage path for the stack's
 default HTTP stage. Add a behavior with path `/api/*`:
 
@@ -85,11 +88,12 @@ Verify application routes containing a dot separately if you introduce any.
 
 ## 13. Point the domain at CloudFront
 
-Route 53 > `vetify.page` zone > Create record > apex A > Alias > CloudFront.
-Select the actual distribution. Add an AAAA alias if IPv6 is enabled.
-Wait for DNS and distribution changes to finish. Keep certificate validation
-records and the Resend DNS records.
-[Alias steps](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-cloudfront-distribution.html).
+In Name.com > vetify.page > Manage DNS Records, create an apex ANAME record
+pointing to the actual distribution hostname, such as `d123.cloudfront.net`.
+Leave Host blank for the apex. Remove conflicting apex address records only
+after reviewing them. Keep certificate validation and Resend DNS records.
+Wait for DNS and distribution changes to finish.
+[Name.com ANAME steps](https://cs.name.com/hc/en-us/articles/115010493967-Adding-an-ANAME-Alias-record).
 
 ## 14. Build main frontend with public production settings
 
@@ -100,7 +104,7 @@ The current builder accepts these public settings:
 ```dotenv
 NODE_ENV=production
 VITE_API_URL=/api/v1
-VITE_REALTIME_URL=wss://<actual-websocket-api-id>.execute-api.ap-southeast-1.amazonaws.com/prod
+VITE_REALTIME_URL=wss://<actual-websocket-api-id>.execute-api.ap-southeast-2.amazonaws.com/prod
 VITE_CARTO_KEY=
 ```
 

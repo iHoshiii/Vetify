@@ -6,7 +6,8 @@ This migration keeps React on S3/CloudFront, HTTP on API Gateway/Lambda, and acc
 
 - `src/server/lambda/http.ts`: Express HTTP adapter with notification delivery awaited before returning.
 - `src/server/lambda/websocket.ts`: `$connect`, `$disconnect`, and `$default` event handler.
-- `src/server/lambda/maintenance.ts`: scheduled presence/session/call cleanup.
+- `src/server/lambda/maintenance.ts`: scheduled realtime cleanup, appointment reminders, completion and delivery retries.
+- `src/server/lambda/clinic-refresh.ts`: hourly checks and awaited daily clinic cache refreshes.
 - `src/server/realtime/gateway/`: Mongo-backed connection tickets, sessions, call membership, delivery and event permissions.
 - `src/client/lib/gateway-socket.ts`: browser WebSocket transport preserving existing events and acknowledgements.
 - `deploy/serverless/template.yaml`: SAM backend template, including management permissions and minute cleanup schedule.
@@ -48,7 +49,7 @@ The tests use temporary MongoDB and a mocked gateway transport. They do not use 
 
 ## Prepare AWS deployment
 
-Install AWS CLI, AWS SAM CLI and Docker Desktop before running SAM's Linux container build. Configure a deployment identity with the required CloudFormation, IAM, API Gateway, Lambda, EventBridge, packaging S3 and secret-read permissions. The app itself uses its Lambda role, not static AWS access keys.
+Install AWS CLI and AWS SAM CLI. Docker is optional for container builds; the current Node ZIP builds directly on Windows. Configure a deployment identity with the required CloudFormation, IAM, API Gateway, Lambda, EventBridge, packaging S3 and secret-read permissions. The app itself uses its Lambda role, not static AWS access keys.
 
 In Secrets Manager, create one production JSON secret using `deploy/serverless/app-secret.example.json` as the list of keys. Replace every required placeholder. Include the optional provider/TURN keys with blank values when disabled. Use the main Vetify URI, independent signing secrets, and verified Resend senders with separate auth/professional mail keys. Do not commit the real JSON or put it in build output.
 
@@ -57,27 +58,27 @@ SAM resolves this existing secret into Lambda environment variables during deplo
 ```powershell
 npm.cmd run build:lambda
 sam validate --lint --template-file deploy/serverless/template.yaml
-sam build --use-container --template-file deploy/serverless/template.yaml
-sam deploy --guided --stack-name vetify-backend --region ap-southeast-1
+sam build --template-file deploy/serverless/template.yaml --region ap-southeast-2
+sam deploy --guided --stack-name vetify-backend --region ap-southeast-2 --profile vetify-deploy
 ```
 
 In the guided prompts supply AppSecretArn and ClientOrigin=https://vetify.page. Review the CloudFormation change set and IAM changes before deployment. These commands create billable resources when you run deploy.
 
-The template currently supplies HTTP, realtime and realtime cleanup only. It does not provision the frontend bucket/distribution, private document storage, TURN hosting, or the existing reminder/book/appointment/OSM workers. Those need the remaining deployment work before inviting production users. Existing large upload routes are not made Lambda-compatible by this realtime migration.
+The template supplies HTTP, realtime, scheduled appointment/realtime maintenance and hourly clinic refresh. Professional proof photos transfer individually into private MongoDB drafts, then submit as small references. The frontend bucket/distribution and TURN hosting are configured separately. Live AWS acceptance remains required. Extracted subsystem workers are outside main.
 
 ## Wire the frontend
 
 Read the stack outputs:
 
 ```powershell
-aws cloudformation describe-stacks --stack-name vetify-backend --region ap-southeast-1 --query "Stacks[0].Outputs" --output table
+aws cloudformation describe-stacks --stack-name vetify-backend --region ap-southeast-2 --profile vetify-deploy --query "Stacks[0].Outputs" --output table
 ```
 
 In your private env.prod set:
 
 ```dotenv
 VITE_API_URL=/api/v1
-VITE_REALTIME_URL=wss://REPLACE_API_ID.execute-api.ap-southeast-1.amazonaws.com/prod
+VITE_REALTIME_URL=wss://REPLACE_API_ID.execute-api.ap-southeast-2.amazonaws.com/prod
 ```
 
 Rebuild with `npm.cmd run build:client:prod`. Upload dist/client to the private frontend S3 bucket. CloudFront serves that bucket using origin access control and forwards `/api/*` to the HttpApiUrl hostname, with no API caching and the necessary headers/cookies/query strings forwarded. Keep the public website and HTTP API on the same site for the existing refresh cookie/OAuth flow. Register the existing provider callbacks under https://vetify.page/api/v1/auth/PROVIDER/callback.
