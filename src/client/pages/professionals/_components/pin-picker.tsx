@@ -1,4 +1,4 @@
-import { BASEMAP_ATTRIBUTION, basemapUrl } from '@/components/basemap';
+import { basemapAttribution, basemapUrl } from '@/components/basemap';
 import '@/components/vetmap/map.css';
 import { createMarkerIcon, VETIFY_PALETTE, type MarkerGlyph } from '@/components/marker-icon';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -75,15 +75,17 @@ export default function PinPicker({
       });
       L.control.attribution({ prefix: false }).addTo(instance);
       L.tileLayer(basemapUrl('land'), {
-        attribution: BASEMAP_ATTRIBUTION,
+        attribution: basemapAttribution(),
         subdomains: 'abcd',
         maxZoom: 19,
       }).addTo(instance);
-      L.tileLayer(basemapUrl('labels'), {
-        subdomains: 'abcd',
-        maxZoom: 19,
-        pane: 'overlayPane',
-      }).addTo(instance);
+      const labels = basemapUrl('labels');
+      if (labels)
+        L.tileLayer(labels, {
+          subdomains: 'abcd',
+          maxZoom: 19,
+          pane: 'overlayPane',
+        }).addTo(instance);
       const pin = L.marker([at.latitude, at.longitude], {
         icon: createMarkerIcon(L, VETIFY_PALETTE, glyph.current),
         draggable: true,

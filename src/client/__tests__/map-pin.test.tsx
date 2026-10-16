@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PinPicker, { type Point } from '../pages/professionals/_components/pin-picker';
 
@@ -131,11 +131,13 @@ vi.mock('@/hooks/useOsmClinics', () => ({
 }));
 
 beforeEach(() => {
+  vi.stubEnv('VITE_CARTO_KEY', '');
   leaflet.state.maps.length = 0;
   leaflet.state.markers.length = 0;
   leaflet.state.tiles.length = 0;
   leaflet.state.credits = 0;
 });
+afterEach(() => vi.unstubAllEnvs());
 
 /** The picker is controlled, so a test has to hold the coordinate the way the page does. */
 function Harness({
@@ -171,13 +173,7 @@ describe('placing the pin', () => {
     renderPicker(<Harness />);
     await mounted();
 
-    // The point of sharing `basemapUrl`: the vet is dragging their pin across the very
-    // tiles a stranger will see it on. The credit rides along, because CARTO's free
-    // tier is given in exchange for it and Leaflet only draws it with a control added.
-    expect(leaflet.state.tiles).toEqual([
-      expect.stringContaining('/light_all/'),
-      expect.stringContaining('/light_only_labels/'),
-    ]);
+    expect(leaflet.state.tiles).toEqual(['https://tile.openstreetmap.org/{z}/{x}/{y}.png']);
     expect(leaflet.state.credits).toBe(1);
   });
 
