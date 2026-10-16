@@ -10,6 +10,12 @@ Parameters:
   DomainName:
     Type: String
     Default: vetify.page
+  UseCustomDomain:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+Conditions:
+  CustomDomainEnabled: !Equals [!Ref UseCustomDomain, 'true']
 Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
@@ -56,14 +62,16 @@ Resources:
         Enabled: true
         Comment: Main Vetify website and HTTP API
         DefaultRootObject: index.html
-        Aliases: [!Ref DomainName]
+        Aliases: !If [CustomDomainEnabled, [!Ref DomainName], !Ref 'AWS::NoValue']
         IPV6Enabled: true
         HttpVersion: http2and3
         PriceClass: PriceClass_200
-        ViewerCertificate:
-          AcmCertificateArn: !Ref CertificateArn
-          SslSupportMethod: sni-only
-          MinimumProtocolVersion: TLSv1.2_2021
+        ViewerCertificate: !If
+          - CustomDomainEnabled
+          - AcmCertificateArn: !Ref CertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
         Origins:
           - Id: website
             DomainName: !GetAtt WebsiteBucket.RegionalDomainName
@@ -121,4 +129,9 @@ Outputs:
   DistributionHostname:
     Value: !GetAtt Distribution.DomainName
   WebsiteUrl:
-    Value: !Sub 'https://${DomainName}'
+    Value:
+      !If [
+        CustomDomainEnabled,
+        !Sub 'https://${DomainName}',
+        !Sub 'https://${Distribution.DomainName}',
+      ]

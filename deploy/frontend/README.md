@@ -19,6 +19,12 @@ the stack outputs for the bucket, distribution ID and distribution hostname.
 In Name.com, point an apex ANAME record at that distribution hostname. Preserve
 the existing ACM validation and Resend records. Do not change nameservers.
 
+If certificate validation is pending, supply `UseCustomDomain=false` to create
+the same infrastructure with CloudFront's default HTTPS address first. After ACM
+shows ISSUED, update this stack with `UseCustomDomain=true` before routing the
+domain. Use the temporary address for asset and API routing checks; OAuth and
+browser-origin checks remain configured for `https://vetify.page`.
+
 Build with public settings in ignored `env.prod`: `/api/v1` and the exact backend
 `RealtimeUrl`. Follow [the deployment guide](../../docs/main-deployment/aws-deploy.md)
 for the production build, S3 uploads and invalidation commands. Upload only
