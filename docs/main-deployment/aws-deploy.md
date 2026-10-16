@@ -31,6 +31,10 @@ directory before publishing the frontend. Check that invocation succeeds.
 
 ## 10. Create the private frontend S3 bucket
 
+For reproducible setup, use [the frontend CloudFormation template](../../deploy/frontend/README.md)
+instead of manually creating the resources in steps 10–12. It creates those
+resources together. Steps 13–16 still apply.
+
 In Sydney: S3 > Create bucket. Choose a globally unique name, such as
 `vetify-main-web-<your-account-id>`. Keep Block Public Access enabled, ACLs
 disabled/Bucket owner enforced and default encryption. Leave static website
