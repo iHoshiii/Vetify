@@ -6,7 +6,8 @@ The production region is Sydney, `ap-southeast-2`.
 
 ## What runs
 
-1. Open a pull request targeting `dev` or `main`.
+1. Push or merge a change to `main`. Feature branches and pull requests do not
+   trigger CI. Manual runs execute jobs only when `main` is selected.
 2. CI runs full lint, types, unit tests, browser tests and standalone startup.
 3. The AWS job builds Lambda, runs its isolated runtime smoke, validates templates,
    and builds the production frontend using `deploy/github/frontend-build.env`.
@@ -60,11 +61,20 @@ Create these **repository variables**, not application secrets:
 Keep MongoDB, OAuth, mail, Gemini and TURN secrets in AWS Secrets Manager.
 GitHub does not need their values. The role ARNs and bucket name are identifiers.
 
-Review and merge this branch through a pull request. Protect `main` and require
-`Lint, types, tests and production startup`, `Browser tests`, and
-`Validate and package main AWS application`.
+Review and merge this branch through a pull request. With main-only execution,
+these jobs run after merging. Do not require their status checks before merging
+pull requests, since those requests do not trigger the workflow. CI failure still
+blocks deployment after the merge. Branch protection can continue to require review.
 Then open Actions → CI → Run workflow → select `main` to test the first deployment.
 If `Deploy main Vetify to AWS` is skipped, check the branch, event and enable variable.
+
+VS Code can report `Unable to find reusable workflow` for valid local workflow
+references. Open the full Vetify repository folder, then use Developer: Reload Window.
+The file must remain `.github/workflows/deploy-aws.yml` with `on.workflow_call`.
+The workflow validation tests also check this reference. `Context access might be
+invalid` warnings for `AWS_*` variables indicate that the editor cannot see those
+repository variables. Configure the four variables above after AWS authorization;
+keep deployment disabled until setup is complete.
 
 ## Public build settings and secret changes
 

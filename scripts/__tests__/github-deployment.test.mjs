@@ -21,10 +21,36 @@ tags.push(
 const bootstrap = parseDocument(bootstrapSource, { customTags: tags });
 const resources = bootstrap.toJS().Resources;
 
+test('CI runs automatically only for main pushes and skips non-main manual runs', () => {
+  assert.deepEqual(Object.keys(ci.on).sort(), ['push', 'workflow_dispatch']);
+  assert.deepEqual(ci.on.push.branches, ['main']);
+  for (const job of Object.values(ci.jobs)) {
+    assert.match(job.if, /github\.ref == 'refs\/heads\/main'/);
+    assert.match(
+      job.if,
+      /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
+    );
+  }
+  assert.match(deploy.jobs.production.if, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(
+    deploy.jobs.production.if,
+    /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
+  );
+});
+
+test('the local deployment workflow exists and declares the reusable entry point', () => {
+  assert.equal(ci.jobs.deploy.uses, './.github/workflows/deploy-aws.yml');
+  assert.ok(Object.hasOwn(deploy.on, 'workflow_call'));
+  assert.deepEqual(Object.keys(deploy.on), ['workflow_call']);
+});
+
 test('production deployment requires all CI gates and a trusted main event', () => {
   assert.deepEqual(ci.jobs.deploy.needs.sort(), ['aws-artifacts', 'checks', 'e2e-tests']);
   assert.match(ci.jobs.deploy.if, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(ci.jobs.deploy.if, /github\.event_name != 'pull_request'/);
+  assert.match(
+    ci.jobs.deploy.if,
+    /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
+  );
   assert.match(ci.jobs.deploy.if, /vars\.AWS_DEPLOY_ENABLED == 'true'/);
   assert.equal(ci.jobs.deploy.permissions['id-token'], 'write');
   assert.equal(ci.jobs.checks.permissions?.['id-token'], undefined);

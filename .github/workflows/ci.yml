@@ -3,9 +3,7 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: main
-  pull_request:
-    branches: main
+    branches: [main]
 
 permissions:
   contents: read
@@ -24,6 +22,7 @@ env:
 jobs:
   checks:
     name: Lint, types, tests and production startup
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -51,6 +50,7 @@ jobs:
 
   e2e-tests:
     name: Browser tests
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -78,6 +78,7 @@ jobs:
   aws-artifacts:
     name: Validate and package main AWS application
     needs: [checks, e2e-tests]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -111,7 +112,7 @@ jobs:
   deploy:
     name: Deploy main Vetify to AWS
     needs: [checks, e2e-tests, aws-artifacts]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.AWS_DEPLOY_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.AWS_DEPLOY_ENABLED == 'true'
     permissions:
       contents: read
       id-token: write
