@@ -110,8 +110,8 @@ function withClient() {
 }
 
 /** The path fetch was called with, minus the base URL. */
-function requestedPath(fetchMock: ReturnType<typeof respond>): string {
-  return String(fetchMock.mock.calls[0]?.[0]).replace('/api/v1', '');
+function requestedPath(fetchMock: ReturnType<typeof respond>, index = 0): string {
+  return String(fetchMock.mock.calls[index]?.[0]).replace('/api/v1', '');
 }
 
 beforeEach(() => {
@@ -266,6 +266,12 @@ describe('useInvite', () => {
 describe('useApplyThroughInvite', () => {
   it('posts through the link, seeds the status cache, and drops the invitation', async () => {
     const fetchMock = respond(APPLICATION, 201);
+    for (const digit of ['1', '2', '3'])
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ uploadId: digit.repeat(24), revision: digit.repeat(64) }),
+      });
     vi.stubGlobal('fetch', fetchMock);
 
     const token = 'c'.repeat(64);
@@ -279,8 +285,12 @@ describe('useApplyThroughInvite', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(requestedPath(fetchMock)).toBe(`/professionals/invites/${token}/apply`);
+    const [, init] = fetchMock.mock.calls[3] as [string, RequestInit];
+    expect(requestedPath(fetchMock, 3)).toBe(`/professionals/invites/${token}/apply`);
+    expect(JSON.parse(init.body as string).portrait).toEqual({
+      uploadId: '1'.repeat(24),
+      revision: '1'.repeat(64),
+    });
     expect(init.method).toBe('POST');
     // Written straight in, so the status screen renders without a second trip.
     expect(client.getQueryData(professionalKeys.mine())).toEqual(APPLICATION);

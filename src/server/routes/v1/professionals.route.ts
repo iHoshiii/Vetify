@@ -10,14 +10,13 @@ import {
   type AppointmentSlotsQuery,
   type ProfessionalApply,
   type ProfessionalInquiry,
-  type ProfessionalInviteRefusal,
   type ProfessionalListQuery,
   type ProfessionalNearQuery,
   type ProfessionalProfileUpdate,
   type ReviewReport,
 } from '@shared/schemas';
 import { APPOINTMENT_SLOT_MINUTES } from '@shared/limits';
-import { Router, type Request, type Response } from 'express';
+import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { inquiryLimiter } from '../../middleware/security';
@@ -62,44 +61,13 @@ import { reportReview } from '../../services/review-reports.service';
 import { created, fail, failReason, ok } from '../../utils/response';
 import { slotRangeBounds, slotsForRange, scheduleForKind } from '../../services/appointment-slots';
 import { actorOf, signedIn } from './caller';
+import { refuseInvite, tokenOf } from './professional-invite-access';
+import photoUploads from './professional-photo-uploads.route';
+import { hydrateProfessionalPhotos } from '../../middleware/professional-photo-uploads';
+import { clearProfessionalUploads } from '../../models/professional-capture-uploads';
 
 const router = Router();
-
-const INVITE_TOKEN = /^[0-9a-f]{64}$/i;
-
-/**
- * The invitation token from the path, or null when the path had nothing usable.
- *
- * `mintInvite` writes 32 random bytes as hex, so anything of another shape was
- * never a link we sent, and refusing it here keeps a crawler walking the URL space
- * off the collection entirely. The `string[]` case is Express being honest about
- * repeated segments; this route has exactly one.
- */
-function tokenOf(req: Request): string | null {
-  const token = req.params.token;
-  return typeof token === 'string' && INVITE_TOKEN.test(token) ? token : null;
-}
-
-/**
- * How each refusal reads on the wire.
- *
- * 404 only for a link that was never ours; the other three are 410, because the
- * link existed and no longer works — a distinction the form uses to decide
- * between "check the address" and "ask us for another one". The reason travels
- * alongside the sentence so the page can render its own copy without parsing
- * prose.
- */
-const REFUSALS: Record<ProfessionalInviteRefusal, { status: number; error: string }> = {
-  'not-found': { status: 404, error: 'That application link is not one of ours.' },
-  withdrawn: { status: 410, error: 'That invitation was withdrawn. Please get in touch with us.' },
-  used: { status: 410, error: 'That link has already been used to file an application.' },
-  expired: { status: 410, error: 'That link has expired. Ask us for a new one.' },
-};
-
-function refuseInvite(res: Response, reason: ProfessionalInviteRefusal): Response {
-  const refusal = REFUSALS[reason];
-  return failReason(res, refusal.status, refusal.error, reason);
-}
+router.use(photoUploads);
 
 /**
  * GET /api/v1/professionals
@@ -321,6 +289,7 @@ router.post(
   '/invites/:token/apply',
   optionalAuth,
   signedIn,
+  hydrateProfessionalPhotos,
   validate(professionalApplySchema),
   async (req, res) => {
     const actor = actorOf(req);
@@ -400,6 +369,9 @@ router.post(
     // A failure before this point leaves a live link; a failure after it leaves an
     // application a reviewer can still see, which is the harmless direction.
     await completeInquiry(inquiry._id, application._id);
+    await clearProfessionalUploads(actor._id, inquiry._id).catch(() =>
+      console.warn('[professionals] temporary photo cleanup deferred to TTL')
+    );
 
     // Telemetry, deliberately not awaited: the applicant's response does not wait
     // on a chart.
