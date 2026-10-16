@@ -1,87 +1,11 @@
-import type { ReactNode } from 'react';
-
-import { BUTTON_SM, FRAME, HEADER_WASH, LABEL, MUTED, PAGE_BUTTON, ROW_HOVER } from './ui';
-
-/**
- * One sort the server actually understands.
- *
- * The token is opaque here — `'newest'`, `'email'`, whatever that list accepts —
- * because the table's job is to send it back, not to interpret it. The direction
- * exists only so the header can say `aria-sort` truthfully.
- */
-export type SortOption = { token: string; direction: 'ascending' | 'descending' };
-
-export type Column<T> = {
-  header: string;
-  cell: (row: T) => ReactNode;
-  /** Tokens this header cycles through on click. Omitted means not sortable. */
-  sorts?: SortOption[];
-  align?: 'right';
-  /** Dropped on narrow screens: context columns, never the identifying one. */
-  secondary?: boolean;
-};
-
-type DataTableProps<T> = {
-  /** Names the table for screen readers; not drawn. */
-  caption: string;
-  columns: Column<T>[];
-  rows: T[];
-  rowKey: (row: T) => string;
-  page: number;
-  pages: number;
-  total: number;
-  /** From the response, not assumed: the range line counts rows with it. */
-  limit: number;
-  onPage: (page: number) => void;
-  sort?: string;
-  onSort?: (sort: string) => void;
-  isPending?: boolean;
-  /** Dimmed, not blanked: the current page stays readable while the next loads. */
-  isFetching?: boolean;
-  error?: string | null;
-  onRetry?: () => void;
-  empty?: string;
-};
-
+import { BUTTON_SM, FRAME, HEADER_WASH, LABEL, ROW_HOVER } from './ui';
+import { nextSort, sortStateOf, type Column, type DataTableProps } from './data-table-types';
+import TablePagination from './table-pagination';
+export type { Column, SortOption } from './data-table-types';
 const PANEL = `overflow-hidden ${FRAME}`;
 const TH = `px-4 py-3 text-left ${LABEL}`;
 const TD = 'px-4 py-3 text-sm text-slate-700';
 
-/** The next token in this column's cycle, given whatever is sorted now. */
-function nextSort(column: Column<unknown>, current?: string): string | null {
-  const sorts = column.sorts;
-  if (!sorts || sorts.length === 0) return null;
-
-  const at = sorts.findIndex((option) => option.token === current);
-  // Not this column's turn yet, so start at its first option rather than
-  // advancing past it — one click should sort, not sort and then reverse.
-  const next = at === -1 ? sorts[0] : sorts[(at + 1) % sorts.length];
-  return next?.token ?? null;
-}
-
-function sortStateOf(
-  column: Column<unknown>,
-  current?: string
-): 'ascending' | 'descending' | 'none' {
-  return column.sorts?.find((option) => option.token === current)?.direction ?? 'none';
-}
-
-/** The row range this page covers, for the 'showing 21–40 of 63' line. */
-function rangeOf(page: number, rows: number, limit: number, total: number): string {
-  if (total === 0 || rows === 0) return 'No rows';
-
-  const first = (page - 1) * limit + 1;
-  return `${first}\u2013${first + rows - 1} of ${total.toLocaleString()}`;
-}
-
-/**
- * The admin lists, all of them.
- *
- * Every one of the four is a paginated read with a couple of filters and rows a
- * moderator clicks into, so they share this rather than each growing its own
- * copy of the header, the empty row and the paging. Columns arrive as render
- * functions, which is what keeps the badges and buttons out of here.
- */
 export function DataTable<T>({
   caption,
   columns,
@@ -141,7 +65,7 @@ export function DataTable<T>({
                         className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors hover:text-forest-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
                       >
                         {column.header}
-                        {/* Decorative: aria-sort on the header already says it. */}
+
                         <span aria-hidden="true" className="text-[10px]">
                           {state === 'ascending'
                             ? '\u2191'
@@ -161,8 +85,6 @@ export function DataTable<T>({
 
           <tbody className="divide-y divide-forest-100">
             {isPending ? (
-              // Four rows, because that is enough to look like a table and not
-              // enough to jump when the real page is shorter.
               Array.from({ length: 4 }, (_, index) => (
                 <tr key={index} aria-hidden="true" className="animate-pulse">
                   {columns.map((column) => (
@@ -201,39 +123,16 @@ export function DataTable<T>({
         </table>
       </div>
 
-      <nav
-        aria-label={`${caption} pages`}
-        className={`flex items-center justify-between gap-4 border-t border-forest-200 ${HEADER_WASH} px-4 py-3`}
-      >
-        {/* Announced on change so paging is audible without moving focus. */}
-        <p aria-live="polite" className={`${MUTED} tabular-nums`}>
-          {isPending ? 'Loading\u2026' : rangeOf(page, rows.length, limit, total)}
-        </p>
-
-        {pages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onPage(page - 1)}
-              disabled={page <= 1}
-              className={PAGE_BUTTON}
-            >
-              Previous
-            </button>
-            <span className="text-xs font-bold tabular-nums text-slate-600">
-              {page} / {pages}
-            </span>
-            <button
-              type="button"
-              onClick={() => onPage(page + 1)}
-              disabled={page >= pages}
-              className={PAGE_BUTTON}
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </nav>
+      <TablePagination
+        caption={caption}
+        page={page}
+        pages={pages}
+        total={total}
+        limit={limit}
+        rows={rows.length}
+        pending={isPending}
+        onPage={onPage}
+      />
     </div>
   );
 }

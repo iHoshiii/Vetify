@@ -45,7 +45,7 @@ export default function Input({ label, error, className = '', id, type, ...props
           // outside here has to know or care.
           type={isPassword && revealed ? 'text' : type}
           className={`
-          flex h-10 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm 
+          flex h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-base sm:text-sm
           ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium 
           placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 
           focus-visible:ring-vet-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed
@@ -65,7 +65,7 @@ export default function Input({ label, error, className = '', id, type, ...props
             // pressing it goes. `type="button"` keeps it from submitting the form.
             aria-label={revealed ? 'Hide password' : 'Show password'}
             aria-pressed={revealed}
-            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-400 transition-colors hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-slate-400 transition-colors hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
           >
             {revealed ? (
               <EyeOff size={16} aria-hidden="true" />

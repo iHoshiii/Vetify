@@ -13,12 +13,13 @@ export function useAllVets(open: boolean) {
 
   // Debounced so a keystroke is not a request, and a new search snaps back to the first page.
   useEffect(() => {
+    if (term.trim() === q) return;
     const id = setTimeout(() => {
       setQ(term.trim());
       setPage(1);
     }, DEBOUNCE_MS);
     return () => clearTimeout(id);
-  }, [term]);
+  }, [term, q]);
 
   // A fresh open starts clean rather than on whatever the last visit searched for.
   useEffect(() => {

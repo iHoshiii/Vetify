@@ -9,6 +9,13 @@ export function useMedia() {
     let active = true;
     let opened: MediaStream | null = null;
 
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        'This browser cannot access your camera or microphone. Use a supported browser over HTTPS.'
+      );
+      return;
+    }
+
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((media) => {

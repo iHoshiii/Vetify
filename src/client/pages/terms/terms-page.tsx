@@ -6,8 +6,8 @@ export default function TermsAndConditionsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-5 sm:px-8">
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/5 sm:p-12">
-        <h1 className="mb-8 text-4xl font-black tracking-tight text-slate-900">
+      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-12">
+        <h1 className="mb-8 text-3xl font-black sm:text-4xl tracking-tight text-slate-900">
           Terms and Conditions
         </h1>
 

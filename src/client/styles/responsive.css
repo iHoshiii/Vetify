@@ -1,0 +1,73 @@
+:root {
+  --site-header-height: 68px;
+  --viewport-height: 100dvh;
+}
+
+html,
+body,
+#root {
+  min-width: 0;
+  width: 100%;
+}
+
+body {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+:where(main, section, article, fieldset) {
+  min-width: 0;
+}
+
+section[id] {
+  scroll-margin-top: var(--site-header-height);
+}
+
+:where(img, video) {
+  max-width: 100%;
+}
+
+:where(h1, h2, h3, p, label, dd, td, a) {
+  overflow-wrap: anywhere;
+}
+
+:where([role='dialog'], [role='alertdialog']):not(.inset-0) {
+  max-height: calc(var(--viewport-height, 100dvh) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+:where(.fixed.inset-0):has(> [role='dialog'], > [role='alertdialog']) {
+  margin: 0 !important;
+  height: var(--viewport-height, 100dvh);
+  bottom: auto;
+}
+
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([inputmode='numeric']),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal,
+  .reveal-left,
+  .reveal-right,
+  .reveal-scale {
+    opacity: 1;
+    transform: none;
+  }
+}

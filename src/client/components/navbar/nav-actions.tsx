@@ -7,7 +7,7 @@ interface NavActionsProps {
 
 export function NavActions({ isAuthenticated, showAuthActions }: NavActionsProps) {
   return (
-    <div className="hidden items-center gap-3 md:flex">
+    <div className="hidden shrink-0 items-center gap-3 xl:flex">
       {isAuthenticated && (
         <Link
           to="/map"

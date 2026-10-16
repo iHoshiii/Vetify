@@ -35,9 +35,9 @@ export default function AllVetsDialog({ open, chosenId, onCancel, onPick }: Prop
       lead="Search by name or clinic, or browse the full list A to Z."
       onCancel={onCancel}
       footer={
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           {pages > 1 ? (
-            <nav aria-label="Vet pages" className="flex items-center gap-3">
+            <nav aria-label="Vet pages" className="flex max-w-full flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => setPage(page - 1)}

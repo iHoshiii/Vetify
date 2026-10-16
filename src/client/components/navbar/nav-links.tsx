@@ -8,7 +8,7 @@ interface NavLinksProps {
 
 export function NavLinks({ isAuthenticated }: NavLinksProps) {
   return (
-    <nav className="hidden items-center gap-1 md:flex">
+    <nav aria-label="Main navigation" className="hidden shrink-0 items-center gap-1 xl:flex">
       {NAV_ITEMS.map((item) => (
         <SiteLink
           key={item.href}

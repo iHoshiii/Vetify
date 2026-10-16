@@ -14,7 +14,7 @@ export default function ChatPage() {
   } = useChatStorage();
 
   return (
-    <main className="h-[calc(100vh-57px)] flex overflow-hidden bg-slate-50">
+    <main className="h-[calc(var(--viewport-height,100dvh)-var(--site-header-height,68px))] min-h-0 flex overflow-hidden bg-slate-50">
       <ChatSidebar
         sessions={sessions}
         activeId={activeId}
@@ -23,7 +23,7 @@ export default function ChatPage() {
         onDeleteSession={handleDeleteSession}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
         <ChatWindow messages={messages} onMessagesChange={setMessages} />
       </div>
     </main>

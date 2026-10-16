@@ -10,7 +10,7 @@ export default function ServicesCta() {
           If you&apos;re not sure which tool you need, try asking our AI assistant first. It can
           point you in the right direction.
         </p>
-        <div className="mt-8 flex justify-center gap-3">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             to="/chat"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-vet-primary px-6 text-sm font-bold text-white transition-colors hover:bg-vet-primary-dark"

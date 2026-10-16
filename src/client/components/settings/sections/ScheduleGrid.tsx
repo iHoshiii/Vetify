@@ -19,7 +19,7 @@ export default function ScheduleGrid({
   onEdit: (day: string, change: Partial<WeeklyScheduleItem>) => void;
 }) {
   return (
-    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid min-w-0 gap-2 md:grid-cols-2 2xl:grid-cols-3">
       {DAYS.map(([day, short]) => {
         const item = schedule.find((one) => one.day === day);
         if (!item) return null;
@@ -27,7 +27,7 @@ export default function ScheduleGrid({
         return (
           <li
             key={day}
-            className={`flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 ${
+            className={`flex min-w-0 flex-wrap items-center gap-3 rounded-lg border border-slate-200 px-3 py-3 ${
               item.enabled ? '' : 'bg-slate-50'
             }`}
           >
@@ -48,19 +48,19 @@ export default function ScheduleGrid({
             </label>
 
             {item.enabled ? (
-              <span className="flex flex-1 items-center gap-1">
+              <span className="flex min-w-0 basis-full items-center gap-2">
                 <input
                   type="time"
                   value={item.startTime}
                   onChange={(event) => onEdit(day, { startTime: event.target.value })}
-                  className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
+                  className="min-h-11 min-w-0 w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-base sm:text-sm font-semibold"
                 />
                 <span className="text-xs text-slate-400">to</span>
                 <input
                   type="time"
                   value={item.endTime}
                   onChange={(event) => onEdit(day, { endTime: event.target.value })}
-                  className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
+                  className="min-h-11 min-w-0 w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-base sm:text-sm font-semibold"
                 />
               </span>
             ) : (

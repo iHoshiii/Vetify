@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { consoleRoutes } from './routes/console-routes';
 import { PageBoundary } from './routes/page-boundary';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
@@ -39,6 +40,7 @@ const SignupPage = lazy(() => import('@/pages/signup/signup-page'));
 const TermsPage = lazy(() => import('@/pages/terms/terms-page'));
 
 export default function App() {
+  useViewportHeight();
   return (
     <Routes>
       {consoleRoutes()}

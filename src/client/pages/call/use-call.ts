@@ -15,7 +15,7 @@ import { useCallControls } from './use-call-controls';
 
 export function useCall(appointmentId: string) {
   const { stream, error: mediaError } = useMedia();
-  const { user } = useAuth();
+  const { user, status } = useAuth();
   const initialAccount = useRef(user?.id);
   const wantedCall = useRef(true);
   const wantedAppointment = useRef(appointmentId);
@@ -36,7 +36,7 @@ export function useCall(appointmentId: string) {
       setRemoteStream(null);
       setMessage(null);
     }
-    if (!stream) return;
+    if (!stream || status !== 'authenticated') return;
     const socket = getSocket();
     if (!socket) {
       setState('error');
@@ -111,7 +111,7 @@ export function useCall(appointmentId: string) {
       peerRef.current?.close();
       peerRef.current = null;
     };
-  }, [stream, appointmentId]);
+  }, [stream, appointmentId, status]);
 
   const hangUp = useCallback(() => {
     wantedCall.current = false;

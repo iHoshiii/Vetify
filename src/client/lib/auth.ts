@@ -86,12 +86,13 @@ export function clearAuthReturnTo(): void {
 
 export function startSocialLogin(
   provider: Exclude<AuthProviderName, 'local'>,
-  from?: string | null
+  from?: string | null,
+  intent: 'login' | 'signup' = 'login'
 ): void {
   const returnTo = safeInternalPath(from);
   if (returnTo) window.sessionStorage.setItem(AUTH_RETURN_KEY, returnTo);
   else window.sessionStorage.removeItem(AUTH_RETURN_KEY);
-  window.location.href = `/api/v1/auth/${provider}`;
+  window.location.href = `/api/v1/auth/${provider}${intent === 'signup' ? '?intent=signup' : ''}`;
 }
 
 export async function logoutFromServer() {

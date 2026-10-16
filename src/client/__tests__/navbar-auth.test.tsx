@@ -112,6 +112,7 @@ describe('floating settings auth reactivity', () => {
     fireEvent.click(screen.getByText('trigger login'));
 
     expect(screen.getByLabelText('Account')).toBeDefined();
+    fireEvent.click(screen.getByLabelText('Account'));
     expect(screen.getAllByText('ada@example.com').length).toBeGreaterThan(0);
   });
 
