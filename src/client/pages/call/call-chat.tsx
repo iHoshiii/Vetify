@@ -44,14 +44,17 @@ export default function CallChat({
   const them: Speaker = { name: peer?.name ?? 'Guest', avatarUrl: peer?.avatarUrl };
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-30 flex w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-2xl">
+    <aside
+      aria-label="Call chat"
+      className="fixed top-0 right-0 z-30 flex h-[var(--viewport-height,100dvh)] w-full max-w-sm flex-col border-l border-slate-200 bg-white shadow-2xl"
+    >
       <header className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <span className="text-sm font-black text-slate-900">Chat</span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close chat"
-          className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
         >
           <X className="h-4 w-4" />
         </button>

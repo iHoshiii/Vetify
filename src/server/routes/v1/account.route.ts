@@ -9,7 +9,6 @@ import { Router } from 'express';
 
 import { optionalAuth } from '../../middleware/optionalAuth';
 import { validate } from '../../middleware/validate';
-import { listPets } from '../../models/pets';
 import {
   findUsersByIds,
   findUserById,
@@ -97,38 +96,13 @@ router.patch('/profile', validate(accountProfileUpdateSchema), async (req, res) 
 
 router.get('/export', async (req, res) => {
   const actor = actorOf(req);
-  const [preferences, pets] = await Promise.all([getPreferences(actor._id), listPets(actor._id)]);
+  const preferences = await getPreferences(actor._id);
   if (!preferences) return fail(res, 404, MISSING);
   ok(res, {
     exportedAt: new Date().toISOString(),
     account: toPublicUser(actor),
     preferences,
-    pets,
   });
-});
-
-router.post('/deactivate', validate(accountDeactivationSchema), async (req, res) => {
-  const actor = actorOf(req);
-  const body = req.body as AccountDeactivation;
-  const account = await findUserWithPasswordById(actor._id);
-  if (!account) return fail(res, 404, MISSING);
-  if (account.password) {
-    if (!body.currentPassword) {
-      return fail(res, 400, 'Enter your current password');
-    }
-    if (!(await comparePassword(account.password, body.currentPassword))) {
-      return fail(res, 400, 'Your current password is not correct.');
-    }
-  }
-  await updateUser(actor._id, {
-    status: 'deactivated',
-    statusReason: 'Deactivated by account owner',
-    statusChangedBy: actor._id,
-    statusChangedAt: new Date(),
-    statusUntil: null,
-  });
-  await revokeAllRefreshTokensForUser(actor._id);
-  ok(res, { deactivated: true });
 });
 
 export default router;

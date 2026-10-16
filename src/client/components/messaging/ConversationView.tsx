@@ -68,7 +68,7 @@ export default function ConversationView({
             type="button"
             onClick={onBack}
             aria-label="Back to conversations"
-            className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
@@ -150,7 +150,7 @@ export default function ConversationView({
       <MessageComposer
         onSend={(body) => send.mutate(body)}
         onType={onType}
-        sending={send.isPending}
+        sending={send.isPending || isLoading}
       />
     </div>
   );

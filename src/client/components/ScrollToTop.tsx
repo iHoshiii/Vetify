@@ -13,14 +13,17 @@ export default function ScrollToTop() {
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
-    if (hash) {
-      const el = document.getElementById(anchorId(hash));
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-        return;
+    const frame = requestAnimationFrame(() => {
+      if (hash && hash !== '#home') {
+        const el = document.getElementById(anchorId(hash));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
       }
-    }
-    window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [pathname, hash]);
 
   return null;

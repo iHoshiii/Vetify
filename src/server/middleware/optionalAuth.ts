@@ -50,6 +50,7 @@ export async function optionalAuth(
       email?: string;
       role?: UserRole;
       nativeSessionId?: unknown;
+      sessionVersion?: number;
     };
     if (payload.sub) {
       if (

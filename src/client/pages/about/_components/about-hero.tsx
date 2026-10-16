@@ -2,7 +2,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 
 export const AboutHero = () => {
   return (
-    <section className="relative overflow-hidden pt-20 pb-16 sm:pt-28 sm:pb-24">
+    <section className="relative overflow-hidden py-8 sm:py-10 xl:pt-28 xl:pb-24">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-50" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#f6fbfb] via-transparent to-[#f6fbfb]" />

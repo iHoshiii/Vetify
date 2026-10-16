@@ -30,9 +30,9 @@ const moreFeatures = [
 
 export default function MoreFeatures() {
   return (
-    <section className="bg-vet-bg py-20 sm:py-28">
+    <section className="bg-vet-bg py-8 sm:py-10 xl:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <ScrollReveal variant="reveal" className="mb-14 text-center">
+        <ScrollReveal variant="reveal" className="mb-6 text-center sm:mb-8 xl:mb-14">
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-vet-primary">
             More for your pet
           </p>
@@ -49,7 +49,7 @@ export default function MoreFeatures() {
             <ScrollReveal key={f.title} variant="reveal-scale" delay={i * 110}>
               <SiteLink
                 to={f.href}
-                className="group flex h-full flex-col rounded-2xl border border-teal-900/10 bg-white p-8 transition-colors hover:border-vet-primary/30"
+                className="group flex h-full flex-col rounded-2xl border border-teal-900/10 bg-white p-5 transition-colors hover:border-vet-primary/30 sm:p-6 xl:p-8"
               >
                 <h3 className="text-xl font-bold text-vet-ink">{f.title}</h3>
                 <p className="mt-3 flex-1 leading-relaxed text-slate-600">{f.description}</p>

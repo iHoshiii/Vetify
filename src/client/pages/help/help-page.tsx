@@ -28,18 +28,23 @@ export default function HelpCenterPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-5 sm:px-8">
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/5 sm:p-12">
-        <div className="text-center mb-12">
-          <h1 className="mb-4 text-4xl font-black tracking-tight text-slate-900">Help Center</h1>
+    <div className="bg-slate-50 py-6 px-5 sm:px-8 sm:py-8 xl:min-h-screen xl:py-12">
+      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6 xl:p-12">
+        <div className="text-center mb-6 xl:mb-12">
+          <h1 className="mb-4 text-3xl font-black sm:text-4xl tracking-tight text-slate-900">
+            Help Center
+          </h1>
           <p className="text-lg text-slate-600">How can we help you today?</p>
         </div>
 
-        <div className="mb-12">
+        <div className="mb-6 xl:mb-12">
           <h2 className="mb-6 text-2xl font-bold text-slate-800">Frequently Asked Questions</h2>
           <div className="space-y-6">
             {faqs.map((faq, index) => (
-              <div key={index} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
+              <div
+                key={index}
+                className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 sm:p-6"
+              >
                 <h3 className="mb-2 text-lg font-bold text-slate-800">{faq.question}</h3>
                 <p className="text-slate-600 leading-relaxed">{faq.answer}</p>
               </div>
@@ -47,7 +52,7 @@ export default function HelpCenterPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-teal-50 p-8 text-center border border-teal-100">
+        <div className="rounded-2xl bg-white p-5 sm:p-6 text-center border border-teal-100 xl:p-8">
           <h2 className="mb-2 text-xl font-bold text-teal-900">Still need help?</h2>
           <p className="mb-6 text-teal-700">Our support team is always ready to assist you.</p>
           <a
@@ -58,7 +63,7 @@ export default function HelpCenterPage() {
           </a>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-slate-100">
+        <div className="mt-6 pt-6 border-t border-slate-100 xl:mt-12 xl:pt-8">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-sm font-bold text-teal-600 hover:text-teal-700 transition-colors"

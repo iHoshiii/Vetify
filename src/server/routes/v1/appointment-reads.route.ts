@@ -22,6 +22,8 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
       limit: query.limit,
     });
 
+    const live = await Promise.all(items.map((item) => isCallLive(item._id.toString())));
+    const liveIds = new Set(items.filter((_, i) => live[i]).map((item) => item._id.toString()));
     ok(
       res,
       toAppointmentPage({
@@ -31,7 +33,7 @@ function list(side: 'client' | 'professionalUser'): RequestHandler {
         total,
         page: query.page,
         limit: query.limit,
-        callActive: (appointment) => isCallLive(appointment._id.toString()),
+        callActive: (appointment) => liveIds.has(appointment._id.toString()),
       })
     );
   };

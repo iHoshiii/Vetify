@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Vetify HTTP and WebSocket backend; frontend deployed separately to S3/CloudFront
+Parameters:
+  AppSecretArn:
+    Type: String
+    Description: ARN of an existing Secrets Manager JSON secret; see app-secret.example.json
+  ClientOrigin:
+    Type: String
+    Default: https://vetify.page
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    CodeUri: ../../dist/lambda/
+    Architectures: [x86_64]
+    MemorySize: 512
+    Timeout: 28
+    LoggingConfig: { LogFormat: JSON, LogGroup: !Ref AppLogGroup }
+    Environment:
+      Variables:
+        NODE_ENV: production
+        CLIENT_ORIGIN: !Ref ClientOrigin
+        SERVER_URL: !Ref ClientOrigin
+        OAUTH_SUCCESS_REDIRECT: !Sub '${ClientOrigin}/auth/callback'
+        OAUTH_FAILURE_REDIRECT: !Sub '${ClientOrigin}/login?error=oauth'
+        REALTIME_MANAGEMENT_ENDPOINT: !Sub 'https://${RealtimeApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/prod'
+        MONGODB_URI: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:MONGODB_URI}}'
+        JWT_SECRET_ACCESS: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:JWT_SECRET_ACCESS}}'
+        OAUTH_STATE_SECRET: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OAUTH_STATE_SECRET}}'
+        GEMINI_API_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:GEMINI_API_KEY}}'
+        AUTH_MAIL_TRANSPORT: http
+        AUTH_MAIL_FROM: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:AUTH_MAIL_FROM}}'
+        AUTH_MAIL_API_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:AUTH_MAIL_API_KEY}}'
+        MAIL_TRANSPORT: http
+        MAIL_FROM: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:MAIL_FROM}}'
+        MAIL_API_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:MAIL_API_KEY}}'
+        GOOGLE_CLIENT_ID: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:GOOGLE_CLIENT_ID}}'
+        GOOGLE_CLIENT_SECRET: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:GOOGLE_CLIENT_SECRET}}'
+        FACEBOOK_APP_ID: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:FACEBOOK_APP_ID}}'
+        FACEBOOK_APP_SECRET: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:FACEBOOK_APP_SECRET}}'
+        TIKTOK_CLIENT_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:TIKTOK_CLIENT_KEY}}'
+        TIKTOK_CLIENT_SECRET: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:TIKTOK_CLIENT_SECRET}}'
+        TURN_URL: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:TURN_URL}}'
+        TURN_USERNAME: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:TURN_USERNAME}}'
+        TURN_CREDENTIAL: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:TURN_CREDENTIAL}}'
+Resources:
+  AppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: { LogGroupName: !Sub '/aws/lambda/${AWS::StackName}', RetentionInDays: 7 }
+  ConnectionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: execute-api:ManageConnections
+            Resource: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${RealtimeApi}/prod/*/@connections/*'
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings: { ThrottlingBurstLimit: 20, ThrottlingRateLimit: 10 }
+  RealtimeApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-realtime'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: '$request.body.event'
+  RealtimeStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref RealtimeApi
+      StageName: prod
+      AutoDeploy: true
+      DefaultRouteSettings: { ThrottlingBurstLimit: 30, ThrottlingRateLimit: 15 }
+  GatewayIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref RealtimeApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketFunction.Arn}/invocations'
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      {
+        ApiId: !Ref RealtimeApi,
+        RouteKey: '$connect',
+        Target: !Sub 'integrations/${GatewayIntegration}',
+      }
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      {
+        ApiId: !Ref RealtimeApi,
+        RouteKey: '$disconnect',
+        Target: !Sub 'integrations/${GatewayIntegration}',
+      }
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      {
+        ApiId: !Ref RealtimeApi,
+        RouteKey: '$default',
+        Target: !Sub 'integrations/${GatewayIntegration}',
+      }
+  GatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref WebSocketFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${RealtimeApi}/*'
+  BackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: http.handler
+      Policies: [!Ref ConnectionPolicy]
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: '/{proxy+}', Method: ANY }
+  WebSocketFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: websocket.handler
+      Policies: [!Ref ConnectionPolicy]
+  RealtimeMaintenanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: maintenance.handler
+      Timeout: 60
+      Policies: [!Ref ConnectionPolicy]
+      Events:
+        Sweep:
+          Type: Schedule
+          Properties: { Schedule: 'rate(1 minute)' }
+Outputs:
+  HttpApiUrl:
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}'
+  RealtimeUrl:
+    Value: !Sub 'wss://${RealtimeApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/prod'

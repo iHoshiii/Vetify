@@ -13,6 +13,7 @@ export type MailMessage = {
   subject: string;
   text: string;
   html?: string;
+  idempotencyKey?: string;
 };
 
 const OUTBOX_LIMIT = 20;

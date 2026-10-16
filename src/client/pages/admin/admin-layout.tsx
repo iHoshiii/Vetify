@@ -1,6 +1,5 @@
 import ScrollToTop from '@/components/ScrollToTop';
 import { NavBrand } from '@/components/navbar/nav-brand';
-import { useAdminBlogs } from '@/hooks/useAdminBlogs';
 import { useAdminInquiries } from '@/hooks/useAdminInquiries';
 import { useAdminProfessionals } from '@/hooks/useAdminProfessionals';
 import { useAdminReviewReports } from '@/hooks/useAdminReviews';
@@ -31,7 +30,7 @@ const SECTIONS = [
 ] as const;
 
 const LINK =
-  'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700';
+  'flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-md px-2 py-2 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700 sm:px-3 sm:text-sm xl:min-h-0';
 const ACTIVE = 'bg-forest-800 text-white';
 const IDLE = 'text-slate-600 hover:bg-forest-100 hover:text-forest-800';
 
@@ -70,12 +69,10 @@ export default function AdminLayout() {
   // altogether — that tab is a queue too, and the sidebar covers both.
   const requests = useAdminInquiries({ status: 'pending', limit: 1 }).data?.total ?? 0;
   const applications = useAdminProfessionals({ status: 'pending', limit: 1 }).data?.total ?? 0;
-  const held = useAdminBlogs({ status: 'flagged', limit: 1 }).data?.total ?? 0;
   const reports = useAdminReviewReports({ status: 'pending', limit: 1 }).data?.total ?? 0;
 
   const WAITING: Record<string, number> = {
     '/admin/applications': requests + applications,
-    '/admin/blogs': held,
     '/admin/reviews': reports,
   };
 
@@ -86,7 +83,7 @@ export default function AdminLayout() {
       {/* Follows the page like the site header does. Solid rather than the site's
           translucent scrolled state: tables would show through it. */}
       <div className="sticky top-0 z-50 border-b border-forest-200 bg-white">
-        <div className="flex items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           {/* To the console, not to the marketing site: leaving is the explicit
               link beside it rather than the thing you hit by aiming for home. */}
           <NavBrand to="/admin" />
@@ -99,7 +96,7 @@ export default function AdminLayout() {
               the quietest thing on the page. */}
           <Link
             to="/"
-            className="ml-auto inline-flex h-9 items-center justify-center rounded-md border border-forest-200 bg-white px-4 text-sm font-bold text-forest-700 transition-colors hover:bg-forest-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
+            className="inline-flex min-h-11 basis-full sm:ml-auto sm:basis-auto items-center justify-center rounded-md border border-forest-200 bg-white px-4 text-sm font-bold text-forest-700 transition-colors hover:bg-forest-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700"
           >
             View User Console
           </Link>
@@ -112,14 +109,14 @@ export default function AdminLayout() {
       <main className="gap-6 px-4 py-6 sm:px-6 lg:flex lg:gap-8 lg:px-8">
         <nav aria-label="Admin sections" className="lg:w-52 lg:shrink-0">
           {/* Scrolls sideways under lg, stacks above it. */}
-          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 lg:mx-0 lg:flex-col lg:px-0 lg:pb-0">
+          <ul className="relative grid grid-cols-2 gap-1 pb-2 sm:grid-cols-3 lg:flex lg:flex-col lg:pb-0">
             {SECTIONS.map((section) => {
               const waiting = WAITING[section.to] ?? 0;
               const statisticsIsOpen = location.pathname === '/admin/applications/statistics';
               const activeSection = section.to === '/admin/applications' ? !statisticsIsOpen : true;
 
               return (
-                <li key={section.to} className="shrink-0 lg:shrink">
+                <li key={section.to} className="min-w-0 lg:shrink">
                   <NavLink
                     to={section.to}
                     end={'end' in section ? section.end : false}

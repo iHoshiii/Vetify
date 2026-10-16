@@ -29,14 +29,6 @@ const applications = breakdown([
   { label: 'verified', count: 6 },
   { label: 'rejected', count: 2 },
 ]);
-const series = {
-  data: { points: [{ date: '2026-08-30', count: 2 }] },
-  isPending: false,
-  isFetching: false,
-  isError: false,
-  error: null,
-  refetch: vi.fn(),
-};
 const providerSeries = {
   data: {
     lines: ['facebook', 'tiktok', 'local', 'google', 'total'].map((provider) => ({
@@ -58,16 +50,11 @@ const overview = {
       admins: 1,
       professionals: 6,
       pendingApplications: 4,
-      blogs: 8,
-      publishedBlogs: 7,
-      flaggedBlogs: 1,
-      moderatedBlogs: 2,
     },
     trend: {
       signups: { current: 5, previous: 2, change: 150 },
       logins: { current: 12, previous: 8, change: 50 },
       chats: { current: 3, previous: 3, change: 0 },
-      blogs: { current: 4, previous: 2, change: 100 },
       applications: { current: 6, previous: 3, change: 100 },
     },
   },
@@ -83,13 +70,12 @@ const asked: { days: number | undefined } = { days: undefined };
 
 vi.mock('@/hooks/useAdminMetrics', () => ({
   useMetricsOverview: () => overview,
-  useMetricsProviderTimeseries: () => providerSeries,
+  useMetricsProviderTimeseries: (_metric: string, days: number) => {
+    asked.days = days;
+    return providerSeries;
+  },
   useMetricsBreakdown: (dimension: string) =>
     dimension === 'inquiryStatus' ? inquiries : applications,
-  useMetricsTimeseries: (_metric: string, days: number) => {
-    asked.days = days;
-    return series;
-  },
 }));
 
 function renderWith(node: React.ReactNode) {
@@ -198,8 +184,11 @@ describe('the phase rail', () => {
     renderTab();
 
     const filters = screen.getByRole('group', { name: 'Platform metric' });
-    for (const label of ['Signups', 'Sign-ins', 'Users', 'Posts written', 'Applications']) {
+    for (const label of ['Signups', 'Sign-ins', 'Users', 'Applications']) {
       expect(within(filters).getByRole('button', { name: label })).toBeInTheDocument();
     }
+    expect(
+      within(filters).queryByRole('button', { name: 'Posts written' })
+    ).not.toBeInTheDocument();
   });
 });

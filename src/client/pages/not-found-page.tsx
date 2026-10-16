@@ -10,7 +10,7 @@ export default function NotFoundPage() {
   useDocumentTitle('Page not found', 'The page you were looking for does not exist.');
 
   return (
-    <main className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-24 text-center">
+    <main className="flex flex-col items-center px-6 py-8 text-center sm:py-10 xl:min-h-[60vh] xl:justify-center xl:py-24">
       <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">404</p>
       <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
         Page not found

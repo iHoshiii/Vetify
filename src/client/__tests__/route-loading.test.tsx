@@ -21,7 +21,6 @@ const state = vi.hoisted(() => {
     }),
     finishAbout: () => finishAbout(),
     finishDashboard: () => finishDashboard(),
-    booksLoaded: vi.fn(),
     adminLoaded: vi.fn(),
     professionalLoaded: vi.fn(),
   };
@@ -35,15 +34,10 @@ vi.mock('../components/navbar', () => ({ default: () => <header>Site navigation<
 vi.mock('../components/RevealObserver', () => ({ default: () => null }));
 vi.mock('../components/ScrollToTop', () => ({ default: () => null }));
 vi.mock('../pages/home-page', () => ({ default: () => <h1>Home page</h1> }));
-vi.mock('../pages/planner/planner-page', () => ({ default: () => <h1>Planner page</h1> }));
 vi.mock('../pages/login/login-page', () => ({ default: () => <h1>Login page</h1> }));
 vi.mock('../pages/about/about-page', async () => {
   await state.about;
   return { default: () => <h1>About page</h1> };
-});
-vi.mock('../pages/books/books-page', () => {
-  state.booksLoaded();
-  return { default: () => <h1>Books page</h1> };
 });
 vi.mock('../pages/admin/admin-layout', () => {
   state.adminLoaded();
@@ -100,7 +94,6 @@ describe('deferred routes', () => {
   it('renders home without importing private pages or console layouts', () => {
     renderRoute('/');
     expect(screen.getByRole('heading', { name: 'Home page' })).toBeVisible();
-    expect(state.booksLoaded).not.toHaveBeenCalled();
     expect(state.adminLoaded).not.toHaveBeenCalled();
     expect(state.professionalLoaded).not.toHaveBeenCalled();
   });
@@ -118,7 +111,7 @@ describe('deferred routes', () => {
     state.auth.isAuthenticated = false;
     renderRoute('/books');
     expect(await screen.findByRole('heading', { name: 'Login page' })).toBeVisible();
-    expect(state.booksLoaded).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Vetify Books' })).not.toBeInTheDocument();
   });
 
   it.each(['/admin', '/professionals/dashboard'])(
@@ -147,9 +140,14 @@ describe('deferred routes', () => {
     expect(screen.getByText('Professional navigation')).toBeVisible();
   });
 
-  it('continues to render the planner immediately for a signed-in user', () => {
+  it('shows the Meal Planner app introduction without requiring sign-in', () => {
+    state.auth.isAuthenticated = false;
     renderRoute('/planner');
-    expect(screen.getByRole('heading', { name: 'Planner page' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'A simpler feeding routine.'
+    );
+    expect(screen.getByRole('img', { name: 'App download QR code placeholder' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Login page' })).not.toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

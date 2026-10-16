@@ -6,7 +6,7 @@ export default function ContactPage() {
     <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
       <ContactHero />
 
-      <section className="mx-auto max-w-3xl px-5 pb-20 sm:px-8 sm:pb-24">
+      <section className="mx-auto max-w-3xl px-5 pb-8 sm:px-8 sm:pb-10 xl:pb-24">
         <ContactInfo />
       </section>
     </main>

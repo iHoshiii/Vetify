@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { ApiError } from '@/services/api';
 import { needsEmailVerification } from '@shared/email-verification';
 import { VERIFICATION_REQUIRED_EVENT } from '@/lib/email-verification-access';
+import { useAuthStorageSync } from './use-auth-storage-sync';
 
 import {
   logoutFromServer,
@@ -10,6 +11,7 @@ import {
   writeAuthState,
   type AuthSession,
   type AuthUser,
+  type AuthState,
 } from '@/lib/auth';
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
@@ -34,6 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // at 'loading' only when there is something to validate keeps first paint for
   // anonymous visitors free of a spinner.
   const [status, setStatus] = useState<AuthStatus>(stored?.user ? 'loading' : 'anonymous');
+  const adoptStored = useCallback((session: AuthState | null) => {
+    setUser(session?.user ?? null);
+    setAccessToken(session?.accessToken ?? null);
+    setStatus(session?.user ? 'authenticated' : 'anonymous');
+  }, []);
+  useAuthStorageSync(adoptStored);
 
   const setSession = useCallback((session: AuthSession) => {
     setUser(session.user);

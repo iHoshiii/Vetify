@@ -28,7 +28,11 @@ export default function BookingFilterBar({
   onPick: (key: BookingFilter) => void;
 }) {
   return (
-    <div className="flex gap-1" role="tablist" aria-label="Filter by status">
+    <div
+      className="flex max-w-full flex-wrap gap-1 pb-1 xl:flex-nowrap"
+      role="tablist"
+      aria-label="Filter by status"
+    >
       {TABS.map((tab) => (
         <button
           key={tab.key}
@@ -36,7 +40,7 @@ export default function BookingFilterBar({
           role="tab"
           aria-selected={value === tab.key}
           onClick={() => onPick(tab.key)}
-          className={`flex-1 rounded-md px-3 py-1.5 text-center text-sm font-medium transition ${
+          className={`min-h-11 min-w-0 flex-1 basis-24 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:px-3 sm:text-sm xl:basis-auto xl:shrink-0 ${
             value === tab.key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >

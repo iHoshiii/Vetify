@@ -1,15 +1,14 @@
 import { SiteLink } from '@/components/common/site-link';
+import { BrandLogo } from '@/components/common/brand-logo';
 
 export default function Footer() {
   return (
     <footer className="bg-slate-900 text-white">
-      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
+      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10 xl:py-16">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 font-black text-white shadow-md shadow-teal-500/30">
-                V
-              </div>
+              <BrandLogo className="h-10 w-10 rounded-xl shadow-md shadow-teal-500/30" />
               <span className="text-xl font-black">Vetify</span>
             </div>
             <p className="mt-4 leading-relaxed text-slate-400">

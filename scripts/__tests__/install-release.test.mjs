@@ -59,7 +59,6 @@ async function scenario(success, previous, check) {
       await writeFile(join(paths.bin, name), `#!/bin/bash\n${body}\n`, { mode: 0o755 });
     const files = {
       'server/index.js': 'new application',
-      'server/book-pdf.worker.js': 'worker',
       'server/package-lock.json': '{}',
       'public/index.html': 'new website',
       'config/Caddyfile': 'config',

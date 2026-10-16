@@ -56,11 +56,11 @@ export default function MapPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-80px)] bg-[#f6fbfb] text-slate-950 flex flex-col justify-center">
+    <main className="min-h-[calc(var(--viewport-height,100dvh)-var(--site-header-height))] bg-[#f6fbfb] text-slate-950 flex flex-col xl:min-h-[calc(100vh-80px)] xl:justify-center">
       {/* ── HERO + MAP ───────────────────────────────────────── */}
-      <section className="flex items-center px-5 sm:px-10 max-w-7xl mx-auto py-8 gap-8 lg:gap-12 w-full">
+      <section className="flex items-center px-5 sm:px-10 max-w-7xl mx-auto py-6 sm:py-8 gap-8 lg:gap-12 w-full">
         {/* LEFT — Text */}
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="min-w-0 flex-1 flex flex-col gap-6">
           {/* Heading */}
           <div>
             <h1 className="text-4xl font-black tracking-tight leading-[1.1] text-slate-900 sm:text-5xl">

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { SiteLink } from '@/components/common/site-link';
 import { NAV_ITEMS, TOOLS_ITEMS } from './nav-data';
 
@@ -9,13 +11,25 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isOpen, showAuthActions, onClose }: MobileMenuProps) {
+  useBodyScrollLock(isOpen);
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [isOpen, onClose]);
+  if (!isOpen) return null;
   return (
     <div
-      className={`overflow-hidden transition-all duration-300 md:hidden ${
-        isOpen ? 'max-h-[600px] border-t border-slate-200' : 'max-h-0'
-      }`}
+      id="mobile-navigation"
+      className="absolute inset-x-0 top-full max-h-[calc(var(--viewport-height,100dvh)-var(--site-header-height))] overflow-y-auto overscroll-contain border-t border-slate-200 bg-white shadow-lg xl:hidden"
     >
-      <nav className="flex flex-col gap-1 bg-white px-5 pb-4 pt-2">
+      <nav
+        aria-label="Mobile navigation"
+        className="flex flex-col gap-1 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
+      >
         {NAV_ITEMS.map((item) => (
           <SiteLink
             key={item.href}

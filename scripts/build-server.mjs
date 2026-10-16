@@ -13,7 +13,6 @@ const result = await build({
   absWorkingDir: root,
   entryPoints: {
     index: 'src/server/index.ts',
-    'book-pdf.worker': 'src/server/services/book-pdf.worker.ts',
   },
   outdir: output,
   tsconfig: 'tsconfig.server.json',
@@ -64,4 +63,4 @@ await writeFile(
     2
   ) + '\n'
 );
-console.log(`[build] Server and PDF worker bundled with ${packages.size} runtime dependencies.`);
+console.log(`[build] Server bundled with ${packages.size} runtime dependencies.`);

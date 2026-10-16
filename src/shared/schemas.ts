@@ -14,9 +14,6 @@ import {
   ADMIN_PAGE_SIZE,
   ADMIN_PAGE_SIZE_MAX,
   AVATAR_URL_MAX_CHARS,
-  BLOG_MAX_TAGS,
-  BLOG_PAGE_SIZE,
-  BLOG_PAGE_SIZE_MAX,
   MESSAGE_MAX_LENGTH,
   MESSAGE_PAGE_SIZE,
   MESSAGE_PAGE_SIZE_MAX,
@@ -167,36 +164,6 @@ export const AUDIT_ACTIONS = [
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /**
- * What an automatic screening verdict can be about.
- *
- * Shared for the same reason the audit actions are: the queue renders these
- * strings as chips, so the list the server may write and the list the dashboard
- * can label have to be one list. Named for what a reviewer would say out loud
- * rather than for any provider's taxonomy.
- */
-export const MODERATION_CATEGORIES = [
-  'nudity',
-  'sexual',
-  'slur',
-  'hate',
-  'harassment',
-  'violence',
-  'self-harm',
-  'illegal',
-] as const;
-export type ModerationCategory = (typeof MODERATION_CATEGORIES)[number];
-
-/**
- * Where a screened post ended up.
- *
- * 'unavailable' is not a pass: the check could not be completed — an unreachable
- * model, a cover image that would not load — and the post is held on that basis,
- * because the alternative is publishing the one post nobody managed to look at.
- */
-export const MODERATION_OUTCOMES = ['clean', 'flagged', 'unavailable'] as const;
-export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
-
-/**
  * What a privileged action was done to.
  *
  * 'professional-inquiry' is the enquiry a reviewer invites or turns away, and is
@@ -212,99 +179,6 @@ export const AUDIT_TARGET_TYPES = [
   'user',
 ] as const;
 export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
-
-/**
- * Statuses an author may set on their own post.
- *
- * A deliberate subset of the four a blog document can hold: 'hidden' and
- * 'removed' are moderation states, and letting an author write them would let
- * them both hide their own work in a way the dashboard cannot explain and — far
- * worse — patch their way back out of a takedown.
- */
-export const BLOG_AUTHOR_STATUSES = ['draft', 'published'] as const;
-export type BlogAuthorStatus = (typeof BLOG_AUTHOR_STATUSES)[number];
-
-/**
- * The statuses only a moderator may set, and the full set a post can hold.
- *
- * The full list is derived from the author's rather than written out again, which
- * is what makes the note above ("a deliberate subset") true by construction: a
- * status added here cannot go missing from one of the two lists.
- *
- * 'flagged' is where the automatic screen puts a post it will not let through:
- * held out of the feed, waiting on a human. Distinct from 'hidden', which is an
- * admin's own reversible "not right now" — the difference is who decided, and only
- * one of them has a verdict attached explaining why.
- */
-export const BLOG_MODERATION_STATUSES = ['flagged', 'hidden', 'removed'] as const;
-export const BLOG_STATUSES = [...BLOG_AUTHOR_STATUSES, ...BLOG_MODERATION_STATUSES] as const;
-export type BlogStatus = (typeof BLOG_STATUSES)[number];
-
-/** Defined once so create and update cannot drift apart on the same field. */
-const blogFields = {
-  title: z
-    .string()
-    .trim()
-    .min(3, 'Title must be at least 3 characters')
-    .max(160, 'Title is too long'),
-  excerpt: z
-    .string()
-    .trim()
-    .min(10, 'Excerpt must be at least 10 characters')
-    .max(320, 'Excerpt is too long'),
-  body: z.string().trim().min(50, 'A post needs at least 50 characters'),
-  coverUrl: z.string().trim().url('Cover image must be a valid URL').nullish(),
-  tags: z
-    .array(z.string().trim().min(1, 'A tag cannot be empty').max(24, 'That tag is too long'))
-    .max(BLOG_MAX_TAGS, `Up to ${BLOG_MAX_TAGS} tags`)
-    // Lowercased and deduplicated here rather than at the query, so 'Dogs' and
-    // 'dogs' are one filterable tag instead of two that each miss half the posts.
-    .transform((tags) => [...new Set(tags.map((tag) => tag.toLowerCase()))]),
-};
-
-export const blogCreateSchema = z.object({
-  ...blogFields,
-  tags: blogFields.tags.default([]),
-  // Drafts by default: publishing is a decision, and a schema default is the
-  // wrong place to make it on the author's behalf.
-  status: z.enum(BLOG_AUTHOR_STATUSES).default('draft'),
-});
-
-export const blogUpdateSchema = z
-  .object({
-    title: blogFields.title.optional(),
-    excerpt: blogFields.excerpt.optional(),
-    body: blogFields.body.optional(),
-    coverUrl: blogFields.coverUrl.optional(),
-    tags: blogFields.tags.optional(),
-    status: z.enum(BLOG_AUTHOR_STATUSES).optional(),
-  })
-  // An empty PATCH would otherwise bump updatedAt and report success for having
-  // done nothing.
-  .refine((patch) => Object.keys(patch).length > 0, {
-    message: 'Include at least one field to update',
-  });
-
-export const blogListQuerySchema = z.object({
-  page: z.coerce.number().int().min(1, 'Page starts at 1').default(1),
-  // Capped rather than clamped: silently returning 50 for a request that asked
-  // for 5000 hides the limit from whoever is writing against the API.
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(BLOG_PAGE_SIZE_MAX, `Ask for at most ${BLOG_PAGE_SIZE_MAX} posts per page`)
-    .default(BLOG_PAGE_SIZE),
-  tag: z.string().trim().toLowerCase().min(1).optional(),
-  q: z.string().trim().min(2, 'Search for at least 2 characters').max(80).optional(),
-});
-
-export type BlogCreateInput = z.input<typeof blogCreateSchema>;
-export type BlogCreate = z.output<typeof blogCreateSchema>;
-export type BlogUpdateInput = z.input<typeof blogUpdateSchema>;
-export type BlogUpdate = z.output<typeof blogUpdateSchema>;
-/** Post-parse list query: page and limit coerced from strings and defaulted. */
-export type BlogListQuery = z.output<typeof blogListQuerySchema>;
 
 /**
  * What an applicant fills in. Defined once so the form and the validator behind
@@ -613,7 +487,7 @@ export type ProfessionalStatus = (typeof PROFESSIONAL_STATUSES)[number];
  * Required wherever the action takes something away — a rejection, a takedown, a
  * ban — because it is the only thing the person on the other end is told, and the
  * only thing the audit log can show for the decision months later. Defined once
- * so the blog, user and professional routes cannot disagree on how much of an
+ * so the user and professional routes cannot disagree on how much of an
  * explanation counts as one.
  */
 export const moderationReason = z
@@ -958,8 +832,7 @@ export type CapturedPhotoInput = z.input<typeof capturedPhotoSchema>;
  * Admin surface
  *
  * Query shapes and mutation bodies for the dashboard, kept beside the public
- * contracts on purpose: the admin blog list is the public list plus a status
- * filter, and reading the two next to each other is how they stay that way.
+ * contracts so account and professional filters share the same vocabulary.
  * -------------------------------------------------------------------------- */
 
 /**
@@ -988,35 +861,6 @@ const adminPageFields = {
     .max(ADMIN_PAGE_SIZE_MAX, `Ask for at most ${ADMIN_PAGE_SIZE_MAX} rows per page`)
     .default(ADMIN_PAGE_SIZE),
 };
-
-/**
- * The moderation list of posts.
- *
- * No status default, unlike the public feed's implicit 'published': moderating
- * means seeing the drafts and the takedowns too, and an admin who wants one
- * status says so.
- */
-export const adminBlogListQuerySchema = z.object({
-  ...adminPageFields,
-  status: z.enum(BLOG_STATUSES).optional(),
-  author: objectIdSchema.optional(),
-  tag: z.string().trim().toLowerCase().min(1).optional(),
-  q: z.string().trim().min(2, 'Search for at least 2 characters').max(80).optional(),
-});
-
-/** Hiding is reversible, so its note is optional. A takedown is not, so its
- * reason is required — that string is the whole defence of the decision. */
-export const blogHideSchema = z.object({ reason: moderationNote });
-export const blogRemoveSchema = z.object({ reason: moderationReason });
-
-/**
- * The permanent one.
- *
- * Identical in shape to a takedown's and deliberately its own name: this is the
- * request that leaves nothing to restore, and a route mounting the wrong schema
- * should read as wrong rather than as a synonym.
- */
-export const blogPurgeSchema = z.object({ reason: moderationReason });
 
 /** Sort orders the user list offers. Email is there for the support case: someone
  * writes in, and you are looking for one address rather than browsing. */
@@ -1124,7 +968,7 @@ export const adminAuditListQuerySchema = z.object({
  * activity type behind them: 'signups' reads better on a chart legend than
  * 'user.signed_up', and the mapping belongs to the server.
  */
-export const METRIC_SERIES = ['signups', 'logins', 'chats', 'blogs', 'applications'] as const;
+export const METRIC_SERIES = ['signups', 'logins', 'chats', 'applications'] as const;
 export type MetricSeries = (typeof METRIC_SERIES)[number];
 
 /** What the breakdown charts can slice by. */
@@ -1132,7 +976,6 @@ export const BREAKDOWN_DIMENSIONS = [
   'provider',
   'role',
   'userStatus',
-  'blogStatus',
   'inquiryStatus',
   'professionalStatus',
 ] as const;
@@ -1196,10 +1039,6 @@ export const metricsBreakdownQuerySchema = z
       !query.role || (USER_BREAKDOWN_DIMENSIONS as readonly string[]).includes(query.dimension),
     { path: ['role'], message: 'A role only narrows the account breakdowns' }
   );
-
-/** Post-parse admin queries: page, limit and days coerced from strings and
- * defaulted, so a handler reads numbers and never re-parses a param. */
-export type AdminBlogListQuery = z.output<typeof adminBlogListQuerySchema>;
 export type AdminUserListQuery = z.output<typeof adminUserListQuerySchema>;
 export type AdminProfessionalListQuery = z.output<typeof adminProfessionalListQuerySchema>;
 export type AdminAuditListQuery = z.output<typeof adminAuditListQuerySchema>;
@@ -1207,9 +1046,6 @@ export type MetricsOverviewQuery = z.output<typeof metricsOverviewQuerySchema>;
 export type MetricsTimeseriesQuery = z.output<typeof metricsTimeseriesQuerySchema>;
 export type MetricsProviderTimeseriesQuery = z.output<typeof metricsProviderTimeseriesQuerySchema>;
 export type MetricsBreakdownQuery = z.output<typeof metricsBreakdownQuerySchema>;
-
-export type BlogHideInput = z.output<typeof blogHideSchema>;
-export type BlogRemoveInput = z.output<typeof blogRemoveSchema>;
 export type UserRoleUpdateInput = z.output<typeof userRoleUpdateSchema>;
 export type UserStatusUpdateInput = z.output<typeof userStatusUpdateSchema>;
 

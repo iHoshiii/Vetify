@@ -5,7 +5,7 @@ import { services } from '../data/services-data';
 
 export default function ServicesGrid() {
   return (
-    <section className="mx-auto max-w-7xl px-5 sm:px-8 pb-24 sm:pb-32">
+    <section className="mx-auto max-w-7xl px-5 sm:px-8 pb-8 sm:pb-10 xl:pb-32">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {services.map((service, i) => (
           <ScrollReveal key={service.title} variant="reveal" delay={i * 80}>

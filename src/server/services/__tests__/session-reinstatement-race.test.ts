@@ -2,7 +2,7 @@ import type { Server } from 'socket.io';
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
-import { insertUser } from '../../models/users';
+import { insertUser, usersCollection } from '../../models/users';
 import * as restrictions from '../../models/users/restrict-account';
 import { setRealtime } from '../../realtime/hub';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
@@ -34,6 +34,7 @@ describe('late restriction cleanup after reinstatement', () => {
     'preserves a new sign-in after %s cleanup resumes',
     async (status) => {
       const user = await insertUser({ ...credentials, provider: 'local' });
+      await usersCollection().updateOne({ _id: user._id }, { $set: { emailVerified: true } });
       const moderator = await insertUser({
         email: 'moderator@example.com',
         provider: 'google',

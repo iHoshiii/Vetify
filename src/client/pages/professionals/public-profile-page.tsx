@@ -75,7 +75,7 @@ export default function PublicProfilePage() {
 
   if (query.isPending) {
     return (
-      <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 sm:px-8">
+      <main className="bg-[#f6fbfb] px-5 py-6 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
         <p className="mx-auto max-w-4xl text-slate-600">Loading…</p>
       </main>
     );
@@ -83,7 +83,7 @@ export default function PublicProfilePage() {
 
   if (!vet) {
     return (
-      <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+      <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
         <div className="mx-auto max-w-4xl">
           <h1 className="text-3xl font-black tracking-tight">Not in the directory</h1>
           <p className="mt-3 text-slate-600">
@@ -105,7 +105,7 @@ export default function PublicProfilePage() {
   const availability = AVAILABILITY[vet.availabilityStatus] ?? AVAILABILITY.unavailable;
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
       <div className="mx-auto max-w-4xl">
         <div className={PANEL}>
           <div className="flex flex-wrap items-start justify-between gap-6">

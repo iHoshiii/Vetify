@@ -16,11 +16,11 @@ export const services: ServiceItem[] = [
     actionText: 'Explore anatomy',
   },
   {
-    title: 'Personalized Nutrition',
+    title: 'Meal Planner App',
     description:
-      "Stop guessing with generic kibble. Input your pet's age, weight, and allergies to get customized meal ideas and dietary recommendations that actually fit their needs.",
+      'Get to know the separate mobile app for pet profiles, meal plans and feeding records. Preview the highlights and learn how your Vetify account connects.',
     href: '/planner',
-    actionText: 'Plan a meal',
+    actionText: 'Explore the app',
   },
   {
     title: 'Find Nearby Vets',

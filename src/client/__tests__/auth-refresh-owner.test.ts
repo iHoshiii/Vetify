@@ -101,7 +101,10 @@ describe('refresh after changing accounts', () => {
         })
     );
     vi.stubGlobal('fetch', fetchMock);
-    const pending = apiFetch('/meal-plans', { method: 'POST', body: { name: 'Old account plan' } });
+    const pending = apiFetch('/account/profile', {
+      method: 'PATCH',
+      body: { name: 'Old account name' },
+    });
     writeAuthState(current);
     finish({ status: 401, ok: false, json: async () => ({ error: 'Expired' }) } as Response);
     await expect(pending).rejects.toMatchObject({ status: 409, reason: 'account-changed' });

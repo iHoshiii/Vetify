@@ -63,6 +63,13 @@ const FloatingBones = () => {
     []
   );
 
+  if (
+    typeof OffscreenCanvas === 'undefined' ||
+    typeof HTMLCanvasElement.prototype.transferControlToOffscreen !== 'function' ||
+    window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  )
+    return null;
+
   return (
     <ParticlesProvider init={particlesInit}>
       <Particles id="tsparticles" options={options} className="absolute inset-0 z-0" />

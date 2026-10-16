@@ -1,6 +1,10 @@
 import type { Server } from 'socket.io';
 
 import { markCallConnected } from '../models';
+import { env } from '../config/env';
+import { sendUser, closeUser, userOnline } from './gateway/delivery';
+import { callLive } from './gateway/calls';
+import { queueDelivery } from './gateway/work';
 
 // The one io instance, set at boot. Held here so services can emit without importing the HTTP server.
 let io: Server | null = null;
@@ -16,10 +20,18 @@ export function userRoom(userId: string): string {
 
 // Emits to one account's room. A no-op before the socket server is up, so tests and seeds do not need one.
 export function emitToUser(userId: string, event: string, payload: unknown): void {
+  if (env.REALTIME_MANAGEMENT_ENDPOINT) {
+    queueDelivery(sendUser(userId, event, payload));
+    return;
+  }
   io?.to(userRoom(userId)).emit(event, payload);
 }
 
 export function disconnectUserSessions(userId: string, beforeSessionVersion?: number): void {
+  if (env.REALTIME_MANAGEMENT_ENDPOINT) {
+    queueDelivery(closeUser(userId, beforeSessionVersion));
+    return;
+  }
   if (beforeSessionVersion !== undefined) {
     for (const socket of io?.sockets.sockets.values() ?? []) {
       if (
@@ -36,12 +48,14 @@ export function disconnectUserSessions(userId: string, beforeSessionVersion?: nu
   io?.in(userRoom(userId)).disconnectSockets(true);
 }
 
-export function isUserOnline(userId: string): boolean {
+export function isUserOnline(userId: string): boolean | Promise<boolean> {
+  if (env.REALTIME_MANAGEMENT_ENDPOINT) return userOnline(userId);
   return (io?.sockets.adapter.rooms.get(userRoom(userId))?.size ?? 0) > 0;
 }
 
 // Whether a socket sits in this booking's call room right now. The `call:` prefix mirrors callRoom in call.ts.
-export function isCallLive(appointmentId: string): boolean {
+export function isCallLive(appointmentId: string): boolean | Promise<boolean> {
+  if (env.REALTIME_MANAGEMENT_ENDPOINT) return callLive(appointmentId);
   return (io?.sockets.adapter.rooms.get(`call:${appointmentId}`)?.size ?? 0) > 0;
 }
 

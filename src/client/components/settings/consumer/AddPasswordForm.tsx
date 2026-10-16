@@ -8,6 +8,7 @@ import { openAccountAuthUrl } from '@/services/account-auth.service';
 import { ApiError } from '@/services/api';
 import { accountAuthError, PROVIDER_NAMES } from './account-auth-feedback';
 import { FIELD, SaveRow } from './controls';
+import { LINK_METHOD_BUTTON } from './link-method-styles';
 
 type Props = { methods: AccountLoginMethods; onProofExpired: () => void };
 
@@ -71,7 +72,7 @@ export default function AddPasswordForm({ methods, onProofExpired }: Props) {
             type="button"
             disabled={proof.isPending}
             onClick={() => void authenticate()}
-            className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-900 disabled:opacity-45"
+            className={LINK_METHOD_BUTTON}
           >
             {proof.isPending ? 'Confirming...' : `Confirm with ${PROVIDER_NAMES[provider]}`}
           </button>
@@ -126,6 +127,7 @@ export default function AddPasswordForm({ methods, onProofExpired }: Props) {
         saved={false}
         dirty={dirty}
         label="Add password"
+        buttonClassName={LINK_METHOD_BUTTON}
         onReset={reset}
       />
     </form>

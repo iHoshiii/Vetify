@@ -1,63 +1,69 @@
-# Vetify — Masterplan
+# Main Vetify delivery plan
 
-## Phase Overview
+Updated 14 October 2026. Scope is main only. This plan separates implemented
+foundations from remaining release work; no phase implies a live AWS deployment.
 
-| Phase | Focus                                              | Status         |
-| ----- | -------------------------------------------------- | -------------- |
-| 1     | Foundation — monorepo, Express, MongoDB            | ✅ Done        |
-| 2     | Auth — JWT + httpOnly refresh cookie               | ✅ Done        |
-| 3     | AI Chat — Gemini + LangSmith                       | ✅ Done        |
-| 4     | Frontend — React + Vite, React Router, Chat UI     | ✅ Done        |
-| 5     | Testing — Vitest unit tests, Playwright E2E        | 🔄 In progress |
-| 6     | Deployment — S3 + CloudFront, API Gateway + Lambda | ⏳ Planned     |
+## Current status
 
----
+| Area                                             | Status                                           |
+| ------------------------------------------------ | ------------------------------------------------ |
+| Main React/Express/Mongo foundations             | Implemented                                      |
+| Browser/native accounts, email codes and linking | Implemented; release regression required         |
+| Professional/clinic/appointment workflows        | Implemented; serverless upload/jobs work pending |
+| Main AI assistant                                | Implemented; policy/provider checks required     |
+| Local Socket.IO and Gateway WebSocket adapters   | Implemented; live cloud acceptance pending       |
+| Main-only feature extraction                     | Planner/Books/Anatomy/Blog removed               |
+| Planner introspection v2 compatibility           | Pending coordinated main/Planner work            |
+| Separate-app browser SSO                         | Planned, not implemented                         |
+| AWS production release                           | Pending                                          |
 
-## Phase 1 — Foundation
+## Phase 1: establish main ownership
 
-- Vite + React + Express monorepo under `src/client/` and `src/server/`
-- Shared Zod schemas in `src/shared/schemas.ts`
-- MongoDB Atlas via the official `mongodb` driver
-- Prisma for schema management (`npx prisma db push`)
-- `nodemon` + `concurrently` for local dev
+Preserve each feature implementation in its own repository. Descriptions/prompts
+now belong there. Remove feature import roots, API mounts, collection/index
+initialization, PDF packaging and Anatomy assets from main together.
+Update account exports, admin metrics and professional/navigation links.
+Retain central native auth, Planner QR/handoff, subscription authority, common
+region/date helpers and professional MediaPipe capture.
+Gate: main starts, renders and functions with all feature apps unavailable.
 
-## Phase 2 — Auth
+## Phase 2: finish main serverless requirements
 
-- Custom JWT auth — short-lived access token + long-lived refresh token
-- Refresh token stored hashed in MongoDB (`RefreshToken` model), sent as httpOnly cookie
-- Client stores `{ accessToken, user }` in `localStorage` under `vetify.auth`
-- Endpoints: `POST /api/v1/auth/signup`, `/login`, `/refresh`, `/logout`
-- Zod validation on all auth routes via `validate` middleware
+Implement private professional image uploads through authorized object storage.
+Schedule reminders, completion and mail retries durably with idempotency and
+bounded retry/error visibility. Review clinic refresh scheduling.
+Verify persistent abuse controls, configuration, DB/network access and secrets.
+Gate: main workflows work without persistent Node intervals or open browsers.
 
-## Phase 3 — AI Chat
+## Phase 3: validate main release
 
-- `POST /api/v1/chat` → Express → `@google/genai` (Gemini)
-- Model whitelist enforced server-side via `chatRequestSchema`
-- LangSmith tracing for monitoring AI responses
-- System prompt includes safety rules, scannability rules, length rules
-- Conversation history passed per request (stateless server)
+Run auth/verification/linking, professional approval, booking, messaging and call
+regression tests. Verify package contents exclude feature implementation/data.
+Check admin metrics and exports without external dependencies.
+Earlier focused checks passed; full-suite failures remain and need assessment.
+Gate: relevant failures resolved and the actual release artifacts verified.
 
-## Phase 4 — Frontend
+## Phase 4: deploy main AWS resources
 
-- React + Vite + TypeScript + Tailwind CSS
-- React Router for client-side routing
-- `ChatWindow.tsx` — full chat UI with edit, cancel, model selector, markdown rendering
-- `react-markdown` for rendering AI responses
-- `AbortController` for cancelling in-flight requests
-- Custom auth lib (`src/client/lib/auth.ts`) — no NextAuth/Supabase
+Review credits/budget and credentials. Configure DNS, certificate, production
+mail and main database network access. Deploy the SAM backend, private frontend
+S3 and CloudFront; use isolated frontend build settings and production secrets.
+Test real inbox delivery, provider callbacks, durable jobs and cross-network TURN.
+Gate: [live acceptance](main-deployment/aws-acceptance.md) passes with monitoring.
 
-## Phase 5 — Testing (In Progress)
+## Phase 5: enable external integrations separately
 
-- Vitest for unit tests (`src/client/__tests__/`, `src/server/models/__tests__/`)
-- Playwright for E2E tests (`tests/e2e/`)
-- `mongodb-memory-server` for isolated server tests
-- CI in `.github/workflows/ci.yml` (currently disabled during active development)
+Coordinate Planner's native version 2 introspection contract with main.
+Implement registered-client web sign-in and trusted professional/admin capability.
+Test account reuse, revocation, disabled users and provider-link collisions.
+Each feature deploys independently; enable its main link only after it works.
+Main launch can precede this phase with external links marked unavailable.
 
-## Phase 6 — Deployment (Planned)
+## Execution references
 
-- Frontend: `npm run build:client` → upload `dist/` to S3 → serve via CloudFront
-  - CloudFront error pages: 403/404 → `/index.html` (200) for React Router support
-- Backend: wrap Express with `@vendia/serverless-express` → deploy to Lambda → API Gateway (HTTP API)
-- Custom domains: `yourapp.com` (CloudFront) + `api.yourapp.com` (API Gateway) — required for httpOnly cookies
-- Secrets: `MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY` stored in Lambda env vars (encrypted)
-- `VITE_API_URL` baked into the client build at deploy time
+- [Main extraction plan](../MIGRATION_PLAN.md)
+- [Exact extraction checklist](main-deployment/extraction-checklist.md)
+- [Central authentication contract](main-deployment/shared-auth.md)
+- [AWS preparation](main-deployment/aws-prepare.md)
+- [AWS deployment](main-deployment/aws-deploy.md)
+- [Implemented realtime](serverless-realtime.md)

@@ -40,7 +40,7 @@ export function VetRow({
 
   return (
     <li>
-      <div className="relative flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md">
+      <div className="relative grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md xl:flex">
         {/* Covers the card so the whole row still opens the profile, without an anchor inside an anchor. */}
         <Link
           to={`/professionals/${vet.id}`}
@@ -66,11 +66,15 @@ export function VetRow({
         )}
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-slate-900">{heading}</span>
+          <span className="block break-words text-sm font-bold text-slate-900 xl:truncate">
+            {heading}
+          </span>
           {second && (
-            <span className="block truncate text-xs font-semibold text-slate-600">{second}</span>
+            <span className="block break-words text-xs font-semibold text-slate-600 xl:truncate">
+              {second}
+            </span>
           )}
-          <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold">
+          <span className="mt-0.5 flex flex-wrap items-center gap-1.5 break-words text-[11px] font-semibold">
             <span className={AVAILABILITY_TONE[vet.availabilityStatus]}>
               {AVAILABILITY[vet.availabilityStatus]}
             </span>
@@ -84,14 +88,14 @@ export function VetRow({
           </span>
         </span>
 
-        <span className="flex shrink-0 flex-col items-end gap-1.5">
+        <span className="col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-2 xl:shrink-0 xl:flex-col xl:items-end xl:gap-1.5">
           <span className="text-xs font-black text-blue-700">{distance} away</span>
 
           {vet.availabilityStatus === 'available' && (
             <Link
               to={`/book-appointment?professional=${vet.id}`}
               aria-label={`${book} with ${person}`}
-              className="relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-teal-800 px-2.5 py-1.5 text-[11px] font-bold leading-none text-white transition-colors hover:bg-teal-900"
+              className="relative z-10 inline-flex min-h-10 max-w-full items-center gap-1.5 rounded-full bg-teal-800 px-2.5 py-1.5 text-[11px] font-bold leading-tight text-white transition-colors hover:bg-teal-900 xl:min-h-0 xl:whitespace-nowrap xl:leading-none"
             >
               <CalendarPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {book}

@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.client.runtime.json",
+  "include": ["src/client/index.tsx", "tests/responsive/**/*.ts", "playwright.responsive.config.ts"]
+}

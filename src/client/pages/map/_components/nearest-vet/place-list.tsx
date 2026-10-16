@@ -6,7 +6,7 @@ export function PlacesList({ places, loading }: { places: NearbyPlace[]; loading
   if (places.length === 0 || loading) return null;
 
   return (
-    <ul className="space-y-2">
+    <ul className="min-w-0 space-y-2">
       {places.map((place) =>
         place.source === 'vetify' ? (
           <VetRow

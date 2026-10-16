@@ -9,6 +9,8 @@ const confirmationSessionPaths = new Set([
   '/auth/login',
   '/auth/refresh',
   '/auth/logout',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth/email/verify',
   '/auth/email/resend',
   '/auth/native/signup',
@@ -26,7 +28,8 @@ export const enforceEmailVerification: RequestHandler = async (req, res, next) =
   await optionalAuth(req, res, () => undefined);
   if (req.auth && isValidObjectId(req.auth.userId)) {
     const user = await findUserById(req.auth.userId);
-    if (user) requireVerifiedEmail(user);
+    if (user && (req.auth.sessionVersion ?? 0) === (user.sessionVersion ?? 0))
+      requireVerifiedEmail(user);
   }
   next();
 };

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export default function CtaBanner() {
   return (
     <ScrollReveal variant="reveal">
-      <section className="bg-vet-ink px-5 py-16 sm:px-8 sm:py-20">
+      <section className="bg-vet-ink px-5 py-8 sm:px-8 sm:py-10 xl:py-20">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 text-center md:flex-row md:justify-between md:text-left">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.22em] text-vet-accent">

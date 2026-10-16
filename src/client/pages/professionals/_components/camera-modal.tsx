@@ -43,7 +43,7 @@ export default function CameraModal({ label, guide, video, onShoot, onClose }: P
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className="relative flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col rounded-2xl bg-slate-950 p-4 shadow-2xl outline-none sm:max-h-[calc(100vh-4rem)] sm:p-6"
+        className="relative flex max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-3xl flex-col rounded-2xl bg-slate-950 p-4 shadow-2xl outline-none sm:max-h-[calc(100dvh-4rem)] sm:p-6"
       >
         <button
           type="button"
@@ -57,7 +57,7 @@ export default function CameraModal({ label, guide, video, onShoot, onClose }: P
 
         <div
           className="relative mx-auto w-full shrink-0 overflow-hidden rounded-xl bg-black"
-          style={{ aspectRatio: ratio, maxWidth: `calc(62vh * ${ratio})` }}
+          style={{ aspectRatio: ratio, maxWidth: `calc(50dvh * ${ratio})` }}
         >
           {/* object-cover with the wrapper on the stream's own ratio: no letterboxing to
               offset the outline from the pixels the check reads */}

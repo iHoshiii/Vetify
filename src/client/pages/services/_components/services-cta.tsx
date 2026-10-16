@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 export default function ServicesCta() {
   return (
-    <section className="bg-white py-20 border-t border-slate-100">
+    <section className="bg-white py-8 sm:py-10 xl:py-20 border-t border-slate-100">
       <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
         <h2 className="text-2xl font-bold tracking-tight text-vet-ink sm:text-3xl">
           Still looking for answers?
@@ -10,7 +10,7 @@ export default function ServicesCta() {
           If you&apos;re not sure which tool you need, try asking our AI assistant first. It can
           point you in the right direction.
         </p>
-        <div className="mt-8 flex justify-center gap-3">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             to="/chat"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-vet-primary px-6 text-sm font-bold text-white transition-colors hover:bg-vet-primary-dark"

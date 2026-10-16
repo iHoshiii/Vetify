@@ -5,9 +5,9 @@ export default function TermsAndConditionsPage() {
   useDocumentTitle('Terms and Conditions', 'Terms and Conditions for using the Vetify application');
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-5 sm:px-8">
-      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-xl shadow-slate-900/5 sm:p-12">
-        <h1 className="mb-8 text-4xl font-black tracking-tight text-slate-900">
+    <div className="bg-slate-50 py-6 px-5 sm:px-8 sm:py-8 xl:min-h-screen xl:py-12">
+      <div className="mx-auto max-w-3xl rounded-3xl bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6 xl:p-12">
+        <h1 className="mb-8 text-3xl font-black sm:text-4xl tracking-tight text-slate-900">
           Terms and Conditions
         </h1>
 
@@ -60,7 +60,7 @@ export default function TermsAndConditionsPage() {
           </p>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-slate-100">
+        <div className="mt-6 pt-6 border-t border-slate-100 xl:mt-12 xl:pt-8">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-sm font-bold text-teal-600 hover:text-teal-700 transition-colors"

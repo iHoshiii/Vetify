@@ -33,3 +33,26 @@
 .leaflet-popup-tip-container {
   display: none !important;
 }
+
+@media (max-width: 1279px) {
+  .leaflet-popup {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .leaflet-popup-content {
+    max-width: calc(100vw - 5rem);
+    max-height: max(3rem, calc(var(--viewport-height, 100dvh) - 10rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .leaflet-popup-content > div {
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .leaflet-popup-content > div > div {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

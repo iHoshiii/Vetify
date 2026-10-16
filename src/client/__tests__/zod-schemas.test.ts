@@ -1,26 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ADMIN_PAGE_SIZE,
-  ADMIN_PAGE_SIZE_MAX,
-  BLOG_PAGE_SIZE,
-  BLOG_PAGE_SIZE_MAX,
   METRIC_MAX_DAYS,
   METRIC_WINDOW_DAYS,
   PROFESSIONAL_PAGE_SIZE,
   PROFESSIONAL_PAGE_SIZE_MAX,
 } from '@shared/limits';
 import {
-  BLOG_AUTHOR_STATUSES,
-  BLOG_STATUSES,
   adminAuditListQuerySchema,
-  adminBlogListQuerySchema,
   adminProfessionalListQuerySchema,
   adminUserListQuerySchema,
-  blogCreateSchema,
-  blogListQuerySchema,
-  blogRemoveSchema,
-  blogUpdateSchema,
   chatRequestSchema,
   loginSchema,
   metricsTimeseriesQuerySchema,
@@ -79,66 +68,6 @@ describe('Zod schemas', () => {
     if (result.success) {
       expect(result.data.model).toBe('gemini-3.5-flash');
     }
-  });
-});
-
-describe('blog schemas', () => {
-  const valid = {
-    title: '  Spot early signs your pet needs a vet  ',
-    excerpt: 'The small changes that are worth a phone call.',
-    body: 'x'.repeat(60),
-  };
-
-  it('trims the title and defaults an unpublished post to draft', () => {
-    const result = blogCreateSchema.parse(valid);
-
-    expect(result.title).toBe('Spot early signs your pet needs a vet');
-    // Publishing is a decision the author makes, not one the schema makes for
-    // them.
-    expect(result.status).toBe('draft');
-    expect(result.tags).toEqual([]);
-  });
-
-  it('lowercases and deduplicates tags', () => {
-    // Otherwise 'Dogs' and 'dogs' are two tags that each match half the posts.
-    const result = blogCreateSchema.parse({ ...valid, tags: ['Dogs', 'dogs', ' Cats '] });
-
-    expect(result.tags).toEqual(['dogs', 'cats']);
-  });
-
-  it('refuses a moderation status from an author', () => {
-    // 'hidden' and 'removed' belong to the admin routes. Accepting them here
-    // would let an author patch their way out of a takedown.
-    for (const status of ['hidden', 'removed']) {
-      expect(blogUpdateSchema.safeParse({ status }).success).toBe(false);
-    }
-    expect(blogUpdateSchema.safeParse({ status: 'published' }).success).toBe(true);
-  });
-
-  it('refuses an update that changes nothing', () => {
-    const result = blogUpdateSchema.safeParse({});
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].message).toBe('Include at least one field to update');
-    }
-  });
-
-  it('coerces list paging from the query string and caps the page size', () => {
-    // Query values arrive as strings, and an uncapped limit turns a paginated
-    // endpoint back into a full scan.
-    expect(blogListQuerySchema.parse({ page: '2', limit: '3' })).toMatchObject({
-      page: 2,
-      limit: 3,
-    });
-    expect(blogListQuerySchema.parse({})).toMatchObject({ page: 1, limit: BLOG_PAGE_SIZE });
-    expect(blogListQuerySchema.safeParse({ limit: String(BLOG_PAGE_SIZE_MAX + 1) }).success).toBe(
-      false
-    );
-  });
-
-  it('normalises a tag filter the same way it stores one', () => {
-    expect(blogListQuerySchema.parse({ tag: ' DOGS ' }).tag).toBe('dogs');
   });
 });
 describe('professional schemas', () => {
@@ -279,17 +208,6 @@ describe('professional schemas', () => {
 });
 
 describe('admin moderation contract', () => {
-  it('derives the full blog status list from the author subset', () => {
-    // The point of deriving it: neither list can quietly lose a status.
-    expect(BLOG_STATUSES).toEqual(['draft', 'published', 'flagged', 'hidden', 'removed']);
-  });
-
-  it('keeps the holding status out of an author’s reach', () => {
-    // An author who could write 'flagged' could also write their way out of it.
-    expect(BLOG_AUTHOR_STATUSES).toEqual(['draft', 'published']);
-    expect(blogUpdateSchema.safeParse({ status: 'flagged' }).success).toBe(false);
-  });
-
   it('treats an empty note as no note, but a short one as a mistake', () => {
     expect(moderationNote.parse(undefined)).toBeUndefined();
     // What a form actually sends when the admin leaves the box alone.
@@ -299,30 +217,6 @@ describe('admin moderation contract', () => {
     expect(moderationNote.parse('  Duplicate of an earlier post.  ')).toBe(
       'Duplicate of an earlier post.'
     );
-  });
-
-  it('will not take a post down without a reason', () => {
-    expect(blogRemoveSchema.safeParse({}).success).toBe(false);
-    expect(blogRemoveSchema.safeParse({ reason: 'nope' }).success).toBe(false);
-    expect(blogRemoveSchema.parse({ reason: 'Plagiarised from another clinic.' })).toEqual({
-      reason: 'Plagiarised from another clinic.',
-    });
-  });
-
-  it('leaves the admin blog list unfiltered by status and caps its page size', () => {
-    const parsed = adminBlogListQuerySchema.parse({});
-    expect(parsed).toMatchObject({ page: 1, limit: ADMIN_PAGE_SIZE });
-    // No status default: moderating means seeing drafts and takedowns too.
-    expect(parsed.status).toBeUndefined();
-
-    expect(adminBlogListQuerySchema.parse({ page: '4', status: 'removed' })).toMatchObject({
-      page: 4,
-      status: 'removed',
-    });
-    expect(
-      adminBlogListQuerySchema.safeParse({ limit: String(ADMIN_PAGE_SIZE_MAX + 1) }).success
-    ).toBe(false);
-    expect(adminBlogListQuerySchema.safeParse({ author: 'not-an-id' }).success).toBe(false);
   });
 
   it('defaults the user list to newest first and refuses unknown filters', () => {

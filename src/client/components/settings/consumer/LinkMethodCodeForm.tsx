@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import type { AccountLinkMethod } from '@shared/account-auth';
 import type { EmailVerificationDelivery } from '@shared/email-verification';
 import VerificationCodeInput from '@/pages/signup/_components/verification-code-input';
@@ -8,6 +8,7 @@ import {
   openAccountAuthUrl,
 } from '@/services/account-auth.service';
 import { accountAuthError, LOGIN_METHOD_NAMES } from './account-auth-feedback';
+import { LINK_METHOD_BUTTON } from './link-method-styles';
 
 type Props = {
   method: AccountLinkMethod;
@@ -21,6 +22,13 @@ export default function LinkMethodCodeForm({ method, email, onVerified, onClose 
   const [error, setError] = useState('');
   const [pending, setPending] = useState(true);
   const requested = useRef(false);
+  const active = useRef(true);
+  useLayoutEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -57,6 +65,7 @@ export default function LinkMethodCodeForm({ method, email, onVerified, onClose 
     setError('');
     try {
       const result = await verifyAccountLinkCode(method, code);
+      if (!active.current) return;
       if (result.url) openAccountAuthUrl(result.url);
       else onVerified();
     } catch (cause) {
@@ -67,7 +76,7 @@ export default function LinkMethodCodeForm({ method, email, onVerified, onClose 
   return (
     <form
       onSubmit={(event) => void verify(event)}
-      className="space-y-4 rounded-xl border border-teal-200 bg-teal-50/40 p-4"
+      className="space-y-4 bg-white"
       aria-label={`Link ${LOGIN_METHOD_NAMES[method]}`}
     >
       <p className="text-sm text-slate-600">
@@ -99,7 +108,7 @@ export default function LinkMethodCodeForm({ method, email, onVerified, onClose 
           <button
             type="submit"
             disabled={pending || expired || !/^[0-9]{6}$/.test(code)}
-            className="rounded-lg bg-teal-800 px-4 py-2 text-sm font-bold text-white disabled:opacity-45"
+            className={LINK_METHOD_BUTTON}
           >
             {pending
               ? 'Verifying...'
@@ -114,7 +123,7 @@ export default function LinkMethodCodeForm({ method, email, onVerified, onClose 
           type="button"
           disabled={pending || cooldown > 0}
           onClick={() => void send()}
-          className="rounded-lg border border-teal-800 px-4 py-2 text-sm font-bold text-teal-800 disabled:opacity-45"
+          className={LINK_METHOD_BUTTON}
         >
           {cooldown > 0
             ? `Resend code in ${cooldown}s`

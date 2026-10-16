@@ -124,8 +124,8 @@ export const PAGE_BUTTON =
  * phone is five unreadable ones.
  */
 export const TAB_RAIL =
-  'flex gap-1 overflow-x-auto rounded-lg border border-forest-200 bg-white p-1';
-export const TAB_ITEM = 'shrink-0 sm:flex-1 sm:shrink';
+  'flex max-w-full flex-wrap gap-1 rounded-lg border border-forest-200 bg-white p-1 xl:flex-nowrap';
+export const TAB_ITEM = 'min-w-0 flex-1 basis-24 xl:basis-0';
 export const TAB =
   'block rounded-md px-3 py-2 text-center text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-700';
 export const TAB_ON = 'bg-forest-800 text-white';

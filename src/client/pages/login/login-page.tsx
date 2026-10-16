@@ -39,7 +39,6 @@ export default function LoginPage() {
       ? 'You have used your free questions for today. Log in to keep chatting with the assistant.'
       : null;
 
-  const state = location.state as { from?: string; message?: string } | null;
   const from = state?.from ?? pendingAuthReturnTo();
   const gatedAction = from ? GATED_PAGES[from.split('?')[0]] : undefined;
   const gatedMessage = from
@@ -48,11 +47,12 @@ export default function LoginPage() {
       : 'Please log in to continue.'
     : null;
 
-  const notice = oauthMessage ?? state?.message ?? quotaMessage ?? gatedMessage;
+  const notice = oauthMessage ?? successMessage ?? quotaMessage ?? gatedMessage;
+  const success = Boolean(successMessage && !oauthMessage);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
+    <div className="flex flex-col items-center bg-slate-50 px-4 py-6 sm:py-8 xl:min-h-screen xl:justify-center xl:py-12">
+      <div className="w-full max-w-md space-y-6 bg-white p-5 sm:space-y-8 sm:p-6 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn xl:p-8">
         {/* Header Section */}
         <div className="text-center animate-slideDown">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Welcome Back</h1>

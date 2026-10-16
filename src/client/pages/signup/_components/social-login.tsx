@@ -7,7 +7,7 @@ type Props = { onLogin: (provider: SocialProvider) => void };
 
 export default function SocialLogin({ onLogin }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-3 animate-slideUp delay-600">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-slideUp delay-600">
       <Button
         variant="secondary"
         className="w-full gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
@@ -26,7 +26,7 @@ export default function SocialLogin({ onLogin }: Props) {
       </Button>
       <Button
         variant="secondary"
-        className="w-full gap-2 col-span-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+        className="w-full gap-2 sm:col-span-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
         onClick={() => onLogin('tiktok')}
       >
         <TikTokIcon />

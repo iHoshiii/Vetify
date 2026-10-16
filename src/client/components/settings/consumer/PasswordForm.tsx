@@ -68,7 +68,10 @@ export default function PasswordForm() {
         </p>
       )}
       {success && (
-        <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p
+          role="status"
+          className="rounded-xl border border-emerald-700 bg-white px-4 py-3 text-sm text-emerald-800"
+        >
           {success}
         </p>
       )}

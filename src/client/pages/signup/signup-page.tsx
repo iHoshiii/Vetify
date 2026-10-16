@@ -15,6 +15,7 @@ import {
 import EmailVerificationForm from './_components/email-verification-form';
 import SignupForm from './_components/signup-form';
 import SocialLogin from './_components/social-login';
+import SocialSignupNotice from './_components/social-signup-notice';
 
 export default function SignupPage() {
   const location = useLocation();
@@ -39,8 +40,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn">
+    <div className="flex flex-col items-center bg-slate-50 px-4 py-6 sm:py-8 xl:min-h-screen xl:justify-center xl:py-12">
+      <div className="w-full max-w-md space-y-6 bg-white p-5 sm:space-y-8 sm:p-6 rounded-2xl shadow-xl border border-slate-100 animate-scaleIn xl:p-8">
         <div className="text-center animate-slideDown">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             {verifying ? 'Confirm your email' : 'Create Account'}
@@ -70,6 +71,7 @@ export default function SignupPage() {
           </>
         ) : (
           <>
+            <SocialSignupNotice />
             <SignupForm onSignup={signup} />
 
             <div className="relative my-8 animate-fadeIn delay-400">
@@ -81,7 +83,7 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <SocialLogin onLogin={(provider) => startSocialLogin(provider, from)} />
+            <SocialLogin onLogin={(provider) => startSocialLogin(provider, from, 'signup')} />
 
             <p className="mt-8 text-center text-sm text-slate-600 animate-fadeIn delay-700">
               Already have an account?{' '}

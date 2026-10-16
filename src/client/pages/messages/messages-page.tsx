@@ -22,11 +22,11 @@ export default function MessagesPage() {
   };
 
   return (
-    <main className="flex h-[calc(100vh-4rem)] min-h-[32rem] w-full gap-3 bg-slate-50 p-3 sm:gap-4 sm:p-5 lg:p-6">
+    <main className="flex h-[calc(var(--viewport-height,100dvh)-var(--site-header-height,68px))] min-h-0 w-full gap-3 bg-slate-50 p-3 sm:gap-4 sm:p-5 lg:p-6">
       <section
         className={`${
-          active ? 'hidden sm:flex' : 'flex'
-        } w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:w-80 sm:shrink-0 lg:w-96`}
+          active ? 'hidden lg:flex' : 'flex'
+        } min-w-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:w-80 lg:shrink-0 xl:w-96`}
       >
         <header className="space-y-3 border-b border-slate-200 px-3 py-3">
           <h1 className="text-lg font-black text-slate-900">Chat</h1>
@@ -45,7 +45,7 @@ export default function MessagesPage() {
 
       <section
         className={`${
-          active ? 'flex' : 'hidden sm:flex'
+          active ? 'flex' : 'hidden lg:flex'
         } min-w-0 flex-1 items-stretch overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm`}
       >
         {active ? (

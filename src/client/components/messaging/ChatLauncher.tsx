@@ -41,7 +41,7 @@ export default function ChatLauncher() {
         onClick={() => (open ? closePanel() : openPanel())}
         aria-label="Messages"
         aria-expanded={open}
-        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-vet-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-vet-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vet-primary"
       >
         <MessageCircle className="h-5 w-5" />
         {unread > 0 && (
@@ -51,7 +51,7 @@ export default function ChatLauncher() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2">
+        <div className="fixed inset-x-4 top-[calc(var(--site-header-height)+8px)] z-50 sm:left-auto sm:w-96 xl:absolute xl:inset-x-auto xl:right-0 xl:top-full xl:mt-2">
           <ChatPanel />
         </div>
       )}

@@ -98,7 +98,7 @@ export default function LocationPickerField({
             aria-modal="true"
             aria-label="Pin your location on the map"
             tabIndex={-1}
-            className="animate-scaleIn relative w-full max-w-6xl rounded-2xl bg-white p-4 shadow-2xl outline-none sm:p-6"
+            className="animate-scaleIn relative max-h-[calc(100dvh-2rem)] overflow-y-auto w-full max-w-6xl rounded-2xl bg-white p-4 shadow-2xl outline-none sm:p-6"
           >
             <button
               type="button"

@@ -17,6 +17,9 @@ import { insertAuthIdentity } from '../../../models/auth-identities';
 
 setupVerificationDb();
 
+const readPreferences = (token: string) =>
+  request(app).get('/api/v1/account/preferences').set('Authorization', `Bearer ${token}`);
+
 describe('mandatory local email verification', () => {
   it.each(['', '/native'] as const)(
     'restricts signup and subsequent login sessions on %s until the code is confirmed',
@@ -31,7 +34,6 @@ describe('mandatory local email verification', () => {
       expect(login.status).toBe(200);
       const token = login.body.accessToken;
       for (const path of [
-        '/api/v1/pets',
         '/api/v1/account/preferences',
         '/api/v1/auth/subscription',
         '/api/v1/account/login-methods',
@@ -52,9 +54,7 @@ describe('mandatory local email verification', () => {
       expect((await resend(token, surface)).body.reason).toBe('email-verification-cooldown');
       expect((await verify(token, '999999', surface)).status).toBe(400);
       expect((await verify(token, code, surface)).body.user.emailVerified).toBe(true);
-      expect(
-        (await request(app).get('/api/v1/pets').set('Authorization', `Bearer ${token}`)).status
-      ).toBe(200);
+      expect((await readPreferences(token)).status).toBe(200);
       expect(
         (await request(app).post('/api/v1/auth/introspect').set('Authorization', `Bearer ${token}`))
           .status
@@ -74,13 +74,7 @@ describe('mandatory local email verification', () => {
     const refreshed = await browser.post('/api/v1/auth/refresh');
     expect(refreshed.status).toBe(200);
     expect(refreshed.body.user.emailVerified).toBe(false);
-    expect(
-      (
-        await browser
-          .get('/api/v1/pets')
-          .set('Authorization', `Bearer ${refreshed.body.accessToken}`)
-      ).status
-    ).toBe(403);
+    expect((await readPreferences(refreshed.body.accessToken)).status).toBe(403);
     expect((await browser.post('/api/v1/auth/logout')).status).toBe(200);
   });
 
@@ -104,9 +98,7 @@ describe('mandatory local email verification', () => {
     const native = await createNativeSession(account);
     const oldBrowser = await createAuthPayloadFor(account);
     for (const token of [native.accessToken, oldBrowser.accessToken])
-      expect(
-        (await request(app).get('/api/v1/pets').set('Authorization', `Bearer ${token}`)).status
-      ).toBe(403);
+      expect((await readPreferences(token)).status).toBe(403);
   });
 
   it('keeps a linked social identity restricted when the original local email is unverified', async () => {
@@ -118,13 +110,9 @@ describe('mandatory local email verification', () => {
     });
     await insertAuthIdentity({ user: local._id, provider: 'google', providerId: 'linked-google' });
     const token = (await createAuthPayloadFor(local)).accessToken;
-    expect(
-      (await request(app).get('/api/v1/pets').set('Authorization', `Bearer ${token}`)).status
-    ).toBe(403);
+    expect((await readPreferences(token)).status).toBe(403);
     await usersCollection().updateOne({ _id: local._id }, { $set: { emailVerified: true } });
-    expect(
-      (await request(app).get('/api/v1/pets').set('Authorization', `Bearer ${token}`)).status
-    ).toBe(200);
+    expect((await readPreferences(token)).status).toBe(200);
   });
 
   it('preserves access for social accounts and anonymous public pages', async () => {
@@ -135,9 +123,7 @@ describe('mandatory local email verification', () => {
       emailVerified: false,
     });
     const token = (await createAuthPayloadFor(social)).accessToken;
-    expect(
-      (await request(app).get('/api/v1/pets').set('Authorization', `Bearer ${token}`)).status
-    ).toBe(200);
-    expect((await request(app).get('/api/v1/blogs')).status).toBe(200);
+    expect((await readPreferences(token)).status).toBe(200);
+    expect((await request(app).get('/api/v1/professionals')).status).toBe(200);
   });
 });

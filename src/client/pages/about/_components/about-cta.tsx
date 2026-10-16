@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 export const AboutCTA = () => {
   return (
-    <section className="bg-white py-20 border-t border-slate-100">
+    <section className="bg-white py-8 sm:py-10 xl:py-20 border-t border-slate-100">
       <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
         <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
           Want to learn more?
@@ -10,7 +10,7 @@ export const AboutCTA = () => {
           If you share our passion for improving pet care or want to join our network of
           professionals, we&apos;d love to connect.
         </p>
-        <div className="mt-8 flex justify-center gap-3">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             to="/contact"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 hover:-translate-y-0.5"

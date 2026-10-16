@@ -10,11 +10,8 @@ import {
   countActivityBetween,
   countActivityPerDay,
   countActivityPerDayByProvider,
-  countBlogsBetween,
-  countBlogsByStatus,
   countInquiriesByStatus,
   countInquiriesPerDay,
-  countBlogsPerDay,
   countProfessionalsByStatus,
   countUsersBy,
   countAuditPerDay,
@@ -54,11 +51,6 @@ export type MetricsOverview = {
     admins: number;
     professionals: number;
     pendingApplications: number;
-    blogs: number;
-    publishedBlogs: number;
-    /** Held by the screen, waiting on a human. The one blog figure that is a queue. */
-    flaggedBlogs: number;
-    moderatedBlogs: number;
   };
   trend: Record<MetricSeries, MetricTrend>;
 };
@@ -88,15 +80,7 @@ export type MetricsBreakdown = {
   slices: { label: string; count: number }[];
 };
 
-/**
- * Which activity type each line is drawn from.
- *
- * 'blogs' is deliberately absent: no activity type is recorded for writing a
- * post, and one should not be. The posts themselves are permanent, so counting
- * them from the blogs collection stays correct past the 90-day event retention,
- * where an event-derived line would fall to zero and read as a dead blog.
- */
-const SERIES_ACTIVITY: Record<Exclude<MetricSeries, 'blogs'>, ActivityType> = {
+const SERIES_ACTIVITY: Record<MetricSeries, ActivityType> = {
   signups: 'user.signed_up',
   logins: 'user.logged_in',
   chats: 'chat.message_sent',
@@ -106,7 +90,7 @@ const SERIES_ACTIVITY: Record<Exclude<MetricSeries, 'blogs'>, ActivityType> = {
 /**
  * What each breakdown slices, all of them a single grouped count.
  *
- * The three read from accounts take the role narrowing; the three that do not are
+ * The three read from accounts take the role narrowing; the two that do not are
  * written as thunks that visibly drop it, rather than passed by reference and
  * silently handed an argument they have no field for.
  */
@@ -117,7 +101,6 @@ const BREAKDOWN_READS: Record<
   provider: (role) => countUsersBy('provider', { role }),
   role: (role) => countUsersBy('role', { role }),
   userStatus: (role) => countUsersBy('status', { role }),
-  blogStatus: () => countBlogsByStatus(),
   inquiryStatus: () => countInquiriesByStatus(),
   professionalStatus: () => countProfessionalsByStatus(),
 };
@@ -174,19 +157,17 @@ function trendOf(current: number, previous: number): MetricTrend {
 }
 
 function countSeriesBetween(metric: MetricSeries, from: Date, to: Date): Promise<number> {
-  if (metric === 'blogs') return countBlogsBetween({ from, to });
   return countActivityBetween({ type: SERIES_ACTIVITY[metric], from, to });
 }
 
 function countSeriesPerDay(metric: MetricSeries, from: Date): Promise<DailyCount[]> {
-  if (metric === 'blogs') return countBlogsPerDay({ from });
   return countActivityPerDay({ type: SERIES_ACTIVITY[metric], from });
 }
 
 /**
  * Sixty seconds of memory, per distinct question.
  *
- * The overview is fourteen counts and a reload costs all of them, so a dashboard
+ * The overview needs multiple counts and a reload costs all of them, so a dashboard
  * left open on a wall would scan the collections every few seconds forever. One
  * minute is short enough that a moderator watching a number move still sees it
  * move, and the pages where being current actually matters — the account list, the
@@ -243,9 +224,8 @@ export async function metricsOverview(days: number, now = new Date()): Promise<M
   return cached(`overview:${days}`, async () => {
     const { from, to, previousFrom } = windowOf(days, now);
 
-    const [roles, blogs, applications, admins, current, previous] = await Promise.all([
+    const [roles, applications, admins, current, previous] = await Promise.all([
       countUsersBy('role'),
-      countBlogsByStatus(),
       countProfessionalsByStatus(),
       countActiveAdmins(),
       Promise.all(METRIC_SERIES.map((metric) => countSeriesBetween(metric, from, to))),
@@ -267,12 +247,6 @@ export async function metricsOverview(days: number, now = new Date()): Promise<M
         admins,
         professionals: applications.verified ?? 0,
         pendingApplications: applications.pending ?? 0,
-        blogs: sum(blogs),
-        publishedBlogs: blogs.published ?? 0,
-        flaggedBlogs: blogs.flagged ?? 0,
-        // Hidden and removed only: a flagged post is held rather than moderated,
-        // since nobody has decided anything about it yet.
-        moderatedBlogs: (blogs.hidden ?? 0) + (blogs.removed ?? 0),
       },
       trend,
     };

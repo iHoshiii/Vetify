@@ -3,7 +3,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 export const AboutValues = () => {
   return (
     <ScrollReveal variant="reveal" delay={200}>
-      <div className="mt-16 rounded-3xl bg-white p-8 sm:p-12 shadow-xl shadow-slate-200/40 border border-teal-900/10">
+      <div className="mt-8 rounded-3xl bg-white p-5 sm:p-6 shadow-xl shadow-slate-200/40 border border-teal-900/10 xl:mt-16 xl:p-12">
         <h3 className="text-2xl font-bold tracking-tight text-slate-950 mb-8">What drives us</h3>
         <div className="grid gap-8 sm:grid-cols-2">
           {/* Fast Help Value */}

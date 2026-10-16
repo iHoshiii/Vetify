@@ -3,6 +3,7 @@ import { Navigate, Route } from 'react-router-dom';
 import { RequireAuth } from '@/components/providers/RequireAuth';
 import { RequireRole } from '@/components/providers/RequireRole';
 import { PageBoundary, PageOutlet } from './page-boundary';
+import ExternalAppPage from '@/pages/external-app/external-app-page';
 
 const AdminLayout = lazy(() => import('@/pages/admin/admin-layout'));
 const AdminApplicationQueue = lazy(() => import('@/pages/admin/applications/application-queue'));
@@ -12,13 +13,10 @@ const AdminApplicationsLayout = lazy(
 const AdminRequestTab = lazy(() => import('@/pages/admin/applications/request-tab'));
 const AdminApplicationStatistics = lazy(() => import('@/pages/admin/applications/statistics-tab'));
 const AdminAuditPage = lazy(() => import('@/pages/admin/audit-page'));
-const AdminBlogsPage = lazy(() => import('@/pages/admin/blogs-page'));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/dashboard-page'));
 const AdminReviewsPage = lazy(() => import('@/pages/admin/reviews/reviews-page'));
 const AdminAccountsTab = lazy(() => import('@/pages/admin/users/accounts-tab'));
 const AdminUsersLayout = lazy(() => import('@/pages/admin/users/users-layout'));
-const BooksPage = lazy(() => import('@/pages/books/books-page'));
-const ProfessionalAffiliatePage = lazy(() => import('@/pages/professionals/affiliate-page'));
 const ProfessionalBookingsPage = lazy(() => import('@/pages/professionals/bookings-page'));
 const ProfessionalConversationsPage = lazy(
   () => import('@/pages/professionals/conversations-page')
@@ -86,7 +84,7 @@ export function consoleRoutes() {
             path="professionals"
             element={<Navigate to="/admin/applications/application" replace />}
           />
-          <Route path="blogs" element={<AdminBlogsPage />} />
+          <Route path="blogs" element={<ExternalAppPage feature="blogs" destination="/admin" />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="audit" element={<AdminAuditPage />} />
         </Route>
@@ -109,8 +107,11 @@ export function consoleRoutes() {
           <Route path="consultations" element={<ProfessionalBookingsPage kind="virtual" />} />
           <Route path="clinic-visits" element={<ProfessionalBookingsPage kind="onsite" />} />
           <Route path="reviews" element={<ProfessionalReviewsPage />} />
-          <Route path="books" element={<BooksPage manage />} />
-          <Route path="affiliate" element={<ProfessionalAffiliatePage />} />
+          <Route path="books" element={<ExternalAppPage feature="books" destination="/manage" />} />
+          <Route
+            path="affiliate"
+            element={<ExternalAppPage feature="books" destination="/affiliate" />}
+          />
           <Route path="conversations" element={<ProfessionalConversationsPage />} />
           <Route path="history" element={<ProfessionalHistoryPage />} />
           <Route path="location" element={<ProfessionalMapLocationPage />} />

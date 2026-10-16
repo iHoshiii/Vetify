@@ -30,10 +30,10 @@ export default function NearestVets({
   const halfFailed = !bothFailed && (vetsFailed || clinicsFailed);
 
   return (
-    <div className="rounded-3xl border border-blue-900/10 bg-white p-4 shadow-lg shadow-blue-900/5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-1.5 text-sm font-black tracking-tight text-slate-900">
-          <MapPin className="h-4 w-4 text-blue-600" />
+    <div className="min-w-0 rounded-3xl border border-blue-900/10 bg-white p-4 shadow-lg shadow-blue-900/5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex min-w-0 max-w-full items-center gap-1.5 text-sm font-black tracking-tight text-slate-900">
+          <MapPin className="h-4 w-4 shrink-0 text-blue-600" />
           Nearest Vet From You
         </h2>
 
@@ -42,7 +42,7 @@ export default function NearestVets({
             type="button"
             onClick={onAsk}
             disabled={asking}
-            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="inline-flex max-w-full shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
           >
             {asking ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -40,6 +40,7 @@ export function SaveRow({
   dirty = true,
   label,
   onReset,
+  buttonClassName,
 }: {
   pending: boolean;
   error: string | null;
@@ -47,6 +48,7 @@ export function SaveRow({
   dirty?: boolean;
   label: string;
   onReset?: () => void;
+  buttonClassName?: string;
 }) {
   return (
     <div className="space-y-3 border-t border-slate-100 pt-5">
@@ -68,7 +70,10 @@ export function SaveRow({
         <button
           type="submit"
           disabled={pending || !dirty}
-          className="rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-45"
+          className={
+            buttonClassName ??
+            'rounded-lg bg-teal-800 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-45'
+          }
         >
           {pending ? 'Saving…' : label}
         </button>

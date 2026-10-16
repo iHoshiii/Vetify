@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import { consoleRoutes } from './routes/console-routes';
 import { PageBoundary } from './routes/page-boundary';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { Route, Routes } from 'react-router-dom';
 
 import { RequireAuth } from '@/components/providers/RequireAuth';
@@ -8,13 +9,11 @@ import { RequireTermsAgreed } from '@/components/providers/RequireTermsAgreed';
 import RootLayout from '@/layouts/RootLayout';
 import HomePage from '@/pages/home-page';
 import PlannerPage from '@/pages/planner/planner-page';
+import ExternalAppPage from '@/pages/external-app/external-app-page';
+import BlogsLaunchPage from '@/pages/external-app/blogs-launch-page';
 
 const AboutPage = lazy(() => import('@/pages/about/about-page'));
-const AnatomyPage = lazy(() => import('@/pages/anatomy/anatomy-page'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
-const BlogDetailPage = lazy(() => import('@/pages/blogs/blog-detail-page'));
-const BlogsPage = lazy(() => import('@/pages/blogs/blogs-page'));
-const BooksPage = lazy(() => import('@/pages/books/books-page'));
 const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
 const CallPage = lazy(() => import('@/pages/call/call-page'));
 const ChatPage = lazy(() => import('@/pages/chat/chat-page'));
@@ -40,6 +39,7 @@ const SignupPage = lazy(() => import('@/pages/signup/signup-page'));
 const TermsPage = lazy(() => import('@/pages/terms/terms-page'));
 
 export default function App() {
+  useViewportHeight();
   return (
     <Routes>
       {consoleRoutes()}
@@ -50,7 +50,7 @@ export default function App() {
           path="books"
           element={
             <RequireAuth>
-              <BooksPage />
+              <ExternalAppPage feature="books" />
             </RequireAuth>
           }
         />
@@ -59,13 +59,13 @@ export default function App() {
           path="anatomy"
           element={
             <RequireAuth>
-              <AnatomyPage />
+              <ExternalAppPage feature="anatomy" />
             </RequireAuth>
           }
         />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
-        <Route path="blogs" element={<BlogsPage />} />
-        <Route path="blogs/:slug" element={<BlogDetailPage />} />
+        <Route path="blogs" element={<BlogsLaunchPage />} />
+        <Route path="blogs/:slug" element={<BlogsLaunchPage />} />
         <Route
           path="book-appointment"
           element={
@@ -97,14 +97,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="planner"
-          element={
-            <RequireAuth>
-              <PlannerPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="planner" element={<PlannerPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="professionals" element={<ProfessionalsPage />} />
 
