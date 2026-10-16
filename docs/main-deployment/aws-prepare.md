@@ -55,9 +55,9 @@ account ID before deploying. Do not paste access keys into code or chat.
 2. Main professional applications currently carry large base64 images. Implement
    authorized private S3 upload/download and store object keys before relying on
    Lambda for those submissions. The frontend bucket is not private user storage.
-3. Schedule main appointment reminders, completion and delivery retries durably.
-   Current Lambda maintenance handles realtime cleanup only; local interval
-   scanners do not automatically run in Lambda. Review the clinic refresh too.
+3. Scheduled Lambda maintenance now runs appointment reminders, completion,
+   delivery retries and realtime cleanup. Local interval scanners remain for
+   local development. Review the clinic refresh separately.
 4. Verify persistent rate limits, email delivery, secret sizes and error handling.
 5. Test main auth/professional/appointments/realtime regression and fix relevant
    failures. Earlier focused checks did not make the full test suite green.

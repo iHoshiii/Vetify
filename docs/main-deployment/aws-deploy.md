@@ -23,8 +23,8 @@ Review the change set, acknowledge required IAM capabilities and save SAM config
 locally. Reauthenticate the CLI if its temporary credentials expire.
 Do not manually recreate WebSocket APIs in parallel with the SAM-managed stack.
 Save the output values `HttpApiUrl` and `RealtimeUrl`; do not invent their IDs.
-The current stack creates HTTP, WebSocket and realtime-maintenance Lambdas;
-additional main durable workers from preparation need their own template entries.
+The current stack creates HTTP, WebSocket and maintenance Lambdas. The scheduled
+maintenance invocation runs appointment reminders, completion, delivery retries and realtime cleanup.
 
 ## 10. Create the private frontend S3 bucket
 
