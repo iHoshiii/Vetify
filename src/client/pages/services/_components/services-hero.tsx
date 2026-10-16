@@ -2,7 +2,7 @@ import ScrollReveal from '@/components/ScrollReveal';
 
 export default function ServicesHero() {
   return (
-    <section className="relative overflow-hidden pt-20 pb-16 sm:pt-28 sm:pb-24">
+    <section className="relative overflow-hidden py-8 sm:py-10 xl:pt-28 xl:pb-24">
       <div className="mx-auto max-w-4xl px-5 text-center sm:px-8">
         <ScrollReveal variant="reveal">
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-vet-primary">

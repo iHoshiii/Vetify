@@ -66,7 +66,7 @@ export default function VetMap({
       />
       {settled && showOverlay && pinCount > 0 && (
         <div
-          className="absolute bottom-3 left-3 px-3 py-1.5 rounded-full bg-white/95 border border-blue-100 shadow-md text-xs font-bold text-blue-700 backdrop-blur-sm pointer-events-none"
+          className="absolute bottom-3 left-3 max-w-[calc(100%_-_1.5rem)] px-3 py-1.5 rounded-full bg-white/95 border border-blue-100 shadow-md text-xs font-bold text-blue-700 backdrop-blur-sm pointer-events-none"
           style={{ zIndex: 1100 }}
         >
           🐾{' '}
@@ -82,7 +82,7 @@ export default function VetMap({
       {settled && showOverlay && clinicsLoading && (
         <div
           role="status"
-          className="pointer-events-none absolute right-5 top-20 rounded-full border border-blue-100 bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-md backdrop-blur-sm"
+          className="pointer-events-none absolute right-5 top-20 max-w-[calc(100%_-_2.5rem)] rounded-full border border-blue-100 bg-white/95 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-md backdrop-blur-sm"
           style={{ zIndex: 1100 }}
         >
           Loading nearby clinics…
@@ -90,7 +90,7 @@ export default function VetMap({
       )}
       {settled && showOverlay && clinicsFailed && (
         <div
-          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-white/95 border border-amber-100 shadow-md text-xs font-semibold text-amber-700 backdrop-blur-sm pointer-events-none"
+          className="absolute bottom-14 left-3 right-3 w-fit max-w-[calc(100%_-_1.5rem)] px-3 py-1.5 rounded-full bg-white/95 border border-amber-100 shadow-md text-xs font-semibold text-amber-700 backdrop-blur-sm pointer-events-none sm:bottom-3 sm:left-auto"
           style={{ zIndex: 1100 }}
         >
           Couldn&apos;t load nearby clinics

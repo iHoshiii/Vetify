@@ -10,7 +10,7 @@ export default function ExternalAppPage({ feature, destination = '/' }: Props) {
     feature === 'books' ? import.meta.env.VITE_BOOKS_ORIGIN : import.meta.env.VITE_ANATOMY_ORIGIN;
   const origin = externalAppOrigin(configured, import.meta.env.DEV);
   return (
-    <main className="mx-auto flex min-h-[60vh] max-w-xl flex-col justify-center px-6 py-16 text-center">
+    <main className="mx-auto flex max-w-xl flex-col px-6 py-8 text-center sm:py-10 xl:min-h-[60vh] xl:justify-center xl:py-16">
       <h1 className="text-3xl font-black text-slate-950">{title}</h1>
       <p className="mt-4 text-slate-600">
         {origin

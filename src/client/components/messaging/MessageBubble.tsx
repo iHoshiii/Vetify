@@ -84,7 +84,7 @@ export default function MessageBubble({
       className={`group relative flex items-end gap-2 ${mine ? 'flex-row-reverse' : 'flex-row'}`}
     >
       <ParticipantAvatar name={who.name} avatarUrl={who.avatarUrl} size="xs" />
-      <div className={`relative max-w-[75%] lg:max-w-lg ${metaSpace}`}>
+      <div className={`relative min-w-0 max-w-[75%] lg:max-w-lg ${metaSpace}`}>
         {editing ? (
           <MessageEditor
             body={message.body}
@@ -105,7 +105,7 @@ export default function MessageBubble({
               if (event.key === 'Enter' || event.key === ' ') setExpandedTime((shown) => !shown);
             }}
             {...longPress}
-            className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm ${
+            className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm [overflow-wrap:anywhere] ${
               mine
                 ? 'rounded-br-sm bg-teal-700 text-white'
                 : 'rounded-bl-sm bg-slate-100 text-slate-800'

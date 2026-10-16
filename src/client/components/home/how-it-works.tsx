@@ -20,9 +20,9 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="bg-white py-20 sm:py-28">
+    <section id="how-it-works" className="bg-white py-8 sm:py-10 xl:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <ScrollReveal variant="reveal" className="mb-14 text-center">
+        <ScrollReveal variant="reveal" className="mb-6 text-center sm:mb-8 xl:mb-14">
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-vet-primary">
             Simple process
           </p>
@@ -31,10 +31,10 @@ export default function HowItWorks() {
           </h2>
         </ScrollReveal>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-5 sm:gap-6 md:grid-cols-3 xl:gap-8">
           {steps.map((s, i) => (
             <ScrollReveal key={s.num} variant="reveal" delay={i * 130}>
-              <div className="rounded-2xl border border-teal-900/10 bg-white p-8 transition-colors hover:border-vet-primary/30">
+              <div className="rounded-2xl border border-teal-900/10 bg-white p-5 transition-colors hover:border-vet-primary/30 sm:p-6 xl:p-8">
                 <span className="text-sm font-bold text-vet-primary">{s.num}</span>
                 <h3 className="mt-4 text-lg font-bold text-vet-ink">{s.title}</h3>
                 <p className="mt-3 leading-7 text-slate-600">{s.body}</p>

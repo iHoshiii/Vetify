@@ -47,7 +47,7 @@ export default function SiteHeader() {
           : 'border-b border-slate-200 bg-white'
       }`}
     >
-      <div className="mx-auto flex min-h-[68px] max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-8 xl:flex-nowrap">
+      <div className="mx-auto flex min-h-[68px] max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-8">
         <NavBrand />
         <NavLinks isAuthenticated={isAuthenticated} />
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-3">

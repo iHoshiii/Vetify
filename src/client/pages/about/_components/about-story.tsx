@@ -11,7 +11,7 @@ export const AboutStory = () => {
           just isn&apos;t an option.
         </p>
 
-        <h2 className="text-2xl font-bold text-slate-950 mt-12 mb-4">The Breaking Point</h2>
+        <h2 className="text-2xl font-bold text-slate-950 mt-6 mb-4 xl:mt-12">The Breaking Point</h2>
         <p className="text-slate-600 mb-6 leading-relaxed">
           We realized that pet owners deserve fast, reliable, and evidence-based guidance without
           having to scroll through endless forum threads filled with panic-inducing misinformation.
@@ -23,13 +23,13 @@ export const AboutStory = () => {
           tools directly into the hands of pet parents, right when they need them most.
         </p>
 
-        <h2 className="text-2xl font-bold text-slate-950 mt-12 mb-4">Our Mission</h2>
+        <h2 className="text-2xl font-bold text-slate-950 mt-6 mb-4 xl:mt-12">Our Mission</h2>
         <p className="text-slate-600 mb-6 leading-relaxed">
           At Vetify, our mission is to make proactive pet care accessible, less stressful, and
           highly informed. We believe that technology should empower, not replace, the bond between
           a pet owner and their local veterinarian.
         </p>
-        <p className="text-slate-600 mb-12 leading-relaxed">
+        <p className="text-slate-600 mb-6 leading-relaxed xl:mb-12">
           Whether you need to triage a weird symptom with our AI, build a customized meal plan for a
           picky eater, or instantly find a highly-rated clinic nearby when things go wrong, Vetify
           is designed to be your first stop for everyday pet health. For every breed, every budget,

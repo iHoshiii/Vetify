@@ -8,6 +8,25 @@ body,
 #root {
   min-width: 0;
   width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+@supports not (overflow: clip) {
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+  }
+}
+
+html:has(#mobile-navigation) {
+  overflow-y: hidden;
+}
+
+body:has(#mobile-navigation) {
+  overflow: clip !important;
 }
 
 body {
@@ -69,5 +88,30 @@ section[id] {
   .reveal-scale {
     opacity: 1;
     transform: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .relative > .message-meta {
+    width: max-content;
+    white-space: normal;
+  }
+
+  .relative:has(> .message-meta) {
+    margin-bottom: 2rem;
+  }
+
+  .relative:has(> .message-meta > p:nth-child(2)) {
+    margin-bottom: 3rem;
+  }
+}
+
+@media (max-width: 319px) {
+  .relative:has(> .message-meta) {
+    margin-bottom: 3rem;
+  }
+
+  .relative:has(> .message-meta > p:nth-child(2)) {
+    margin-bottom: 4rem;
   }
 }

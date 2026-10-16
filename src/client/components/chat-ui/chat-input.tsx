@@ -46,9 +46,9 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex-shrink-0 border-t border-slate-200 bg-white px-6 py-2">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 transition-all">
+    <div className="min-w-0 flex-shrink-0 border-t border-slate-200 bg-white px-3 py-2 sm:px-6">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap">
+        <div className="flex min-w-0 flex-1 basis-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 transition-all focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-400/20 sm:basis-auto">
           <textarea
             ref={inputRef}
             rows={1}
@@ -56,7 +56,7 @@ export function ChatInput({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={editingIndex != null ? 'Edit your message…' : 'Ask about your pet…'}
-            className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none max-h-32"
+            className="max-h-32 min-w-0 flex-1 resize-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
           />
           {editingIndex != null && (
             <button
@@ -96,7 +96,7 @@ export function ChatInput({
             </button>
           )}
         </div>
-        <div ref={modelRef} className="relative flex-shrink-0">
+        <div ref={modelRef} className="relative ml-auto max-w-full flex-shrink-0">
           <button
             onClick={() => setModelOpen((o) => !o)}
             disabled={loading}

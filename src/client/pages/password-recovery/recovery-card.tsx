@@ -11,8 +11,8 @@ export default function RecoveryCard({
   children: ReactNode;
 }) {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-100 bg-white p-8 shadow-xl">
+    <main className="flex items-start justify-center bg-slate-50 px-4 py-6 sm:py-8 xl:min-h-screen xl:items-center xl:py-12">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-xl sm:p-6 xl:p-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
           <p className="mt-2 text-sm text-slate-600">{description}</p>

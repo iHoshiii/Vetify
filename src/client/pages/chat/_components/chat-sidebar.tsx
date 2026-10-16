@@ -22,8 +22,8 @@ export default function ChatSidebar({
   };
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-slate-100">
+    <aside className="flex max-h-40 w-full flex-shrink-0 flex-col overflow-hidden border-b border-slate-200 bg-white xl:max-h-none xl:w-64 xl:border-b-0 xl:border-r">
+      <div className="shrink-0 border-b border-slate-100 p-2 xl:p-4">
         <button
           onClick={onNewChat}
           className="w-full flex items-center justify-center gap-2 rounded-xl border border-teal-500 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-100 transition-colors"
@@ -41,7 +41,7 @@ export default function ChatSidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2 xl:p-3">
         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-2">
           Recent
         </p>
@@ -70,7 +70,7 @@ export default function ChatSidebar({
               </div>
               <button
                 onClick={(e) => handleDelete(e, s.id)}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-all"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-slate-400 opacity-100 transition-all hover:text-red-500 xl:h-auto xl:w-auto xl:opacity-0 xl:group-hover:opacity-100"
               >
                 <svg
                   viewBox="0 0 24 24"

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function AboutSection() {
   return (
-    <section id="about" className="bg-vet-bg py-20 sm:py-28">
+    <section id="about" className="bg-vet-bg py-8 sm:py-10 xl:py-28">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <ScrollReveal variant="reveal-left">
           <p className="text-sm font-bold uppercase tracking-[0.22em] text-vet-primary">About us</p>

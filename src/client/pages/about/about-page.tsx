@@ -8,7 +8,7 @@ export default function AboutPage() {
     <main className="min-h-screen bg-[#f6fbfb] text-slate-950">
       <AboutHero />
 
-      <section className="mx-auto max-w-3xl px-5 sm:px-8 pb-20 sm:pb-28">
+      <section className="mx-auto max-w-3xl px-5 sm:px-8 pb-8 sm:pb-10 xl:pb-28">
         <AboutStory />
         <AboutValues />
       </section>

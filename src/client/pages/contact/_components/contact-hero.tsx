@@ -1,6 +1,6 @@
 export default function ContactHero() {
   return (
-    <section className="pt-16 pb-10 sm:pt-20 sm:pb-12">
+    <section className="pt-8 pb-6 sm:pt-10 sm:pb-8 xl:pt-20 xl:pb-12">
       <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
           We&apos;re here to help.

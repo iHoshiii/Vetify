@@ -37,7 +37,7 @@ export default function BlogsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
       <section className="mx-auto max-w-5xl">
         <p className="text-sm font-bold uppercase tracking-[0.22em] text-teal-800">Blogs</p>
         <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">

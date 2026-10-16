@@ -5,6 +5,8 @@
 @import './styles/hero-animations.css';
 @import './styles/animations.css';
 @import './styles/responsive.css';
+@import './styles/mobile-media.css';
+@import './styles/table-reflow.css';
 
 :root {
   color-scheme: light;

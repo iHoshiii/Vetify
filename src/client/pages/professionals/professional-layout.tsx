@@ -29,7 +29,7 @@ export function useConsoleApplication(): OwnProfessional {
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">{children}</div>;
+  return <div className="mx-auto max-w-2xl px-5 py-6 sm:px-8 sm:py-8 xl:py-12">{children}</div>;
 }
 
 function Bar({ children }: { children?: React.ReactNode }) {
@@ -113,7 +113,7 @@ export default function ProfessionalLayout() {
   if (!application) {
     return shell(
       <Centered>
-        <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+        <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-xs sm:p-6 xl:p-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-teal-100 bg-teal-50 text-teal-800">
             <Award className="h-7 w-7" />
           </div>

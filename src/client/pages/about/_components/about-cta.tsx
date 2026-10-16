@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 export const AboutCTA = () => {
   return (
-    <section className="bg-white py-20 border-t border-slate-100">
+    <section className="bg-white py-8 sm:py-10 xl:py-20 border-t border-slate-100">
       <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
         <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
           Want to learn more?

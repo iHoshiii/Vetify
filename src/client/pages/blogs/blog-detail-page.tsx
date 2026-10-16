@@ -17,7 +17,7 @@ export default function BlogDetailPage() {
   const missing = query.error instanceof ApiError && query.error.status === 404;
 
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
       <article className="mx-auto max-w-3xl">
         {query.isError ? (
           missing ? (
@@ -59,7 +59,7 @@ export default function BlogDetailPage() {
               <img
                 src={post.coverUrl}
                 alt=""
-                className="mt-8 aspect-[16/9] w-full rounded-lg object-cover"
+                className="mt-8 h-auto max-h-[calc(var(--viewport-height)-var(--site-header-height)-2rem)] w-full rounded-lg object-contain xl:aspect-[16/9] xl:max-h-none xl:object-cover"
               />
             )}
 

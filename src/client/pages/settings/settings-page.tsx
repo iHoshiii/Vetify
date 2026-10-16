@@ -87,7 +87,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-8 sm:px-6 sm:py-10">
+    <main className="bg-slate-50 px-4 py-6 sm:px-6 sm:py-8 xl:min-h-[calc(100vh-4rem)] xl:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-7">
           <h1 className="text-3xl font-black tracking-tight text-slate-950">Settings</h1>
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         <div className="lg:flex lg:items-start lg:gap-8">
           <UnsavedSettingsProvider>
             <SettingsNavigation />
-            <div className="min-h-[32rem] min-w-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="min-w-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:min-h-[32rem]">
               <SectionHeading title={COPY[active].title} description={COPY[active].description}>
                 {content()}
               </SectionHeading>

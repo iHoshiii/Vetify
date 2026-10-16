@@ -38,7 +38,7 @@ const REFUSALS: Record<ProfessionalInviteRefusal, { title: string; body: string 
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#f6fbfb] px-5 py-14 text-slate-950 sm:px-8">
+    <main className="bg-[#f6fbfb] px-5 py-6 text-slate-950 sm:px-8 sm:py-8 xl:min-h-screen xl:py-14">
       <section className="mx-auto max-w-3xl">{children}</section>
     </main>
   );

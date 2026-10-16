@@ -42,8 +42,8 @@ export default function AuthCallbackPage() {
   }, [navigate, setSession]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-xl">
+    <div className="flex flex-col items-center bg-slate-50 px-4 py-6 sm:py-8 xl:min-h-screen xl:justify-center xl:py-0">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-xl sm:p-6 xl:p-8">
         {failed ? (
           <>
             <h1 className="text-lg font-semibold text-slate-900">Could not finish signing in</h1>
