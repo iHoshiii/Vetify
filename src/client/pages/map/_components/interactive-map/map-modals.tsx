@@ -44,13 +44,13 @@ export default function MapModal({
           aria-modal="true"
           aria-label="Map of nearby vets and clinics"
           tabIndex={-1}
-          className="relative w-full h-full outline-none"
+          className="relative flex w-full h-full flex-col outline-none xl:block"
           style={{ animation: 'scaleIn 0.25s ease both' }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 z-[2100] flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150"
+            className="relative z-[2100] m-3 ml-auto flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-xl text-slate-800 text-sm font-semibold hover:bg-slate-50 active:scale-95 transition-all duration-150 xl:absolute xl:top-5 xl:right-5 xl:m-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -68,6 +68,7 @@ export default function MapModal({
                 to them at street level when they have. A link inside a popup goes
                 through the router rather than reloading the app, and closes this. */}
             <VetMap
+              className="min-h-0 flex-1 xl:flex-none"
               zoom={userLocation ? 13 : 6}
               center={
                 userLocation ? [userLocation.latitude, userLocation.longitude] : [12.87, 121.77]
