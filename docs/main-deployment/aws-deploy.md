@@ -29,6 +29,11 @@ realtime cleanup. An hourly job refreshes clinic data when its daily cache expir
 After deployment, invoke the `ClinicRefreshFunctionName` output once to warm the
 directory before publishing the frontend. Check that invocation succeeds.
 
+After updating values inside the same Secrets Manager secret, increase the
+`ConfigRevision` parameter on the next backend deployment. This changes Lambda's
+configuration so CloudFormation resolves the secret again. Keeping the same ARN
+and unchanged template does not refresh the running functions.
+
 ## 10. Create the private frontend S3 bucket
 
 For reproducible setup, use [the frontend CloudFormation template](../../deploy/frontend/README.md)
