@@ -2,12 +2,15 @@ import { externalAppOrigin } from '@/lib/external-app';
 import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type Props = { feature: 'books' | 'anatomy'; destination?: '/' | '/manage' | '/affiliate' };
+type Props = { feature: 'books' | 'anatomy' | 'blogs'; destination?: string };
 
 export default function ExternalAppPage({ feature, destination = '/' }: Props) {
-  const title = feature === 'books' ? 'Vetify Books' : 'Vetify Anatomy';
-  const configured =
-    feature === 'books' ? import.meta.env.VITE_BOOKS_ORIGIN : import.meta.env.VITE_ANATOMY_ORIGIN;
+  const apps = {
+    books: { title: 'Vetify Books', origin: import.meta.env.VITE_BOOKS_ORIGIN },
+    anatomy: { title: 'Vetify Anatomy', origin: import.meta.env.VITE_ANATOMY_ORIGIN },
+    blogs: { title: 'Vetify Blogs', origin: import.meta.env.VITE_BLOGS_ORIGIN },
+  };
+  const { title, origin: configured } = apps[feature];
   const origin = externalAppOrigin(configured, import.meta.env.DEV);
   return (
     <main className="mx-auto flex max-w-xl flex-col px-6 py-8 text-center sm:py-10 xl:min-h-[60vh] xl:justify-center xl:py-16">

@@ -3,18 +3,7 @@ import { pollingBridge } from './realtime';
 import { clinics } from './data-clinics';
 import type { BrowserContext } from '@playwright/test';
 import { defaultUserPreferences } from '../../src/shared/schemas';
-import {
-  account,
-  DATE,
-  message,
-  pageOf,
-  post,
-  professional,
-  thread,
-  USER_ID,
-  vet,
-  VET_ID,
-} from './data';
+import { account, DATE, message, pageOf, professional, thread, USER_ID, vet, VET_ID } from './data';
 
 export type Role = 'guest' | 'user' | 'professional' | 'admin';
 export async function installApi(context: BrowserContext, role: Role, realtime = false) {
@@ -140,8 +129,6 @@ export async function installApi(context: BrowserContext, role: Role, realtime =
             }
           : pageOf()
       );
-    if (path === '/blogs') return reply(pageOf(post));
-    if (path.startsWith('/blogs/')) return reply(post);
     const admin = adminReply(url);
     if (admin !== undefined) return reply(admin);
     unknown.add(`${route.request().method()} ${path}`);

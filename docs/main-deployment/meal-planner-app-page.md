@@ -50,7 +50,7 @@ page describes this account model; it does not establish production integration.
 Main currently provides introspection version 1 while the sibling requires version 2.
 Coordinate and jointly test that contract before enabling the production download.
 
-Blog remains embedded. This extraction alone is not a verified main-only release.
+Blog has also been extracted. Deployment still requires the main release acceptance checks.
 
 ## Validation
 

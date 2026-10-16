@@ -47,7 +47,7 @@ The actual Blog sibling folder is `vetify-blogs`; its proposed public host is
 
 ## Key source locations
 
-- `src/client/App.tsx`: main routes, public Planner app page and embedded Blog routes.
+- `src/client/App.tsx`: main routes, public Planner app page and external feature launch pages.
 - `src/client/routes/console-routes.tsx`: professional/admin console routes.
 - `src/server/app.ts`: Express composition and request middleware.
 - `src/server/index.ts`: local listen/startup and interval jobs.
@@ -72,11 +72,11 @@ See [the central contract](main-deployment/shared-auth.md).
 ## Main-only deployment boundary
 
 Books/Anatomy code and assets are removed. Main retains protected launch pages.
-Main still bundles Blog and mounts its data APIs. Planner has a public app page;
+Blog has public/article/admin launch pages and no embedded implementation. Planner has a public app page;
 its feature implementation, data APIs and indexes have been removed.
 Deleting only navigation or documentation does not separate them.
-Main account export and dashboard metrics read feature data; indexes and the
-Books worker/scanner are removed. Preserve shared native auth, region
+Main account export and dashboard metrics no longer read migrated feature data.
+Feature indexes and the Books worker/scanner are removed. Preserve shared native auth, region
 helpers and professional MediaPipe proof while removing feature-specific roots.
 See [the extraction checklist](main-deployment/extraction-checklist.md).
 

@@ -12,7 +12,7 @@ foundations from remaining release work; no phase implies a live AWS deployment.
 | Professional/clinic/appointment workflows        | Implemented; serverless upload/jobs work pending |
 | Main AI assistant                                | Implemented; policy/provider checks required     |
 | Local Socket.IO and Gateway WebSocket adapters   | Implemented; live cloud acceptance pending       |
-| Main-only feature extraction                     | Planner/Books/Anatomy removed; Blog pending      |
+| Main-only feature extraction                     | Planner/Books/Anatomy/Blog removed               |
 | Planner introspection v2 compatibility           | Pending coordinated main/Planner work            |
 | Separate-app browser SSO                         | Planned, not implemented                         |
 | AWS production release                           | Pending                                          |

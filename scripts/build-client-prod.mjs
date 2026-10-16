@@ -33,7 +33,7 @@ if (apiUrl !== '/api/v1' && !apiUrl.startsWith('https://')) {
   throw new Error('VITE_API_URL must be /api/v1 or an HTTPS production API URL.');
 }
 const featureOrigins = {};
-for (const name of ['VITE_BOOKS_ORIGIN', 'VITE_ANATOMY_ORIGIN']) {
+for (const name of ['VITE_BOOKS_ORIGIN', 'VITE_ANATOMY_ORIGIN', 'VITE_BLOGS_ORIGIN']) {
   const value = settings[name]?.trim() || '';
   if (value) {
     const origin = new URL(value);

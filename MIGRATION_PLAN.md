@@ -1,8 +1,8 @@
 # Main Vetify extraction and integration plan
 
 Updated 14 October 2026. This plan documents the agreed boundaries and remaining
-main work. It does not declare extraction, cross-app authentication or deployment
-complete. Detailed feature requirements belong to their respective repositories.
+main work. Feature-code extraction is complete; cross-app authentication and deployment
+remain separate work. Detailed feature requirements belong to their respective repositories.
 
 ## Repository ownership
 
@@ -39,8 +39,8 @@ concurrent-refresh behavior must remain intact.
 - Books/Anatomy code and assets are extracted; main retains protected launch pages.
 - Books API, scanner, index creation, PDF worker and PDF.js dependency are removed.
 - Planner feature UI, APIs and indexes are removed; `/planner` introduces the app.
-- Main account export contains only main data; admin statistics still read Blog records.
-- Blog UI, APIs and index initialization remain embedded.
+- Main account export and admin statistics use only main data.
+- Blog UI, APIs, moderation and index initialization are removed. Launch pages use `VITE_BLOGS_ORIGIN`.
 - Professional Books/affiliate links now lead to external launch pages; unset
   destinations show an unavailable state.
 - Planner exists as an Expo/native application with its own API. Its current

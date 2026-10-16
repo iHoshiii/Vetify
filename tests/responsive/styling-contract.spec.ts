@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { installApi, type Role } from './api';
 import { routes } from './routes';
-import { post, pageOf } from './data';
 import { tightLayout } from './styling-assertions';
 
 for (const [role, paths] of Object.entries(routes)) {
@@ -64,32 +63,3 @@ test('home photo stays complete in the background layer', async ({ context, page
     animations: 'disabled',
   });
 });
-
-for (const path of ['/blogs', '/blogs/responsive-care']) {
-  test(`portrait photo is fully contained on ${path}`, async ({ context, page }) => {
-    await installApi(context, 'guest');
-    const coverUrl = '/__portrait-test.svg';
-    await context.route('**/__portrait-test.svg', (route) =>
-      route.fulfill({
-        contentType: 'image/svg+xml',
-        body: '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="500"><rect width="300" height="500" fill="teal"/></svg>',
-      })
-    );
-    await context.route('**/api/v1/blogs**', (route) =>
-      route.fulfill({
-        json: path === '/blogs' ? pageOf({ ...post, coverUrl }) : { ...post, coverUrl },
-      })
-    );
-    await page.goto(path);
-    const image = page.locator('main img').first();
-    await expect(image).toBeVisible();
-    await image.evaluate((element: HTMLImageElement) => element.decode());
-    if (page.viewportSize()!.width < 1280) {
-      await expect(image).toHaveCSS('object-fit', 'contain');
-      const box = await image.boundingBox();
-      expect(box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-      expect(box!.height).toBeLessThan(page.viewportSize()!.height);
-    }
-    await tightLayout(page);
-  });
-}
