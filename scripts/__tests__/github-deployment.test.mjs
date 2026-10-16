@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+import { parseDocument } from 'yaml';
+
+const read = (path) => readFileSync(path, 'utf8');
+const ci = parseDocument(read('.github/workflows/ci.yml')).toJS();
+const deploy = parseDocument(read('.github/workflows/deploy-aws.yml')).toJS();
+const bootstrapSource = read('deploy/github/bootstrap.yaml');
+const tags = ['Ref', 'Sub', 'GetAtt'].map((name) => ({
+  tag: `!${name}`,
+  resolve: (value) => value,
+}));
+tags.push(
+  ...['If', 'Equals'].map((name) => ({
+    tag: `!${name}`,
+    collection: 'seq',
+    resolve: (value) => value.toJSON(),
+  }))
+);
+const bootstrap = parseDocument(bootstrapSource, { customTags: tags });
+const resources = bootstrap.toJS().Resources;
+
+test('production deployment requires all CI gates and a trusted main event', () => {
+  assert.deepEqual(ci.jobs.deploy.needs.sort(), ['aws-artifacts', 'checks', 'e2e-tests']);
+  assert.match(ci.jobs.deploy.if, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(ci.jobs.deploy.if, /github\.event_name != 'pull_request'/);
+  assert.match(ci.jobs.deploy.if, /vars\.AWS_DEPLOY_ENABLED == 'true'/);
+  assert.equal(ci.jobs.deploy.permissions['id-token'], 'write');
+  assert.equal(ci.jobs.checks.permissions?.['id-token'], undefined);
+  assert.equal(deploy.concurrency['cancel-in-progress'], false);
+  assert.match(ci.concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/);
+});
+
+test('AWS artifacts include Lambda smoke and use isolated public frontend settings', () => {
+  const commands = ci.jobs['aws-artifacts'].steps.map((step) => step.run || '').join('\n');
+  assert.match(commands, /npm run build:lambda/);
+  assert.match(commands, /npm run test:lambda/);
+  assert.match(commands, /--env-file=deploy\/github\/frontend-build\.env/);
+  assert.match(commands, /cp -R dist\/client dist\/lambda release\/dist/);
+  assert.doesNotMatch(commands, /cp .*\.env(?:\s|$)/m);
+  assert.match(commands, /git rev-parse HEAD > release\/revision\.txt/);
+  for (const name of ['checks', 'e2e-tests']) assert.ok(ci.jobs[name]);
+});
+
+test('GitHub OIDC trusts only this repository main branch and deployment role cannot read secrets', () => {
+  assert.deepEqual(bootstrap.errors, []);
+  assert.deepEqual(bootstrap.warnings, []);
+  const role = resources.GitHubDeployRole.Properties;
+  const trust = role.AssumeRolePolicyDocument.Statement[0];
+  assert.equal(trust.Action, 'sts:AssumeRoleWithWebIdentity');
+  assert.deepEqual(trust.Condition.StringEquals, {
+    'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+    'token.actions.githubusercontent.com:sub': 'repo:iHoshiii/Vetify:ref:refs/heads/main',
+  });
+  assert.doesNotMatch(JSON.stringify(role.Policies), /secretsmanager:|AdministratorAccess/);
+  const execution = JSON.stringify(resources.CloudFormationRole.Properties.Policies);
+  assert.doesNotMatch(
+    execution,
+    /iam:(?:CreateRole|PutRolePolicy|AttachRolePolicy)|AdministratorAccess/
+  );
+});
+
+test('deployment preserves runtime configuration, uploads assets before HTML and invalidates cache', () => {
+  const script = read('scripts/deploy-aws.sh');
+  assert.match(script, /ConfigRevision/);
+  assert.match(script, /AppSecretArn/);
+  assert.match(script, /get-caller-identity/);
+  assert.match(script, /test .*RealtimeUrl.*expected_realtime/);
+  assert.ok(script.indexOf('aws s3 sync') < script.indexOf('aws s3 cp'));
+  assert.match(script, /cloudfront wait invalidation-completed/);
+  assert.doesNotMatch(script, /s3 sync[^\n]*--delete|get-secret-value|\.env\.prod/);
+});
+
+test('all externally maintained workflow actions use immutable revisions', () => {
+  for (const workflow of [ci, deploy]) {
+    for (const job of Object.values(workflow.jobs)) {
+      for (const step of job.steps || []) {
+        if (step.uses) assert.match(step.uses, /^[\w-]+\/[\w-]+@[a-f0-9]{40}$/);
+      }
+    }
+  }
+});
