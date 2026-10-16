@@ -16,6 +16,7 @@ try {
     'http.js',
     'websocket.js',
     'maintenance.js',
+    'clinic-refresh.js',
     'package.json',
     'package-lock.json',
   ])

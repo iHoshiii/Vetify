@@ -5,6 +5,7 @@ import {
   type OsmClinicCacheDocument,
 } from '../models/osm-clinics';
 import { AppError } from '../utils/AppError';
+import { env } from '../config/env';
 
 export const OSM_CLINIC_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const OVERPASS_TIMEOUT_MS = 30_000;
@@ -126,7 +127,7 @@ export async function getOsmClinics(options: { now?: Date; fetcher?: Fetcher } =
   }
 
   const stale = now.getTime() - cached.refreshedAt.getTime() >= OSM_CLINIC_CACHE_TTL_MS;
-  if (stale) {
+  if (stale && !env.REALTIME_MANAGEMENT_ENDPOINT) {
     void refreshOsmClinicCache(options.fetcher).catch((error) => {
       console.warn(`[osm] background refresh failed: ${(error as Error).message}`);
     });

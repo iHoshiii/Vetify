@@ -25,6 +25,7 @@ try {
   const { handler: http } = await import('./http.js');
   const { handler: websocket } = await import('./websocket.js');
   const { handler: maintenance } = await import('./maintenance.js');
+  const { handler: clinicRefresh } = await import('./clinic-refresh.js');
   const context = () => ({ callbackWaitsForEmptyEventLoop: true });
   const invoke = (path, body, token) =>
     http(
@@ -114,6 +115,14 @@ try {
     .updateOne({ _id: 'smoke-connection' }, { $set: { expiresAt: Date.now() - 1 } });
   await maintenance({}, context());
   assert.ok(frames.some((frame) => frame.method === 'DELETE'));
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(JSON.stringify({ elements: [] }));
+    await clinicRefresh({}, context());
+    assert.ok(await dbClient.db().collection('osmClinicCache').findOne({}));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
   for (const path of ['books', 'blogs', 'pets', 'meal-plans', 'nutrition-observations'])
     assert.equal((await invoke(`/api/v1/${path}`, {}, auth.accessToken)).statusCode, 404);
   const collections = await dbClient.db().listCollections().toArray();
