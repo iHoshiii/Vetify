@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Stop main Vetify at 80 percent of its reported monthly budget
+Resources:
+  BudgetActionPermissions:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: VetifyBudgetDenyPermissions
+      Roles: [AWSBudgetsActionRole]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: [iam:AttachRolePolicy, iam:DetachRolePolicy]
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/vetify-backend-*'
+              - !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/vetify-github-cloudformation'
+            Condition:
+              ArnEquals: { 'iam:PolicyARN': !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSDenyAll' }
+          - Effect: Allow
+            Action: [iam:AttachUserPolicy, iam:DetachUserPolicy]
+            Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:user/github-actions-deployer'
+            Condition:
+              ArnEquals: { 'iam:PolicyARN': !Sub 'arn:${AWS::Partition}:iam::aws:policy/AWSDenyAll' }
+  GuardLog:
+    Type: AWS::Logs::LogGroup
+    Properties: { LogGroupName: /aws/lambda/vetify-budget-guard, RetentionInDays: 1 }
+  GuardRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StopMainVetify
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: budgets:ViewBudget
+                Resource: !Sub 'arn:${AWS::Partition}:budgets::${AWS::AccountId}:budget/vetify-monthly'
+              - Effect: Allow
+                Action: [ssm:GetParameter, ssm:PutParameter]
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vetify/monthly-budget-stop'
+              - Effect: Allow
+                Action: [cloudformation:ListStackResources, cloudformation:DescribeStacks]
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/vetify-backend/*'
+                  - !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/vetify-frontend/*'
+              - Effect: Allow
+                Action: [lambda:GetFunctionConcurrency, lambda:PutFunctionConcurrency]
+                Resource: !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:vetify-backend-*'
+              - Effect: Allow
+                Action: [events:DescribeRule, events:DisableRule]
+                Resource: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/vetify-backend-*'
+              - Effect: Allow
+                Action: [apigateway:GET, apigateway:PATCH]
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/apis/qnjnr8fwf5'
+                  - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/apis/l305xof20m'
+              - Effect: Allow
+                Action: [cloudfront:GetDistributionConfig, cloudfront:UpdateDistribution]
+                Resource: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/E3UQC3URTVYDHE'
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub '${GuardLog.Arn}'
+  Guard:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vetify-budget-guard
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: handler.lambda_handler
+      CodeUri: runtime/
+      Role: !GetAtt GuardRole.Arn
+      Timeout: 120
+      MemorySize: 128
+      Environment:
+        Variables:
+          ACCOUNT_ID: !Ref AWS::AccountId
+          BUDGET_NAME: vetify-monthly
+          STATE_PARAMETER: /vetify/monthly-budget-stop
+          STOP_PERCENT: '80'
+      Events:
+        Check:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            RetryPolicy: { MaximumRetryAttempts: 2, MaximumEventAgeInSeconds: 3600 }
+Outputs:
+  FunctionName:
+    Value: !Ref Guard

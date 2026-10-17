@@ -19,46 +19,47 @@ The production region is Sydney, `ap-southeast-2`.
 
 Deployments run serially. Pull requests cannot obtain AWS credentials. Re-running
 a failed job uses the same tested revision. Do not cancel a deployment mid-update.
+Deployment also checks the persistent monthly-budget shutdown flag before changes.
+The separate [budget controller](../../deploy/budget-guard/README.md) stops main
+Vetify at 80% of reported monthly cost and requires a manual restore.
 
 ## One-time AWS authorization
 
-This account currently denies `iam:ListOpenIDConnectProviders` and
-`iam:GetOpenIDConnectProvider` through an AWS Organizations service control policy.
-The account administrator must authorize
-GitHub OIDC provider setup before activation. Do not substitute a broad permanent
-AWS access key to work around that restriction.
+The active workflow uses the existing `github-actions-deployer` IAM user's access
+key pair. Programmatic IAM access does not require a plan upgrade or an OIDC
+provider. Account and organization restrictions still apply to every AWS request.
 
-After authorization, the administrator should review `deploy/github/bootstrap.yaml`.
-It creates a GitHub role trusted only for `iHoshiii/Vetify` on `main`, plus a separate
-CloudFormation execution role. The execution role can read the application secret.
-The GitHub role cannot retrieve it directly. Existing stack IAM roles are read-only
-to this execution role. Changes that create or alter IAM roles require a separate
-administrator review and deployment.
-
-If a GitHub OIDC provider already exists, pass its ARN as `ExistingOidcProviderArn`.
-Otherwise the template creates one with audience `sts.amazonaws.com`.
+An administrator deploys `deploy/github/access-key-bootstrap.yaml` once. It creates
+a CloudFormation execution role and adds scoped deployment permissions to the
+existing IAM user. The execution role can read the application secret. The added
+user policy cannot retrieve it directly. Existing stack IAM roles are read-only
+to the execution role, so IAM changes still require administrator review.
 
 ```powershell
-aws cloudformation deploy --template-file deploy/github/bootstrap.yaml --stack-name vetify-github-deployment --region ap-southeast-2 --profile vetify-deploy --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --parameter-overrides ArtifactBucket=aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu AppSecretArn=arn:aws:secretsmanager:ap-southeast-2:223703743978:secret:vetify/prod/app-UzxTQF
+aws cloudformation deploy --template-file deploy/github/access-key-bootstrap.yaml --stack-name vetify-github-access-keys --region ap-southeast-2 --profile vetify-deploy --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --parameter-overrides ArtifactBucket=aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu AppSecretArn=arn:aws:secretsmanager:ap-southeast-2:223703743978:secret:vetify/prod/app-UzxTQF GitHubUserName=github-actions-deployer
 ```
 
 Review the change set, execute it, and wait for completion. Read the
-`GitHubDeployRoleArn` and `CloudFormationRoleArn` stack outputs.
+`CloudFormationRoleArn` stack output. This does not create an OIDC provider or
+change the account's billing plan. The older `bootstrap.yaml` is an optional OIDC
+setup for accounts that permit federation and is not used by the active workflow.
 
 ## GitHub repository settings
 
-Open `iHoshiii/Vetify` → Settings → Secrets and variables → Actions → Variables.
-Create these **repository variables**, not application secrets:
+Open `iHoshiii/Vetify` → Settings → Secrets and variables → Actions → Secrets.
+Create these **repository secrets** under the Secrets tab:
 
-| Name                  | Value                                                         |
-| --------------------- | ------------------------------------------------------------- |
-| `AWS_DEPLOY_ROLE_ARN` | Bootstrap output `GitHubDeployRoleArn`                        |
-| `AWS_CFN_ROLE_ARN`    | Bootstrap output `CloudFormationRoleArn`                      |
-| `AWS_ARTIFACT_BUCKET` | `aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu` |
+| Name                    | Value                                                         |
+| ----------------------- | ------------------------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`     | Access key ID for `github-actions-deployer`                   |
+| `AWS_SECRET_ACCESS_KEY` | Matching secret access key                                    |
+| `AWS_CFN_ROLE_ARN`      | Bootstrap output `CloudFormationRoleArn`                      |
+| `AWS_ARTIFACT_BUCKET`   | `aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu` |
 
 Keep MongoDB, OAuth, mail and TURN secrets in AWS Secrets Manager.
 Bedrock uses the Lambda execution role rather than an application API key.
-GitHub does not need their values. The role ARNs and bucket name are identifiers.
+GitHub does not need their values. `AWS_DEPLOY_ROLE_ARN` is no longer used.
+The access key pair stays in GitHub Secrets and is passed only to the AWS job.
 
 Review and merge this branch through a pull request. With main-only execution,
 these jobs run after merging. Do not require their status checks before merging
@@ -71,9 +72,9 @@ VS Code can report `Unable to find reusable workflow` for valid local workflow
 references. Open the full Vetify repository folder, then use Developer: Reload Window.
 The file must remain `.github/workflows/deploy-aws.yml` with `on.workflow_call`.
 The workflow validation tests also check this reference. `Context access might be
-invalid` warnings for `AWS_*` variables indicate that the editor cannot see those
-repository variables. Configure the three variables above after AWS authorization
-before merging the deployment workflow into `main`.
+invalid` warnings may be stale after changing authentication. Save the workflow
+and reload the window. All four secrets are declared by the reusable workflow and
+passed explicitly by CI. Validate both files with actionlint before merging.
 
 ## Public build settings and secret changes
 

@@ -51,7 +51,7 @@ export async function findNotifications(input: {
   const [items, total] = await Promise.all([
     notificationsCollection()
       .find(filter)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .toArray(),
