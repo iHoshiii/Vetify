@@ -94,6 +94,10 @@ jobs:
       - run: sam validate --lint --template-file deploy/serverless/template.yaml --region ap-southeast-2
       - run: sam validate --lint --template-file deploy/frontend/template.yaml --region ap-southeast-2
       - run: sam validate --lint --template-file deploy/github/bootstrap.yaml --region ap-southeast-2
+      - run: sam validate --lint --template-file deploy/github/access-key-bootstrap.yaml --region ap-southeast-2
+      - run: sam validate --lint --template-file deploy/budget-guard/template.yaml --region ap-southeast-2
+      - run: python -B -m unittest discover -s deploy/budget-guard -p '*_test.py'
+      - run: node --test scripts/__tests__/budget-gate.test.mjs scripts/__tests__/budget-guard.test.mjs
       - run: npm run build:client:prod -- --env-file=deploy/github/frontend-build.env
       - name: Assemble the tested release
         run: |
@@ -114,9 +118,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
-      id-token: write
     uses: ./.github/workflows/deploy-aws.yml
     secrets:
-      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_CFN_ROLE_ARN: ${{ secrets.AWS_CFN_ROLE_ARN }}
       AWS_ARTIFACT_BUCKET: ${{ secrets.AWS_ARTIFACT_BUCKET }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
