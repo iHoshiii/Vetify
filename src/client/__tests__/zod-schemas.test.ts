@@ -66,7 +66,7 @@ describe('Zod schemas', () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.model).toBe('gemini-3.5-flash');
+      expect(result.data.model).toBe('amazon.nova-lite-v1:0');
     }
   });
 });

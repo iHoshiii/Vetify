@@ -14,7 +14,7 @@ import { signAccessToken } from '../../../services/auth.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
 // Same reason as the chat route's own tests: the gate is what matters here, and a
-// real Gemini call would cost money and need a key.
+// real Bedrock call would cost money and need AWS credentials.
 vi.mock('../../../services/chat.service', () => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
 }));
@@ -119,7 +119,7 @@ describe('chat activity', () => {
     expect(event).toMatchObject({
       type: 'chat.message_sent',
       user: null,
-      metadata: { model: 'gemini-3.5-flash' },
+      metadata: { model: 'amazon.nova-lite-v1:0' },
     });
     // The id the allowance already counts them by, so one visitor's conversation
     // stays one visitor's without a second cookie.

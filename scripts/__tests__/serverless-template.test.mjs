@@ -11,6 +11,31 @@ const customTags = ['Ref', 'Sub'].map((name) => ({
 const document = parseDocument(source, { customTags });
 const template = document.toJS();
 
+test('only the HTTP Lambda can invoke the approved regional Bedrock models', () => {
+  const policy = template.Resources.BackendFunction.Properties.Policies[1];
+  assert.equal(policy.Statement[0].Action, 'bedrock:InvokeModel');
+  assert.deepEqual(
+    policy.Statement[0].Resource.map((value) => value['Fn::Sub']),
+    [
+      'arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0',
+      'arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0',
+    ]
+  );
+  const variables = template.Globals.Function.Environment.Variables;
+  assert.deepEqual(variables.BEDROCK_REGION, { Ref: 'AWS::Region' });
+  assert.equal(variables.GEMINI_API_KEY, undefined);
+  for (const name of [
+    'WebSocketFunction',
+    'RealtimeMaintenanceFunction',
+    'ClinicRefreshFunction',
+  ]) {
+    assert.doesNotMatch(
+      JSON.stringify(template.Resources[name].Properties.Policies ?? []),
+      /bedrock:/
+    );
+  }
+});
+
 test('gateway routes and permissions target the built handler and this API only', () => {
   assert.deepEqual(document.errors, []);
   assert.doesNotMatch(source, /&ConnectionPolicies|\*ConnectionPolicies/);

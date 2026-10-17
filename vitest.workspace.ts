@@ -33,7 +33,7 @@ export default defineWorkspace([
         NODE_ENV: 'test',
         MAIL_TRANSPORT: 'log',
         AUTH_MAIL_TRANSPORT: 'log',
-        GEMINI_API_KEY: 'synthetic-gemini-api-key',
+        BEDROCK_REGION: 'ap-southeast-2',
         JWT_SECRET_ACCESS: 'synthetic-test-signing-secret-at-least-32-characters',
       },
       globals: true,

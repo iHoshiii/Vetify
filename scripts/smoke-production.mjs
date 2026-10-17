@@ -74,7 +74,7 @@ try {
         NODE_ENV: 'production',
         PORT: String(port),
         MONGODB_URI: uri,
-        GEMINI_API_KEY: 'production-smoke-key',
+        BEDROCK_REGION: 'ap-southeast-2',
         JWT_SECRET_ACCESS: 'production-smoke-only-secret-at-least-32-characters',
         MAIL_TRANSPORT: 'log',
         CLIENT_ORIGIN: `http://127.0.0.1:${port}`,

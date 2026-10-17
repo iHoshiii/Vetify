@@ -15,7 +15,7 @@ Open Budgets > Create budget > Cost budget. Start with $20/month as a learning
 target, with actual alerts at 50%, 80%, 100% and a forecast alert at 100%.
 Include usage costs before credits so credits do not hide consumption.
 Alerts do not stop resources, and this target is not a cost guarantee.
-Review costs weekly, including MongoDB, Resend, Gemini and TURN outside AWS.
+Review Bedrock token costs plus MongoDB, Resend and TURN costs weekly.
 [Budgets guidance](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html).
 
 Use Sydney (`ap-southeast-2`) for backend/S3/Secrets Manager. This account's

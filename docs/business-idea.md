@@ -52,7 +52,7 @@ Educational-document commissions and their economics belong to Books docs.
 ## Operating assumptions
 
 Main hosting is planned as S3/CloudFront plus HTTP/WebSocket API Gateway and
-Lambda. MongoDB Atlas, mail, Gemini and TURN have their own limits/costs.
+Lambda and Bedrock. MongoDB Atlas, mail and TURN have their own limits/costs.
 AWS credits are a temporary budget, not a permanent operating-cost estimate.
 Verify the actual balance, usage and expiry before launch.
 

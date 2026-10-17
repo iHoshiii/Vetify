@@ -8,9 +8,7 @@ Parameters:
   ClientOrigin:
     Type: String
     Default: https://vetify.page
-  ConfigRevision:
-    Type: String
-    Default: '1'
+  ConfigRevision: { Type: String, Default: '1' }
 Globals:
   Function:
     Runtime: nodejs24.x
@@ -31,7 +29,7 @@ Globals:
         MONGODB_URI: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:MONGODB_URI}}'
         JWT_SECRET_ACCESS: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:JWT_SECRET_ACCESS}}'
         OAUTH_STATE_SECRET: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OAUTH_STATE_SECRET}}'
-        GEMINI_API_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:GEMINI_API_KEY}}'
+        BEDROCK_REGION: !Ref AWS::Region
         AUTH_MAIL_TRANSPORT: http
         AUTH_MAIL_FROM: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:AUTH_MAIL_FROM}}'
         AUTH_MAIL_API_KEY: !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:AUTH_MAIL_API_KEY}}'
@@ -118,7 +116,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: http.handler
-      Policies: [!Ref ConnectionPolicy]
+      Policies:
+        - !Ref ConnectionPolicy
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: [!Sub 'arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0', !Sub 'arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0']
       Events:
         Proxy:
           Type: HttpApi
