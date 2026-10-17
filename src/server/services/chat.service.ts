@@ -1,7 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
-import * as wrappers from 'langsmith/wrappers';
+import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
+import { traceable } from 'langsmith/traceable';
 
 import type { ChatRequest } from '@shared/schemas';
+import { normalizeChatModel } from '@shared/chat-models';
+import { toBedrockMessages } from './chat-messages';
 
 import { env } from '../config/env';
 import { AppError } from '../utils/AppError';
@@ -27,41 +29,35 @@ const SYSTEM_PROMPT =
   'Never over-explain. Say what matters most, skip the filler. ' +
   'However, if the user explicitly asks for more detail, a full explanation, or a list, then go deeper and be as thorough as needed.';
 
-const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+const client = new BedrockRuntimeClient({ region: env.BEDROCK_REGION, maxAttempts: 2 });
 
-// Wrap with LangSmith tracing
-const client = wrappers.wrapSDK(geminiClient, {
-  tags: ['gemini', 'vetify', 'triage'],
-  metadata: { integration: 'google-genai' },
-});
-
-export async function generateReply({ message, history, model }: ChatRequest): Promise<string> {
-  // Gemini calls the assistant turn "model"; the client and DB call it "assistant".
-  const contents = [
-    ...history.map((m: { role: string; content: string }) => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.content }],
-    })),
-    { role: 'user', parts: [{ text: message }] },
-  ];
-
+async function reply({
+  message,
+  history,
+  model,
+}: Pick<ChatRequest, 'message' | 'history' | 'model'>): Promise<string> {
   try {
-    const response = await client.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      },
-    });
-
-    return response.text ?? 'I could not generate a response.';
+    const response = await client.send(
+      new ConverseCommand({
+        modelId: normalizeChatModel(model),
+        messages: toBedrockMessages(history, message),
+        system: [{ text: SYSTEM_PROMPT }],
+        inferenceConfig: { temperature: 0.7, maxTokens: 2048 },
+      }),
+      { abortSignal: AbortSignal.timeout(22_000) }
+    );
+    const text = response.output?.message?.content
+      ?.flatMap((block) => (block.text ? [block.text] : []))
+      .join('\n');
+    return text?.trim() ? text : 'I could not generate a response.';
   } catch (err) {
-    const msg = (err as Error)?.message ?? '';
-    console.error('[chat.service] gemini error:', err);
-
-    if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+    const error = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+    const status = error?.$metadata?.httpStatusCode;
+    console.error('[chat.service] bedrock error:', { name: error?.name, status });
+    if (
+      status === 429 ||
+      ['ThrottlingException', 'ServiceQuotaExceededException'].includes(error?.name ?? '')
+    ) {
       throw AppError.tooManyRequests(
         '⏳ The AI is temporarily rate-limited. Please wait a moment and try again.'
       );
@@ -69,4 +65,15 @@ export async function generateReply({ message, history, model }: ChatRequest): P
 
     throw new AppError(502, 'The AI service is unavailable right now. Please try again.');
   }
+}
+
+const tracedReply = traceable(reply, {
+  name: 'vetify-chat',
+  run_type: 'llm',
+  tags: ['bedrock', 'vetify', 'triage'],
+  metadata: { integration: 'aws-bedrock' },
+});
+
+export function generateReply({ message, history, model }: ChatRequest): Promise<string> {
+  return tracedReply({ message, history, model });
 }

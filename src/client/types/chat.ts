@@ -10,8 +10,4 @@ export const CHAT_SUGGESTIONS = [
   'My bird stopped eating, should I be worried?',
 ];
 
-export const CHAT_MODELS: ChatModel[] = [
-  { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
-  { label: 'Gemini 2.5 Flash', value: 'gemini-2.5-flash' },
-  { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite' },
-];
+export { CHAT_MODELS } from '@shared/chat-models';

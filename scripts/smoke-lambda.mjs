@@ -42,13 +42,13 @@ try {
         NODE_ENV: 'test',
         MONGODB_URI: mongo.getUri(),
         JWT_SECRET_ACCESS: 'synthetic-lambda-signing-secret-32-characters',
-        GEMINI_API_KEY: 'synthetic-gemini-key',
+        BEDROCK_REGION: 'ap-southeast-2',
         CLIENT_ORIGIN: 'https://vetify.page',
         AUTH_MAIL_TRANSPORT: 'log',
         MAIL_TRANSPORT: 'log',
         AWS_ACCESS_KEY_ID: 'SYNTHETICACCESSKEY',
         AWS_SECRET_ACCESS_KEY: 'synthetic-secret-never-used-against-aws',
-        AWS_REGION: 'ap-southeast-1',
+        AWS_REGION: 'ap-southeast-2',
       },
     });
     const timer = setTimeout(() => child.kill(), 90_000);

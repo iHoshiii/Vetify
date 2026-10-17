@@ -6,17 +6,21 @@ import { tightLayout } from './styling-assertions';
 test('AI chat input, history and model choices remain usable', async ({ context, page }) => {
   await installApi(context, 'user');
   await page.goto('/chat');
-  await page.getByRole('button', { name: 'Gemini 3.5 Flash', exact: true }).click();
+  await page.getByRole('button', { name: 'Amazon Nova Lite', exact: true }).click();
   await tightLayout(page);
-  await page.getByRole('button', { name: 'Gemini 2.5 Flash', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Gemini 2.5 Flash', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Amazon Nova Micro', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Amazon Nova Micro', exact: true })).toBeVisible();
   const composer = page.getByRole('textbox');
   await composer.fill('Is my dog okay?');
   const send = page.getByRole('button', { name: 'Send message', exact: true });
   await send.scrollIntoViewIfNeeded();
   await fitsViewport(page, send);
   await tightLayout(page);
+  const submitted = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/v1/chat')
+  );
   await send.click();
+  expect((await submitted).postDataJSON().model).toBe('amazon.nova-micro-v1:0');
   const reply = page.getByText('Please contact a veterinarian if symptoms persist.', {
     exact: true,
   });

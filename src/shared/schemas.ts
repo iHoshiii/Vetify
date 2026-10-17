@@ -46,11 +46,7 @@ import {
   PROFESSIONAL_PHOTO_MIME,
 } from './limits';
 
-const allowedChatModels = [
-  'gemini-3.5-flash',
-  'gemini-2.5-flash',
-  'gemini-3.1-flash-lite',
-] as const;
+import { DEFAULT_CHAT_MODEL, normalizeChatModel } from './chat-models';
 
 export const loginSchema = z.object({
   email: z.string().trim().min(1, 'Email is required').email('Please enter a valid email address'),
@@ -96,13 +92,11 @@ export const chatRequestSchema = z
       )
       .default([]),
     session_id: z.string().trim().default('anonymous'),
-    model: z.string().trim().default('gemini-3.5-flash'),
+    model: z.string().trim().default(DEFAULT_CHAT_MODEL),
   })
   .transform((value) => ({
     ...value,
-    model: allowedChatModels.includes(value.model as (typeof allowedChatModels)[number])
-      ? value.model
-      : 'gemini-3.5-flash',
+    model: normalizeChatModel(value.model),
   }));
 
 export type LoginInput = z.infer<typeof loginSchema>;
