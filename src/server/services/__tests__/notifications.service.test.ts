@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { insertUser, updatePreferences, type User } from '../../models';
+import { notificationsCollection } from '../../models/notifications';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import {
   countUnread,
@@ -86,18 +87,32 @@ describe('notifications.service', () => {
     expect(await seed(user)).toBeNull();
   });
 
-  it('lists an account newest first, and only its own', async () => {
+  it('lists only the owner’s notifications newest first, including timestamp ties across pages', async () => {
     const user = await account();
     const other = await account();
     const first = await seed(user, 'booking_requested');
     const second = await seed(user);
     await seed(other);
     if (!first || !second) throw new Error('Expected notifications');
+    await notificationsCollection().updateMany(
+      {},
+      { $set: { createdAt: new Date('2026-10-17T02:00:00.000Z') } }
+    );
 
     const page = await listForUser({ user: user._id, page: 1, limit: 20 });
 
     expect(page.total).toBe(2);
     expect(page.items.map((n) => n.id)).toEqual([second.id, first.id]);
+    const pageOne = await listForUser({ user: user._id, page: 1, limit: 1 });
+    const pageTwo = await listForUser({ user: user._id, page: 2, limit: 1 });
+    expect(pageOne.items.map((n) => n.id)).toEqual([second.id]);
+    expect(pageTwo.items.map((n) => n.id)).toEqual([first.id]);
+    await notificationsCollection().updateOne(
+      { _id: new ObjectId(first.id) },
+      { $set: { createdAt: new Date('2026-10-17T02:00:01.000Z') } }
+    );
+    const reordered = await listForUser({ user: user._id, page: 1, limit: 20 });
+    expect(reordered.items.map((n) => n.id)).toEqual([first.id, second.id]);
   });
 
   it('marks one read for its owner and drops the unread count', async () => {
