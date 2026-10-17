@@ -21,20 +21,15 @@ tags.push(
 const bootstrap = parseDocument(bootstrapSource, { customTags: tags });
 const resources = bootstrap.toJS().Resources;
 
-test('CI runs automatically only for main pushes and skips non-main manual runs', () => {
-  assert.deepEqual(Object.keys(ci.on).sort(), ['push', 'workflow_dispatch']);
+test('only pushes and merges into main trigger automatic CI and deployment', () => {
+  assert.deepEqual(Object.keys(ci.on), ['push']);
   assert.deepEqual(ci.on.push.branches, ['main']);
   for (const job of Object.values(ci.jobs)) {
-    assert.match(job.if, /github\.ref == 'refs\/heads\/main'/);
-    assert.match(
-      job.if,
-      /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
-    );
+    assert.equal(job.if, "github.ref == 'refs/heads/main' && github.event_name == 'push'");
   }
-  assert.match(deploy.jobs.production.if, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(
+  assert.equal(
     deploy.jobs.production.if,
-    /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
+    "github.ref == 'refs/heads/main' && github.event_name == 'push'"
   );
 });
 
@@ -47,15 +42,12 @@ test('the local deployment workflow exists and declares the reusable entry point
 test('production deployment requires all CI gates and a trusted main event', () => {
   assert.deepEqual(ci.jobs.deploy.needs.sort(), ['aws-artifacts', 'checks', 'e2e-tests']);
   assert.match(ci.jobs.deploy.if, /github\.ref == 'refs\/heads\/main'/);
-  assert.match(
-    ci.jobs.deploy.if,
-    /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/
-  );
-  assert.match(ci.jobs.deploy.if, /vars\.AWS_DEPLOY_ENABLED == 'true'/);
+  assert.match(ci.jobs.deploy.if, /github\.event_name == 'push'/);
+  assert.doesNotMatch(ci.jobs.deploy.if, /vars\.|workflow_dispatch/);
   assert.equal(ci.jobs.deploy.permissions['id-token'], 'write');
   assert.equal(ci.jobs.checks.permissions?.['id-token'], undefined);
   assert.equal(deploy.concurrency['cancel-in-progress'], false);
-  assert.match(ci.concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/);
+  assert.equal(ci.concurrency['cancel-in-progress'], false);
 });
 
 test('AWS artifacts include Lambda smoke and use isolated public frontend settings', () => {
@@ -89,6 +81,8 @@ test('GitHub OIDC trusts only this repository main branch and deployment role ca
 
 test('deployment preserves runtime configuration, uploads assets before HTML and invalidates cache', () => {
   const script = read('scripts/deploy-aws.sh');
+  assert.ok(script.includes('test "${GITHUB_REF:-}" = refs/heads/main'));
+  assert.ok(script.includes('test "${GITHUB_EVENT_NAME:-}" = push'));
   assert.match(script, /ConfigRevision/);
   assert.match(script, /AppSecretArn/);
   assert.match(script, /get-caller-identity/);
