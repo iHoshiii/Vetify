@@ -12,6 +12,7 @@ import {
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { hashToken, refreshTokensCollection } from '../../../models/refresh-token';
+import { REFRESH_GRACE_MS } from '../../../models/refresh-token/rotation';
 import { comparePassword, usersCollection } from '../../../models/users';
 import { PASSWORD_PROOF_COOKIE, unsealPasswordProof } from '../../../services/account-auth-proof';
 
@@ -25,6 +26,9 @@ describe('password confirmation proof security', () => {
     const original = unsealPasswordProof(originalCookie.split('=').slice(1).join('='))!;
     expect(original.expiresAt - Date.now()).toBeGreaterThan(290_000);
     expect(String(completed.headers['set-cookie'])).toContain('HttpOnly');
+    // Advance beyond the fixture's initial refresh grace to exercise a new rotation.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + REFRESH_GRACE_MS + 1);
     const refreshed = await owner.browser.post('/api/v1/auth/refresh');
     expect(refreshed.status).toBe(200);
     const rotatedCookie = cookieOf(refreshed, PASSWORD_PROOF_COOKIE);

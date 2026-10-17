@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SiteHeader from '@/components/navbar/navbar-header';
@@ -48,7 +48,7 @@ describe('responsive site navigation', () => {
     show();
     fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
     media.matches = true;
-    fireEvent(media, new Event('change'));
+    act(() => media.dispatchEvent(new Event('change')));
     expect(screen.queryByRole('navigation', { name: 'Mobile navigation' })).toBeNull();
     expect(document.body.style.overflow).toBe('');
   });

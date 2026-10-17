@@ -44,6 +44,7 @@ export async function postMailMessage(message: MailMessage, provider: MailProvid
       headers: {
         authorization: `Bearer ${provider.apiKey}`,
         'content-type': 'application/json',
+        ...(message.idempotencyKey ? { 'Idempotency-Key': message.idempotencyKey } : {}),
       },
       body: JSON.stringify({
         from: provider.from,

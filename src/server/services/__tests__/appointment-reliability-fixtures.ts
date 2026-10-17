@@ -12,11 +12,13 @@ export async function bookingFixture() {
     email: `owner-${new ObjectId()}@example.com`,
     password: 'pw12345678',
     name: 'Pet owner',
+    emailVerified: true,
   });
   const vet = await insertUser({
     email: `vet-${new ObjectId()}@example.com`,
     password: 'pw12345678',
     name: 'Dr Vet',
+    emailVerified: true,
   });
   const professional = await insertProfessional({
     user: vet._id,

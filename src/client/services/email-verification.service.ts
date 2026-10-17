@@ -1,4 +1,3 @@
-import type { EmailVerificationConfirm } from '@shared/email-verification';
 import { readAuthState } from '@/lib/auth-storage';
 import { apiFetch, ApiError } from './api';
 import { refreshAccessToken } from './auth-refresh';
@@ -16,7 +15,7 @@ export async function requestEmailVerification() {
   }
 }
 
-export function confirmEmailVerification(input: EmailVerificationConfirm) {
+export function confirmEmailVerification(input: { token: string }) {
   return apiFetch<{ message: string; verified: true }>('/auth/email-verification/confirm', {
     method: 'POST',
     body: input,
