@@ -3,7 +3,7 @@
 Updated 14 October 2026. This is main's architecture and its external interfaces.
 Independent feature implementation details live in their own repositories.
 
-![Agreed target architecture](main-deployment/architecture.png)
+![Agreed target architecture](main-deployment/architecture.svg)
 
 The picture is a target boundary, not proof of extraction or AWS deployment.
 
@@ -20,7 +20,7 @@ flowchart LR
     WS --> DB
     Jobs[Scheduled main jobs] --> DB
     API --> Mail[Resend]
-    API --> AI[Gemini]
+    API --> AI[Amazon Bedrock / Nova]
     Browser <--> Peer[WebRTC peer or TURN relay]
 ```
 

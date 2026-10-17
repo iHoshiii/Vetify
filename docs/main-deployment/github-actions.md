@@ -58,7 +58,8 @@ Create these **repository variables**, not application secrets:
 | `AWS_ARTIFACT_BUCKET` | `aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu`              |
 | `AWS_DEPLOY_ENABLED`  | Leave unset until authorization and the first CI run pass, then set `true` |
 
-Keep MongoDB, OAuth, mail, Gemini and TURN secrets in AWS Secrets Manager.
+Keep MongoDB, OAuth, mail and TURN secrets in AWS Secrets Manager.
+Bedrock uses the Lambda execution role rather than an application API key.
 GitHub does not need their values. The role ARNs and bucket name are identifiers.
 
 Review and merge this branch through a pull request. With main-only execution,

@@ -65,7 +65,7 @@
   <text x="1182" y="385" class="heading">Resend</text>
   <text x="1182" y="413" class="small">Separate auth / professional mail keys</text>
   <rect x="1160" y="480" width="370" height="85" rx="12" class="box"/>
-  <text x="1182" y="514" class="heading">Gemini</text>
+  <text x="1182" y="514" class="heading">Bedrock</text>
   <text x="1182" y="542" class="small">Main AI assistant and main moderation</text>
   <rect x="1160" y="595" width="370" height="75" rx="12" class="box"/>
   <text x="1182" y="625" class="heading">TURN + WebRTC</text>

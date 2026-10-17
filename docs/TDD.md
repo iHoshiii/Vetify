@@ -14,7 +14,7 @@ The target is documented separately from current implementation state.
 | Local realtime      | Socket.IO on the HTTP server                                    |
 | Production realtime | API Gateway WebSockets, Mongo-backed tickets/leases             |
 | Calls               | Browser WebRTC, TURN when needed                                |
-| AI                  | Gemini with existing tracing/moderation integration             |
+| AI                  | Amazon Bedrock Converse, Nova and LangSmith tracing             |
 | Tests               | Vitest, isolated MongoDB fixtures and Playwright                |
 
 `src/server/app.ts` creates Express without listening. `index.ts` owns local

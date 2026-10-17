@@ -60,7 +60,7 @@ See [API Gateway pricing](https://aws.amazon.com/api-gateway/pricing/).
 
 Main infrastructure is S3/CloudFront, HTTP and WebSocket API Gateway, Lambda,
 CloudWatch, Secrets Manager, optional Route 53 and private upload storage/workers.
-MongoDB, Resend, Gemini and TURN have separate billing/limits.
+Bedrock adds token charges to AWS usage. MongoDB, Resend and TURN have separate limits/costs.
 No EC2, Fargate, load balancer or NAT is required by the basic public architecture;
 a later private database networking decision can change that cost picture.
 
