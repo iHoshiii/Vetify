@@ -3,7 +3,10 @@ set -euo pipefail
 
 : "${AWS_ARTIFACT_BUCKET:?Missing AWS artifact bucket}"
 : "${AWS_CFN_ROLE_ARN:?Missing CloudFormation execution role}"
-test "${GITHUB_REF:-}" = refs/heads/main
+case "${GITHUB_REF:-}" in
+  refs/heads/main|refs/heads/hotfix/ci-message-timezone) ;;
+  *) exit 1 ;;
+esac
 test "${GITHUB_EVENT_NAME:-}" = push
 test "$(cat release/revision.txt)" = "$GITHUB_SHA"
 test "$(aws sts get-caller-identity --query Account --output text)" = 223703743978

@@ -21,15 +21,18 @@ tags.push(
 const bootstrap = parseDocument(bootstrapSource, { customTags: tags });
 const resources = bootstrap.toJS().Resources;
 
-test('only pushes and merges into main trigger automatic CI and deployment', () => {
+test('only main and the temporary hotfix branch trigger automatic CI and deployment', () => {
   assert.deepEqual(Object.keys(ci.on), ['push']);
-  assert.deepEqual(ci.on.push.branches, ['main']);
+  assert.deepEqual(ci.on.push.branches, ['main', 'hotfix/ci-message-timezone']);
   for (const job of Object.values(ci.jobs)) {
-    assert.equal(job.if, "github.ref == 'refs/heads/main' && github.event_name == 'push'");
+    assert.equal(
+      job.if,
+      "(github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hotfix/ci-message-timezone') && github.event_name == 'push'"
+    );
   }
   assert.equal(
     deploy.jobs.production.if,
-    "github.ref == 'refs/heads/main' && github.event_name == 'push'"
+    "(github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hotfix/ci-message-timezone') && github.event_name == 'push'"
   );
 });
 
@@ -107,7 +110,10 @@ test('GitHub OIDC trusts only this repository main branch and deployment role ca
 
 test('deployment preserves runtime configuration, uploads assets before HTML and invalidates cache', () => {
   const script = read('scripts/deploy-aws.sh');
-  assert.ok(script.includes('test "${GITHUB_REF:-}" = refs/heads/main'));
+  assert.match(
+    script,
+    /case "\$\{GITHUB_REF:-\}" in\s+refs\/heads\/main\|refs\/heads\/hotfix\/ci-message-timezone\) ;;\s+\*\) exit 1 ;;\s+esac/
+  );
   assert.ok(script.includes('test "${GITHUB_EVENT_NAME:-}" = push'));
   assert.match(script, /ConfigRevision/);
   assert.match(script, /AppSecretArn/);

@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   production:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hotfix/ci-message-timezone') && github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
