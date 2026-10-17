@@ -133,6 +133,14 @@ test('access-key setup grants scoped deployment access without creating an ident
   const access = setup.GitHubAccessKeyPolicy.Properties;
   assert.deepEqual(access.Users, ['GitHubUserName']);
   assert.doesNotMatch(JSON.stringify(access.PolicyDocument), /secretsmanager:|AdministratorAccess/);
+  const executionStatements =
+    setup.CloudFormationRole.Properties.Policies[0].PolicyDocument.Statement;
+  const transform = executionStatements.find((s) => s.Action === 'cloudformation:CreateChangeSet');
+  assert.equal(transform?.Effect, 'Allow');
+  assert.equal(
+    transform?.Resource,
+    'arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
+  );
   assert.doesNotMatch(
     JSON.stringify(setup.CloudFormationRole.Properties.Policies),
     /iam:(?:CreateRole|PutRolePolicy|AttachRolePolicy)|AdministratorAccess/
