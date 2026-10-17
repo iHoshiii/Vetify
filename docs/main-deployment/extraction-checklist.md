@@ -43,7 +43,7 @@ features: extract the needed definitions instead of deleting the whole file.
   The existing native client registration is not a generic client for all apps.
 - Professional inquiries/approval/profiles, clinic directory/map, appointments,
   messages, notifications, moderation of main accounts, audits and realtime.
-- AI Vet Assistant and its required Gemini code. Blog moderation is removed.
+- AI Vet Assistant and its Bedrock integration. Blog moderation is removed.
 - Professional selfie/identity proof: it still uses MediaPipe.
   Anatomy is not a reason to remove `@mediapipe/tasks-vision` or its assets.
 - Main branding, home/help/about/legal/contact pages and shared layout.

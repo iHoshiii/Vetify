@@ -1,72 +1,20 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures';
 
-const token = 'a'.repeat(64);
+const session = {
+  accessToken: 'e2e-token',
+  user: {
+    id: 'owner',
+    email: 'owner@example.test',
+    name: 'Owner',
+    provider: 'local',
+    role: 'user',
+    avatarUrl: null,
+    emailVerified: false,
+  },
+};
 
-test('a verification link waits for a click, removes its token, and confirms the email', async ({
-  page,
-}) => {
-  let confirmations = 0;
-  await page.route('**/api/v1/auth/email-verification/confirm', async (route) => {
-    confirmations++;
-    expect(route.request().postDataJSON()).toEqual({ token });
-    await route.fulfill({ json: { message: 'Your email address is verified.', verified: true } });
-  });
-  await page.goto(`/verify-email#token=${token}`);
-  await expect(page).toHaveURL(/\/verify-email$/);
-  await expect(page.getByRole('button', { name: 'Verify email' })).toBeVisible();
-  expect(confirmations).toBe(0);
-  await page.getByRole('button', { name: 'Verify email' }).click();
-  await expect(page.getByRole('status')).toHaveText('Your email address is verified.');
-  await expect(page.getByRole('button', { name: 'Verify email' })).toHaveCount(0);
-  expect(confirmations).toBe(1);
-});
-
-test('an expired verification link directs an anonymous user to sign in for a new link', async ({
-  page,
-}) => {
-  await page.route('**/api/v1/auth/email-verification/confirm', async (route) => {
-    await route.fulfill({
-      status: 400,
-      json: { error: 'This verification link is invalid or expired.' },
-    });
-  });
-  await page.goto(`/verify-email#token=${token}`);
-  await page.getByRole('button', { name: 'Verify email' }).click();
-  await expect(page.getByRole('alert')).toHaveText('This verification link is invalid or expired.');
-  await page.getByRole('link', { name: /Request a new verification link/ }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByLabel('Email address')).toBeVisible();
-});
-
-test('a missing verification token shows a recovery action without confirming', async ({
-  page,
-}) => {
-  await page.goto('/verify-email');
-  await expect(page.getByRole('alert')).toHaveText(
-    'This verification link is missing or invalid. Please request a new one.'
-  );
-  await expect(page.getByRole('button', { name: 'Verify email' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: /Request a new verification link/ })).toHaveAttribute(
-    'href',
-    '/settings/profile'
-  );
-});
-
-test('an unverified owner can resend from profile settings without saving a draft name', async ({
-  page,
-}) => {
-  const session = {
-    accessToken: 'e2e-token',
-    user: {
-      id: 'owner',
-      email: 'owner@example.test',
-      name: 'Owner',
-      provider: 'local',
-      role: 'user',
-      avatarUrl: null,
-      emailVerified: false,
-    },
-  };
+async function unverifiedOwner(page: Page) {
   await page.addInitScript(
     (stored) => sessionStorage.setItem('vetify.auth', JSON.stringify(stored)),
     session
@@ -87,37 +35,110 @@ test('an unverified owner can resend from profile settings without saving a draf
       },
     })
   );
+  await page.route('**/api/v1/account/realtime-ticket', (route) =>
+    route.fulfill({ status: 503, json: { error: 'Realtime is unavailable in this test.' } })
+  );
   await page.route('**/api/v1/notifications/unread', (route) =>
     route.fulfill({ json: { unread: 0 } })
   );
   await page.route('**/api/v1/messages/unread**', (route) =>
     route.fulfill({ json: { unread: 0 } })
   );
-  let requests = 0;
-  await page.route('**/api/v1/auth/email-verification/request', async (route) => {
+}
+
+test('an unverified owner confirms a six-digit code before returning to their destination', async ({
+  page,
+}) => {
+  await unverifiedOwner(page);
+  let confirmations = 0;
+  await page.route('**/api/v1/auth/email/verify', async (route) => {
+    confirmations++;
     expect(route.request().method()).toBe('POST');
     expect(route.request().headers().authorization).toBe('Bearer e2e-token');
+    expect(route.request().postDataJSON()).toEqual({ code: '012345' });
+    await route.fulfill({ json: { user: { ...session.user, emailVerified: true } } });
+  });
+  await page.goto('/help');
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(page.getByRole('heading', { name: 'Confirm your email' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm email', exact: true })).toBeDisabled();
+  expect(confirmations).toBe(0);
+  await page.getByLabel('Digit 1 of 6').fill('012345');
+  await page.getByRole('button', { name: 'Confirm email', exact: true }).click();
+  await expect(page).toHaveURL(/\/help$/);
+  expect(confirmations).toBe(1);
+  expect(
+    await page.evaluate(() => JSON.parse(sessionStorage.getItem('vetify.auth')!).user.emailVerified)
+  ).toBe(true);
+});
+
+test('an expired confirmation code keeps the owner on signup and offers a new code', async ({
+  page,
+}) => {
+  await unverifiedOwner(page);
+  await page.route('**/api/v1/auth/email/verify', async (route) => {
+    expect(route.request().postDataJSON()).toEqual({ code: '123456' });
+    await route.fulfill({
+      status: 400,
+      json: { error: 'This confirmation code is invalid or expired.' },
+    });
+  });
+  await page.goto('/signup');
+  await page.getByLabel('Digit 1 of 6').fill('123456');
+  await page.getByRole('button', { name: 'Confirm email', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('This confirmation code is invalid or expired.');
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(page.getByRole('button', { name: 'Send code', exact: true })).toBeEnabled();
+  expect(
+    await page.evaluate(() => JSON.parse(sessionStorage.getItem('vetify.auth')!).user.emailVerified)
+  ).toBe(false);
+});
+
+test('a legacy verification link redirects to signup without submitting its token', async ({
+  page,
+}) => {
+  await page.goto(`/verify-email#token=${'a'.repeat(64)}`);
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(page.getByRole('heading', { name: 'Create Account', exact: true })).toBeVisible();
+});
+
+test('an unverified owner can retry sending a code and must wait before resending', async ({
+  page,
+}) => {
+  await unverifiedOwner(page);
+  let requests = 0;
+  await page.route('**/api/v1/auth/email/resend', async (route) => {
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().headers().authorization).toBe('Bearer e2e-token');
+    expect(route.request().postDataJSON()).toEqual({});
     requests++;
     await route.fulfill(
       requests === 1
         ? {
             status: 429,
-            json: { error: 'Please wait one minute before requesting another verification email.' },
+            json: { error: 'Please wait one minute before requesting another confirmation email.' },
           }
-        : { json: { message: 'Verification email sent. Check your inbox and spam folder.' } }
+        : {
+            json: {
+              sent: true,
+              expiresAt: new Date(Date.now() + 600000).toISOString(),
+              resendAvailableAt: new Date(Date.now() + 60000).toISOString(),
+            },
+          }
     );
   });
   await page.goto('/settings/profile');
-  await expect(page.getByText('Verification pending', { exact: true })).toBeVisible();
-  await page.getByLabel('Display name').fill('Draft owner');
-  await page.getByRole('button', { name: 'Resend verification email' }).click();
+  await expect(page).toHaveURL(/\/signup$/);
+  await page.getByLabel('Digit 1 of 6').fill('123456');
+  await page.getByRole('button', { name: 'Send code', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveText(
-    'Please wait one minute before requesting another verification email.'
+    'Please wait one minute before requesting another confirmation email.'
   );
-  await page.getByRole('button', { name: 'Resend verification email' }).click();
-  await expect(page.getByRole('status')).toHaveText(
-    'Verification email sent. Check your inbox and spam folder.'
-  );
-  await expect(page.getByLabel('Display name')).toHaveValue('Draft owner');
+  await page.getByRole('button', { name: 'Send code', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('We sent a six-digit confirmation code to');
+  await expect(page.getByRole('status')).toContainText('owner@example.test');
+  await expect(page.getByRole('button', { name: /Resend code in \d+s/ })).toBeDisabled();
+  await expect(page.getByLabel('Digit 1 of 6')).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Confirm email', exact: true })).toBeDisabled();
   expect(requests).toBe(2);
 });

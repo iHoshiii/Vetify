@@ -63,7 +63,7 @@ try {
       PORT: String(port),
       MONGODB_URI: db.getUri('vetify_release_smoke'),
       JWT_SECRET_ACCESS: 'synthetic-signing-secret-at-least-32-characters',
-      GEMINI_API_KEY: 'synthetic-api-key',
+      BEDROCK_REGION: 'ap-southeast-2',
       OAUTH_FAILURE_REDIRECT: 'https://vetify.example.test/login?error=oauth',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

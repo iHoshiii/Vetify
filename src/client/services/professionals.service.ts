@@ -6,7 +6,6 @@ import type {
 import type {
   ProfessionalAddressKind,
   AppointmentKind,
-  ProfessionalApplyInput,
   ProfessionalInquiryInput,
   ProfessionalInviteRefusal,
   ProfessionalProfileUpdateInput,
@@ -403,16 +402,7 @@ export async function getInvite(token: string, signal?: AbortSignal): Promise<In
   return apiFetch<InviteSummary>(`/professionals/invites/${encodeURIComponent(token)}`, { signal });
 }
 
-/** POST /api/v1/professionals/invites/:token/apply — stage two, through the link. */
-export async function applyThroughInvite(input: {
-  token: string;
-  application: ProfessionalApplyInput;
-}): Promise<OwnProfessional> {
-  return apiFetch<OwnProfessional>(
-    `/professionals/invites/${encodeURIComponent(input.token)}/apply`,
-    { method: 'POST', body: input.application }
-  );
-}
+export { applyThroughInvite } from './professional-photo-uploads';
 
 /**
  * GET /api/v1/professionals/captures/:id — one photograph.

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { findOsmClinicCache, replaceOsmClinicCache } from '../../models/osm-clinics';
+import { env } from '../../config/env';
 import { clearTestDb, startTestDb, stopTestDb } from '../../test-utils/db';
 import {
   getOsmClinics,
@@ -20,6 +21,19 @@ function overpass(elements: unknown[], status = 200) {
 }
 
 describe('the OpenStreetMap clinic cache', () => {
+  it('serves stale clinics on Lambda without leaving an unawaited external request', async () => {
+    const original = env.REALTIME_MANAGEMENT_ENDPOINT;
+    const fetcher = vi.fn();
+    await replaceOsmClinicCache([], new Date(Date.now() - OSM_CLINIC_CACHE_TTL_MS - 1));
+    try {
+      env.REALTIME_MANAGEMENT_ENDPOINT = 'https://gateway.example.test/prod';
+      expect(await getOsmClinics({ fetcher })).toMatchObject({ stale: true, items: [] });
+      expect(fetcher).not.toHaveBeenCalled();
+    } finally {
+      env.REALTIME_MANAGEMENT_ENDPOINT = original;
+    }
+  });
+
   it('fills an empty cache through the mirror fallback and reuses it', async () => {
     const fetcher = vi
       .fn()

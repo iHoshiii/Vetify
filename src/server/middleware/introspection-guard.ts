@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
+import { lambdaRateLimitStore } from './lambda-rate-limit-store';
 import jwt from 'jsonwebtoken';
 import { env, isTest } from '../config/env';
 import { isValidObjectId } from '../models/object-id';
@@ -20,6 +21,7 @@ export function createIntrospectionGuard(limit = 300, invalidLimit = 50): Reques
     skip: () => isTest,
   };
   const accountLimiter = rateLimit({
+    store: lambdaRateLimitStore('accountLimiter'),
     ...common,
     limit,
     keyGenerator: (req) => req.introspectionClaims!.sub,
@@ -29,6 +31,7 @@ export function createIntrospectionGuard(limit = 300, invalidLimit = 50): Reques
     },
   });
   const invalidLimiter = rateLimit({
+    store: lambdaRateLimitStore('invalidLimiter'),
     ...common,
     limit: invalidLimit,
     message: {

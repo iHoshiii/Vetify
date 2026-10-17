@@ -8,6 +8,8 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
+      '.aws-sam/**',
+      '.cache/**',
       'node_modules/**',
       'test-results/**',
       'playwright-report/**',

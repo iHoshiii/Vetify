@@ -2,7 +2,7 @@
 
 Only main Vetify is being deployed. Four feature repositories already exist
 locally and deploy separately later. Read [the extraction gate](extraction-checklist.md)
-first; current output is not yet main-only.
+first; extracted feature implementations are excluded from main's package.
 
 ## 1. Protect the account and set a budget
 
@@ -15,16 +15,17 @@ Open Budgets > Create budget > Cost budget. Start with $20/month as a learning
 target, with actual alerts at 50%, 80%, 100% and a forecast alert at 100%.
 Include usage costs before credits so credits do not hide consumption.
 Alerts do not stop resources, and this target is not a cost guarantee.
-Review costs weekly, including MongoDB, Resend, Gemini and TURN outside AWS.
+Review Bedrock token costs plus MongoDB, Resend and TURN costs weekly.
 [Budgets guidance](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-best-practices.html).
 
-Use `ap-southeast-1` for backend/S3/Secrets Manager unless an existing service
-requires a different region. The CloudFront certificate is the exception.
+Use Sydney (`ap-southeast-2`) for backend/S3/Secrets Manager. This account's
+project is assigned there. The CloudFront certificate uses `us-east-1`.
 
 ## 2. Install tools on Windows
 
-Install AWS CLI v2, AWS SAM CLI and Docker Desktop from their official installers.
-Start Docker Desktop and use Linux containers for SAM container builds.
+Install AWS CLI v2 and AWS SAM CLI from their official installers.
+Docker Desktop is optional for container builds and local Lambda emulation;
+the current Node ZIP package builds with SAM directly on Windows.
 Node/npm already exist in this workspace; Node 24 matches the Lambda template.
 
 - [AWS CLI install](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
@@ -35,11 +36,10 @@ Open a new PowerShell terminal:
 ```powershell
 aws --version
 sam --version
-docker version
 node --version
 npm.cmd --version
-aws login --profile vetify-deploy
-aws configure set region ap-southeast-1 --profile vetify-deploy
+aws login --profile vetify-deploy --region ap-southeast-2
+aws configure set region ap-southeast-2 --profile vetify-deploy
 aws sts get-caller-identity --profile vetify-deploy
 ```
 
@@ -51,14 +51,15 @@ account ID before deploying. Do not paste access keys into code or chat.
 
 ## 3. Finish the main release prerequisites
 
-1. Extract the four features and satisfy the main-only package gate.
-2. Main professional applications currently carry large base64 images. Implement
-   authorized private S3 upload/download and store object keys before relying on
-   Lambda for those submissions. The frontend bucket is not private user storage.
-3. Schedule main appointment reminders, completion and delivery retries durably.
-   Current Lambda maintenance handles realtime cleanup only; local interval
-   scanners do not automatically run in Lambda. Review the clinic refresh too.
-4. Verify persistent rate limits, email delivery, secret sizes and error handling.
+1. Check the extracted features remain absent from main's package.
+2. Professional applications send each proof photo separately before submitting
+   small references. Private MongoDB drafts expire after two hours. Submitted
+   photos retain existing account access checks and never enter frontend S3.
+3. Scheduled Lambda maintenance now runs appointment reminders, completion,
+   delivery retries and realtime cleanup. Local interval scanners remain for
+   local development. A separate hourly Lambda refreshes the daily clinic cache.
+4. Lambda rate counters use MongoDB across instances. Verify production email
+   delivery, secret sizes and error handling before accepting users.
 5. Test main auth/professional/appointments/realtime regression and fix relevant
    failures. Earlier focused checks did not make the full test suite green.
 6. Configure/test TURN for real video calls across networks. API Gateway carries
@@ -70,12 +71,9 @@ enabling the respective integrations; no need to deploy the feature apps now.
 
 ## 4. Configure the domain's DNS
 
-In Route 53 > Hosted zones > Create hosted zone: name `vetify.page`, type Public.
-Copy existing DNS records before changing nameservers, especially mail records.
-In your domain registrar, replace its nameservers with the zone's four NS values.
-You keep domain ownership at the registrar. Wait until DNS resolves via Route 53.
-Use an existing DNS provider instead if you want to avoid moving nameservers;
-the same certificate/domain-verification records still need to be added there.
+Keep the current Name.com nameservers. In Name.com > My Domains > vetify.page >
+Manage DNS Records, add the certificate and email verification records when
+requested. Preserve existing mail records. No Route 53 hosted zone is required.
 
 ## 5. Request the frontend certificate
 
@@ -113,7 +111,7 @@ Do not add a NAT Gateway silently to this small-budget setup.
 
 ## 8. Create the production secret
 
-Switch back to Singapore. Secrets Manager > Store a new secret > Other type >
+Switch back to Sydney. Secrets Manager > Store a new secret > Other type >
 Plaintext. Use the field names in `deploy/serverless/app-secret.example.json`.
 Fill its placeholders privately, keeping every field the template references,
 including blank strings for genuinely disabled optional providers.

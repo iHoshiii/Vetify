@@ -27,7 +27,7 @@
 12. Confirm main admin metrics render while all four feature apps are offline.
     Empty main collections must not cause a crash.
 13. Verify professional/owner uploads are private and unauthorized downloads fail.
-    Confirm frontend OAC does not expose the private user-upload bucket.
+    Confirm private proof photos stay in MongoDB and are absent from frontend S3.
 
 Use isolated test accounts/data and remove deliberate test bookings through the
 normal app controls. Do not run bulk seed/reset scripts against production.
@@ -41,8 +41,8 @@ normal app controls. Do not run bulk seed/reset scripts against production.
 - No real environment files, keys or source archives in deployment artifacts.
 - Main identity/session/approval IDs are preserved. No email-based account merge.
 
-The current source needs extraction before these assertions can pass.
-Existing focused auth/realtime checks are useful but do not validate this split.
+Feature extraction is implemented. Validate the actual packaged release against
+these assertions; focused auth/realtime checks alone do not validate the split.
 Resolve or explicitly assess known full-suite failures before claiming readiness.
 
 ## Monitoring and cost checks
@@ -60,7 +60,7 @@ See [API Gateway pricing](https://aws.amazon.com/api-gateway/pricing/).
 
 Main infrastructure is S3/CloudFront, HTTP and WebSocket API Gateway, Lambda,
 CloudWatch, Secrets Manager, optional Route 53 and private upload storage/workers.
-MongoDB, Resend, Gemini and TURN have separate billing/limits.
+Bedrock adds token charges to AWS usage. MongoDB, Resend and TURN have separate limits/costs.
 No EC2, Fargate, load balancer or NAT is required by the basic public architecture;
 a later private database networking decision can change that cost picture.
 

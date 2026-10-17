@@ -18,7 +18,7 @@ const router = Router();
  * Spends one of the anonymous allowance, or waves signed-in callers straight
  * through. Runs before `validate` so a visitor past their limit is turned away
  * without the request body being parsed, and well before anything reaches
- * Gemini — the whole point is not paying for the call.
+ * Bedrock — the whole point is not paying for the call.
  */
 async function enforceAnonQuota(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (req.auth) return next();

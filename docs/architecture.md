@@ -3,7 +3,7 @@
 Updated 14 October 2026. This is main's architecture and its external interfaces.
 Independent feature implementation details live in their own repositories.
 
-![Agreed target architecture](main-deployment/architecture.png)
+![Agreed target architecture](main-deployment/architecture.svg)
 
 The picture is a target boundary, not proof of extraction or AWS deployment.
 
@@ -20,13 +20,14 @@ flowchart LR
     WS --> DB
     Jobs[Scheduled main jobs] --> DB
     API --> Mail[Resend]
-    API --> AI[Gemini]
+    API --> AI[Amazon Bedrock / Nova]
     Browser <--> Peer[WebRTC peer or TURN relay]
 ```
 
 Only signalling/presence/message events travel through the WebSocket API.
-WebRTC media uses the peer/relay connection. Scheduled main appointment jobs
-and private upload handling are required additions to the current template.
+WebRTC media uses the peer/relay connection. Scheduled Lambda maintenance runs
+appointment jobs. Professional proof photos upload separately to private MongoDB
+drafts before application submission, keeping individual requests below Lambda's limit.
 Local development uses Vite's proxy and persistent Socket.IO instead of gateways.
 
 ## Ownership

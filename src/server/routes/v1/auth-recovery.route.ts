@@ -1,6 +1,7 @@
 import { forgotPasswordSchema, resetPasswordSchema } from '@shared/password-recovery';
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import { lambdaRateLimitStore } from '../../middleware/lambda-rate-limit-store';
 import { env, isTest } from '../../config/env';
 import { validate } from '../../middleware/validate';
 import {
@@ -12,6 +13,7 @@ import { fail, ok } from '../../utils/response';
 
 const router = Router();
 const recoveryLimiter = rateLimit({
+  store: lambdaRateLimitStore('recoveryLimiter'),
   windowMs: 15 * 60 * 1000,
   limit: 5,
   standardHeaders: 'draft-7',

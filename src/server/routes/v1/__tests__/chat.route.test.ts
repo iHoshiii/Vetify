@@ -8,8 +8,7 @@ import { signAccessToken } from '../../../services/auth.service';
 import { insertUser } from '../../../models/users';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
-// Keeps Gemini out of the test entirely — the point here is the gate in front of
-// it, and a real call would cost money and need a key.
+// Keeps Bedrock out of the test; real generation requires AWS access and incurs usage charges.
 vi.mock('../../../services/chat.service', () => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
 }));

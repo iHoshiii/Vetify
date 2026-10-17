@@ -14,7 +14,7 @@ The target is documented separately from current implementation state.
 | Local realtime      | Socket.IO on the HTTP server                                    |
 | Production realtime | API Gateway WebSockets, Mongo-backed tickets/leases             |
 | Calls               | Browser WebRTC, TURN when needed                                |
-| AI                  | Gemini with existing tracing/moderation integration             |
+| AI                  | Amazon Bedrock Converse, Nova and LangSmith tracing             |
 | Tests               | Vitest, isolated MongoDB fixtures and Playwright                |
 
 `src/server/app.ts` creates Express without listening. `index.ts` owns local
@@ -59,7 +59,7 @@ Mongo stores connections, authorization deadlines and call membership.
 Ready/heartbeat/renewal/reconnect preserve the local event/acknowledgement contract.
 Call joins enforce appointment participation and the allowed time window.
 SDP/ICE and ephemeral call events go only to authorized room members.
-Maintenance cleans stale leases; media remains WebRTC, outside API Gateway.
+Maintenance cleans stale leases and runs appointment jobs; media remains WebRTC.
 See [realtime design](serverless-realtime.md) for actual handlers and limits.
 
 ## Target main production topology
@@ -69,20 +69,27 @@ CloudFront forwards `/api/*` to HTTP API Gateway with caching disabled and the
 required headers/cookies/query values. Lambda uses the existing Express adapter.
 WebSockets use their direct WSS gateway address. A viewer-request SPA rewrite
 belongs only to the default S3 behavior; API errors stay API responses.
-Private professional proof uploads need a separate bucket and authorized signed
-operations. Main upload API changes are pending, not already deployed storage.
+Professional proofs upload one photo per authenticated request to private MongoDB
+drafts. Final submissions carry references bound to the invitation and account.
+Drafts expire after two hours; submitted photos retain existing access checks.
 
 Secrets Manager values feed the current SAM Lambda configuration. Private `.env`
 is local. Ignored `env.prod` provides public VITE build values. Never expose
 MongoDB URIs, JWT secrets, mail/provider keys or private proofs in the browser.
 Database network access and production least-privilege credentials need review.
+Lambda request limits use shared MongoDB counters with expiry indexes, preserving
+the existing quotas across separate instances. Local development retains memory
+counters. Startup also creates the active email-code expiry and uniqueness indexes.
 
 ## Background work
 
 Local startup starts appointment reminders, completion, delivery retries and
 clinic refresh. Lambda timers are not persistent schedulers.
-Current Lambda maintenance performs realtime cleanup only. Main production
-needs durable/scheduled appointment jobs with idempotency, retries and logging.
+Scheduled Lambda maintenance runs reminders, completion, delivery retries and
+realtime cleanup each minute. Existing atomic claims and delivery leases protect
+overlapping workers. Failed jobs are logged and fail the invocation for retries.
+An hourly Lambda checks the daily clinic cache and awaits refreshes. Lambda HTTP
+requests serve stale cached results without starting work after the response.
 Books' scanner, indexes, PDF worker and PDF.js dependency have been removed
 from main. Anatomy UI/assets are also removed; independent copies are preserved.
 
@@ -92,8 +99,9 @@ Implemented: browser/native account foundations, code verification, explicit
 linking, professional/appointment workflows, local realtime and Gateway adapters.
 Earlier focused auth/realtime, packaged Lambda and browser media checks passed.
 The full suite has known failures and does not establish all-green readiness.
-Not completed: main-only extraction, private production uploads, durable main
-jobs, Planner v2 compatibility, external web SSO and live AWS/TURN acceptance.
+Main-only extraction, individual private photo transfers and scheduled appointment
+jobs are implemented. Planner v2 compatibility, external web SSO and live
+AWS/TURN acceptance remain incomplete.
 
 Run relevant tests after runtime changes. Verify main can start and render while
 every feature service is absent, and cannot initialize feature collections.

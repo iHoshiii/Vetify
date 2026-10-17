@@ -35,7 +35,7 @@ const envSchema = z.object({
   // browser same-origin, so CORS is a no-op in normal local development.
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
 
-  GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
+  BEDROCK_REGION: z.string().min(1).default('ap-southeast-2'),
 
   JWT_SECRET_ACCESS: z.string().min(32, 'JWT_SECRET must be set and at least 32 characters'),
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),

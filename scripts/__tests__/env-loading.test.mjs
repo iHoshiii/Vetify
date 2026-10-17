@@ -10,7 +10,7 @@ const cache = join(root, 'node_modules/.cache');
 const source = new URL('../../src/server/config/env.ts', import.meta.url).href;
 const command = `import {env} from ${JSON.stringify(
   source
-)}; console.log(JSON.stringify({google:env.GOOGLE_CLIENT_ID ?? null,mode:env.NODE_ENV}));`;
+)}; console.log(JSON.stringify({google:env.GOOGLE_CLIENT_ID ?? null,mode:env.NODE_ENV,region:env.BEDROCK_REGION}));`;
 const base = Object.fromEntries(
   Object.entries(process.env).filter(([key]) =>
     /^(path|systemroot|windir|temp|tmp|comspec|userprofile|home|homedrive|homepath)$/i.test(key)
@@ -21,7 +21,7 @@ async function fixture(action) {
   const cwd = await mkdtemp(join(cache, 'env-loading-'));
   await writeFile(
     join(cwd, '.env'),
-    'GOOGLE_CLIENT_ID=local-only-id\nGOOGLE_CLIENT_SECRET=local-only-secret\nJWT_SECRET_ACCESS=local-synthetic-signing-secret-at-least-32-characters\nGEMINI_API_KEY=local-synthetic-api-key\n'
+    'GOOGLE_CLIENT_ID=local-only-id\nGOOGLE_CLIENT_SECRET=local-only-secret\nJWT_SECRET_ACCESS=local-synthetic-signing-secret-at-least-32-characters\nBEDROCK_REGION=ap-southeast-1\n'
   );
   try {
     await action(cwd);
@@ -40,10 +40,9 @@ for (const mode of ['production', 'test']) {
           ...base,
           NODE_ENV: mode,
           JWT_SECRET_ACCESS: 'synthetic-signing-secret-at-least-32-characters',
-          GEMINI_API_KEY: 'synthetic-api-key',
         },
       });
-      assert.deepEqual(JSON.parse(output.trim()), { google: null, mode });
+      assert.deepEqual(JSON.parse(output.trim()), { google: null, mode, region: 'ap-southeast-2' });
     });
   });
 }
@@ -54,7 +53,11 @@ test('development still loads its local .env', async () => {
       encoding: 'utf8',
       env: { ...base, NODE_ENV: 'development' },
     });
-    assert.deepEqual(JSON.parse(output.trim()), { google: 'local-only-id', mode: 'development' });
+    assert.deepEqual(JSON.parse(output.trim()), {
+      google: 'local-only-id',
+      mode: 'development',
+      region: 'ap-southeast-1',
+    });
   });
 });
 test('production fails when required secrets exist only in local .env', async () => {

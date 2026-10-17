@@ -1,8 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultUserPreferences, type UserPreferencesUpdate } from '@shared/schemas';
-import SettingsPage from '@/pages/settings/settings-page';
+import { SettingsNavigationApp as App } from './settings-navigation-fixtures';
 
 let preferences = defaultUserPreferences();
 const save = vi.fn();
@@ -20,16 +19,6 @@ vi.mock('@/hooks/usePreferences', () => ({ usePreferences: () => ({ data: prefer
 vi.mock('@/components/settings/consumer/save-preferences', () => ({
   useSavePreferences: () => ({ pending: false, error: null, saved: false, save }),
 }));
-
-function App({ section }: { section: string }) {
-  return (
-    <MemoryRouter initialEntries={[`/settings/${section}`]}>
-      <Routes>
-        <Route path="/settings/:section" element={<SettingsPage />} />
-      </Routes>
-    </MemoryRouter>
-  );
-}
 
 function edit(section: string) {
   if (section === 'notifications') {
