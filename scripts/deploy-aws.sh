@@ -7,6 +7,7 @@ test "${GITHUB_REF:-}" = refs/heads/main
 test "${GITHUB_EVENT_NAME:-}" = push
 test "$(cat release/revision.txt)" = "$GITHUB_SHA"
 test "$(aws sts get-caller-identity --query Account --output text)" = 223703743978
+node scripts/check-budget.mjs
 
 backend=$(aws cloudformation describe-stacks --stack-name vetify-backend)
 frontend=$(aws cloudformation describe-stacks --stack-name vetify-frontend)
@@ -21,6 +22,7 @@ test -n "$expected_realtime"
 test "$(output "$backend" RealtimeUrl)" = "$expected_realtime"
 
 sam build --template-file release/deploy/serverless/template.yaml --build-dir .aws-sam/github-build
+node scripts/check-budget.mjs
 sam deploy --template-file .aws-sam/github-build/template.yaml \
   --stack-name vetify-backend --s3-bucket "$AWS_ARTIFACT_BUCKET" --s3-prefix vetify-ci \
   --role-arn "$AWS_CFN_ROLE_ARN" --capabilities CAPABILITY_IAM \
@@ -35,6 +37,7 @@ api_hostname=${api_url#https://}
 curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 40 \
   "$api_url/api/v1/health" | jq -e '.status == "ok" and .db == "connected"' > /dev/null
 
+node scripts/check-budget.mjs
 aws cloudformation deploy --template-file release/deploy/frontend/template.yaml \
   --stack-name vetify-frontend --role-arn "$AWS_CFN_ROLE_ARN" \
   --parameter-overrides "ApiHostname=$api_hostname" "CertificateArn=$certificate_arn" DomainName=vetify.page UseCustomDomain=true \
@@ -44,6 +47,7 @@ frontend=$(aws cloudformation describe-stacks --stack-name vetify-frontend)
 bucket=$(output "$frontend" WebsiteBucketName)
 distribution=$(output "$frontend" DistributionId)
 test "$bucket" = vetify-main-web-223703743978-ap-southeast-2
+node scripts/check-budget.mjs
 aws s3 sync release/dist/client "s3://$bucket" --exclude index.html \
   --cache-control public,max-age=3600 --no-progress --only-show-errors
 aws s3 cp release/dist/client/index.html "s3://$bucket/index.html" \
