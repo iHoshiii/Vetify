@@ -50,17 +50,14 @@ test('production deployment requires all CI gates and a trusted main event', () 
   assert.equal(ci.concurrency['cancel-in-progress'], false);
 });
 
-test('deployment accepts the configured AWS secrets as well as repository variables', () => {
+test('deployment requires and uses the configured AWS secrets', () => {
   const names = ['AWS_DEPLOY_ROLE_ARN', 'AWS_CFN_ROLE_ARN', 'AWS_ARTIFACT_BUCKET'];
   assert.deepEqual(Object.keys(ci.jobs.deploy.secrets).sort(), [...names].sort());
   assert.deepEqual(Object.keys(deploy.on.workflow_call.secrets).sort(), [...names].sort());
   for (const name of names) {
     assert.equal(ci.jobs.deploy.secrets[name], '${{ secrets.' + name + ' }}');
-    assert.equal(deploy.on.workflow_call.secrets[name].required, false);
-    assert.equal(
-      deploy.jobs.production.env[name],
-      '${{ vars.' + name + ' || secrets.' + name + ' }}'
-    );
+    assert.equal(deploy.on.workflow_call.secrets[name].required, true);
+    assert.equal(deploy.jobs.production.env[name], '${{ secrets.' + name + ' }}');
   }
   const credentials = deploy.jobs.production.steps.find((step) =>
     step.uses?.startsWith('aws-actions/configure-aws-credentials@')
