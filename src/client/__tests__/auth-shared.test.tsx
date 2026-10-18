@@ -47,6 +47,7 @@ function show(path = resume) {
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.spyOn(HTMLFormElement.prototype, 'requestSubmit').mockImplementation(() => {});
   vi.mocked(useAuth).mockReturnValue({
     user,
     setSession,
@@ -70,6 +71,9 @@ describe('shared Anatomy sign-in continuation', () => {
     );
     expect(button.closest('form')).toHaveAttribute('method', 'post');
     expect(screen.getByText(/owner@example.com/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(HTMLFormElement.prototype.requestSubmit).toHaveBeenCalledWith(button)
+    );
   });
 
   it('preserves the interaction when an anonymous user needs existing login', async () => {

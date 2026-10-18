@@ -39,7 +39,7 @@ export async function begin(
     redirect_uri: 'http://localhost:5176/auth/callback',
     scope: 'openid email',
     response_type: 'code',
-    prompt: 'login',
+    ...(Object.hasOwn(overrides, 'prompt') ? {} : { prompt: 'login' }),
     state,
     nonce,
     code_challenge: await oidc.calculatePKCECodeChallenge(verifier),

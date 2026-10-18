@@ -5,7 +5,8 @@ import { errors, type Provider } from 'oidc-provider';
 import { env, isTest } from '../config/env';
 import { LambdaRateLimitStore } from '../middleware/lambda-rate-limit-store';
 import { AppError } from '../utils/AppError';
-import { mainBrowserSession, oidcBindings } from './bindings';
+import { mainBrowserSession } from './bindings';
+import { completeAnatomySignIn } from './complete';
 import { createOidcProvider } from './provider';
 import { ANATOMY_CLIENT_ID, OIDC_PATH, readOidcSettings } from './settings';
 
@@ -14,6 +15,21 @@ function interactionRoutes(provider: Provider) {
   router.get('/interaction/:uid', async (req, res) => {
     const details = await provider.interactionDetails(req, res);
     if (details.uid !== req.params.uid) throw AppError.badRequest('Invalid sign-in transaction.');
+    const explicitPrompt = /\b(login|consent|select_account)\b/.test(
+      String(details.params.prompt ?? '')
+    );
+    if (details.params.client_id === ANATOMY_CLIENT_ID && !explicitPrompt) {
+      let session;
+      try {
+        session = await mainBrowserSession(req);
+      } catch (error) {
+        if (!(error instanceof AppError && [401, 403].includes(error.statusCode))) throw error;
+      }
+      if (session) {
+        await completeAnatomySignIn(provider, req, res, details, session);
+        return;
+      }
+    }
     const destination = new URL('/auth/shared', env.CLIENT_ORIGIN);
     destination.searchParams.set('interaction', details.uid);
     res.redirect(destination.href);
@@ -37,32 +53,7 @@ function interactionRoutes(provider: Provider) {
       }
       if (req.body.decision !== 'allow') throw AppError.badRequest('Choose whether to continue.');
       const session = await mainBrowserSession(req);
-      const accountId = session.owner._id.toHexString();
-      const grant = new provider.Grant({ accountId, clientId: ANATOMY_CLIENT_ID });
-      grant.addOIDCScope('openid email');
-      grant.addResourceScope(new URL(String(details.params.redirect_uri)).origin, 'openid email');
-      const lifetime = Math.min(
-        3600,
-        Math.floor((session.expiresAt.getTime() - Date.now()) / 1000)
-      );
-      if (lifetime <= 0) throw AppError.unauthorized('Please sign in again.');
-      const grantId = await grant.save();
-      await oidcBindings().insertOne({
-        _id: grantId,
-        userId: accountId,
-        browserSessionId: session._id,
-        sessionVersion: session.owner.sessionVersion ?? 0,
-        expiresAt: new Date(Date.now() + lifetime * 1000),
-      });
-      await provider.interactionFinished(
-        req,
-        res,
-        {
-          login: { accountId, ts: Math.floor(Date.now() / 1000) },
-          consent: { grantId },
-        },
-        { mergeWithLastSubmission: false }
-      );
+      await completeAnatomySignIn(provider, req, res, details, session);
     }
   );
   router.use((error: unknown, _req: Request, _res: Response, next: NextFunction) => {

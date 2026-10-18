@@ -12,9 +12,19 @@ export default function SharedAuthPage() {
   const navigate = useNavigate();
   const { user, setSession, logout } = useAuth();
   const started = useRef(false);
+  const form = useRef<HTMLFormElement>(null);
+  const continueButton = useRef<HTMLButtonElement>(null);
+  const submitted = useRef(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    if (ready && form.current && continueButton.current && !submitted.current) {
+      submitted.current = true;
+      form.current.requestSubmit(continueButton.current);
+    }
+  }, [ready]);
 
   async function signOutEverywhere() {
     setSigningOut(true);
@@ -52,14 +62,16 @@ export default function SharedAuthPage() {
         <p role="alert">{error || 'This sign-in link is invalid. Start again from Anatomy.'}</p>
       ) : ready ? (
         <>
-          <p>Continue as {user?.email}. Anatomy will receive your account ID and verified email.</p>
+          <p>Continuing as {user?.email} to Vetify Anatomy...</p>
           <p>Signing out of Vetify also ends Anatomy access from this session.</p>
           <form
+            ref={form}
             method="post"
             action={`/api/oidc/interaction/${uid}/complete`}
             className="flex gap-4"
           >
             <button
+              ref={continueButton}
               name="decision"
               value="allow"
               className="rounded-lg bg-emerald-700 px-4 py-2 text-white"
