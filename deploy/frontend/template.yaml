@@ -55,6 +55,15 @@ Resources:
           }
           return request;
         }
+  WebsiteHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub '${AWS::StackName}-website-headers'
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: "frame-ancestors 'self' https://anatomy.vetify.page"
+            Override: true
   Distribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -90,6 +99,7 @@ Resources:
           CachedMethods: [GET, HEAD]
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref WebsiteHeaders
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt SpaRoutes.FunctionARN

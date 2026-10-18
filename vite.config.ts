@@ -14,6 +14,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    headers: { 'Content-Security-Policy': "frame-ancestors 'self' http://localhost:5176" },
     // Proxy keeps the browser on a single origin, so SameSite=Lax auth cookies
     // work without CORS or Secure-context complications in dev.
     proxy: {
