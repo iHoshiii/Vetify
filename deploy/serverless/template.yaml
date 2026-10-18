@@ -9,6 +9,12 @@ Parameters:
     Type: String
     Default: https://vetify.page
   ConfigRevision: { Type: String, Default: '1' }
+  SharedAuthEnabled:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+Conditions:
+  EnableSharedAuth: !Equals [!Ref SharedAuthEnabled, 'true']
 Globals:
   Function:
     Runtime: nodejs24.x
@@ -116,6 +122,12 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: http.handler
+      Environment:
+        Variables:
+          OIDC_ISSUER: !If [EnableSharedAuth, !Sub '${ClientOrigin}/api/oidc', '']
+          OIDC_ANATOMY_CLIENT_SECRET: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_ANATOMY_CLIENT_SECRET}}', '']
+          OIDC_COOKIE_KEYS: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_COOKIE_KEYS}}', '']
+          OIDC_JWKS: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_JWKS}}', '']
       Policies:
         - !Ref ConnectionPolicy
         - Version: '2012-10-17'

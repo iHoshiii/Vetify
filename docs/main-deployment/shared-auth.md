@@ -28,6 +28,10 @@ linked login methods and `POST /api/v1/auth/introspect`.
 Introspection returns user ID, role/status, subscription, region and a validity
 window capped at thirty seconds. It checks an attached native session.
 
+An optional Anatomy OIDC provider is now implemented separately at `/api/oidc`.
+See [Anatomy OIDC setup and release checks](anatomy-oidc.md). It must be configured,
+reviewed and jointly verified before production use.
+
 The existing `vetify-meal-planner` repository now requires introspection version 2;
 main still returns version 1. Its version 2 contract requires a verified issuer,
 Planner audience and provider/email-verification attributes. Align main and
