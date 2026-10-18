@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { anatomyOrigin, anatomyView, authorizeAnatomy, handoffKey } from './anatomy-integration';
+import {
+  anatomyOrigin,
+  anatomyView,
+  authorizeAnatomy,
+  handoffKey,
+  notifyAnatomy,
+} from './anatomy-integration';
 
 export default function AnatomyPage() {
   const [params, setParams] = useSearchParams();
@@ -17,6 +23,7 @@ export default function AnatomyPage() {
       if (event.origin !== origin || event.source !== frame.current?.contentWindow) return;
       if (event.data?.type === 'vetify-anatomy:ready') {
         sessionStorage.removeItem(handoffKey);
+        notifyAnatomy('ready');
       } else if (event.data?.type === 'vetify-anatomy:authenticate' && !redirecting.current) {
         const previous = Number(sessionStorage.getItem(handoffKey));
         if (previous && Date.now() - previous < 60_000) {
@@ -42,6 +49,7 @@ export default function AnatomyPage() {
           className="rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white"
           onClick={() => {
             sessionStorage.removeItem(handoffKey);
+            notifyAnatomy('retry');
             redirecting.current = false;
             setError('');
             const next = new URLSearchParams(params);

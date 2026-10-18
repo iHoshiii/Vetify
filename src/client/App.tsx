@@ -13,7 +13,7 @@ import ExternalAppPage from '@/pages/external-app/external-app-page';
 import BlogsLaunchPage from '@/pages/external-app/blogs-launch-page';
 
 const AboutPage = lazy(() => import('@/pages/about/about-page'));
-const AnatomyPage = lazy(() => import('@/pages/anatomy/anatomy-page'));
+const AnatomyEntry = lazy(() => import('@/pages/anatomy/anatomy-entry'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
 const SharedAuthPage = lazy(() => import('@/pages/auth-shared/auth-shared-page'));
 const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
@@ -57,14 +57,7 @@ export default function App() {
           }
         />
 
-        <Route
-          path="anatomy"
-          element={
-            <RequireAuth>
-              <AnatomyPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="anatomy" element={<AnatomyEntry />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="auth/shared" element={<SharedAuthPage />} />
         <Route path="blogs" element={<BlogsLaunchPage />} />
