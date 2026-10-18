@@ -42,11 +42,9 @@ export async function verifyOidcLambda(handler, cookies, userId) {
   assert.equal(started.statusCode, 303);
   assert.ok(started.cookies?.some((cookie) => cookie.startsWith('vetify_oidc_interaction=')));
   const interaction = await request(started.headers.location);
-  const uid = new URL(interaction.headers.location).searchParams.get('interaction');
-  assert.ok(uid);
-  const completed = await request(`/api/oidc/interaction/${uid}/complete`, { decision: 'allow' });
-  assert.equal(completed.statusCode, 303, completed.body);
-  const resumed = await request(completed.headers.location);
+  assert.equal(interaction.statusCode, 303, interaction.body);
+  assert.notEqual(new URL(interaction.headers.location).pathname, '/auth/shared');
+  const resumed = await request(interaction.headers.location);
   assert.equal(resumed.statusCode, 303, resumed.body);
   const callback = new URL(resumed.headers.location);
   assert.equal(callback.origin, 'https://anatomy.vetify.page');
@@ -107,6 +105,6 @@ export async function verifyOidcLambda(handler, cookies, userId) {
   });
   assert.deepEqual(JSON.parse(revoked.body), { active: false });
   console.log(
-    '[lambda smoke] OIDC discovery, cookies, PKCE, signed identity, introspection and revocation passed'
+    '[lambda smoke] Automatic OIDC sign-in, discovery, cookies, PKCE, signed identity, introspection and revocation passed'
   );
 }
