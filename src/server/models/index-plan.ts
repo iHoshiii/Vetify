@@ -32,10 +32,18 @@ import { SUBSCRIPTIONS_COLLECTION, SUBSCRIPTION_INDEXES } from './subscriptions'
 import { CAPTURE_UPLOADS_COLLECTION, CAPTURE_UPLOAD_INDEXES } from './professional-capture-uploads';
 import { RATE_LIMITS_COLLECTION, RATE_LIMIT_INDEXES } from './rate-limit';
 import {
+  OIDC_COLLECTION,
+  OIDC_INDEXES,
+  OIDC_BINDINGS_COLLECTION,
+  OIDC_BINDING_INDEXES,
+} from './oidc';
+import {
   EMAIL_VERIFICATIONS_COLLECTION as EMAIL_LINK_VERIFICATIONS_COLLECTION,
   EMAIL_VERIFICATION_INDEXES as EMAIL_LINK_VERIFICATION_INDEXES,
 } from './email-verifications';
 export const INDEX_PLAN: Array<{ collection: string; indexes: IndexDescription[] }> = [
+  { collection: OIDC_COLLECTION, indexes: OIDC_INDEXES },
+  { collection: OIDC_BINDINGS_COLLECTION, indexes: OIDC_BINDING_INDEXES },
   { collection: USERS_COLLECTION, indexes: USER_INDEXES },
   { collection: EMAIL_VERIFICATIONS_COLLECTION, indexes: EMAIL_VERIFICATION_INDEXES },
   { collection: EMAIL_LINK_VERIFICATIONS_COLLECTION, indexes: EMAIL_LINK_VERIFICATION_INDEXES },

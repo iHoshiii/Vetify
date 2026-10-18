@@ -7,6 +7,7 @@
     "node": "^24.0.0"
   },
   "scripts": {
+    "auth:oidc:secrets": "node scripts/create-shared-auth-secrets.mjs",
     "dev": "concurrently -n client,server -c cyan,magenta \"npm:dev:client\" \"npm:dev:server\"",
     "mediapipe:assets": "node scripts/copy-mediapipe.mjs",
     "predev:client": "npm run mediapipe:assets",
@@ -71,6 +72,7 @@
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^1.21.0",
     "mongodb": "^7.5.0",
+    "oidc-provider": "^9.12.2",
     "qrcode.react": "^4.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -93,6 +95,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
+    "@types/oidc-provider": "^9.12.1",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/supertest": "^7.2.1",
@@ -112,6 +115,7 @@
     "lint-staged": "^13.3.0",
     "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.14",
+    "openid-client": "^6.8.8",
     "postcss": "^8",
     "prettier": "^2.8.8",
     "supertest": "^7.2.2",

@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { nativeAuthDiagnostics } from './middleware/native-auth-diagnostics';
 import { applySecurity, generalLimiter, messageLimiter } from './middleware/security';
 import routes from './routes';
+import { mountSharedAuth } from './oidc/routes';
 
 /**
  * Builds the app without binding a port, so tests can drive it via supertest
@@ -20,6 +21,7 @@ export function createApp() {
   // Trace mobile requests before JSON parsing can wait on an incomplete upload.
   app.use(nativeAuthDiagnostics);
   applySecurity(app);
+  mountSharedAuth(app);
 
   // The application carries three JPEGs as base64, so it gets a wider parser than
   // the rest of the API. Mounted first on purpose: body-parser skips a request

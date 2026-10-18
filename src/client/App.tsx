@@ -14,6 +14,7 @@ import BlogsLaunchPage from '@/pages/external-app/blogs-launch-page';
 
 const AboutPage = lazy(() => import('@/pages/about/about-page'));
 const AuthCallbackPage = lazy(() => import('@/pages/auth-callback/auth-callback-page'));
+const SharedAuthPage = lazy(() => import('@/pages/auth-shared/auth-shared-page'));
 const BookAppointmentPage = lazy(() => import('@/pages/book-appointment/book-appointment-page'));
 const CallPage = lazy(() => import('@/pages/call/call-page'));
 const ChatPage = lazy(() => import('@/pages/chat/chat-page'));
@@ -64,6 +65,7 @@ export default function App() {
           }
         />
         <Route path="auth/callback" element={<AuthCallbackPage />} />
+        <Route path="auth/shared" element={<SharedAuthPage />} />
         <Route path="blogs" element={<BlogsLaunchPage />} />
         <Route path="blogs/:slug" element={<BlogsLaunchPage />} />
         <Route
