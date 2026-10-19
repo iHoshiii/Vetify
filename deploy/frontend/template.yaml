@@ -50,8 +50,12 @@ Resources:
       FunctionCode: |
         function handler(event) {
           var request = event.request;
-          if (request.uri.indexOf('/api/') !== 0 && request.uri.indexOf('.') === -1) {
-            request.uri = '/index.html';
+          var pages = ['/', '/about', '/services', '/professionals', '/contact', '/help', '/privacy', '/terms'];
+          var path = request.uri.replace(/\/+$/, '') || '/';
+          if (pages.indexOf(path) !== -1) {
+            request.uri = path === '/' ? '/index.html' : path + '/index.html';
+          } else if (request.uri.indexOf('/api/') !== 0 && request.uri.indexOf('.') === -1) {
+            request.uri = '/app.html';
           }
           return request;
         }

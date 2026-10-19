@@ -1,9 +1,6 @@
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Link } from 'react-router-dom';
 
 export default function TermsAndConditionsPage() {
-  useDocumentTitle('Terms and Conditions', 'Terms and Conditions for using the Vetify application');
-
   return (
     <div className="bg-slate-50 py-6 px-5 sm:px-8 sm:py-8 xl:min-h-screen xl:py-12">
       <div className="mx-auto max-w-3xl rounded-3xl bg-white p-5 shadow-xl shadow-slate-900/5 sm:p-6 xl:p-12">

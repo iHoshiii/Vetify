@@ -38,7 +38,7 @@ test('deployment can read the shutdown flag but cannot remove or overwrite it', 
   assert.match(flag[0].Resource, /parameter\/vetify\/monthly-budget-stop$/);
   const script = readFileSync('scripts/deploy-aws.sh', 'utf8');
   assert.ok(script.indexOf('node scripts/check-budget.mjs') < script.indexOf('sam build'));
-  assert.equal(script.match(/node scripts\/check-budget.mjs/g).length, 4);
+  assert.equal(script.match(/node scripts\/check-budget.mjs/g).length, 5);
 });
 
 test('the budget action can only attach or detach AWSDenyAll for the application identities', () => {

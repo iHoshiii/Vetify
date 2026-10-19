@@ -99,6 +99,7 @@ jobs:
       - run: python -B -m unittest discover -s deploy/budget-guard -p '*_test.py'
       - run: node --test scripts/__tests__/budget-gate.test.mjs scripts/__tests__/budget-guard.test.mjs
       - run: npm run build:client:prod -- --env-file=deploy/github/frontend-build.env
+      - run: node --test scripts/__tests__/seo-build.test.mjs
       - name: Assemble the tested release
         run: |
           mkdir -p release/dist release/deploy

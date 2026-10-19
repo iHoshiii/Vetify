@@ -10,6 +10,7 @@ import { ReactQueryProvider } from './components/providers/ReactQueryProvider';
 import { LocaleProvider } from './components/providers/LocaleProvider';
 import RealtimeBridge from './components/providers/RealtimeBridge';
 import PreferenceSync from './components/providers/PreferenceSync';
+import { SearchMetadata } from './seo/SearchMetadata';
 import './globals.css';
 
 const container = document.getElementById('root');
@@ -23,6 +24,7 @@ if (!container) {
 createRoot(container).render(
   <React.StrictMode>
     <BrowserRouter>
+      <SearchMetadata />
       <LocaleProvider>
         <AuthProvider>
           <EmailVerificationGate>
