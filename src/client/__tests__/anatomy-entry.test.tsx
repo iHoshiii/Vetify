@@ -87,8 +87,8 @@ describe('canonical Anatomy domain', () => {
       'src',
       'http://localhost:5176/?embed=1'
     );
-    expect(refreshSession).toHaveBeenCalledWith({ fresh: true });
-    expect(setSession).toHaveBeenCalledWith(session);
+    expect(refreshSession).toHaveBeenCalledWith();
+    await waitFor(() => expect(setSession).toHaveBeenCalledWith(session));
     expect(visitAnatomy).not.toHaveBeenCalled();
   });
   it('asks the Anatomy host to start top-level main sign-in when the main cookie has expired', async () => {
