@@ -22,22 +22,26 @@ function Launch() {
 }
 
 function Hosted() {
-  const { setSession } = useAuth();
+  const { setSession, isAuthenticated } = useAuth();
   const [params] = useSearchParams();
   const failed = ['failed', 'unavailable'].includes(params.get('auth') ?? '');
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(isAuthenticated);
   const [error, setError] = useState('');
   const started = useRef(false);
   useEffect(() => {
+    if (!isAuthenticated) setReady(false);
+  }, [isAuthenticated]);
+  useEffect(() => {
     if (failed || started.current) return;
     started.current = true;
-    refreshSession({ fresh: true })
+    refreshSession()
       .then((session) => {
         setSession(session);
         if (!session.user.emailVerified) throw new ApiError(403, 'Verify your email to continue.');
         setReady(true);
       })
       .catch((failure: unknown) => {
+        setReady(false);
         const origin = anatomyOrigin(import.meta.env.VITE_ANATOMY_ORIGIN, import.meta.env.DEV);
         if (origin && failure instanceof ApiError && [401, 403].includes(failure.status)) {
           authorizeAnatomy(origin, anatomyView(params.get('view')));

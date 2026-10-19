@@ -1,10 +1,13 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
+import { pageFile } from './seo-html.mjs';
 
 const root = resolve('dist/client');
 const mime = {
   '.html': 'text/html',
+  '.xml': 'application/xml',
+  '.txt': 'text/plain',
   '.js': 'text/javascript',
   '.css': 'text/css',
   '.jpg': 'image/jpeg',
@@ -32,7 +35,7 @@ const server = createServer(async (request, response) => {
         response.writeHead(404).end();
         return;
       }
-      file = resolve(root, 'index.html');
+      file = resolve(root, pageFile(pathname));
     }
     response.setHeader('Content-Type', mime[extname(file)] || 'application/octet-stream');
     response.setHeader('Cache-Control', 'no-store');

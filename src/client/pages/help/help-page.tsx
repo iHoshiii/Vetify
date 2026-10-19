@@ -1,9 +1,6 @@
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Link } from 'react-router-dom';
 
 export default function HelpCenterPage() {
-  useDocumentTitle('Help Center', 'Help Center and FAQs for Vetify');
-
   const faqs = [
     {
       question: 'How do I book an appointment?',

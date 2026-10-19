@@ -1,9 +1,10 @@
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import { publicSeo } from './scripts/seo-plugin.mjs';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), publicSeo()],
   resolve: {
     alias: {
       // '@' points at src/client (not src) so that existing '@/components/*',
