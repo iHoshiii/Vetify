@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { MongoClient, ObjectId } from 'mongodb';
+import { configureOidcSmoke, verifyOidcLambda } from './oidc-smoke-runtime.mjs';
 
 const frames = [];
 const server = createServer((request, response) => {
@@ -21,6 +22,7 @@ const server = createServer((request, response) => {
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 process.env.REALTIME_MANAGEMENT_ENDPOINT = `http://127.0.0.1:${server.address().port}/prod`;
 const dbClient = new MongoClient(process.env.MONGODB_URI);
+configureOidcSmoke();
 try {
   const { handler: http } = await import('./http.js');
   const { handler: websocket } = await import('./websocket.js');
@@ -74,6 +76,7 @@ try {
     .db()
     .collection('users')
     .updateOne({ _id: new ObjectId(auth.user.id) }, { $set: { emailVerified: true } });
+  await verifyOidcLambda(http, signup.cookies, auth.user.id);
   const ticket = await invoke(
     '/api/v1/account/realtime-ticket',
     { clientId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
