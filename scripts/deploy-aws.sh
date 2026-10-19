@@ -15,6 +15,7 @@ parameter() { jq -er --arg key "$2" '.Stacks[0].Parameters[] | select(.Parameter
 output() { jq -er --arg key "$2" '.Stacks[0].Outputs[] | select(.OutputKey == $key) | .OutputValue' <<< "$1"; }
 secret_arn=$(parameter "$backend" AppSecretArn)
 config_revision=$(parameter "$backend" ConfigRevision)
+shared_auth_enabled=$(jq -r '.Stacks[0].Parameters | map(select(.ParameterKey == "SharedAuthEnabled")) | .[0].ParameterValue // "false"' <<< "$backend")
 certificate_arn=$(parameter "$frontend" CertificateArn)
 test "$(parameter "$frontend" DomainName)" = vetify.page
 expected_realtime=$(sed -n 's/^VITE_REALTIME_URL=//p' release/deploy/github/frontend-build.env)
@@ -26,7 +27,7 @@ node scripts/check-budget.mjs
 sam deploy --template-file .aws-sam/github-build/template.yaml \
   --stack-name vetify-backend --s3-bucket "$AWS_ARTIFACT_BUCKET" --s3-prefix vetify-ci \
   --role-arn "$AWS_CFN_ROLE_ARN" --capabilities CAPABILITY_IAM \
-  --parameter-overrides "AppSecretArn=$secret_arn" ClientOrigin=https://vetify.page "ConfigRevision=$config_revision" \
+  --parameter-overrides "AppSecretArn=$secret_arn" ClientOrigin=https://vetify.page "ConfigRevision=$config_revision" "SharedAuthEnabled=$shared_auth_enabled" \
   --no-confirm-changeset --no-fail-on-empty-changeset
 
 backend=$(aws cloudformation describe-stacks --stack-name vetify-backend)
@@ -37,19 +38,20 @@ api_hostname=${api_url#https://}
 curl --fail --silent --show-error --retry 3 --retry-all-errors --max-time 40 \
   "$api_url/api/v1/health" | jq -e '.status == "ok" and .db == "connected"' > /dev/null
 
+bucket=$(output "$frontend" WebsiteBucketName)
+distribution=$(output "$frontend" DistributionId)
+test "$bucket" = vetify-main-web-223703743978-ap-southeast-2
+node scripts/check-budget.mjs
+aws s3 sync release/dist/client "s3://$bucket" --exclude '*.html' \
+  --cache-control public,max-age=3600 --no-progress --only-show-errors
+aws s3 cp release/dist/client "s3://$bucket" --recursive --exclude '*' --include '*.html' --exclude index.html \
+  --content-type text/html --cache-control no-cache --no-progress --only-show-errors
 node scripts/check-budget.mjs
 aws cloudformation deploy --template-file release/deploy/frontend/template.yaml \
   --stack-name vetify-frontend --role-arn "$AWS_CFN_ROLE_ARN" \
   --parameter-overrides "ApiHostname=$api_hostname" "CertificateArn=$certificate_arn" DomainName=vetify.page UseCustomDomain=true \
   --no-fail-on-empty-changeset
-
-frontend=$(aws cloudformation describe-stacks --stack-name vetify-frontend)
-bucket=$(output "$frontend" WebsiteBucketName)
-distribution=$(output "$frontend" DistributionId)
-test "$bucket" = vetify-main-web-223703743978-ap-southeast-2
 node scripts/check-budget.mjs
-aws s3 sync release/dist/client "s3://$bucket" --exclude index.html \
-  --cache-control public,max-age=3600 --no-progress --only-show-errors
 aws s3 cp release/dist/client/index.html "s3://$bucket/index.html" \
   --content-type text/html --cache-control no-cache --no-progress --only-show-errors
 invalidation=$(aws cloudfront create-invalidation --distribution-id "$distribution" \

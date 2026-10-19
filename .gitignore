@@ -23,6 +23,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Environment
+/.tmp/shared-auth-secrets.json
 .env
 .env.prod
 .env.production

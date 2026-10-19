@@ -22,6 +22,8 @@ try {
   ])
     await cp(join(root, 'dist/lambda', file), join(stage, file));
   await cp(join(root, 'scripts/lambda-smoke-runtime.mjs'), join(stage, 'smoke.mjs'));
+  for (const file of ['oidc-smoke-runtime.mjs', 'oidc-lambda-request.mjs'])
+    await cp(join(root, 'scripts', file), join(stage, file));
   execFileSync(
     process.execPath,
     [process.env.npm_execpath, 'ci', '--omit=dev', '--no-audit', '--no-fund'],

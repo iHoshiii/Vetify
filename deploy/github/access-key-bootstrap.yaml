@@ -67,7 +67,13 @@ Resources:
                 Action: [ cloudfront:GetOriginAccessControl, cloudfront:UpdateOriginAccessControl ]
                 Resource: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:origin-access-control/*'
               - Effect: Allow
-                Action: [ cloudfront:DescribeFunction, cloudfront:GetFunction, cloudfront:UpdateFunction, cloudfront:PublishFunction ]
+                Action: cloudfront:CreateResponseHeadersPolicy
+                Resource: '*'
+              - Effect: Allow
+                Action: [ cloudfront:GetResponseHeadersPolicy, cloudfront:GetResponseHeadersPolicyConfig, cloudfront:UpdateResponseHeadersPolicy, cloudfront:DeleteResponseHeadersPolicy ]
+                Resource: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:response-headers-policy/*'
+              - Effect: Allow
+                Action: [ cloudfront:DescribeFunction, cloudfront:GetFunction, cloudfront:UpdateFunction, cloudfront:PublishFunction, cloudfront:ListTagsForResource ]
                 Resource: !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:function/vetify-frontend-spa'
               - Effect: Allow
                 Action: acm:DescribeCertificate

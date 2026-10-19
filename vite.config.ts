@@ -1,9 +1,10 @@
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { defineConfig } from 'vite';
+import { publicSeo } from './scripts/seo-plugin.mjs';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), publicSeo()],
   resolve: {
     alias: {
       // '@' points at src/client (not src) so that existing '@/components/*',
@@ -14,6 +15,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    headers: { 'Content-Security-Policy': "frame-ancestors 'self' http://localhost:5176" },
     // Proxy keeps the browser on a single origin, so SameSite=Lax auth cookies
     // work without CORS or Secure-context complications in dev.
     proxy: {

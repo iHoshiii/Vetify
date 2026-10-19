@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/",
+    "title": "Vetify | AI Pet Care Guidance & Veterinary Appointments",
+    "description": "Get AI guidance on pet care, find nearby veterinary clinics, and book veterinary appointments with Vetify. Explore tools for everyday pet health."
+  },
+  {
+    "path": "/about",
+    "title": "About Vetify | Pet Care & Veterinary Support",
+    "description": "Learn about Vetify, a pet care platform connecting AI health guidance, nearby veterinary clinics, appointment booking, and everyday pet care tools."
+  },
+  {
+    "path": "/services",
+    "title": "Vetify Services | AI Pet Guidance & Vet Appointments",
+    "description": "Explore Vetify's AI pet care assistant, veterinary clinic finder, appointment booking, and connected tools for caring for your pets."
+  },
+  {
+    "path": "/professionals",
+    "title": "Join Vetify | For Veterinary Professionals",
+    "description": "Discover how veterinary professionals can join Vetify, review the eligibility requirements, and apply to connect with pet owners through the platform."
+  },
+  {
+    "path": "/contact",
+    "title": "Contact Vetify | Pet Care Platform Support",
+    "description": "Contact the Vetify team for help with the pet care platform, account questions, appointment support, or enquiries about veterinary services."
+  },
+  {
+    "path": "/help",
+    "title": "Vetify Help Center | Appointments, Accounts & Support",
+    "description": "Find answers to common Vetify questions about booking veterinary appointments, editing your profile, recovering your password, and managing notifications."
+  },
+  {
+    "path": "/privacy",
+    "title": "Privacy Policy | Vetify",
+    "description": "Read how Vetify collects, uses, and protects account and pet information, and learn how to contact the team with privacy questions."
+  },
+  {
+    "path": "/terms",
+    "title": "Terms and Conditions | Vetify",
+    "description": "Read the terms and conditions for using Vetify, including account responsibilities, platform content, service access, and limitations of liability."
+  }
+]

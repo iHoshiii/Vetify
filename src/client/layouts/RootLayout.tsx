@@ -4,6 +4,7 @@ import RevealObserver from '@/components/RevealObserver';
 import ScrollToTop from '@/components/ScrollToTop';
 import SiteHeader from '@/components/navbar';
 import { PageBoundary } from '@/routes/page-boundary';
+import { useAnatomyHost } from '@/pages/anatomy/use-anatomy-host';
 
 /**
  * Port of the former src/app/layout.tsx. The <html>/<body> tags now live in
@@ -11,6 +12,7 @@ import { PageBoundary } from '@/routes/page-boundary';
  * router. What remains is the chrome every route shares.
  */
 export default function RootLayout() {
+  useAnatomyHost();
   return (
     <>
       <ScrollToTop />

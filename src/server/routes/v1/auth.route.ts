@@ -9,6 +9,7 @@ import { requestEmailVerification } from '../../services/email-verification.serv
 import { ok } from '../../utils/response';
 import emailVerificationRoute from './email-verification.route';
 import browserSessionRoute from './auth-browser-session.route';
+import globalLogoutRoute from './auth-global-logout.route';
 import socialRoute from './auth-social.route';
 import recoveryRoute from './auth-recovery.route';
 const router = Router();
@@ -35,6 +36,7 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
   ok(res, { accessToken: auth.accessToken, user: auth.user });
 });
 router.use(browserSessionRoute);
+router.use(globalLogoutRoute);
 router.use(recoveryRoute);
 router.use(socialRoute);
 export default router;

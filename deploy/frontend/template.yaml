@@ -50,11 +50,24 @@ Resources:
       FunctionCode: |
         function handler(event) {
           var request = event.request;
-          if (request.uri.indexOf('/api/') !== 0 && request.uri.indexOf('.') === -1) {
-            request.uri = '/index.html';
+          var pages = ['/', '/about', '/services', '/professionals', '/contact', '/help', '/privacy', '/terms'];
+          var path = request.uri.replace(/\/+$/, '') || '/';
+          if (pages.indexOf(path) !== -1) {
+            request.uri = path === '/' ? '/index.html' : path + '/index.html';
+          } else if (request.uri.indexOf('/api/') !== 0 && request.uri.indexOf('.') === -1) {
+            request.uri = '/app.html';
           }
           return request;
         }
+  WebsiteHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub '${AWS::StackName}-website-headers'
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: "frame-ancestors 'self' https://anatomy.vetify.page"
+            Override: true
   Distribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -90,6 +103,7 @@ Resources:
           CachedMethods: [GET, HEAD]
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref WebsiteHeaders
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt SpaRoutes.FunctionARN
