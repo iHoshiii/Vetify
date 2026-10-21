@@ -51,9 +51,9 @@ function LoginTrigger({ role = 'user' }: { role?: UserRole }) {
   );
 }
 
-function renderHeader(role: UserRole = 'user') {
+function renderHeader(role: UserRole = 'user', path = '/') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <AuthProvider>
         <SiteHeader />
         <LoginTrigger role={role} />
@@ -63,6 +63,22 @@ function renderHeader(role: UserRole = 'user') {
 }
 
 describe('navbar auth reactivity', () => {
+  it('keeps Anatomy navigation compact within the hosted page', () => {
+    renderHeader('user', '/anatomy?hosted=1');
+
+    expect(screen.getByRole('link', { name: 'Vetify Anatomy' })).toHaveAttribute(
+      'href',
+      '/services'
+    );
+    expect(screen.getByRole('link', { name: 'Ask Vetify' })).toHaveAttribute('href', '/chat');
+    expect(screen.getByRole('link', { name: 'Back to Vetify' })).toHaveAttribute(
+      'href',
+      '/services'
+    );
+    expect(screen.queryByRole('navigation', { name: 'Main navigation' })).toBeNull();
+    expect(screen.queryByText('Log in')).toBeNull();
+  });
+
   it('shows the login and signup links while anonymous', () => {
     renderHeader();
 
