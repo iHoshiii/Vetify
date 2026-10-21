@@ -2,24 +2,21 @@ import type { Request } from 'express';
 import Provider, { errors } from 'oidc-provider';
 import { AppError } from '../utils/AppError';
 import { boundAccount, mainBrowserSession, oidcBindings } from './bindings';
-import { ANATOMY_CLIENT_ID, type OidcSettings } from './settings';
+import { type OidcSettings } from './settings';
+import { sharedAuthClients } from './clients';
 import { MongoOidcAdapter } from './storage';
 
 export function createOidcProvider(settings: OidcSettings) {
+  const clients = sharedAuthClients(settings);
+  const resourceFor = (id?: string) => {
+    const callback = clients.find((client) => client.client_id === id)?.redirect_uris?.[0];
+    if (!callback) throw new errors.InvalidTarget();
+    return new URL(callback).origin;
+  };
   const provider: Provider = new Provider(settings.issuer, {
     adapter: MongoOidcAdapter,
     jwks: settings.jwks,
-    clients: [
-      {
-        client_id: ANATOMY_CLIENT_ID,
-        client_secret: settings.clientSecret,
-        redirect_uris: [settings.callback],
-        response_types: ['code'],
-        grant_types: ['authorization_code'],
-        token_endpoint_auth_method: 'client_secret_post',
-        id_token_signed_response_alg: 'RS256',
-      },
-    ],
+    clients,
     clientAuthMethods: ['client_secret_post'],
     responseTypes: ['code'],
     scopes: ['openid', 'email'],
@@ -61,10 +58,10 @@ export function createOidcProvider(settings: OidcSettings) {
       },
       resourceIndicators: {
         enabled: true,
-        defaultResource: () => new URL(settings.callback).origin,
+        defaultResource: (ctx) => resourceFor(ctx.oidc.client?.clientId),
         useGrantedResource: () => true,
         getResourceServerInfo: (_ctx, resource, client) => {
-          if (resource !== new URL(settings.callback).origin) throw new errors.InvalidTarget();
+          if (resource !== resourceFor(client.clientId)) throw new errors.InvalidTarget();
           return {
             audience: client.clientId,
             scope: 'openid email',
