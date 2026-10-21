@@ -52,6 +52,10 @@ describe('Anatomy inside main navigation', () => {
       'http://localhost:5176/bird/nervous?embed=1'
     );
     expect(screen.queryByText('Open Anatomy')).not.toBeInTheDocument();
+    const sandbox = screen.getByTitle('Vetify Anatomy viewer').getAttribute('sandbox')!.split(' ');
+    expect(sandbox).toContain('allow-popups');
+    expect(sandbox).toContain('allow-popups-to-escape-sandbox');
+    expect(sandbox).not.toContain('allow-top-navigation');
   });
   it('accepts authentication requests only from the configured iframe window and origin', () => {
     show();

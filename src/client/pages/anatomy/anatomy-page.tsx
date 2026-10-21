@@ -87,7 +87,7 @@ export default function AnatomyPage({ canAuthenticate = true }: { canAuthenticat
         src={source.href}
         className="block h-full w-full border-0"
         referrerPolicy="strict-origin"
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       />
     </main>
   );
