@@ -61,6 +61,14 @@ Bedrock uses the Lambda execution role rather than an application API key.
 GitHub does not need their values. `AWS_DEPLOY_ROLE_ARN` is no longer used.
 The access key pair stays in GitHub Secrets and is passed only to the AWS job.
 
+For CARTO Basemaps, optionally add a repository secret named `VITE_CARTO_KEY`
+containing your dedicated Basemaps key. CI injects it only into the production
+frontend build. Keep the actual key out of `deploy/github/frontend-build.env`.
+This keeps it out of the repository source; the deployed browser bundle and map
+tile requests still contain it. Restrict the key to `vetify.page` in CARTO's
+dashboard and monitor its usage. Local production builds can read the key from
+an ignored production env file, or from the `VITE_CARTO_KEY` process variable.
+
 Review and merge this branch through a pull request. With main-only execution,
 these jobs run after merging. Do not require their status checks before merging
 pull requests, since those requests do not trigger the workflow. CI failure still

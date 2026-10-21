@@ -23,15 +23,20 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Environment
-/.tmp/shared-auth-secrets.json
-/.tmp/books-capability-secrets.json
+/.tmp/
 .env
-.env.prod
-.env.production
-env.prod
-.env.local
-.env.*.local
+.env.*
+/env.prod
+*.env
+# These files contain public build settings or synthetic test values.
+!/deploy/github/frontend-build.env
+!/tests/responsive/build.env
+# Keep templates available; real credentials belong in ignored local files or AWS.
 !.env.example
+!.env.*.example
+/deploy/serverless/app-secret.json
+/deploy/serverless/app-secret.*.json
+!/deploy/serverless/app-secret.example.json
 
 # Testing
 /coverage/
@@ -62,5 +67,9 @@ Thumbs.db
 
 # Misc
 *.pem
+*.key
+*.p8
+*.p12
+*.pfx
 /.aws-sam/
 /samconfig.toml

@@ -18,6 +18,9 @@ try {
 }
 const apiUrl = settings.VITE_API_URL || '/api/v1';
 const realtimeUrl = settings.VITE_REALTIME_URL || '';
+// CI injects the browser basemap key from Actions secrets. Local builds can use
+// their ignored production env file. Other shell credentials stay out of Vite.
+const cartoKey = process.env.VITE_CARTO_KEY || settings.VITE_CARTO_KEY || '';
 if (realtimeUrl) {
   const gateway = new URL(realtimeUrl);
   if (
@@ -72,7 +75,7 @@ try {
     mode: 'production',
     define: {
       'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl),
-      'import.meta.env.VITE_CARTO_KEY': JSON.stringify(settings.VITE_CARTO_KEY || ''),
+      'import.meta.env.VITE_CARTO_KEY': JSON.stringify(cartoKey),
       'import.meta.env.VITE_REALTIME_URL': JSON.stringify(realtimeUrl),
       ...featureOrigins,
     },
