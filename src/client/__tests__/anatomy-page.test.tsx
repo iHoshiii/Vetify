@@ -63,6 +63,23 @@ describe('Anatomy inside main navigation', () => {
     message('vetify-anatomy:authenticate');
     expect(authorizeAnatomy).toHaveBeenCalledOnce();
   });
+  it('waits for main session validation before starting a requested handoff', () => {
+    const page = render(
+      <MemoryRouter>
+        <AnatomyPage canAuthenticate={false} />
+      </MemoryRouter>
+    );
+    message('vetify-anatomy:authenticate');
+    expect(authorizeAnatomy).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(handoffKey)).toBeNull();
+    page.rerender(
+      <MemoryRouter>
+        <AnatomyPage canAuthenticate />
+      </MemoryRouter>
+    );
+    expect(authorizeAnatomy).toHaveBeenCalledOnce();
+    expect(authorizeAnatomy).toHaveBeenCalledWith('http://localhost:5176', '/');
+  });
   it('stops repeated automatic redirects and allows an explicit retry', () => {
     sessionStorage.setItem(handoffKey, String(Date.now()));
     show();

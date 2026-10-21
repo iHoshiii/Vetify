@@ -13,16 +13,15 @@ export default function SharedAuthPage() {
   const { user, setSession, logout } = useAuth();
   const started = useRef(false);
   const form = useRef<HTMLFormElement>(null);
-  const continueButton = useRef<HTMLButtonElement>(null);
   const submitted = useRef(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (ready && form.current && continueButton.current && !submitted.current) {
+    if (ready && form.current && !submitted.current) {
       submitted.current = true;
-      form.current.requestSubmit(continueButton.current);
+      form.current.requestSubmit();
     }
   }, [ready]);
 
@@ -41,7 +40,7 @@ export default function SharedAuthPage() {
   useEffect(() => {
     if (!valid || started.current) return;
     started.current = true;
-    refreshSession({ fresh: true })
+    refreshSession()
       .then((session) => {
         setSession(session);
         if (!session.user.emailVerified) {
@@ -49,9 +48,15 @@ export default function SharedAuthPage() {
         } else setReady(true);
       })
       .catch((failure: unknown) => {
-        if (failure instanceof ApiError && failure.status !== 401) {
-          setError(failure.message);
-        } else navigate('/login', { replace: true, state: { from: resume } });
+        if (failure instanceof ApiError && failure.status === 401) {
+          navigate('/login', { replace: true, state: { from: resume } });
+        } else {
+          setError(
+            failure instanceof ApiError
+              ? failure.message
+              : 'Vetify sign-in is unavailable. Please reload to try again.'
+          );
+        }
       });
   }, [navigate, resume, setSession, valid]);
 
@@ -72,15 +77,18 @@ export default function SharedAuthPage() {
             action={`/api/oidc/interaction/${uid}/complete`}
             className="flex gap-4"
           >
-            <button
-              ref={continueButton}
-              name="decision"
-              value="allow"
-              className="rounded-lg bg-emerald-700 px-4 py-2 text-white"
-            >
+            <input type="hidden" name="decision" value="allow" />
+            <button type="submit" className="rounded-lg bg-emerald-700 px-4 py-2 text-white">
               Continue
             </button>
-            <button name="decision" value="deny" className="rounded-lg border px-4 py-2">
+            <button
+              type="submit"
+              className="rounded-lg border px-4 py-2"
+              onClick={(event) => {
+                const decision = event.currentTarget.form?.elements.namedItem('decision');
+                if (decision instanceof HTMLInputElement) decision.value = 'deny';
+              }}
+            >
               Cancel
             </button>
           </form>

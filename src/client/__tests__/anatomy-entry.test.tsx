@@ -63,7 +63,7 @@ describe('canonical Anatomy domain', () => {
     );
     expect(refreshSession).not.toHaveBeenCalled();
   });
-  it('requires main login for a signed-out main visitor', () => {
+  it('checks the browser cookie before requiring main login for a signed-out visitor', async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       accessToken: null,
@@ -72,9 +72,27 @@ describe('canonical Anatomy domain', () => {
       isAuthenticated: false,
       status: 'anonymous',
     });
+    vi.mocked(refreshSession).mockRejectedValue(new ApiError(401, 'Please sign in.'));
     show();
-    expect(screen.getByText('Main login')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+    expect(screen.queryByText('Main login')).not.toBeInTheDocument();
+    expect(await screen.findByText('Main login')).toBeInTheDocument();
     expect(visitAnatomy).not.toHaveBeenCalled();
+  });
+  it('shows only a loading indicator while restoring a hosted session', () => {
+    hosted();
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      accessToken: null,
+      setSession,
+      logout: vi.fn(),
+      isAuthenticated: false,
+      status: 'anonymous',
+    });
+    vi.mocked(refreshSession).mockReturnValue(new Promise(() => {}));
+    show('/anatomy?hosted=1');
+    expect(screen.getByRole('status', { name: 'Loading' }).textContent).toBe('');
+    expect(screen.queryByText(/connecting|account|opening/i)).not.toBeInTheDocument();
   });
   it('does not activate hosted mode at the top level', () => {
     show('/anatomy?hosted=1');
