@@ -48,14 +48,7 @@ export default function App() {
       <Route element={<RootLayout />}>
         <Route index element={<HomePage />} />
         <Route path="about" element={<AboutPage />} />
-        <Route
-          path="books"
-          element={
-            <RequireAuth>
-              <ExternalAppPage feature="books" />
-            </RequireAuth>
-          }
-        />
+        <Route path="books" element={<ExternalAppPage feature="books" />} />
 
         <Route path="anatomy" element={<AnatomyEntry />} />
         <Route path="auth/callback" element={<AuthCallbackPage />} />

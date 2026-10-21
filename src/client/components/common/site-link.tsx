@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { externalAppOrigin } from '@/lib/external-app';
 
-// A hash target like /#about needs a plain anchor so the browser scrolls to the section, every other internal route uses Link for client-side nav
+// Hash targets and configured Books links use native browser navigation.
 export function SiteLink({
   to,
   className,
@@ -13,9 +14,13 @@ export function SiteLink({
   onClick?: () => void;
   children: ReactNode;
 }) {
-  if (to.startsWith('/#')) {
+  const booksOrigin =
+    to === '/books'
+      ? externalAppOrigin(import.meta.env.VITE_BOOKS_ORIGIN, import.meta.env.DEV)
+      : null;
+  if (booksOrigin || to.startsWith('/#')) {
     return (
-      <a href={to} className={className} onClick={onClick}>
+      <a href={booksOrigin ? `${booksOrigin}/` : to} className={className} onClick={onClick}>
         {children}
       </a>
     );

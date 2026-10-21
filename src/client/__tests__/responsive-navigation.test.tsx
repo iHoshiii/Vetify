@@ -7,7 +7,10 @@ vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({ isAuthenticated: false }),
 }));
 vi.mock('@/components/navbar/header-tools', () => ({ HeaderTools: () => null }));
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 function show() {
   render(
     <MemoryRouter>
@@ -17,6 +20,29 @@ function show() {
 }
 
 describe('responsive site navigation', () => {
+  it('links directly to the Books application on desktop and mobile', () => {
+    vi.stubEnv('VITE_BOOKS_ORIGIN', 'https://books.example.test/');
+    show();
+    const desktop = screen.getByRole('navigation', { name: 'Main navigation' });
+    expect(within(desktop).getByRole('link', { name: 'Books' })).toHaveAttribute(
+      'href',
+      'https://books.example.test/'
+    );
+    expect(within(desktop).getByRole('link', { name: 'Blogs' })).toHaveAttribute('href', '/blogs');
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle menu' }));
+    const mobile = screen.getByRole('navigation', { name: 'Mobile navigation' });
+    expect(within(mobile).getByRole('link', { name: 'Books' })).toHaveAttribute(
+      'href',
+      'https://books.example.test/'
+    );
+  });
+
+  it('keeps Books on the safe local route when its configured origin is invalid', () => {
+    vi.stubEnv('VITE_BOOKS_ORIGIN', 'https://user:secret@books.example.test');
+    show();
+    expect(screen.getByRole('link', { name: 'Books' })).toHaveAttribute('href', '/books');
+  });
+
   it('keeps closed mobile links out of keyboard navigation and closes on Escape', () => {
     show();
     const toggle = screen.getByRole('button', { name: 'Toggle menu' });
