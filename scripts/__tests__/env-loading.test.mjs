@@ -71,3 +71,31 @@ test('production fails when required secrets exist only in local .env', async ()
     assert.match(output.stderr, /Invalid environment configuration/);
   });
 });
+
+test('Books capability configuration requires a valid hash and expiry together without leaking values', () => {
+  const valid = {
+    BOOKS_CAPABILITY_TOKEN_SHA256: 'a'.repeat(64),
+    BOOKS_CAPABILITY_TOKEN_EXPIRES_AT: '2030-01-01T00:00:00.000Z',
+  };
+  for (const [settings, succeeds] of [
+    [{}, true],
+    [valid, true],
+    [{ BOOKS_CAPABILITY_TOKEN_SHA256: valid.BOOKS_CAPABILITY_TOKEN_SHA256 }, false],
+    [{ BOOKS_CAPABILITY_TOKEN_EXPIRES_AT: valid.BOOKS_CAPABILITY_TOKEN_EXPIRES_AT }, false],
+    [{ ...valid, BOOKS_CAPABILITY_TOKEN_SHA256: 'private-invalid-credential' }, false],
+    [{ ...valid, BOOKS_CAPABILITY_TOKEN_EXPIRES_AT: 'invalid-date' }, false],
+  ]) {
+    const output = spawnSync(process.execPath, ['--input-type=module', '-e', command], {
+      cwd: root,
+      encoding: 'utf8',
+      env: {
+        ...base,
+        NODE_ENV: 'production',
+        JWT_SECRET_ACCESS: 'synthetic-signing-secret-at-least-32-characters',
+        ...settings,
+      },
+    });
+    assert.equal(output.status === 0, succeeds);
+    assert.doesNotMatch(output.stderr, /private-invalid-credential|a{64}/);
+  }
+});

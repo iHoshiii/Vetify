@@ -25,6 +25,8 @@ by matching an email address. Main owns those linking checks and verification.
 
 Main already has browser authentication, native authentication/session handoff,
 linked login methods and `POST /api/v1/auth/introspect`.
+The Books worker [capability endpoint and credential generator](books-capabilities.md)
+are implemented separately; they do not complete Books web sign-in.
 Introspection returns user ID, role/status, subscription, region and a validity
 window capped at thirty seconds. It checks an attached native session.
 

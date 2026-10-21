@@ -24,6 +24,7 @@ yarn-error.log*
 
 # Environment
 /.tmp/shared-auth-secrets.json
+/.tmp/books-capability-secrets.json
 .env
 .env.prod
 .env.production

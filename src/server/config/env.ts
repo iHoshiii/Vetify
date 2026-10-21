@@ -47,6 +47,13 @@ const envSchema = z.object({
   // character.
   SERVER_URL: z.string().url().default('http://localhost:8000'),
 
+  // Dedicated Books worker credential. Main keeps only its digest and expiry.
+  BOOKS_CAPABILITY_TOKEN_SHA256: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  BOOKS_CAPABILITY_TOKEN_EXPIRES_AT: z.string().datetime().optional(),
+
   // Where the OAuth callback sends the browser once it is done. Success lands on
   // a client route that trades the refresh cookie for an access token.
   OAUTH_SUCCESS_REDIRECT: z.string().url().default('http://localhost:5173/auth/callback'),
@@ -112,7 +119,17 @@ const provided = Object.fromEntries(
   Object.entries(process.env).filter(([, value]) => value !== undefined && value.trim() !== '')
 );
 
-const parsed = envSchema.safeParse(provided);
+const parsed = envSchema
+  .refine(
+    (config) =>
+      Boolean(config.BOOKS_CAPABILITY_TOKEN_SHA256) ===
+      Boolean(config.BOOKS_CAPABILITY_TOKEN_EXPIRES_AT),
+    {
+      path: ['BOOKS_CAPABILITY_TOKEN_SHA256'],
+      message: 'Books capability token hash and expiry must be configured together',
+    }
+  )
+  .safeParse(provided);
 
 if (!parsed.success) {
   const details = Object.entries(parsed.error.flatten().fieldErrors)
