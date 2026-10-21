@@ -1,21 +1,21 @@
 import type { Request, Response } from 'express';
 import type { Provider } from 'oidc-provider';
 import { mainBrowserSession, oidcBindings } from './bindings';
-import { ANATOMY_CLIENT_ID } from './settings';
+import { isSharedAuthClient } from './clients';
 import { AppError } from '../utils/AppError';
 
-export async function completeAnatomySignIn(
+export async function completeSharedSignIn(
   provider: Provider,
   req: Request,
   res: Response,
   details: Awaited<ReturnType<Provider['interactionDetails']>>,
   session: Awaited<ReturnType<typeof mainBrowserSession>>
 ) {
-  if (details.params.client_id !== ANATOMY_CLIENT_ID) throw AppError.badRequest('Invalid client.');
+  if (!isSharedAuthClient(details.params.client_id)) throw AppError.badRequest('Invalid client.');
   const accountId = session.owner._id.toHexString();
   const lifetime = Math.min(3600, Math.floor((session.expiresAt.getTime() - Date.now()) / 1000));
   if (lifetime <= 0) throw AppError.unauthorized('Please sign in again.');
-  const grant = new provider.Grant({ accountId, clientId: ANATOMY_CLIENT_ID });
+  const grant = new provider.Grant({ accountId, clientId: String(details.params.client_id) });
   grant.addOIDCScope('openid email');
   grant.addResourceScope(new URL(String(details.params.redirect_uri)).origin, 'openid email');
   const grantId = await grant.save();

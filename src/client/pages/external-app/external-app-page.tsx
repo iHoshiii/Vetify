@@ -1,6 +1,7 @@
 import { externalAppOrigin } from '@/lib/external-app';
 import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
 
 type Props = { feature: 'books' | 'anatomy' | 'blogs'; destination?: string };
 
@@ -12,6 +13,22 @@ export default function ExternalAppPage({ feature, destination = '/' }: Props) {
   };
   const { title, origin: configured } = apps[feature];
   const origin = externalAppOrigin(configured, import.meta.env.DEV);
+  const booksDestination = feature === 'books' && origin ? `${origin}${destination}` : null;
+  useEffect(() => {
+    if (booksDestination) window.location.replace(booksDestination);
+  }, [booksDestination]);
+  if (booksDestination) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center">
+        <div role="status" aria-label="Opening Vetify Books">
+          <span
+            aria-hidden="true"
+            className="block h-8 w-8 animate-spin rounded-full border-2 border-teal-700 border-t-transparent motion-reduce:animate-none"
+          />
+        </div>
+      </main>
+    );
+  }
   return (
     <main className="mx-auto flex max-w-xl flex-col px-6 py-8 text-center sm:py-10 xl:min-h-[60vh] xl:justify-center xl:py-16">
       <h1 className="text-3xl font-black text-slate-950">{title}</h1>

@@ -57,13 +57,15 @@ export default function SharedAuthPage() {
 
   return (
     <main className="mx-auto my-12 max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-6">
-      <h1 className="text-2xl font-semibold">Continue to Vetify Anatomy</h1>
+      <h1 className="text-2xl font-semibold">Continue with Vetify</h1>
       {!valid || error ? (
-        <p role="alert">{error || 'This sign-in link is invalid. Start again from Anatomy.'}</p>
+        <p role="alert">
+          {error || 'This sign-in link is invalid. Return to the app and try again.'}
+        </p>
       ) : ready ? (
         <>
-          <p>Continuing as {user?.email} to Vetify Anatomy...</p>
-          <p>Signing out of Vetify also ends Anatomy access from this session.</p>
+          <p>Continuing with your Vetify account, {user?.email}...</p>
+          <p>Signing out of Vetify also ends app access from this session.</p>
           <form
             ref={form}
             method="post"

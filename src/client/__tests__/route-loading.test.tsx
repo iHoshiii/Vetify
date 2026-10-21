@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Outlet, useOutletContext } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 
 const state = vi.hoisted(() => {
@@ -81,6 +81,7 @@ beforeEach(() => {
   state.auth.user.role = 'user';
   vi.clearAllMocks();
 });
+afterEach(() => vi.unstubAllEnvs());
 
 function renderRoute(path: string) {
   return render(
@@ -107,11 +108,12 @@ describe('deferred routes', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('redirects an anonymous visitor without importing a protected page', async () => {
+  it.each(['/messages', '/books'])('handles anonymous navigation to %s', async (path) => {
     state.auth.isAuthenticated = false;
-    renderRoute('/books');
-    expect(await screen.findByRole('heading', { name: 'Login page' })).toBeVisible();
-    expect(screen.queryByRole('heading', { name: 'Vetify Books' })).not.toBeInTheDocument();
+    vi.stubEnv('VITE_BOOKS_ORIGIN', '');
+    renderRoute(path);
+    const name = path === '/books' ? 'Vetify Books' : 'Login page';
+    expect(await screen.findByRole('heading', { name })).toBeVisible();
   });
 
   it.each(['/admin', '/professionals/dashboard'])(

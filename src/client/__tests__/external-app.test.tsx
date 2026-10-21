@@ -5,7 +5,10 @@ import { externalAppOrigin } from '../lib/external-app';
 import ExternalAppPage from '../pages/external-app/external-app-page';
 import BlogsLaunchPage from '../pages/external-app/blogs-launch-page';
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe('external feature destinations', () => {
   it.each([
@@ -36,6 +39,19 @@ describe('external feature destinations', () => {
 });
 
 describe('feature launch pages', () => {
+  it('does not navigate to an unsafe Books origin', () => {
+    vi.stubEnv('VITE_BOOKS_ORIGIN', 'javascript:alert(1)');
+    const replace = vi.fn();
+    vi.stubGlobal('window', Object.create(window, { location: { value: { replace } } }));
+    render(
+      <MemoryRouter>
+        <ExternalAppPage feature="books" />
+      </MemoryRouter>
+    );
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.getByText(/is not available yet/)).toBeVisible();
+  });
+
   it.each(['books', 'anatomy', 'blogs'] as const)(
     'shows %s unavailable without a destination',
     (feature) => {
@@ -53,19 +69,21 @@ describe('feature launch pages', () => {
     }
   );
 
-  it.each(['/manage', '/affiliate'] as const)(
-    'opens Books %s without transferring credentials',
+  it.each(['/', '/manage', '/affiliate'] as const)(
+    'automatically opens Books %s without transferring credentials',
     (destination) => {
       vi.stubEnv('VITE_BOOKS_ORIGIN', 'https://books.example.test');
+      const replace = vi.fn();
+      vi.stubGlobal('window', Object.create(window, { location: { value: { replace } } }));
       render(
         <MemoryRouter>
           <ExternalAppPage feature="books" destination={destination} />
         </MemoryRouter>
       );
-      expect(screen.getByRole('link', { name: 'Open Vetify Books' })).toHaveAttribute(
-        'href',
-        `https://books.example.test${destination}`
-      );
+      expect(replace).toHaveBeenCalledWith(`https://books.example.test${destination}`);
+      expect(screen.getByRole('status', { name: 'Opening Vetify Books' })).toBeVisible();
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
     }
   );
 

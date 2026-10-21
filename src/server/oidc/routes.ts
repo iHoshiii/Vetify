@@ -6,9 +6,10 @@ import { env, isTest } from '../config/env';
 import { LambdaRateLimitStore } from '../middleware/lambda-rate-limit-store';
 import { AppError } from '../utils/AppError';
 import { mainBrowserSession } from './bindings';
-import { completeAnatomySignIn } from './complete';
+import { completeSharedSignIn } from './complete';
+import { isSharedAuthClient } from './clients';
 import { createOidcProvider } from './provider';
-import { ANATOMY_CLIENT_ID, OIDC_PATH, readOidcSettings } from './settings';
+import { OIDC_PATH, readOidcSettings } from './settings';
 
 function interactionRoutes(provider: Provider) {
   const router = express.Router();
@@ -18,7 +19,7 @@ function interactionRoutes(provider: Provider) {
     const explicitPrompt = /\b(login|consent|select_account)\b/.test(
       String(details.params.prompt ?? '')
     );
-    if (details.params.client_id === ANATOMY_CLIENT_ID && !explicitPrompt) {
+    if (isSharedAuthClient(details.params.client_id) && !explicitPrompt) {
       let session;
       try {
         session = await mainBrowserSession(req);
@@ -26,7 +27,7 @@ function interactionRoutes(provider: Provider) {
         if (!(error instanceof AppError && [401, 403].includes(error.statusCode))) throw error;
       }
       if (session) {
-        await completeAnatomySignIn(provider, req, res, details, session);
+        await completeSharedSignIn(provider, req, res, details, session);
         return;
       }
     }
@@ -41,7 +42,7 @@ function interactionRoutes(provider: Provider) {
       if (req.get('origin') !== new URL(env.CLIENT_ORIGIN).origin)
         throw AppError.forbidden('Invalid sign-in origin.');
       const details = await provider.interactionDetails(req, res);
-      if (details.uid !== req.params.uid || details.params.client_id !== ANATOMY_CLIENT_ID) {
+      if (details.uid !== req.params.uid || !isSharedAuthClient(details.params.client_id)) {
         throw AppError.badRequest('Invalid sign-in transaction.');
       }
       if (req.body.decision === 'deny') {
@@ -53,13 +54,15 @@ function interactionRoutes(provider: Provider) {
       }
       if (req.body.decision !== 'allow') throw AppError.badRequest('Choose whether to continue.');
       const session = await mainBrowserSession(req);
-      await completeAnatomySignIn(provider, req, res, details, session);
+      await completeSharedSignIn(provider, req, res, details, session);
     }
   );
   router.use((error: unknown, _req: Request, _res: Response, next: NextFunction) => {
     if (error instanceof errors.OIDCProviderError && error.statusCode < 500) {
       next(
-        AppError.badRequest('This sign-in request expired or is invalid. Start again from Anatomy.')
+        AppError.badRequest(
+          'This sign-in request expired or is invalid. Return to the app and try again.'
+        )
       );
     } else next(error);
   });
