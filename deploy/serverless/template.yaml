@@ -13,8 +13,18 @@ Parameters:
     Type: String
     AllowedValues: ['true', 'false']
     Default: 'false'
+  BooksCapabilitiesEnabled:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
+  BooksSharedAuthEnabled:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'false'
 Conditions:
   EnableSharedAuth: !Equals [!Ref SharedAuthEnabled, 'true']
+  EnableBooksCapabilities: !Equals [!Ref BooksCapabilitiesEnabled, 'true']
+  EnableBooksSharedAuth: !And [!Condition EnableSharedAuth, !Equals [!Ref BooksSharedAuthEnabled, 'true']]
 Globals:
   Function:
     Runtime: nodejs24.x
@@ -125,7 +135,10 @@ Resources:
       Environment:
         Variables:
           OIDC_ISSUER: !If [EnableSharedAuth, !Sub '${ClientOrigin}/api/oidc', '']
+          BOOKS_CAPABILITY_TOKEN_SHA256: !If [EnableBooksCapabilities, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:BOOKS_CAPABILITY_TOKEN_SHA256}}', '']
+          BOOKS_CAPABILITY_TOKEN_EXPIRES_AT: !If [EnableBooksCapabilities, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:BOOKS_CAPABILITY_TOKEN_EXPIRES_AT}}', '']
           OIDC_ANATOMY_CLIENT_SECRET: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_ANATOMY_CLIENT_SECRET}}', '']
+          OIDC_BOOKS_CLIENT_SECRET: !If [EnableBooksSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_BOOKS_CLIENT_SECRET}}', '']
           OIDC_COOKIE_KEYS: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_COOKIE_KEYS}}', '']
           OIDC_JWKS: !If [EnableSharedAuth, !Sub '{{resolve:secretsmanager:${AppSecretArn}:SecretString:OIDC_JWKS}}', '']
       Policies:

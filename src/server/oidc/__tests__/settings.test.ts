@@ -38,6 +38,21 @@ describe('OIDC deployment configuration', () => {
     const settings = readOidcSettings(values);
     expect(settings?.callback).toBe('http://localhost:5176/auth/callback');
     expect(settings?.secure).toBe(false);
+    expect(settings?.booksCallback).toBe('http://localhost:5175/auth/callback');
+    expect(settings?.booksClientSecret).toBeUndefined();
+  });
+
+  it('enables Books only with its own independent client secret', () => {
+    const booksSecret = 'synthetic-books-oidc-secret-independent-32-characters';
+    expect(
+      readOidcSettings({ ...values, OIDC_BOOKS_CLIENT_SECRET: booksSecret })?.booksClientSecret
+    ).toBe(booksSecret);
+    expect(
+      readOidcSettings({ ...values, OIDC_BOOKS_CLIENT_SECRET: '' })?.booksClientSecret
+    ).toBeUndefined();
+    expect(() =>
+      readOidcSettings({ ...values, OIDC_BOOKS_CLIENT_SECRET: values.OIDC_ANATOMY_CLIENT_SECRET })
+    ).toThrow('Invalid OIDC configuration');
   });
 
   it('registers exactly the production callback with an independent secret', () => {
@@ -46,6 +61,7 @@ describe('OIDC deployment configuration', () => {
     try {
       const settings = readOidcSettings({ ...values, OIDC_ISSUER: 'https://vetify.page/api/oidc' });
       expect(settings?.callback).toBe('https://anatomy.vetify.page/auth/callback');
+      expect(settings?.booksCallback).toBe('https://books.vetify.page/auth/callback');
       expect(settings?.secure).toBe(true);
       expect(settings?.clientSecret).not.toBe(env.JWT_SECRET_ACCESS);
     } finally {
