@@ -13,6 +13,10 @@ const { generateReply } = vi.hoisted(() => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
 }));
 vi.mock('../../../services/chat.service', () => ({ generateReply }));
+const { isVeterinaryTopic } = vi.hoisted(() => ({
+  isVeterinaryTopic: vi.fn().mockResolvedValue(true),
+}));
+vi.mock('../../../services/chat-topic.service', () => ({ isVeterinaryTopic }));
 
 const app = createApp();
 
@@ -24,6 +28,7 @@ const ask = (agent: request.Agent) => agent.post('/api/v1/chat').send({ message:
 
 describe('POST /api/v1/chat anonymous allowance', () => {
   it('refuses non-veterinary messages after a pet-care conversation without calling AI', async () => {
+    isVeterinaryTopic.mockResolvedValueOnce(false);
     const res = await request(app)
       .post('/api/v1/chat')
       .send({

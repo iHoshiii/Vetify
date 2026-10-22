@@ -13,7 +13,7 @@ const VETERINARY_TERMS =
 const OFF_TOPIC_TERMS =
   /\b(?:law|legal|lawyer|court|crime|politic|president|government|election|history|geography|capital|program(?:ming)?|code|software|website|math|algebra|homework|essay|poem|song|movie|recipe|restaurant|stock|crypto|investment)\b/i;
 
-export function isVeterinaryQuestion(message: string): boolean {
+export function mightBeVeterinaryQuestion(message: string): boolean {
   if (OFF_TOPIC_TERMS.test(message)) return false;
   if (ANIMAL_TERMS.test(message) && CARE_TERMS.test(message)) return true;
   return VETERINARY_TERMS.test(message);
