@@ -10,6 +10,7 @@ import { validate } from '../../middleware/validate';
 import { recordActivity } from '../../models/activity-event';
 import { consumeAnonQuery, ensureAnonId } from '../../services/anon-quota';
 import { generateReply } from '../../services/chat.service';
+import { isVeterinaryQuestion, OUT_OF_SCOPE_REPLY } from '../../services/chat-scope';
 import { failReason, ok } from '../../utils/response';
 
 const router = Router();
@@ -62,6 +63,16 @@ router.post(
   validate(chatRequestSchema),
   async (req, res) => {
     const body = req.body as ChatRequest;
+    if (!isVeterinaryQuestion(body.message)) {
+      const anonRemaining = res.locals.anonRemaining as number | undefined;
+      ok(
+        res,
+        anonRemaining === undefined
+          ? { reply: OUT_OF_SCOPE_REPLY }
+          : { reply: OUT_OF_SCOPE_REPLY, anonRemaining }
+      );
+      return;
+    }
     const reply = await generateReply(body);
 
     recordActivity({

@@ -9,9 +9,10 @@ import { insertUser } from '../../../models/users';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
 // Keeps Bedrock out of the test; real generation requires AWS access and incurs usage charges.
-vi.mock('../../../services/chat.service', () => ({
+const { generateReply } = vi.hoisted(() => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
 }));
+vi.mock('../../../services/chat.service', () => ({ generateReply }));
 
 const app = createApp();
 
@@ -22,6 +23,24 @@ afterAll(stopTestDb);
 const ask = (agent: request.Agent) => agent.post('/api/v1/chat').send({ message: 'is my dog ok?' });
 
 describe('POST /api/v1/chat anonymous allowance', () => {
+  it('refuses non-veterinary messages after a pet-care conversation without calling AI', async () => {
+    const res = await request(app)
+      .post('/api/v1/chat')
+      .send({
+        message: 'Tell me a law from the Philippines.',
+        history: [
+          { role: 'user', content: 'My dog is scratching a lot.' },
+          { role: 'assistant', content: 'Check for fleas and irritated skin.' },
+        ],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.reply).toBe(
+      "I'm sorry, but I can only help with pet and animal health or care questions. Please ask me about your pet."
+    );
+    expect(generateReply).not.toHaveBeenCalled();
+  });
+
   it('sets a signed anonymous cookie on the first question', async () => {
     const res = await ask(request.agent(app));
 
