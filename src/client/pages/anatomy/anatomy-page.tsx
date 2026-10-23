@@ -8,31 +8,39 @@ import {
   notifyAnatomy,
 } from './anatomy-integration';
 
-export default function AnatomyPage() {
+export default function AnatomyPage({ canAuthenticate = true }: { canAuthenticate?: boolean }) {
   const [params, setParams] = useSearchParams();
   const origin = anatomyOrigin(import.meta.env.VITE_ANATOMY_ORIGIN, import.meta.env.DEV);
   const view = anatomyView(params.get('view'));
   const frame = useRef<HTMLIFrameElement>(null);
   const redirecting = useRef(false);
   const [error, setError] = useState('');
+  const [authenticationRequested, setAuthenticationRequested] = useState(false);
   const failed = ['failed', 'unavailable'].includes(params.get('auth') ?? '');
+
+  useEffect(() => {
+    if (!authenticationRequested || !canAuthenticate || !origin || failed || redirecting.current)
+      return;
+    const previous = Number(sessionStorage.getItem(handoffKey));
+    if (previous && Date.now() - previous < 60_000) {
+      setError('Anatomy could not restore your session. Please try again.');
+      return;
+    }
+    redirecting.current = true;
+    sessionStorage.setItem(handoffKey, String(Date.now()));
+    authorizeAnatomy(origin, view);
+  }, [authenticationRequested, canAuthenticate, origin, view, failed]);
 
   useEffect(() => {
     if (!origin || failed) return;
     function receive(event: MessageEvent) {
       if (event.origin !== origin || event.source !== frame.current?.contentWindow) return;
       if (event.data?.type === 'vetify-anatomy:ready') {
+        setAuthenticationRequested(false);
         sessionStorage.removeItem(handoffKey);
         notifyAnatomy('ready');
       } else if (event.data?.type === 'vetify-anatomy:authenticate' && !redirecting.current) {
-        const previous = Number(sessionStorage.getItem(handoffKey));
-        if (previous && Date.now() - previous < 60_000) {
-          setError('Anatomy could not restore your session. Please try again.');
-          return;
-        }
-        redirecting.current = true;
-        sessionStorage.setItem(handoffKey, String(Date.now()));
-        authorizeAnatomy(origin!, view);
+        setAuthenticationRequested(true);
       }
     }
     window.addEventListener('message', receive);
@@ -51,6 +59,7 @@ export default function AnatomyPage() {
             sessionStorage.removeItem(handoffKey);
             notifyAnatomy('retry');
             redirecting.current = false;
+            setAuthenticationRequested(false);
             setError('');
             const next = new URLSearchParams(params);
             next.delete('auth');
@@ -78,7 +87,7 @@ export default function AnatomyPage() {
         src={source.href}
         className="block h-full w-full border-0"
         referrerPolicy="strict-origin"
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       />
     </main>
   );
