@@ -63,7 +63,7 @@ describe('shared Anatomy sign-in continuation', () => {
   it('restores a browser session and submits consent only to its fixed main interaction', async () => {
     show();
     const button = await screen.findByRole('button', { name: 'Continue' });
-    expect(refreshSession).toHaveBeenCalledWith({ fresh: true });
+    expect(refreshSession).toHaveBeenCalledWith();
     expect(setSession).toHaveBeenCalledWith({ user, accessToken: 'token' });
     expect(button.closest('form')).toHaveAttribute(
       'action',
@@ -71,9 +71,18 @@ describe('shared Anatomy sign-in continuation', () => {
     );
     expect(button.closest('form')).toHaveAttribute('method', 'post');
     expect(screen.getByText(/owner@example.com/)).toBeInTheDocument();
-    await waitFor(() =>
-      expect(HTMLFormElement.prototype.requestSubmit).toHaveBeenCalledWith(button)
-    );
+    await waitFor(() => expect(HTMLFormElement.prototype.requestSubmit).toHaveBeenCalledWith());
+    // Automatic/native submit has no clicked button. The decision must be a
+    // successful form control even without a submitter.
+    expect(new FormData(button.closest('form')!).getAll('decision')).toEqual(['allow']);
+  });
+
+  it('submits an explicit denial when cancel is clicked', async () => {
+    show();
+    const cancel = await screen.findByRole('button', { name: 'Cancel' });
+    cancel.closest('form')!.addEventListener('submit', (event) => event.preventDefault());
+    fireEvent.click(cancel);
+    expect(new FormData(cancel.closest('form')!).getAll('decision')).toEqual(['deny']);
   });
 
   it('preserves the interaction when an anonymous user needs existing login', async () => {
@@ -97,6 +106,12 @@ describe('shared Anatomy sign-in continuation', () => {
     show();
     expect(await screen.findByRole('alert')).toHaveTextContent('This account is banned.');
     expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
+  });
+  it('keeps a network failure on the continuation page instead of sending the user to login', async () => {
+    vi.mocked(refreshSession).mockRejectedValue(new TypeError('Failed to fetch'));
+    show();
+    expect(await screen.findByRole('alert')).toHaveTextContent('sign-in is unavailable');
+    expect(screen.queryByText(`/login return: ${resume}`)).not.toBeInTheDocument();
   });
 
   it('rejects malformed interactions without reading a session or creating a form', () => {

@@ -52,6 +52,10 @@ describe('Anatomy inside main navigation', () => {
       'http://localhost:5176/bird/nervous?embed=1'
     );
     expect(screen.queryByText('Open Anatomy')).not.toBeInTheDocument();
+    const sandbox = screen.getByTitle('Vetify Anatomy viewer').getAttribute('sandbox')!.split(' ');
+    expect(sandbox).toContain('allow-popups');
+    expect(sandbox).toContain('allow-popups-to-escape-sandbox');
+    expect(sandbox).not.toContain('allow-top-navigation');
   });
   it('accepts authentication requests only from the configured iframe window and origin', () => {
     show();
@@ -62,6 +66,23 @@ describe('Anatomy inside main navigation', () => {
     expect(authorizeAnatomy).toHaveBeenCalledWith('http://localhost:5176', '/');
     message('vetify-anatomy:authenticate');
     expect(authorizeAnatomy).toHaveBeenCalledOnce();
+  });
+  it('waits for main session validation before starting a requested handoff', () => {
+    const page = render(
+      <MemoryRouter>
+        <AnatomyPage canAuthenticate={false} />
+      </MemoryRouter>
+    );
+    message('vetify-anatomy:authenticate');
+    expect(authorizeAnatomy).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(handoffKey)).toBeNull();
+    page.rerender(
+      <MemoryRouter>
+        <AnatomyPage canAuthenticate />
+      </MemoryRouter>
+    );
+    expect(authorizeAnatomy).toHaveBeenCalledOnce();
+    expect(authorizeAnatomy).toHaveBeenCalledWith('http://localhost:5176', '/');
   });
   it('stops repeated automatic redirects and allows an explicit retry', () => {
     sessionStorage.setItem(handoffKey, String(Date.now()));
