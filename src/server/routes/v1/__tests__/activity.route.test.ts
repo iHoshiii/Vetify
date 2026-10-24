@@ -13,10 +13,13 @@ import { insertUser } from '../../../models/users';
 import { signAccessToken } from '../../../services/auth.service';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
 
-// Same reason as the chat route's own tests: the gate is what matters here, and a
-// real Bedrock call would cost money and need AWS credentials.
+// Keep both Bedrock calls out of these activity tests: topic classification and
+// reply generation would otherwise cost money and need AWS credentials.
 vi.mock('../../../services/chat.service', () => ({
   generateReply: vi.fn().mockResolvedValue('a mock reply'),
+}));
+vi.mock('../../../services/chat-topic.service', () => ({
+  isVeterinaryTopic: vi.fn().mockResolvedValue(true),
 }));
 
 const app = createApp();
@@ -113,7 +116,9 @@ describe('chat activity', () => {
     agent.post('/api/v1/chat').send({ message: 'is my dog ok?' });
 
   it('logs an anonymous question against the quota cookie, not a user', async () => {
-    await ask(request.agent(app));
+    const res = await ask(request.agent(app));
+    expect(res.status).toBe(200);
+    expect(res.body.reply).toBe('a mock reply');
 
     const [event] = await events();
     expect(event).toMatchObject({
@@ -134,10 +139,12 @@ describe('chat activity', () => {
       role: 'user',
     });
 
-    await request(app)
+    const res = await request(app)
       .post('/api/v1/chat')
       .set('Authorization', `Bearer ${token}`)
-      .send({ message: 'hello' });
+      .send({ message: 'is my dog ok?' });
+    expect(res.status).toBe(200);
+    expect(res.body.reply).toBe('a mock reply');
 
     const [event] = await events();
     expect(event.user).toEqual(user._id);
@@ -146,7 +153,11 @@ describe('chat activity', () => {
 
   it('logs nothing for a question turned away at the allowance', async () => {
     const agent = request.agent(app);
-    for (let i = 0; i < FREE_ANON_QUERIES; i++) await ask(agent);
+    for (let i = 0; i < FREE_ANON_QUERIES; i++) {
+      const res = await ask(agent);
+      expect(res.status).toBe(200);
+      expect(res.body.reply).toBe('a mock reply');
+    }
 
     const refused = await ask(agent);
     expect(refused.status).toBe(429);
