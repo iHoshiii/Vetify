@@ -24,6 +24,23 @@ describe('chat topic classifier', () => {
     await expect(isVeterinaryTopic('My dog needs health advice.')).resolves.toBe(false);
   });
 
+  it('classifies the fever message instead of rejecting it locally', async () => {
+    send.mockResolvedValue({ output: { message: { content: [{ text: 'VETERINARY' }] } } });
+
+    await expect(isVeterinaryTopic('my dog have fever')).resolves.toBe(true);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0][0].input.messages).toEqual([
+      { role: 'user', content: [{ text: '<message>my dog have fever</message>' }] },
+    ]);
+  });
+
+  it('still declines animal facts when the classifier marks them out of scope', async () => {
+    send.mockResolvedValue({ output: { message: { content: [{ text: 'OUT_OF_SCOPE' }] } } });
+
+    await expect(isVeterinaryTopic('what are dogs')).resolves.toBe(false);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it('denies clear non-veterinary topics without calling the classifier', async () => {
     await expect(isVeterinaryTopic('Tell me a law from the Philippines.')).resolves.toBe(false);
     expect(send).not.toHaveBeenCalled();

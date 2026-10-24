@@ -8,6 +8,13 @@ describe('chat scope', () => {
     expect(mightBeVeterinaryQuestion('My bird stopped eating. Should I be worried?')).toBe(true);
   });
 
+  it.each(['my dog have fever', 'My cat is bleeding.', 'My rabbit seems lethargic.'])(
+    'passes animal concerns to the topic classifier: %s',
+    (message) => {
+      expect(mightBeVeterinaryQuestion(message)).toBe(true);
+    }
+  );
+
   it('requires each message to identify a veterinary topic', () => {
     expect(mightBeVeterinaryQuestion('How often should I do that?')).toBe(false);
   });
