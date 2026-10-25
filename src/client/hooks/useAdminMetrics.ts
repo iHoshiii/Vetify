@@ -1,14 +1,12 @@
 import {
   getMetricsBreakdown,
   getMetricsOverview,
-  getMetricsTimeseries,
   getMetricsProviderTimeseries,
   type MetricsBreakdown,
   type MetricsOverview,
-  type MetricsTimeseries,
   type MetricsProviderTimeseries,
 } from '@/services/admin.service';
-import type { BreakdownDimension, MetricSeries, UserRole } from '@shared/schemas';
+import type { BreakdownDimension, UserRole } from '@shared/schemas';
 import { useQuery } from '@tanstack/react-query';
 
 import { METRICS_STALE_TIME, adminKeys, retryUnlessRefused } from './admin-keys';
@@ -19,23 +17,6 @@ export function useMetricsOverview(days?: number) {
     queryKey: adminKeys.overview(days),
     queryFn: ({ signal }) => getMetricsOverview(days, signal),
     staleTime: METRICS_STALE_TIME,
-    retry: retryUnlessRefused,
-  });
-}
-
-/**
- * One chart line.
- *
- * `placeholderData` keeps the current line drawn while a longer window loads, so
- * switching from 7 days to 30 redraws rather than blanking — the axis moves, which
- * is enough to show something happened.
- */
-export function useMetricsTimeseries(metric: MetricSeries, days?: number) {
-  return useQuery<MetricsTimeseries>({
-    queryKey: adminKeys.timeseries(metric, days),
-    queryFn: ({ signal }) => getMetricsTimeseries({ metric, days }, signal),
-    staleTime: METRICS_STALE_TIME,
-    placeholderData: (previous) => previous,
     retry: retryUnlessRefused,
   });
 }

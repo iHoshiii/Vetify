@@ -3,8 +3,8 @@ import { refreshAccessToken } from './auth-refresh';
 import { ApiError, type ApiErrorBody } from './api-errors';
 export { ApiError, type ApiErrorBody } from './api-errors';
 import { handleEmailVerificationRequired } from '@/lib/email-verification-access';
-
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
+import { API_BASE_URL } from './api-config';
+export { API_BASE_URL } from './api-config';
 
 type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 

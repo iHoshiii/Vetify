@@ -42,7 +42,7 @@ export const generalLimiter = rateLimit({
       /^\/api\/v1\/messages\/[^/]+\/messages(?:\?|$)/.test(req.originalUrl)),
 });
 
-// Gemini calls cost money and have upstream quotas, so they get their own cap.
+// AI calls cost money and have upstream quotas, so they get their own cap.
 export const chatLimiter = rateLimit({
   store: lambdaRateLimitStore('chatLimiter'),
   windowMs: 60 * 1000,
