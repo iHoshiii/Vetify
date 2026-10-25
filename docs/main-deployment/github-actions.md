@@ -1,5 +1,9 @@
 # GitHub Actions deployment
 
+Reviewed 25 October 2026 against `.github/workflows/ci.yml`,
+`deploy-aws.yml`, and the deployment scripts. Resource names below are examples
+or stack names; obtain environment-specific IDs from your own stack outputs.
+
 Main Vetify uses GitHub Actions for CI and AWS deployment. The separate Books,
 Blogs, Anatomy and Meal Planner applications are not deployed by these workflows.
 The production region is Sydney, `ap-southeast-2`.
@@ -8,7 +12,8 @@ The production region is Sydney, `ap-southeast-2`.
 
 1. Push or merge a change to `main`. Feature branches and pull requests do not
    trigger CI. There is no manual workflow trigger.
-2. CI runs full lint, types, unit tests, browser tests and standalone startup.
+2. CI runs lint, types, public-browser-setting guards, unit tests, browser tests,
+   and standalone production startup.
 3. The AWS job builds Lambda, runs its isolated runtime smoke, validates templates,
    and builds the production frontend using `deploy/github/frontend-build.env`.
 4. Only after all checks pass, CI uploads the tested `aws-release` artifact.
@@ -36,7 +41,7 @@ user policy cannot retrieve it directly. Existing stack IAM roles are read-only
 to the execution role, so IAM changes still require administrator review.
 
 ```powershell
-aws cloudformation deploy --template-file deploy/github/access-key-bootstrap.yaml --stack-name vetify-github-access-keys --region ap-southeast-2 --profile vetify-deploy --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --parameter-overrides ArtifactBucket=aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu AppSecretArn=arn:aws:secretsmanager:ap-southeast-2:223703743978:secret:vetify/prod/app-UzxTQF GitHubUserName=github-actions-deployer
+aws cloudformation deploy --template-file deploy/github/access-key-bootstrap.yaml --stack-name vetify-github-access-keys --region ap-southeast-2 --profile vetify-deploy --capabilities CAPABILITY_NAMED_IAM --no-execute-changeset --parameter-overrides ArtifactBucket=REPLACE_ARTIFACT_BUCKET AppSecretArn=REPLACE_APP_SECRET_ARN GitHubUserName=github-actions-deployer
 ```
 
 Review the change set, execute it, and wait for completion. Read the
@@ -46,7 +51,7 @@ setup for accounts that permit federation and is not used by the active workflow
 
 ## GitHub repository settings
 
-Open `iHoshiii/Vetify` → Settings → Secrets and variables → Actions → Secrets.
+Open the repository's Settings > Secrets and variables > Actions > Secrets.
 Create these **repository secrets** under the Secrets tab:
 
 | Name                    | Value                                                         |
@@ -54,7 +59,7 @@ Create these **repository secrets** under the Secrets tab:
 | `AWS_ACCESS_KEY_ID`     | Access key ID for `github-actions-deployer`                   |
 | `AWS_SECRET_ACCESS_KEY` | Matching secret access key                                    |
 | `AWS_CFN_ROLE_ARN`      | Bootstrap output `CloudFormationRoleArn`                      |
-| `AWS_ARTIFACT_BUCKET`   | `aws-sam-cli-managed-default-samclisourcebucket-4ig1icbdtwuu` |
+| `AWS_ARTIFACT_BUCKET`   | Existing SAM artifact bucket from your deployment environment |
 
 Keep MongoDB, OAuth, mail and TURN secrets in AWS Secrets Manager.
 Bedrock uses the Lambda execution role rather than an application API key.
@@ -73,7 +78,7 @@ Review and merge this branch through a pull request. With main-only execution,
 these jobs run after merging. Do not require their status checks before merging
 pull requests, since those requests do not trigger the workflow. CI failure still
 blocks deployment after the merge. Branch protection can continue to require review.
-Open Actions → CI to watch the automatic run after merging into `main`.
+Open Actions > CI to watch the automatic run after merging into `main`.
 Deployment runs after all validation jobs pass, without an enable variable.
 
 VS Code can report `Unable to find reusable workflow` for valid local workflow
@@ -88,8 +93,10 @@ passed explicitly by CI. Validate both files with actionlint before merging.
 
 Edit only public frontend settings in `deploy/github/frontend-build.env`.
 Keep `/api/v1` and the exact backend `RealtimeUrl` output. A mismatched WebSocket
-URL stops deployment before publishing the frontend. Enable subsystem links only
-after their independent applications are ready.
+URL stops deployment before publishing the frontend. The builder permits only
+the six settings in [configuration](configuration.md); it excludes unknown
+ambient `VITE_*` names and rejects URLs carrying credentials or query strings.
+Enable subsystem links only after their independent applications are ready.
 
 Deployment preserves the current stack's `AppSecretArn`, `ConfigRevision` and
 certificate ARN. Rotating a Secrets Manager value still requires incrementing the
@@ -110,13 +117,13 @@ delivery, and two-user chat and video calls.
 
 ## Monitor the running application
 
-1. In AWS, select Sydney (`ap-southeast-2`) and open Lambda → Functions.
+1. In AWS, select Sydney (`ap-southeast-2`) and open Lambda > Functions.
    Open a `vetify-backend-*` function, then Monitor. Check Errors, Throttles,
    Invocations and Duration. Choose View CloudWatch logs to investigate failures.
    The shared application log group is `/aws/lambda/vetify-backend`.
-2. Open API Gateway → HTTP API `qnjnr8fwf5` → Monitoring. Watch `5xx`, `Latency`
+2. Open API Gateway > the HTTP API from your backend stack > Monitoring. Watch `5xx`, `Latency`
    and `IntegrationLatency`; a handled HTTP error may not count as a Lambda error.
-3. Open CloudFront → distribution `E3UQC3URTVYDHE` → Monitoring. Check requests
+3. Open CloudFront > the distribution from your frontend stack > Monitoring. Check requests
    and the 4xx/5xx error rates for website delivery.
 4. Open `https://vetify.page/api/v1/health`. A healthy database connection returns
    JSON containing `"status":"ok"` and `"db":"connected"`.

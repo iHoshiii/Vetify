@@ -1,5 +1,8 @@
 # AWS preparation, from the beginning
 
+Reviewed 25 October 2026. For an existing deployment, check
+[GitHub automation](github-actions.md) before creating resources manually.
+
 Only main Vetify is being deployed. Four feature repositories already exist
 locally and deploy separately later. Read [the extraction gate](extraction-checklist.md)
 first; extracted feature implementations are excluded from main's package.
@@ -61,13 +64,15 @@ account ID before deploying. Do not paste access keys into code or chat.
 4. Lambda rate counters use MongoDB across instances. Verify production email
    delivery, secret sizes and error handling before accepting users.
 5. Test main auth/professional/appointments/realtime regression and fix relevant
-   failures. Earlier focused checks did not make the full test suite green.
+   failures. Use the [audit](repository-cleanup-audit.md) for dated local evidence;
+   release acceptance still checks the deployed revision.
 6. Configure/test TURN for real video calls across networks. API Gateway carries
    signalling, not the media stream. A relay/provider is a separate cost.
 
 Main can launch while future feature links are unavailable. Coordinate the
-Planner/main introspection version mismatch and complete shared web SSO before
-enabling the respective integrations; no need to deploy the feature apps now.
+Planner/main introspection version mismatch before native integration. Configure
+and jointly validate the optional Anatomy/Books OIDC clients before enabling
+their sign-in. Blog registration is separate; feature apps deploy independently.
 
 ## 4. Configure the domain's DNS
 
@@ -116,6 +121,10 @@ Plaintext. Use the field names in `deploy/serverless/app-secret.example.json`.
 Fill its placeholders privately, keeping every field the template references,
 including blank strings for genuinely disabled optional providers.
 Name it `vetify/prod/app` and save its ARN for SAM's `AppSecretArn` parameter.
+
+For optional OIDC or Books worker checks, follow the separate
+[configuration and flag requirements](configuration.md). Do not enable a flag
+until its private fields and the receiving application's settings are ready.
 
 Generate independent random values locally for JWT and OAuth state secrets:
 

@@ -1,8 +1,12 @@
 # Books worker credential
 
+Reviewed 25 October 2026. This credential is server-only and independent of
+Books' optional OIDC client secret.
+
 Main implements `POST /api/v1/auth/books-capabilities` for Books worker approval
-checks. This does not implement Books browser sign-in, PKCE handoff or version-2
-user-token introspection; those remain separate integration requirements.
+checks. Browser sign-in uses the separately configured
+[Books OIDC client](anatomy-oidc.md). This endpoint does not exchange user tokens
+or upgrade main's native introspection contract.
 
 ## Get MAIN_AUTH_SERVICE_TOKEN
 
@@ -64,4 +68,4 @@ Validity is capped by the service credential's expiry and 30 seconds.
 
 Route tests cover credential rejection, expiry/rotation, audience, data
 minimization, disabled/deleted authors, approval status and immediate revocation.
-Joint production Books publication and sign-in acceptance are still required.
+Joint production Books publication and OIDC sign-in acceptance are still required.

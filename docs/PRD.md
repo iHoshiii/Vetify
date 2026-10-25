@@ -1,6 +1,6 @@
 # Main Vetify product requirements
 
-Updated 14 October 2026. This document supersedes the historical Word scope for
+Reviewed 25 October 2026. This document supersedes the historical Word scope for
 main implementation. Technical status is in [TDD](TDD.md); deployment gates are
 in [the main guide](main-deployment/README.md).
 
@@ -10,7 +10,8 @@ Main Vetify connects pet owners to veterinary guidance, verified professionals,
 appointments and communications. It is the account authority for separate apps.
 Meal Planner, Books, Anatomy and Blog are independently owned features; main
 retains launch links and their approved authentication/capability interfaces.
-Books/Anatomy are extracted, with protected launch pages remaining in main.
+Books/Anatomy feature implementations are extracted. Main retains launch routes
+and the Anatomy authentication/host integration.
 Planner has a public app introduction with download/photo placeholders and account
 guidance; its feature code is extracted. Blog also has external launch pages, with its implementation removed from main.
 
@@ -65,13 +66,22 @@ Calls need clear camera/microphone/network states, reconnect and explicit hangup
 Signalling runs through API Gateway WebSockets in production; WebRTC carries media.
 Test TURN-assisted calls across networks, not just local fake-media playback.
 
-### AI Vet Assistant
+### Kupa, the AI veterinary assistant
 
-Provide veterinary-scoped general guidance with clear limits and reviewed urgent
-escalation. It must not represent generated text as a definitive diagnosis.
-Preserve current request validation, cancellation, allowance policy, provider
-failure handling and appropriate moderation. Future paid AI entitlements are a
-policy/integration decision, not an assumed implemented purchase workflow.
+Answer pet and veterinary questions about healthcare, care, anatomy, nutrition,
+behavior, and animal education, including short symptom reports and long or
+contextual questions. Accept brief greetings and questions about Kupa's identity.
+Decide scope semantically using the shared policy, without keyword gates.
+
+Decline programming and unrelated tasks, including pet-themed software and mixed
+requests. A greeting or earlier veterinary discussion cannot authorize them.
+Classifier failure must produce a retryable service error rather than a false
+topic refusal. Generated guidance must not claim a definitive diagnosis and
+should escalate urgent animal concerns appropriately.
+
+Preserve validation, cancellation, allowances, and provider-failure handling.
+Future paid AI entitlements require a separate policy and integration decision.
+See [Kupa behavior and evaluation](main-deployment/bedrock-chat.md).
 
 ### Settings and administration
 
@@ -85,8 +95,10 @@ and preserve last-admin protections. Dashboards must work without external apps.
 Main exposes central identity and approved capabilities, not direct database
 access. Use immutable main user IDs. An unavailable external app cannot block
 main login, booking, messaging or administration.
-External web SSO remains pending; Planner's version 2 introspection requirements
-must be coordinated with main's current version 1 response.
+Optional OIDC sign-in is implemented for Anatomy and Books. Books also has a
+separate worker approval endpoint. Enable each integration only after joint
+acceptance. Blog registration and Planner's version 2 introspection requirements
+remain coordinated work; main's native introspection currently returns version 1.
 
 ## Quality and launch acceptance
 

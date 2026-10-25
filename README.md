@@ -1,72 +1,71 @@
-# Vetify main system
+# Vetify
 
 Vetify connects pet owners with veterinary guidance and verified professionals.
 This repository owns the main website, central accounts, professional onboarding,
-clinic discovery, appointments, messaging, video-call signalling and AI assistant.
+clinic discovery, appointments, messaging, video-call signalling, and **Kupa**, the
+AI veterinary assistant.
 
-Meal Planner, Books, Anatomy and Blog belong to separate repositories. Main
-provides their account authority and launch links; each owns its feature data.
-Books and Anatomy implementations have been removed from this source tree.
-Meal Planner now has a public app introduction at `/planner`; its feature code
-has been removed. Blog UI, APIs, moderation and database indexing are also extracted.
-External entry pages use VITE_BOOKS_ORIGIN, VITE_ANATOMY_ORIGIN and VITE_BLOGS_ORIGIN;
-blank values show unavailable states. See [the extraction record](docs/main-deployment/books-anatomy-extraction.md).
-Set `VITE_BLOGS_ORIGIN` to the separate Blog app's origin, without a path.
-Main `/blogs`, `/blogs/:slug` and `/admin/blogs` open its feed, article and moderation pages.
-Blog account authentication is handled by that app. Main passes no credentials in launch URLs.
-Current build output is not yet a verified main-only release.
+Meal Planner, Books, Anatomy, and Blog live in separate repositories. Main owns
+their approved identity interfaces and launch pages. Each app owns its feature
+data, assets, and deployment. See [repository boundaries](MIGRATION_PLAN.md).
 
-## Local development
+## Develop locally
 
-Use Node 24 and npm. On Windows, use `npm.cmd` if PowerShell blocks npm.ps1.
-Configure local `.env` using `.env.example`; keep credentials private.
+Use Node 24 and the committed npm lockfile. Create a private `.env` from
+[.env.example](.env.example), then supply your development settings. On Windows,
+use `npm.cmd` if PowerShell blocks the npm script wrapper.
 
 ```powershell
 npm.cmd ci
 npm.cmd run dev
 ```
 
-Client: `http://localhost:5173`. API: `http://localhost:8000/api/v1`.
-Vite proxies `/api` and local Socket.IO. The server command explicitly selects
-the server TypeScript config so shared imports resolve correctly.
+The client runs at `http://localhost:5173`; the API runs at
+`http://localhost:8000/api/v1`. Vite proxies `/api` and local Socket.IO traffic.
+The server uses the official MongoDB driver. There is no Prisma setup step.
 
-## Architecture and deployment
-
-- React/Vite/TypeScript/Tailwind client and Express/TypeScript API.
-- Official MongoDB driver and shared Zod contracts.
-- Central password/social authentication, email codes and explicit account linking.
-- Local Socket.IO; production API Gateway WebSockets with Lambda handlers.
-- WebRTC media, with TURN where direct connectivity fails.
-- Selected main hosting: private S3/CloudFront and API Gateway/Lambda.
-- `.env` is local; ignored `env.prod` supplies public frontend build settings.
-  Production server secrets come from Secrets Manager through the SAM template.
-
-Private main uploads, durable appointment jobs and subsystem extraction need
-completion before production launch. Shared external web sign-in is also pending.
-Preparing or building code does not establish a live AWS deployment.
-
-## Useful checks
+## Validate changes
 
 ```powershell
-npm.cmd run typecheck:client:runtime
-npm.cmd run test
-npm.cmd run build:lambda
-npm.cmd run test:lambda
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run build
 ```
 
-Focused auth/realtime checks passed earlier. The full test suite still has known
-failures; report current results and resolve release-relevant failures.
-See [commands](docs/commands.md) for frontend/server build and test commands.
+Ordinary tests mock AI provider calls and use isolated database fixtures. The
+[command reference](docs/commands.md) covers browser, packaged-runtime, and live
+Bedrock checks. Current cleanup evidence and remaining dependency advisories are
+recorded in the [repository audit](docs/main-deployment/repository-cleanup-audit.md).
 
-## Main documentation
+## Production configuration
+
+Main's infrastructure templates use private S3/CloudFront, HTTP and WebSocket API
+Gateway, and Lambda. Server credentials belong in AWS Secrets Manager. Build the
+frontend using an ignored `env.prod` or the committed public CI settings:
+
+```powershell
+npm.cmd run build:client:prod -- --env-file=env.prod
+```
+
+The production builder exposes only six named public settings. Never put server
+credentials in a `VITE_*` variable. API addresses and a dedicated browser basemap
+key are intentionally visible. See [configuration boundaries](docs/main-deployment/configuration.md).
+
+Pushes to `main` run CI and automatically deploy after validation succeeds.
+Feature branches do not run those workflows. Local builds and commits do not
+update the live site. Review [GitHub deployment](docs/main-deployment/github-actions.md)
+before merging a release.
+
+## Documentation
 
 - [Documentation index](docs/README.md)
-- [Product requirements](docs/PRD.md) and [technical design](docs/TDD.md)
-- [Architecture](docs/architecture.md) and [user flows](docs/flowchart.md)
-- [Delivery plan](docs/masterplan.md) and [main business scope](docs/business-idea.md)
-- [Extraction and integration plan](MIGRATION_PLAN.md)
-- [Main AWS deployment guide](docs/main-deployment/README.md)
-- [Implemented realtime design](docs/serverless-realtime.md)
+- [Product requirements](docs/PRD.md), [technical design](docs/TDD.md), and [architecture](docs/architecture.md)
+- [User flows](docs/flowchart.md) and [delivery plan](docs/masterplan.md)
+- [Kupa behavior and Bedrock setup](docs/main-deployment/bedrock-chat.md)
+- [Shared authentication](docs/main-deployment/shared-auth.md)
+- [AWS deployment and acceptance](docs/main-deployment/README.md)
 
-Feature descriptions and setup prompts live in each feature repository. Main
-documentation records only their boundaries and interfaces needed by this app.
+Deployment acceptance still covers real inbox delivery, external app sign-in,
+cross-network calls, monitoring, and production configuration. Passing local
+tests does not establish the state of deployed services.

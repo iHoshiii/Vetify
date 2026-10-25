@@ -1,6 +1,9 @@
 # Vetify realtime on API Gateway WebSockets
 
-This migration keeps React on S3/CloudFront, HTTP on API Gateway/Lambda, and accounts/messages in the main Vetify MongoDB database. WebRTC carries video; a TURN relay is still needed for networks that cannot connect directly. AWS has not been deployed by this change.
+Reviewed 25 October 2026. React is served through S3/CloudFront, HTTP through API
+Gateway/Lambda, and accounts/messages through main's MongoDB database. WebRTC
+carries media; TURN relays connections that cannot connect directly. This document
+describes the implementation and required acceptance, not live deployment health.
 
 ## What is implemented
 
@@ -42,10 +45,12 @@ npm.cmd run typecheck:client:runtime
 npm.cmd run test:lambda
 node node_modules/vitest/vitest.mjs run --project server src/server/realtime/gateway/__tests__
 node node_modules/vitest/vitest.mjs run --project client src/client/__tests__/gateway-socket.test.ts src/client/__tests__/call-reconnect.test.ts
-npm.cmd run build:client:prod -- --env-file=env.prod.example
+npm.cmd run build:client:prod -- --env-file=tests/responsive/build.env
 ```
 
-The tests use temporary MongoDB and a mocked gateway transport. They do not use AWS keys, send real email or query the main database. Broad repository typechecking still includes obsolete link-verification files/tests from the prior merge; build:lambda typechecks the actual deployment import graph.
+The tests use temporary MongoDB and a mocked gateway transport. They do not use
+AWS keys, send real email, or query the main database. Full typechecking and the
+persistent server build are supported. Lambda also checks its runtime graph.
 
 ## Prepare AWS deployment
 
@@ -74,14 +79,24 @@ Read the stack outputs:
 aws cloudformation describe-stacks --stack-name vetify-backend --region ap-southeast-2 --profile vetify-deploy --query "Stacks[0].Outputs" --output table
 ```
 
-In your private env.prod set:
+In ignored `env.prod`, set these public addresses:
 
 ```dotenv
 VITE_API_URL=/api/v1
 VITE_REALTIME_URL=wss://REPLACE_API_ID.execute-api.ap-southeast-2.amazonaws.com/prod
 ```
 
-Rebuild with `npm.cmd run build:client:prod`. Upload dist/client to the private frontend S3 bucket. CloudFront serves that bucket using origin access control and forwards `/api/*` to the HttpApiUrl hostname, with no API caching and the necessary headers/cookies/query strings forwarded. Keep the public website and HTTP API on the same site for the existing refresh cookie/OAuth flow. Register the existing provider callbacks under https://vetify.page/api/v1/auth/PROVIDER/callback.
+Rebuild with `npm.cmd run build:client:prod -- --env-file=env.prod`. Upload only
+`dist/client` to the private frontend S3 bucket. CloudFront forwards `/api/*` to
+the `HttpApiUrl` hostname with caching disabled and the required headers, cookies,
+and query strings. Keep the website and HTTP API on the same site for refresh
+cookies and OAuth. Register provider callbacks under
+`https://vetify.page/api/v1/auth/PROVIDER/callback`.
+
+See [configuration](main-deployment/configuration.md) for the public build
+allowlist. TURN credentials are supplied at runtime only after an authorized
+appointment call join. They are visible to the authorized participant's browser
+because WebRTC needs them; they are not embedded in public build output.
 
 The browser connects directly to the wss gateway endpoint. No `/socket.io` CloudFront behavior is used for this transport. REALTIME_MANAGEMENT_ENDPOINT is injected by SAM and must match that API/stage; do not put server credentials in VITE settings.
 

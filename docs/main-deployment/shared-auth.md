@@ -1,107 +1,96 @@
-# Shared accounts with separate applications and databases
+# Shared accounts and independent applications
 
-## The user experience
+Reviewed 25 October 2026. Main is the account authority. Each feature app owns its
+feature data and app session, identified by the immutable main user ID.
 
-1. A visitor opens Meal Planner, Books or an authenticated Anatomy/Blog feature.
-2. That app sends the visitor to the main Vetify sign-in screen.
-3. Main authenticates using the password or a previously linked social provider.
-   If the main session is already valid, the user can continue without entering
-   their credentials again, subject to consent and any required security checks.
-4. Main returns a short-lived, single-use authorization code to the registered app.
-5. The app exchanges it securely and creates its own session. The shared identity
-   is the immutable main user ID, not the name or email address.
-6. The feature stores only its own data with that user ID as the owner reference.
+## Current contracts
 
-Signup started from any app must create the account through main authentication.
-The existing signup code expires in five minutes, resend waits sixty seconds,
-and replacing a code invalidates the previous one. Do not create a second users
-collection or a separate password/provider database in a subsystem.
+| Interface                        | Implementation                                                                 | Boundary                                             |
+| -------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| Main browser auth                | Password/social login, verification, explicit linking, rotating refresh cookie | Main host only                                       |
+| Native handoff and introspection | `POST /api/v1/auth/introspect`, version 1                                      | Existing native registration and session checks      |
+| Shared web sign-in               | Optional OIDC provider at `/api/oidc`                                          | Anatomy; Books only when independently configured    |
+| Books worker approval            | `POST /api/v1/auth/books-capabilities`, version 2                              | Expiring service credential, current author approval |
+| Blog sign-in                     | No OIDC client registration                                                    | Separate future integration                          |
 
-An existing Google account still requires explicit linking before password,
-Facebook or TikTok login can access it. The subsystem must not merge identities
-by matching an email address. Main owns those linking checks and verification.
+These version numbers belong to different contracts. Books capability version 2
+does not make native introspection compatible with Planner v2.
 
-## Existing implementation versus required additions
+## Browser sign-in
 
-Main already has browser authentication, native authentication/session handoff,
-linked login methods and `POST /api/v1/auth/introspect`.
-The Books worker [capability endpoint and credential generator](books-capabilities.md)
-are implemented separately; they do not complete Books web sign-in.
-Introspection returns user ID, role/status, subscription, region and a validity
-window capped at thirty seconds. It checks an attached native session.
+1. The feature starts Authorization Code sign-in using its registered client,
+   exact callback, state, nonce, and S256 PKCE.
+2. Main authenticates through its existing login/signup flow. A valid verified
+   main browser session can continue without entering credentials again.
+3. Main issues a short-lived single-use code bound to the client and callback.
+4. The feature backend exchanges the code and establishes its own session.
+5. Protected feature requests check the current identity and revocation contract.
 
-An optional Anatomy OIDC provider is now implemented separately at `/api/oidc`.
-See [Anatomy OIDC setup and release checks](anatomy-oidc.md). It must be configured,
-reviewed and jointly verified before production use.
+The provider supports Anatomy and an optional Books registration. Credentials
+and callbacks are separate; a token for one client cannot authorize the other.
+See [provider setup, flags, and joint tests](anatomy-oidc.md).
 
-The existing `vetify-meal-planner` repository now requires introspection version 2;
-main still returns version 1. Its version 2 contract requires a verified issuer,
-Planner audience and provider/email-verification attributes. Align main and
-Planner configuration and run joint tests before declaring compatibility.
-Preserve existing browser/native flows while adding this versioned boundary.
+Main signup uses six-digit email codes, five-minute expiry, and sixty-second
+resend cooldown. A replacement invalidates the previous code. Matching email
+addresses do not link login methods. Users prove ownership through main's
+existing explicit linking flow.
 
-This does **not** establish a complete web SSO protocol for four external apps.
-In particular, the current introspection payload does not expose professional
-approval or email verification, and the guard does not enforce a distinct
-subsystem audience/issuer or current browser session version.
-Implement and test the additions below in main before relying on them.
-Do not advertise proposed endpoints as already available.
+Main logout revokes grants bound to that browser session. Global logout
+invalidates all main browser sessions and their bound grants. Feature-local
+logout revokes that feature's token without ending other sessions.
 
-## Required main authentication work
+## Native Planner boundary
 
-- Register each client with exact allowed callback/logout URLs. Use separate
-  localhost and production registrations. Reject arbitrary return destinations.
-- Use Authorization Code with PKCE, unpredictable state, short code expiry and
-  atomic single use. Prefer a maintained OAuth/OIDC implementation over a new
-  homegrown protocol. Document how the current main identity store integrates.
-- Bind each code to client, callback and PKCE challenge. A code for Books cannot
-  be redeemed by Blog, including when requests run concurrently.
-- Issue credentials scoped to the client/audience. Do not distribute the main
-  `JWT_SECRET_ACCESS`, refresh-cookie secret, social credentials or Mongo URI.
-- For server-backed apps, store sensitive credentials server-side and use a
-  Secure, HttpOnly session cookie. Never place access tokens in callback URLs.
-- Validate expiry, active account, verified email and current session version.
-  Honor bans, deactivation, password changes and session revocation promptly.
-- Define whether logout is local or global and make that distinction visible.
-  Global logout must invalidate all applicable subsystem sessions.
-- Provide server-side introspection or asymmetric token verification plus an
-  online revocation check. Use no-store responses and bounded caching.
-- Expose verified professional capability for Books uploads and main admin
-  authority for Blog moderation. A role string alone is insufficient for Books.
-- Return only approved identity attributes. Profile display names can change;
-  ownership IDs cannot. Never grant authority from client-supplied attributes.
-- Define account deletion/export integration with each feature. Preserve shared
-  identity references while export/deletion requests are being coordinated.
-- Apply persistent abuse limits. A Lambda-local counter cannot coordinate
-  concurrent instances; verification cooldowns and grants need atomic storage.
+Native introspection returns identity, current status, subscription, region,
+token expiry, and a validity window capped at thirty seconds. An attached native
+session must still be active.
 
-## Each subsystem must enforce
+Main currently returns version 1. Planner's documented v2 requirements include
+issuer/audience and provider/email-verification attributes. Coordinate both
+repositories and run joint tests before declaring compatibility. Do not use the
+existing native introspection as a generic web SSO protocol.
 
-- Authenticate and authorize every protected API request on the server.
-- Restrict data reads/writes to the current main user ID, unless an explicitly
-  permitted moderator or administrator operation requires broader access.
-- Reject unknown audiences, wrong issuer, expired credentials, revoked sessions
-  and disabled/unverified accounts. Fail closed when authentication is unavailable.
-- Keep its Mongo user scoped to its own database. Never connect to main collections.
-- Keep cookies scoped to its own host; do not solve SSO with a broad `.vetify.page`
-  cookie or cross-app localStorage access. Configure exact HTTPS CORS origins.
-- Recheck privileges for uploads, moderation, affiliate access and other sensitive
-  writes. Do not trust cached UI state for authorization.
-- Do not treat an externally supplied email as proof that an account exists.
+## Books worker boundary
 
-## Required messages and acceptance cases
+The [Books capability endpoint](books-capabilities.md) rereads current account
+and professional approval. Its service token permits that lookup only. It does
+not sign users in, require an author browser session, or replace Books' own
+authorization immediately before publication.
 
-For a genuinely unknown account, show:
-`Create an account first to use the app.`
-For signup using an already registered identity, show:
-`Account already exist. Please login`
-These decisions come from main, which knows all registered login methods.
+Books must check the returned user ID, audience, active/verified state, current
+professional role and approval, and validity deadline. A role string alone does
+not establish verified professional authority.
 
-Test password signup in main then login from a feature, and signup initiated
-from a feature then login in main. Test Google plus explicitly linked password,
-an unlinked provider collision, expired/wrong/replayed codes, expired tokens,
-PKCE and callback tampering, disabled accounts, revoked sessions and global logout.
-Test that another user's ID, changed email or promoted client-side role cannot
-grant access. Test that removing a professional approval blocks Books uploads.
+## Rules for every app
+
+- Store feature records under immutable main IDs. Do not copy passwords,
+  authentication collections, main refresh tokens, or signing keys.
+- Use separate least-privilege database credentials. Never access main
+  collections directly.
+- Authenticate and authorize protected requests server-side. Reject wrong
+  clients, expired/revoked sessions, disabled accounts, and unverified email.
+- Keep app cookies host-scoped and server credentials outside browser builds.
+  Use exact allowed origins and callbacks.
+- Recheck privileges for sensitive writes. A cached UI role is not authority.
+- Define local and global logout clearly. Honor account/password/session changes.
+- Coordinate account export and deletion across independently owned data.
+
+Blog needs its own registration and admin authorization contract. Account
+export/deletion orchestration across apps remains separate work.
+
+## Joint acceptance
+
+Test main and feature-initiated signup, password and linked social login,
+unlinked-provider collisions, expired/replayed codes, callback/client/PKCE
+tampering, concurrent exchanges, disabled accounts, revoked sessions, password
+reset, local/global logout, and provider outages. Check that one client's token
+cannot introspect or authorize another client's session.
+
+Required unknown-account and duplicate-signup messages remain:
+`Create an account first to use the app.` and
+`Account already exist. Please login`.
+
+Use the provider's tests and the [live checklist](aws-acceptance.md) as separate
+evidence. Local protocol tests do not prove deployed credentials and cookies align.
 
 Protocol reference: [OAuth security best practice, RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
