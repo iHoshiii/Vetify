@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
+import TestingNotice from './components/common/testing-notice';
 import { ChatProvider } from './components/messaging/ChatProvider';
 import { AuthProvider } from './components/providers/AuthProvider';
 import EmailVerificationGate from './components/providers/EmailVerificationGate';
@@ -24,6 +25,7 @@ if (!container) {
 createRoot(container).render(
   <React.StrictMode>
     <BrowserRouter>
+      <TestingNotice />
       <SearchMetadata />
       <LocaleProvider>
         <AuthProvider>
