@@ -38,6 +38,7 @@
     "test:watch": "vitest",
     "test:client": "vitest run --project client",
     "test:server": "vitest run --project server",
+    "test:chat:live": "node scripts/test-chat-live.mjs",
     "test:coverage": "vitest run --coverage",
     "pretest:e2e": "npm run build:client",
     "test:e2e": "playwright test",

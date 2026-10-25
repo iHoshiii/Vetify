@@ -72,8 +72,41 @@ not change the live website. Rebuild and validate before publishing a rollback.
 
 ## Runtime limits and monitoring
 
-Converse requests have a 22-second deadline, at most two SDK attempts, and the
-existing 2,048-token maximum response length. Existing chat rate limits remain.
+### Veterinary scope checks
+
+Every chat message is classified semantically before reply generation; there is
+no animal-name or symptom keyword filter. Classification and generation share
+the policy in `src/server/services/chat-scope.ts`. Pet health, care, anatomy,
+physiology, general pet education, and contextual veterinary follow-ups are in
+scope. Programming requests, including pet-themed software, and unrelated or
+mixed requests are declined. Conversation history resolves follow-ups without
+authorizing a new unrelated topic.
+
+An unavailable or malformed classification returns HTTP 503 and never reaches
+reply generation. It does not label a valid pet question as unrelated.
+
+`npm test` checks routing and provider-response handling with mocked AWS calls.
+To evaluate actual Nova Lite decisions against the human-labelled short, long,
+multilingual, contextual, and adversarial cases, run:
+
+```powershell
+aws login --profile vetify-deploy --region ap-southeast-2
+$env:AWS_PROFILE = 'vetify-deploy'
+npm run test:chat:live
+```
+
+The live suite incurs Bedrock usage charges and spaces calls for the account's
+10 RPM on-demand limit. It also prints six real replies for wording review.
+Passing these cases measures the tested behavior; it does not guarantee perfect
+classification of every possible message. Run it again after changing the scope
+policy or model. Ordinary CI skips live calls.
+
+### Provider limits
+
+Reply-generation Converse requests have a 22-second deadline, at most two SDK
+attempts, and the existing 2,048-token maximum response length. Classification
+has its own eight-second deadline, deterministic sampling, and a 32-token limit
+for its two possible labels. Existing chat rate limits remain.
 The backend returns the same reply/error response format and retains LangSmith
 tracing with Bedrock provider tags. Provider error details are not returned to users.
 Tracing receives message text, history and model selection without account/session identifiers.
