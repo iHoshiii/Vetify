@@ -1,48 +1,57 @@
-# Main Vetify documentation
+# Vetify documentation
 
-Current scope: main website and central account authority only.
-Updated 14 October 2026. Selected hosting is S3/CloudFront with API Gateway/Lambda.
-Feature descriptions and setup prompts are maintained in their own repositories.
+Reviewed against this repository on **25 October 2026**. These Markdown documents
+describe main Vetify and the interfaces it owns. Detailed feature designs belong
+to their separate repositories.
 
 ## Product and engineering
 
-| Document                                | Purpose                                                   |
-| --------------------------------------- | --------------------------------------------------------- |
-| [PRD](PRD.md)                           | Main requirements, actors, permissions and acceptance     |
-| [TDD](TDD.md)                           | Current implementation, target release and technical gaps |
-| [Architecture](architecture.md)         | Main components, ownership and external interfaces        |
-| [Flows](flowchart.md)                   | Main account, booking, communications and launch flows    |
-| [Business scope](business-idea.md)      | Main customers, value and operational assumptions         |
-| [Delivery plan](masterplan.md)          | Remaining work and release gates                          |
-| [Commands](commands.md)                 | Actual package scripts for development and checks         |
-| [Extraction plan](../MIGRATION_PLAN.md) | Main boundaries and coordinated integration work          |
+| Document                                 | Purpose                                                  |
+| ---------------------------------------- | -------------------------------------------------------- |
+| [PRD](PRD.md)                            | Product scope, actors, permissions, and acceptance       |
+| [Technical design](TDD.md)               | Implemented stack, authentication, storage, jobs, and AI |
+| [Architecture](architecture.md)          | Runtime components and ownership                         |
+| [Flows](flowchart.md)                    | Accounts, consultations, Kupa, and external launches     |
+| [Business scope](business-idea.md)       | Customers, operating assumptions, and measures           |
+| [Delivery plan](masterplan.md)           | Implemented foundations and remaining release gates      |
+| [Commands](commands.md)                  | Package scripts and their prerequisites                  |
+| [Integration plan](../MIGRATION_PLAN.md) | Repository boundaries and coordinated work               |
 
-## Deployment and authentication
+## Configuration and operations
 
-- [Main deployment index and picture](main-deployment/README.md)
-- [Main extraction checklist](main-deployment/extraction-checklist.md)
-- [Completed Books/Anatomy extraction](main-deployment/books-anatomy-extraction.md)
-- [Meal Planner app page and extraction](main-deployment/meal-planner-app-page.md)
-- [Central authentication contract](main-deployment/shared-auth.md)
-- [AWS preparation](main-deployment/aws-prepare.md)
-- [AWS deployment](main-deployment/aws-deploy.md)
-- [Live acceptance](main-deployment/aws-acceptance.md)
-- [Implemented WebSocket design](serverless-realtime.md)
+| Document                                                                | Purpose                                                       |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [Deployment index](main-deployment/README.md)                           | Release order and infrastructure ownership                    |
+| [Configuration](main-deployment/configuration.md)                       | Public settings, server secrets, and rotation                 |
+| [Repository cleanup audit](main-deployment/repository-cleanup-audit.md) | Findings, safe fixes, validation, and deferred major upgrades |
+| [AWS preparation](main-deployment/aws-prepare.md)                       | Credentials, domain, mail, database, and secrets              |
+| [AWS deployment](main-deployment/aws-deploy.md)                         | Backend/frontend deployment commands                          |
+| [GitHub Actions](main-deployment/github-actions.md)                     | Automatic deployment, credentials, and rollback               |
+| [Live acceptance](main-deployment/aws-acceptance.md)                    | Checks against the deployed application                       |
+| [Realtime](serverless-realtime.md)                                      | Socket.IO, Gateway WebSockets, and WebRTC                     |
+| [Kupa and Bedrock](main-deployment/bedrock-chat.md)                     | Semantic scope policy, provider behavior, and live evaluation |
 
-The diagram shows target ownership. All four feature implementations are extracted.
-Planner/main auth contract versions differ, and external web SSO is pending.
-None of these documents establishes a deployed production service.
+## External integrations
 
-## Historical owner records
+- [Shared account contracts](main-deployment/shared-auth.md)
+- [Anatomy and optional Books OIDC setup](main-deployment/anatomy-oidc.md)
+- [Books worker capabilities](main-deployment/books-capabilities.md)
+- [Extraction checklist](main-deployment/extraction-checklist.md)
+- [Books/Anatomy extraction record](main-deployment/books-anatomy-extraction.md)
+- [Meal Planner page and extraction record](main-deployment/meal-planner-app-page.md)
 
-[vetify_PRD.docx](vetify_PRD.docx) and [vetify_TDD.docx](vetify_TDD.docx) are the
-owner-authored original Word records. They contain older whole-product scope and
-technology assumptions and are retained for provenance. The Markdown documents
-above define the current main scope and take precedence for implementation.
+The sibling folders are `vetify-meal-planner`, `vetify-books`, `vetify-anatomy`,
+and `vetify-blogs`. Their `docs/DESCRIPTION.md` files describe their own features.
+Main's native introspection remains version 1. The shared OIDC provider and Books
+worker capability endpoint are separate protocols; neither upgrades Planner's
+contract automatically.
 
-## Separate repository locations
+## Historical records and evidence
 
-Sibling folders are `vetify-meal-planner`, `vetify-books`, `vetify-anatomy`
-and `vetify-blogs`. Each maintains `docs/DESCRIPTION.md` for its own feature.
-Main keeps their identity/capability interfaces, availability behavior and data
-ownership references; their detailed product designs do not belong here.
+[Original PRD](vetify_PRD.docx) and [original TDD](vetify_TDD.docx) are preserved
+owner-authored Word records. They contain older whole-product assumptions. The
+maintained Markdown documents define current implementation scope.
+
+Dated extraction results describe the checks run at that time. The cleanup audit
+records this pass's results. Neither historical tests nor architecture diagrams
+establish current production health; use live acceptance for that assessment.

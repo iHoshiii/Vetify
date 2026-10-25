@@ -1,12 +1,16 @@
 import { FREE_ANON_QUERIES } from '@shared/limits';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../../app';
 import { ANON_ID_COOKIE } from '../../../services/anon-quota';
 import { signAccessToken } from '../../../services/auth.service';
 import { insertUser } from '../../../models/users';
+import { activityEventsCollection, flushActivity } from '../../../models/activity-event';
+import { OUT_OF_SCOPE_REPLY } from '../../../services/chat-scope';
+import { CHAT_SCOPE_CASES } from '../../../test-utils/chat-scope-cases';
 import { clearTestDb, startTestDb, stopTestDb } from '../../../test-utils/db';
+import { AppError } from '../../../utils/AppError';
 
 // Keeps Bedrock out of the test; real generation requires AWS access and incurs usage charges.
 const { generateReply } = vi.hoisted(() => ({
@@ -21,7 +25,11 @@ vi.mock('../../../services/chat-topic.service', () => ({ isVeterinaryTopic }));
 const app = createApp();
 
 beforeAll(startTestDb, 120_000);
-afterEach(clearTestDb);
+beforeEach(() => vi.clearAllMocks());
+afterEach(async () => {
+  await flushActivity();
+  await clearTestDb();
+});
 afterAll(stopTestDb);
 
 const ask = (agent: request.Agent) => agent.post('/api/v1/chat').send({ message: 'is my dog ok?' });
@@ -40,9 +48,7 @@ describe('POST /api/v1/chat anonymous allowance', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.reply).toBe(
-      "I'm sorry, but I can only help with pet and animal health or care questions. Please ask me about your pet."
-    );
+    expect(res.body.reply).toBe(OUT_OF_SCOPE_REPLY);
     expect(generateReply).not.toHaveBeenCalled();
   });
 
@@ -94,6 +100,46 @@ describe('POST /api/v1/chat anonymous allowance', () => {
     expect(first.status).toBe(429);
     expect(second.status).toBe(429);
     expect(second.body.reason).toBe('anon-quota');
+  });
+});
+
+describe('POST /api/v1/chat scope decisions', () => {
+  // Mocked classifier results verify routing, context forwarding, and activity
+  // counts. The separate live suite measures real semantic classification.
+  it.each(CHAT_SCOPE_CASES)(
+    '$label (allowed=$allowed)',
+    async ({ message, history = [], allowed }) => {
+      isVeterinaryTopic.mockResolvedValueOnce(allowed);
+      const res = await request(app).post('/api/v1/chat').send({ message, history });
+
+      expect(res.status).toBe(200);
+      expect(isVeterinaryTopic).toHaveBeenCalledTimes(1);
+      expect(isVeterinaryTopic).toHaveBeenCalledWith(message, history);
+      expect(res.body.reply).toBe(allowed ? 'a mock reply' : OUT_OF_SCOPE_REPLY);
+      if (allowed) {
+        expect(generateReply).toHaveBeenCalledTimes(1);
+        expect(generateReply).toHaveBeenCalledWith(expect.objectContaining({ message, history }));
+      } else {
+        expect(generateReply).not.toHaveBeenCalled();
+      }
+      await flushActivity();
+      expect(await activityEventsCollection().countDocuments({ type: 'chat.message_sent' })).toBe(
+        allowed ? 1 : 0
+      );
+    }
+  );
+
+  it('returns a retryable service error without generating or logging an unchecked answer', async () => {
+    isVeterinaryTopic.mockRejectedValueOnce(
+      new AppError(503, 'The AI service is unavailable right now. Please try again.')
+    );
+    const res = await request(app).post('/api/v1/chat').send({ message: 'Dog anatomy' });
+
+    expect(res.status).toBe(503);
+    expect(res.body.error).toBe('The AI service is unavailable right now. Please try again.');
+    expect(res.body.reply).toBeUndefined();
+    expect(generateReply).not.toHaveBeenCalled();
+    expect(await activityEventsCollection().countDocuments({})).toBe(0);
   });
 });
 

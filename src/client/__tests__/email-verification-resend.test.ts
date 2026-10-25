@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { writeAuthState, type AuthSession } from '@/lib/auth-storage';
-import { requestEmailVerification } from '@/services/email-verification.service';
+import { resendEmailVerification } from '@/lib/auth';
 
 const session: AuthSession = {
   accessToken: 'expired-token',
@@ -15,6 +15,11 @@ const session: AuthSession = {
   },
 };
 const fetchMock = vi.fn();
+const delivery = {
+  sent: true,
+  expiresAt: '2030-01-01T00:05:00.000Z',
+  resendAvailableAt: '2030-01-01T00:01:00.000Z',
+};
 
 beforeEach(() => {
   localStorage.clear();
@@ -34,12 +39,12 @@ describe('verification resend session recovery', () => {
   it('refreshes an expired access token once and retries for the same account', async () => {
     fetchMock.mockResolvedValueOnce(Response.json({ error: 'Invalid token.' }, { status: 401 }));
     fetchMock.mockResolvedValueOnce(Response.json({ ...session, accessToken: 'renewed-token' }));
-    fetchMock.mockResolvedValueOnce(Response.json({ message: 'Verification email sent.' }));
-    expect(await requestEmailVerification()).toEqual({ message: 'Verification email sent.' });
+    fetchMock.mockResolvedValueOnce(Response.json(delivery));
+    expect(await resendEmailVerification()).toEqual(delivery);
     expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
-      '/api/v1/auth/email-verification/request',
+      '/api/v1/auth/email/resend',
       '/api/v1/auth/refresh',
-      '/api/v1/auth/email-verification/request',
+      '/api/v1/auth/email/resend',
     ]);
     expect(fetchMock.mock.calls[2][1]).toMatchObject({
       method: 'POST',
@@ -52,7 +57,7 @@ describe('verification resend session recovery', () => {
       writeAuthState({ ...session, user: { ...session.user, id: 'other-owner' } }, false);
       return Response.json({ error: 'Invalid token.' }, { status: 401 });
     });
-    await expect(requestEmailVerification()).rejects.toMatchObject({
+    await expect(resendEmailVerification()).rejects.toMatchObject({
       status: 409,
       reason: 'account-changed',
     });
@@ -64,14 +69,14 @@ describe('verification resend session recovery', () => {
       Response.json(
         {
           error: 'Please wait one minute before requesting another verification email.',
-          reason: 'verification-cooldown',
+          reason: 'email-verification-cooldown',
         },
         { status: 429 }
       )
     );
-    await expect(requestEmailVerification()).rejects.toMatchObject({
+    await expect(resendEmailVerification()).rejects.toMatchObject({
       status: 429,
-      reason: 'verification-cooldown',
+      reason: 'email-verification-cooldown',
     });
     expect(fetchMock).toHaveBeenCalledOnce();
   });

@@ -6,7 +6,6 @@ import PasswordForm from '@/components/settings/consumer/PasswordForm';
 
 const state = vi.hoisted(() => ({
   data: {} as AccountLoginMethods,
-  connect: vi.fn(),
   reauthenticate: vi.fn(),
   add: vi.fn(),
   logout: vi.fn(),
@@ -30,11 +29,6 @@ vi.mock('@/hooks/useAccountLoginMethods', () => ({
     isLoading: false,
     isError: false,
     refetch: state.refetch,
-  }),
-  useConnectAccountProvider: () => ({
-    mutateAsync: state.connect,
-    reset: vi.fn(),
-    isPending: false,
   }),
   useReauthenticateAccount: () => ({ mutateAsync: state.reauthenticate, isPending: false }),
   useAddAccountPassword: () => ({
@@ -70,7 +64,6 @@ export function resetAuthSettings() {
     passwordReady: false,
     reauthProvider: null,
   };
-  state.connect.mockResolvedValue({ url: 'https://accounts.google.com/authorize' });
   state.reauthenticate.mockResolvedValue({ url: 'https://accounts.google.com/confirm' });
   state.add.mockResolvedValue({ added: true });
   state.logout.mockResolvedValue(undefined);

@@ -1,71 +1,66 @@
-# Deploy main Vetify, extract four separate applications
+# Main deployment and integration guide
 
-This is an inspected deployment plan. Feature code extraction is complete; AWS deployment is separate.
-Books/Anatomy code is removed from main and preserved in independent repositories.
-Planner feature code is removed; `/planner` is a public app introduction.
-Blog UI, APIs, moderation, local metrics and indexes are removed.
-Do not upload them as a main-only release until the extraction checks pass.
+Reviewed 25 October 2026. This repository deploys main Vetify. The four feature
+implementations are extracted into independent repositories. Main retains their
+launch pages and approved identity interfaces.
 
-## Scope agreed with the owner
+## Ownership
 
-| Application  | Suggested repository       | Suggested address             | Data owner                                                        |
-| ------------ | -------------------------- | ----------------------------- | ----------------------------------------------------------------- |
-| Main Vetify  | Existing Vetify repository | `https://vetify.page`         | Accounts, professional approvals, appointments, messages          |
-| Meal Planner | `vetify-meal-planner`      | `https://planner.vetify.page` | Pets, plans, feeding logs, nutrition observations                 |
-| Books        | `vetify-books`             | `https://books.vetify.page`   | Documents, reviews, download allowances, commissions              |
-| Anatomy      | `vetify-anatomy`           | `https://anatomy.vetify.page` | Static diagrams and hotspot content; no database needed initially |
-| Blog         | `vetify-blogs`             | `https://blog.vetify.page`    | Posts, moderation decisions and content audit history             |
+| Application  | Repository            | Address or intended destination        | Owns                                                    |
+| ------------ | --------------------- | -------------------------------------- | ------------------------------------------------------- |
+| Main         | `Vetify`              | `https://vetify.page`                  | Accounts, approvals, appointments, communications, Kupa |
+| Meal Planner | `vetify-meal-planner` | Public introduction at main `/planner` | Pets, plans, feeding, and nutrition data                |
+| Books        | `vetify-books`        | `https://books.vetify.page`            | Documents, review, files, and commissions               |
+| Anatomy      | `vetify-anatomy`      | `https://anatomy.vetify.page`          | Viewer, diagrams, and educational assets                |
+| Blog         | `vetify-blogs`        | Proposed `https://blog.vetify.page`    | Articles, authoring, and moderation                     |
 
-The four subdomain names are proposals. No DNS records or resources were created.
-AI Vet Assistant remains in main Vetify. Books means the document library, not
-appointment booking. Appointments, chat between users, calls, the clinic map,
-professional onboarding, settings and account administration remain in main.
-
-## Picture
-
-![Proposed main-only deployment and independent feature applications](architecture.png)
-
-Editable version: [architecture.svg](architecture.svg).
-Boxes below the main deployment boundary are future, independently deployed apps.
-Only accounts are shared through main authentication APIs. Databases are not shared.
+Addresses and configured launch links do not establish deployment health or
+completed joint sign-in. Main's CI currently configures Books and Anatomy
+origins; Blog is blank. Planner's public page uses local download/photo content
+settings rather than a feature runtime bundle.
 
 ## Start here
 
-1. Read [the extraction checklist](extraction-checklist.md). It identifies the
-   dependencies that make immediate deletion unsafe.
-2. Use the existing sibling feature repositories. Their descriptions and setup
-   prompts belong there. Preserve actual code/assets; a prompt cannot recover them.
-3. Preserve and validate each extracted feature before removing its main roots.
-4. Verify the main-only release, then follow [AWS preparation](aws-prepare.md)
-   and [AWS deployment](aws-deploy.md).
-5. Deploy only main now. A feature link without a deployed destination should
-   show an unavailable state, rather than open an unconfigured website.
-6. Coordinate Planner's version 2 introspection requirement and implement/test
-   [central web authentication](shared-auth.md) before enabling external apps.
+1. Check [release ownership and packaging](extraction-checklist.md).
+2. Read [configuration boundaries](configuration.md), including public settings,
+   private credentials, and optional integration flags.
+3. For existing infrastructure, use [GitHub Actions](github-actions.md).
+   Successful pushes to `main` deploy automatically after CI passes.
+4. For initial or administrator-managed changes, follow [AWS preparation](aws-prepare.md)
+   and [deployment](aws-deploy.md). Do not duplicate stack-managed resources.
+5. Run [live acceptance](aws-acceptance.md) against the deployed revision.
+6. Enable external integrations only after their own joint acceptance.
 
-## Feature documentation locations
+The [cleanup audit](repository-cleanup-audit.md) records local validation and
+remaining dependency migrations. A local build does not update the live site.
 
-- `../vetify-meal-planner/docs/DESCRIPTION.md`
-- `../vetify-books/docs/DESCRIPTION.md`
-- `../vetify-anatomy/docs/DESCRIPTION.md`
-- `../vetify-blogs/docs/DESCRIPTION.md`
+## Authentication interfaces
 
-These paths are relative to the main repository root; the folders are siblings.
-Setup prompts stay in those repositories too. Main keeps only its integration
-boundary, extraction work and central authentication requirements.
+[Shared accounts](shared-auth.md) distinguishes three separate contracts:
 
-## What was checked
+- Main's native introspection remains version 1; Planner requires coordinated v2 work.
+- Optional [OIDC sign-in](anatomy-oidc.md) supports Anatomy and Books with separate clients.
+- [Books worker capabilities](books-capabilities.md) provide current approval
+  checks using an independent expiring service credential.
 
-The plan was checked against the existing frontend routes, API mounts, shared
-schemas, model indexing, Lambda build, authentication introspection, Books
-approval checks, Anatomy rendering and local background scanners.
-Blog, Books and Anatomy have external launch pages. Their embedded UI/APIs are
-removed, together with Blog indexing/metrics and the Books worker/scanner.
-See [the completed extraction record](books-anatomy-extraction.md).
-Planner has a public app page, with its data API/models removed. See
-[the Planner page and extraction record](meal-planner-app-page.md).
+Blog has no OIDC client registration. Shared account IDs do not imply shared
+databases, main cookies, signing keys, or unrestricted cross-app access.
 
-Books/Anatomy extraction has targeted main regression and packaged-runtime checks.
-The new shared web sign-in flow and main-only package must receive their own
-tests before deployment. No actual environment file, account, database data or
-AWS resource was modified during Books/Anatomy extraction.
+## Infrastructure and design
+
+![Target ownership and hosting boundaries](architecture.svg)
+
+The editable diagram describes component ownership. It is not a live resource
+inventory. Main uses private S3/CloudFront, HTTP/WebSocket API Gateway, Lambda,
+MongoDB, mail, Bedrock, and WebRTC/TURN. See [architecture](../architecture.md)
+and [realtime](../serverless-realtime.md) for runtime details.
+
+## Extraction records
+
+- [Books and Anatomy](books-anatomy-extraction.md)
+- [Meal Planner page](meal-planner-app-page.md)
+- [Repository integration plan](../../MIGRATION_PLAN.md)
+
+The dated extraction records preserve their original validation results.
+Stored-data migration is separate and needs backups, ownership mapping, and a
+rollback plan. No feature extraction authorizes deleting production data.

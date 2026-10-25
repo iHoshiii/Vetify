@@ -5,6 +5,12 @@ const pages: { path: string; title: string; description: string }[] = JSON.parse
   readFileSync(new URL('../../src/shared/public-pages.json', import.meta.url), 'utf8')
 );
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('vetify-testing-notice-acknowledged', 'true');
+  });
+});
+
 test.describe('public content without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 

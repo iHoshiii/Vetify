@@ -1,5 +1,8 @@
 # Main launch acceptance and monitoring
 
+Reviewed 25 October 2026. Run these checks against the intended deployed revision.
+Local test results and a healthy homepage are separate evidence.
+
 ## Browser checks on https://vetify.page
 
 1. Refresh nested main routes. Confirm assets, logo and available skeletons load.
@@ -28,6 +31,13 @@
     Empty main collections must not cause a crash.
 13. Verify professional/owner uploads are private and unauthorized downloads fail.
     Confirm private proof photos stay in MongoDB and are absent from frontend S3.
+14. Greet Kupa and ask its name. Test short/long pet-care and anatomy questions,
+    contextual follow-ups, unrelated questions, and pet-themed programming requests.
+    Check urgent escalation, anonymous allowances, signed-in activity, and handled
+    provider failures. Use the [live fixture suite](bedrock-chat.md) as additional evidence.
+15. If enabled, test Anatomy/Books OIDC with their exact callbacks, both logout
+    modes, revoked sessions, and client isolation. Test Books approval revocation
+    separately from sign-in. Do not assume native Planner v2 compatibility.
 
 Use isolated test accounts/data and remove deliberate test bookings through the
 normal app controls. Do not run bulk seed/reset scripts against production.
@@ -43,7 +53,8 @@ normal app controls. Do not run bulk seed/reset scripts against production.
 
 Feature extraction is implemented. Validate the actual packaged release against
 these assertions; focused auth/realtime checks alone do not validate the split.
-Resolve or explicitly assess known full-suite failures before claiming readiness.
+Resolve or explicitly assess current test failures and remaining dependency
+advisories before claiming readiness. See the [cleanup audit](repository-cleanup-audit.md).
 
 ## Monitoring and cost checks
 
@@ -67,8 +78,9 @@ a later private database networking decision can change that cost picture.
 ## Later feature launches
 
 Use each existing repository's local documentation. Coordinate Planner's version
-2 introspection requirement with main. Implement central web SSO and required
-capabilities before enabling browser integrations, then validate account reuse.
+2 introspection requirement with main. Configure and jointly validate implemented
+Anatomy/Books OIDC and Books worker capabilities. Blog registration and admin
+integration remain separate work. Validate account reuse before enabling links.
 Create that feature's own hosting, database/storage and callback registration.
 Do not automatically deploy all four with main's stack or share MongoDB users.
 Enable a main launch link only after its destination and auth integration work.

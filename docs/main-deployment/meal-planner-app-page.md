@@ -1,5 +1,9 @@
 # Meal Planner app page and extraction
 
+Reviewed 25 October 2026. Validation results below describe the original page
+and extraction checks. Use the [cleanup audit](repository-cleanup-audit.md) for
+the latest repository maintenance evidence.
+
 Main `/planner` is a public introduction to the separate Meal Planner mobile app.
 It no longer loads a meal planner or requires sign-in just to view this page.
 
@@ -23,7 +27,7 @@ disabled while its URL is missing. Photo failures fall back to the placeholder.
 
 The QR on this page must encode the public download destination. Never put a
 private account connection QR or a temporary sign-in credential into public assets.
-Personal connection QR codes remain under Settings → Connect meal planner.
+Personal connection QR codes remain under Settings > Connect meal planner.
 
 ## What was removed
 

@@ -1,6 +1,6 @@
 # Main Vetify extraction and integration plan
 
-Updated 14 October 2026. This plan documents the agreed boundaries and remaining
+Reviewed 25 October 2026. This plan documents the agreed boundaries and remaining
 main work. Feature-code extraction is complete; cross-app authentication and deployment
 remain separate work. Detailed feature requirements belong to their respective repositories.
 
@@ -36,7 +36,8 @@ concurrent-refresh behavior must remain intact.
 
 ## Current integration gaps
 
-- Books/Anatomy code and assets are extracted; main retains protected launch pages.
+- Books/Anatomy feature code and assets are extracted. Main retains launch routes,
+  professional console guards, and Anatomy authentication/host integration.
 - Books API, scanner, index creation, PDF worker and PDF.js dependency are removed.
 - Planner feature UI, APIs and indexes are removed; `/planner` introduces the app.
 - Main account export and admin statistics use only main data.
@@ -47,7 +48,10 @@ concurrent-refresh behavior must remain intact.
   docs require introspection version 2; main still returns version 1.
 - Main introspection does not yet provide the complete approval/verification
   contract or subsystem audience checks needed by the target integration.
-- Browser SSO for the independent feature sites is proposed, not implemented.
+- Optional OIDC browser sign-in is implemented for Anatomy and Books. Each has
+  distinct credentials and callback registration. Joint deployed acceptance is
+  required; Blog has no registration.
+- Books worker capability checks are implemented separately from browser sign-in.
 
 See [the shared authentication contract](docs/main-deployment/shared-auth.md)
 for security requirements and [the extraction checklist](docs/main-deployment/extraction-checklist.md)
@@ -63,7 +67,8 @@ for exact import, indexing, packaging and navigation work.
 5. Test main in isolation, including account export and admin statistics.
 6. Validate individual private photo transfers and scheduled appointment jobs, then deploy main.
 7. Coordinate main/Planner introspection version 2 and joint native tests.
-8. Implement/test independent web SSO and verified-professional/admin capability.
+8. Validate Anatomy/Books OIDC and Books worker capability jointly. Add Blog
+   sign-in/admin integration only under a separately reviewed registration.
 9. Enable each external app only after its own deployment/integration checks.
 
 Moving prompts or changing documentation does not remove runtime code.

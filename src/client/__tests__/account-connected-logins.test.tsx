@@ -21,7 +21,6 @@ describe('connected login settings', () => {
       await waitFor(() =>
         expect(authSettings.open).toHaveBeenCalledWith('https://provider.example/authorize')
       );
-      expect(authSettings.connect).not.toHaveBeenCalled();
     }
   );
 

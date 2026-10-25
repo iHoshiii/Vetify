@@ -1,6 +1,6 @@
 # Main Vetify business scope
 
-Updated 14 October 2026. This document describes main Vetify, not the detailed
+Reviewed 25 October 2026. This document describes main Vetify, not the detailed
 business models of the separate Meal Planner, Books, Anatomy or Blog apps.
 
 ## Purpose and customers
@@ -24,7 +24,7 @@ Administrators manage professional eligibility, account safety and main operatio
 - Clinic map and contact discovery with clear source/verification distinctions.
 - Virtual/onsite booking, appointment notifications, completion and review flows.
 - Participant-scoped messages and scheduled video consultations.
-- Veterinary-scoped AI guidance with limits, escalation and provider-failure UX.
+- Kupa's pet/veterinary guidance, brief greetings, urgent escalation, and handled provider failures.
 - Settings, privacy, account administration and central identity for separate apps.
 
 Separate apps can extend the user's experience through main launch links.
@@ -51,15 +51,15 @@ Educational-document commissions and their economics belong to Books docs.
 
 ## Operating assumptions
 
-Main hosting is planned as S3/CloudFront plus HTTP/WebSocket API Gateway and
-Lambda and Bedrock. MongoDB Atlas, mail and TURN have their own limits/costs.
+Main infrastructure uses S3/CloudFront, HTTP/WebSocket API Gateway, Lambda, and
+Bedrock. MongoDB Atlas, mail, and TURN have their own limits and costs.
 AWS credits are a temporary budget, not a permanent operating-cost estimate.
 Verify the actual balance, usage and expiry before launch.
 
-The immediate release is main only. Its code still needs feature extraction,
-private professional uploads and durable main background jobs.
-Shared web login for independent apps and Planner's current version 2 auth
-requirements remain coordinated integration work.
+The release boundary is main only. Feature extraction, private professional
+uploads, and durable main background jobs are implemented. Optional Anatomy/Books
+web sign-in and Books worker capabilities need joint production acceptance.
+Planner's version 2 contract and Blog sign-in remain coordinated integration work.
 
 Measure verified professional availability, completed consultations, reminder
 delivery, support issues, account recovery, service failures and cost per active

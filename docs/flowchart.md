@@ -1,7 +1,7 @@
 # Main Vetify user and deployment flows
 
-Updated 14 October 2026. Diagrams describe main responsibilities; external-app
-web SSO and main-only extraction remain pending implementation.
+Reviewed 25 October 2026. Diagrams describe implemented main responsibilities
+and the acceptance boundary for independently deployed apps.
 
 ## Signup, login and linking
 
@@ -33,7 +33,7 @@ Unverified, blocked, revoked or deactivated accounts cannot bypass access checks
 
 ```mermaid
 flowchart TD
-    Home[Main website] --> Guidance[AI Vet Assistant]
+    Home[Main website] --> Guidance[Kupa veterinary assistant]
     Home --> Directory[Clinic map and professional discovery]
     Directory --> Booking[Virtual or onsite appointment]
     Booking --> Decision[Professional confirmation or decline]
@@ -53,3 +53,17 @@ flowchart TD
 Cancelled/declined appointments follow their allowed transitions and do not gain
 call access. External sites own their feature workflows and data.
 See [architecture](architecture.md) and [central auth](main-deployment/shared-auth.md).
+
+## Kupa scope and reply
+
+```mermaid
+flowchart TD
+    Input[Current message and conversation history] --> Access[Validate request and allowance]
+    Access --> Scope[Semantic classification using shared scope policy]
+    Scope -->|Pet, veterinary, or brief social exchange| Reply[Generate Kupa reply]
+    Scope -->|Programming, unrelated, or mixed task| Decline[Return veterinary-scope refusal]
+    Scope -->|Provider failure or invalid label| Retry[Return retryable HTTP 503]
+```
+
+Message length and keywords do not decide scope. Prior context resolves genuine
+follow-ups without authorizing a new unrelated topic. See [Kupa evaluation](main-deployment/bedrock-chat.md).

@@ -1,4 +1,5 @@
 import { CHAT_SUGGESTIONS } from '@/types/chat';
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 
 interface ChatEmptyProps {
   onSuggest: (text: string) => void;
@@ -11,7 +12,7 @@ export function ChatEmpty({ onSuggest }: ChatEmptyProps) {
         <span className="text-3xl">🐾</span>
       </div>
       <div>
-        <h2 className="text-xl font-bold text-slate-800">Ask Vetify AI</h2>
+        <h2 className="text-xl font-bold text-slate-800">Ask {CHAT_ASSISTANT_NAME}</h2>
         <p className="text-sm text-slate-500 mt-1 max-w-sm">
           Get instant guidance on your pet&apos;s health, nutrition, and care.
         </p>
