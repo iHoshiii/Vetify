@@ -1,3 +1,5 @@
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
+
 export type NavItem = {
   label: string;
   href: string;
@@ -18,7 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const TOOLS_ITEMS: ToolItem[] = [
   { label: 'Chat', href: '/messages', desc: 'Your conversations' },
-  { label: 'Ask AI', href: '/chat', desc: 'Chat with the pet assistant' },
+  { label: `Ask ${CHAT_ASSISTANT_NAME}`, href: '/chat', desc: 'Chat with the pet assistant' },
   { label: 'Meal Planner app', href: '/planner', desc: 'Explore the mobile meal planner' },
   { label: 'Anatomy', href: '/anatomy', desc: 'Explore pet anatomy' },
   { label: 'FAQs', href: '/help', desc: 'Common questions answered' },

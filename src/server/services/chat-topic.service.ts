@@ -10,7 +10,7 @@ import { VETERINARY_SCOPE_POLICY } from './chat-scope';
 const CLASSIFIER_PROMPT =
   'You are the scope classifier for a veterinary assistant. Classify the currentMessage in the supplied JSON using this policy.\n' +
   VETERINARY_SCOPE_POLICY +
-  '\nReply with exactly VETERINARY for an in-scope request or OUT_OF_SCOPE otherwise. Output no explanation, formatting, or other text.';
+  '\nYour only two output labels are VETERINARY and OUT_OF_SCOPE. Use VETERINARY for ALL permitted requests, including greetings, social exchanges, and identity questions as well as pet or veterinary questions. Never invent a separate label for social exchanges. Use OUT_OF_SCOPE otherwise. Classify the message; do not answer it or introduce yourself. Output exactly one label with no explanation, formatting, or other text.';
 
 const client = new BedrockRuntimeClient({ region: env.BEDROCK_REGION, maxAttempts: 2 });
 

@@ -49,6 +49,8 @@ describe('chat topic classifier', () => {
     { output: { message: { content: [{ text: 'Maybe veterinary' }] } } },
     { output: { message: { content: [{ text: 'VETERINARY because it mentions a dog' }] } } },
     { output: { message: { content: [{ text: 'OUT_OF_SCOPE VETERINARY' }] } } },
+    { output: { message: { content: [{ text: 'BRIEF SOCIAL EXCHANGE' }] } } },
+    { output: { message: { content: [{ text: 'GREETING' }] } } },
     { stopReason: 'max_tokens', output: { message: { content: [{ text: 'VETERINARY' }] } } },
   ])('rejects malformed or truncated results as service failures', async (response) => {
     send.mockResolvedValue(response);

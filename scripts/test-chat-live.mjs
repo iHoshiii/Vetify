@@ -10,6 +10,7 @@ const result = spawnSync(
     'server',
     'src/server/services/__tests__/chat-topic.live.test.ts',
     '--reporter=verbose',
+    ...process.argv.slice(2),
   ],
   {
     cwd: fileURLToPath(new URL('..', import.meta.url)),

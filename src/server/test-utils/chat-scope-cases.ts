@@ -210,7 +210,97 @@ export const CHAT_SCOPE_CASES: ChatScopeCase[] = [
   {
     label: 'greeting',
     message: 'hello',
+    allowed: true,
+  },
+  {
+    label: 'greeting short',
+    message: 'Hi!',
+    allowed: true,
+  },
+  {
+    label: 'greeting morning',
+    message: 'Good morning!',
+    allowed: true,
+  },
+  {
+    label: 'greeting how are you',
+    message: 'How are you?',
+    allowed: true,
+  },
+  {
+    label: 'greeting Tagalog',
+    message: 'Kumusta!',
+    allowed: true,
+  },
+  {
+    label: 'greeting thanks',
+    message: 'Thank you!',
+    allowed: true,
+  },
+  {
+    label: 'greeting farewell',
+    message: 'Goodbye!',
+    allowed: true,
+  },
+  {
+    label: 'identity name',
+    message: 'What is your name?',
+    allowed: true,
+  },
+  {
+    label: 'identity role',
+    message: 'Who are you and what can you help me with?',
+    allowed: true,
+  },
+  {
+    label: 'greeting with pet care',
+    message: 'Hi, my dog has a fever. What should I do?',
+    allowed: true,
+  },
+  {
+    label: 'greeting with code',
+    message: 'Hello! Write Python code that adds two numbers.',
     allowed: false,
+  },
+  {
+    label: 'greeting with unrelated law',
+    message: 'Good morning! Tell me a law from the Philippines.',
+    allowed: false,
+  },
+  {
+    label: 'identity with unrelated code',
+    message: 'What is your name? Also write a SQL query for my clinic database.',
+    allowed: false,
+  },
+  {
+    label: 'greeting after code refusal',
+    message: 'Hello',
+    allowed: true,
+    history: [
+      {
+        role: 'user',
+        content: 'Write me a Python script.',
+      },
+      {
+        role: 'assistant',
+        content: 'I can help with pet care and veterinary medicine, but not programming.',
+      },
+    ],
+  },
+  {
+    label: 'greeting context must not allow code',
+    message: 'Now write JavaScript to add two numbers.',
+    allowed: false,
+    history: [
+      {
+        role: 'user',
+        content: 'Hi!',
+      },
+      {
+        role: 'assistant',
+        content: "Hello! I'm Kupa, Vetify's AI veterinary assistant. How can I help your pet?",
+      },
+    ],
   },
   {
     label: 'ambiguous standalone',

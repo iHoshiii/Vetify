@@ -5,6 +5,7 @@ import { CHAT_SCOPE_CASES } from '../../test-utils/chat-scope-cases';
 import { isVeterinaryTopic } from '../chat-topic.service';
 import { generateReply } from '../chat.service';
 import { OUT_OF_SCOPE_REPLY } from '../chat-scope';
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 
 // The account's on-demand Nova Lite limit is 10 RPM. Space all live calls so
 // throttling does not get confused with a classification or generation failure.
@@ -43,6 +44,9 @@ describe.skipIf(process.env.VETIFY_LIVE_CHAT_TESTS !== '1')(
           'clinical code meaning',
           'long care question',
           'contextual bathing followup',
+          'greeting',
+          'greeting Tagalog',
+          'identity name',
         ].includes(label)
       )
     )(
@@ -59,6 +63,9 @@ describe.skipIf(process.env.VETIFY_LIVE_CHAT_TESTS !== '1')(
         expect(reply.trim().length).toBeGreaterThan(0);
         expect(reply).not.toBe(OUT_OF_SCOPE_REPLY);
         expect(reply).not.toBe('I could not generate a response.');
+        if (['greeting', 'greeting Tagalog', 'identity name'].includes(label)) {
+          expect(reply).toContain(CHAT_ASSISTANT_NAME);
+        }
         // Keep real answers visible for review; assertions above alone cannot
         // establish the medical accuracy or helpfulness of a model's wording.
         console.info(`[live answer: ${label}] ${reply}`);

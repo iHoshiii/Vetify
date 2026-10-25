@@ -82,6 +82,11 @@ scope. Programming requests, including pet-themed software, and unrelated or
 mixed requests are declined. Conversation history resolves follow-ups without
 authorizing a new unrelated topic.
 
+The assistant's name is Kupa. Brief greetings, thanks, farewells, introductions,
+and questions about Kupa's identity or capabilities are also allowed, without
+requiring a pet-care question. A greeting attached to an unrelated or coding
+request does not authorize that request.
+
 An unavailable or malformed classification returns HTTP 503 and never reaches
 reply generation. It does not label a valid pet question as unrelated.
 
@@ -96,7 +101,7 @@ npm run test:chat:live
 ```
 
 The live suite incurs Bedrock usage charges and spaces calls for the account's
-10 RPM on-demand limit. It also prints six real replies for wording review.
+10 RPM on-demand limit. It also prints real replies for wording and identity review.
 Passing these cases measures the tested behavior; it does not guarantee perfect
 classification of every possible message. Run it again after changing the scope
 policy or model. Ordinary CI skips live calls.

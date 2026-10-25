@@ -1,4 +1,5 @@
 import React from 'react';
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 import ReactMarkdown from 'react-markdown';
 import type { Message } from '@/lib/chat-storage';
 
@@ -20,7 +21,10 @@ export function ChatMessage({
   return (
     <div className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       {m.role === 'assistant' && (
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm mt-1">
+        <div
+          title={CHAT_ASSISTANT_NAME}
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm mt-1"
+        >
           <span className="text-sm">🐾</span>
         </div>
       )}

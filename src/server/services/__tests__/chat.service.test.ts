@@ -19,6 +19,7 @@ vi.mock('langsmith/traceable', () => ({
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { generateReply } from '../chat.service';
 import { VETERINARY_SCOPE_POLICY } from '../chat-scope';
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 
 const request = {
   message: 'How should I groom my dog?',
@@ -62,7 +63,8 @@ describe('Bedrock veterinary chat', () => {
       ],
     });
     const prompt = command.input.system[0].text;
-    expect(prompt).toContain('ONLY answer questions related to pets and animals');
+    expect(prompt).toContain(`You are ${CHAT_ASSISTANT_NAME}, Vetify's AI veterinary assistant`);
+    expect(prompt).toContain('including brief social exchanges');
     expect(prompt).toContain(VETERINARY_SCOPE_POLICY);
     expect(prompt).toContain('do NOT attempt to diagnose');
     expect(prompt).toContain('contact a licensed veterinarian immediately');
