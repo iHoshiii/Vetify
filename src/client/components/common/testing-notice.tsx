@@ -38,12 +38,11 @@ export default function TestingNotice() {
         Testing notice
       </p>
       <h2 id="testing-notice-title" className="text-2xl font-bold tracking-tight text-slate-950">
-        Vetify is currently available for testing only
+        Vetify has ceased regular operations
       </h2>
       <p id="testing-notice-description" className="mt-4 text-sm leading-6 text-slate-600">
-        The website is still under development and is not currently operating as a live service.
-        You&apos;re welcome to explore and test it, but some features may be incomplete or
-        unavailable.
+        This website remains available for testing purposes only. You&apos;re welcome to explore and
+        test it, but some features may be incomplete or unavailable.
       </p>
       <form method="dialog" onSubmit={acknowledge} className="mt-6">
         <button
