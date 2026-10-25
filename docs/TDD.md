@@ -1,6 +1,6 @@
 # Main Vetify technical design
 
-Updated 14 October 2026. Main ownership is defined by [PRD](PRD.md).
+Reviewed 25 October 2026. Main ownership is defined by [PRD](PRD.md).
 The target is documented separately from current implementation state.
 
 ## Stack and entry points
@@ -46,9 +46,16 @@ Native auth/session handoff and Planner QR stay in main. Current introspection
 returns version 1, identity/status, region/subscription and short validity.
 The sibling Planner currently requires version 2; coordinated checks for
 issuer/audience, verified email and session revocation remain pending.
-External browser SSO also requires a reviewed client/code/PKCE flow. A broad
-parent-domain refresh cookie or shared symmetric signing secret is not the design.
-Books needs trusted current professional approval, not only a role string.
+The optional OIDC provider at `/api/oidc` supports Anatomy and an independently
+configured Books client. It uses Mongo-backed single-use authorization codes,
+S256 PKCE, RS256 identity tokens, and client-bound introspection. Grants are bound
+to the originating main browser session. Configuration and joint acceptance are
+documented in [shared sign-in](main-deployment/anatomy-oidc.md).
+
+Books worker approval checks use `/api/v1/auth/books-capabilities` with a separate,
+expiring service credential. They return current account and professional status;
+they are not browser login. Blog has no OIDC registration. Do not share a broad
+parent-domain refresh cookie, signing secret, or database credential across apps.
 
 ## Realtime and calls
 
@@ -73,9 +80,11 @@ Professional proofs upload one photo per authenticated request to private MongoD
 drafts. Final submissions carry references bound to the invitation and account.
 Drafts expire after two hours; submitted photos retain existing access checks.
 
-Secrets Manager values feed the current SAM Lambda configuration. Private `.env`
-is local. Ignored `env.prod` provides public VITE build values. Never expose
-MongoDB URIs, JWT secrets, mail/provider keys or private proofs in the browser.
+Secrets Manager values feed the SAM Lambda configuration. Private `.env` is local.
+The production frontend builder explicitly exposes six public settings and disables
+implicit `VITE_*` exposure. It rejects URL credentials, query parameters, and
+fragments. See [configuration](main-deployment/configuration.md). Never expose
+MongoDB URIs, JWT secrets, mail/provider keys, or private proofs in the browser.
 Database network access and production least-privilege credentials need review.
 Lambda request limits use shared MongoDB counters with expiry indexes, preserving
 the existing quotas across separate instances. Local development retains memory
@@ -93,15 +102,25 @@ requests serve stale cached results without starting work after the response.
 Books' scanner, indexes, PDF worker and PDF.js dependency have been removed
 from main. Anatomy UI/assets are also removed; independent copies are preserved.
 
+## Kupa request flow
+
+The route validates input and access/allowance before invoking semantic scope
+classification. The classifier receives the current message and conversation
+history, and shares `chat-scope.ts` with reply generation. Pet/veterinary guidance
+and brief social exchanges are allowed. Programming, unrelated, and mixed tasks
+are declined without generation. Invalid or unavailable classification returns 503. Reply generation uses Bedrock Converse; client cancellation and existing
+activity attribution remain intact. See [policy and evaluation](main-deployment/bedrock-chat.md).
+
 ## Implementation status and verification
 
 Implemented: browser/native account foundations, code verification, explicit
 linking, professional/appointment workflows, local realtime and Gateway adapters.
-Earlier focused auth/realtime, packaged Lambda and browser media checks passed.
-The full suite has known failures and does not establish all-green readiness.
-Main-only extraction, individual private photo transfers and scheduled appointment
-jobs are implemented. Planner v2 compatibility, external web SSO and live
-AWS/TURN acceptance remain incomplete.
+Main-only extraction, private photo transfers, scheduled appointment jobs, optional
+Anatomy/Books OIDC, and Books worker capabilities are implemented. Planner v2
+compatibility, Blog sign-in registration, and joint live acceptance remain open.
+Current cleanup checks and dependency limitations are recorded in the
+[repository audit](main-deployment/repository-cleanup-audit.md). Do not treat dated
+local validation as proof of current AWS, email, or TURN behavior.
 
 Run relevant tests after runtime changes. Verify main can start and render while
 every feature service is absent, and cannot initialize feature collections.

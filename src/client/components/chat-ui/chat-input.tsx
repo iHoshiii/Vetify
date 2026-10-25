@@ -1,3 +1,4 @@
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 import React, { useEffect, useRef, useState } from 'react';
 import { CHAT_MODELS } from '@/types/chat';
 
@@ -136,8 +137,8 @@ export function ChatInput({
         </div>
       </div>
       <p className="text-[11px] text-slate-400 mt-1 text-center">
-        Vetify AI provides general guidance only — always consult a licensed vet for medical
-        decisions.
+        {CHAT_ASSISTANT_NAME} provides general guidance only — always consult a licensed vet for
+        medical decisions.
       </p>
     </div>
   );

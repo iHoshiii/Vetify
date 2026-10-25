@@ -64,7 +64,7 @@ router.post(
   validate(chatRequestSchema),
   async (req, res) => {
     const body = req.body as ChatRequest;
-    if (!(await isVeterinaryTopic(body.message))) {
+    if (!(await isVeterinaryTopic(body.message, body.history))) {
       const anonRemaining = res.locals.anonRemaining as number | undefined;
       ok(
         res,

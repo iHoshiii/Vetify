@@ -1,68 +1,85 @@
-# Main Vetify command reference
+# Command reference
 
-Run from the main repository with Node 24 and npm. On Windows use `npm.cmd` and
-`npx.cmd` to avoid a blocked PowerShell script wrapper.
-Configure local `.env` privately; production instructions are separate.
+Run from the repository root using Node 24. Commands use `npm.cmd` for Windows;
+`npm` works on other supported shells. Keep local credentials in ignored files.
 
 ## Development
 
-| Command                  | Purpose                                        |
-| ------------------------ | ---------------------------------------------- |
-| `npm.cmd ci`             | Install exact lockfile dependencies            |
-| `npm.cmd run dev`        | Vite client and nodemon server                 |
-| `npm.cmd run dev:client` | Client on localhost:5173                       |
-| `npm.cmd run dev:server` | API on localhost:8000                          |
-| `npm.cmd run preview`    | Preview a built client, not the production API |
+| Command                  | Purpose                                                          |
+| ------------------------ | ---------------------------------------------------------------- |
+| `npm.cmd ci`             | Install exact lockfile dependencies                              |
+| `npm.cmd run dev`        | Start Vite and the persistent development API                    |
+| `npm.cmd run dev:client` | Client on localhost:5173; copies required MediaPipe assets first |
+| `npm.cmd run dev:server` | API on localhost:8000 with the server TypeScript configuration   |
+| `npm.cmd run preview`    | Preview built client files; does not start the API               |
 
-`dev:server` explicitly uses `tsconfig.server.json` for server/shared aliases.
-Vite proxies `/api` and local `/socket.io`.
+Create `.env` from [.env.example](../.env.example). Vite proxies `/api` and local
+`/socket.io`. Bedrock development additionally needs an authenticated AWS profile;
+see [Kupa setup](main-deployment/bedrock-chat.md).
 
-## Build and validation
+## Types, lint, and tests
 
-| Command                                                | Purpose                                         |
-| ------------------------------------------------------ | ----------------------------------------------- |
-| `npm.cmd run typecheck:client:runtime`                 | Client runtime type check                       |
-| `npm.cmd run typecheck`                                | Full configured TypeScript projects             |
-| `npm.cmd run lint`                                     | Repository ESLint checks                        |
-| `npm.cmd run build:client`                             | Client output in dist/client                    |
-| `npm.cmd run build:server`                             | Bundled persistent server in dist/server        |
-| `npm.cmd run build`                                    | Client and persistent-server build              |
-| `npm.cmd run start`                                    | Run persistent server, not Lambda               |
-| `npm.cmd run build:lambda`                             | Lambda type check, bundles and runtime lockfile |
-| `npm.cmd run test:lambda`                              | Isolated packaged Lambda smoke check            |
-| `npm.cmd run build:client:prod -- --env-file=env.prod` | Isolated production frontend build              |
+| Command                                | Purpose                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| `npm.cmd run lint`                     | Repository ESLint checks                                                       |
+| `npm.cmd run typecheck`                | Configured TypeScript projects                                                 |
+| `npm.cmd run typecheck:client:runtime` | Client runtime import graph                                                    |
+| `npm.cmd test`                         | Client and server Vitest projects; skips opt-in live AI tests                  |
+| `npm.cmd run test:client`              | Client Vitest project                                                          |
+| `npm.cmd run test:server`              | Server Vitest project                                                          |
+| `npm.cmd run test:watch`               | Vitest watch mode                                                              |
+| `npm.cmd run test:coverage`            | Vitest coverage report                                                         |
+| `npm.cmd run test:e2e`                 | Build client and run configured Playwright browser tests                       |
+| `npm.cmd run test:responsive`          | Typecheck, isolated production fixture build, and responsive Playwright tests  |
+| `npm.cmd run test:chat:live`           | Opt-in real Bedrock classification and reply evaluation; incurs provider usage |
 
-Blog, Planner feature code, Books/Anatomy and PDF packaging are removed. `/planner` is a public app introduction. Verify the remaining extraction
-gate before uploading them as main-only artifacts. Builds do not deploy AWS.
-The broad server type check still includes obsolete auth files/tests with known
-errors; the Lambda check covers its actual runtime import graph.
+Node script checks run separately from Vitest:
 
-## Tests
+```powershell
+node --test scripts/__tests__/public-build-settings.test.mjs
+node --test scripts/__tests__/env-loading.test.mjs scripts/__tests__/github-deployment.test.mjs scripts/__tests__/serverless-template.test.mjs
+```
 
-| Command                     | Purpose                                    |
-| --------------------------- | ------------------------------------------ |
-| `npm.cmd run test`          | All Vitest tests                           |
-| `npm.cmd run test:client`   | Client project tests                       |
-| `npm.cmd run test:server`   | Server project tests                       |
-| `npm.cmd run test:watch`    | Vitest watch mode                          |
-| `npm.cmd run test:coverage` | Coverage run                               |
-| `npm.cmd run test:e2e`      | Playwright with its configured build/setup |
+Install Playwright browsers before browser checks. Database tests use temporary
+MongoDB fixtures. Never substitute a production database or run account seeds as
+part of verification. Record actual failures and reruns in release evidence.
 
-Use isolated MongoDB fixtures. Do not run seeds or account resets against a
-production database as part of verification. Earlier focused checks passed,
-but the full suite has known failures; inspect results instead of assuming green.
+## Builds and packaged runtime
 
-## Database and deployment
+| Command                                                | Output or prerequisite                                                 |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `npm.cmd run build:client`                             | Standard Vite output in `dist/client`                                  |
+| `npm.cmd run build:client:prod -- --env-file=env.prod` | Isolated public-setting build in `dist/client`                         |
+| `npm.cmd run build:server`                             | Server typecheck and bundle in `dist/server`                           |
+| `npm.cmd run build`                                    | Standard client and persistent server build                            |
+| `npm.cmd start`                                        | Run built persistent server; not a Lambda entry point                  |
+| `npm.cmd run test:production`                          | Smoke-test built server with temporary MongoDB                         |
+| `npm.cmd run release:prod`                             | Build and assemble standalone release; defaults to `env.prod`          |
+| `npm.cmd run test:release`                             | Install and smoke-test the assembled standalone runtime                |
+| `npm.cmd run build:lambda`                             | Typecheck, build handlers, and generate `dist/lambda` runtime lockfile |
+| `npm.cmd run test:lambda`                              | Install and smoke-test the packaged Lambda runtime                     |
 
-The official MongoDB driver uses explicit model indexes; there is no Prisma
-push/migration requirement. Schema changes do not automatically transform old
-documents. Review and back up any needed data migration separately.
-When an authorized development script needs server aliases, select the config:
+`npm.cmd run build:prod` builds the production client and persistent server using
+the default `env.prod`. Use the dedicated `build:client:prod` command when selecting an alternate env
+file. Follow [configuration rules](main-deployment/configuration.md) and inspect
+actual artifacts before publication. Builds do not deploy AWS.
+
+## Administrative scripts
+
+The official MongoDB driver creates explicit model indexes. There is no Prisma
+push step. Index initialization does not transform existing documents.
+
+Account seeds, role backfills, and data migrations change database records. Check
+their target and arrange a backup before an authorized run. For direct server
+scripts with aliases, explicitly select the server config:
 
 ```powershell
 npx.cmd tsx --tsconfig tsconfig.server.json src/server/scripts/<script>.ts
 ```
 
-See [AWS preparation](main-deployment/aws-prepare.md),
-[deployment commands](main-deployment/aws-deploy.md) and
-[release acceptance](main-deployment/aws-acceptance.md).
+Credential generators write private, ignored files and refuse overwrites:
+`npm.cmd run auth:oidc:secrets` and `npm.cmd run auth:books:secrets`.
+See [shared sign-in](main-deployment/anatomy-oidc.md) and
+[Books capabilities](main-deployment/books-capabilities.md) before using them.
+
+Use the [deployment guide](main-deployment/README.md) for cloud operations.

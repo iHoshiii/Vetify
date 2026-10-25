@@ -1,15 +1,18 @@
 # AWS deployment, main Vetify only
 
-Follow [preparation](aws-prepare.md) first. Commands here are instructions for a
-later deployment; they have not been run against AWS by preparing this guide.
+Reviewed 25 October 2026. Follow [preparation](aws-prepare.md) first. These are
+administrator deployment instructions. Existing pushes to `main` use
+[GitHub automation](github-actions.md). Editing this guide does not deploy AWS.
 
 ## 9. Build and deploy the backend
 
-After the main-only extraction and required serverless fixes pass:
+After local checks and main-only artifact acceptance pass, run from the repository root:
 
 ```powershell
-Set-Location C:\Users\Administrator\OneDrive\Desktop\Vetify
 npm.cmd ci
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd test
 npm.cmd run typecheck:client:runtime
 npm.cmd run build:lambda
 npm.cmd run test:lambda
@@ -37,8 +40,8 @@ and unchanged template does not refresh the running functions.
 ## 10. Create the private frontend S3 bucket
 
 For reproducible setup, use [the frontend CloudFormation template](../../deploy/frontend/README.md)
-instead of manually creating the resources in steps 10–12. It creates those
-resources together. Steps 13–16 still apply.
+instead of manually creating the resources in steps 10 through 12. It creates
+those resources together. Steps 13 through 16 still apply.
 
 In Sydney: S3 > Create bucket. Choose a globally unique name, such as
 `vetify-main-web-<your-account-id>`. Keep Block Public Access enabled, ACLs
@@ -115,12 +118,18 @@ NODE_ENV=production
 VITE_API_URL=/api/v1
 VITE_REALTIME_URL=wss://<actual-websocket-api-id>.execute-api.ap-southeast-2.amazonaws.com/prod
 VITE_CARTO_KEY=
+VITE_BOOKS_ORIGIN=
+VITE_ANATOMY_ORIGIN=
+VITE_BLOGS_ORIGIN=
 ```
 
-Use the exact `RealtimeUrl` stack output. Main supports `VITE_BOOKS_ORIGIN` and
-`VITE_ANATOMY_ORIGIN` and `VITE_BLOGS_ORIGIN` for external launch links. Leave them blank until their
-separate destinations and shared login are ready. Planner's public app page uses
-local content settings for its download QR/photos. Blog launch links use the separate app origin.
+Use the exact `RealtimeUrl` stack output. Blank Books/Blog origins keep those
+destinations unavailable. Anatomy uses its built-in origin when blank, so validate
+that integration explicitly. Planner's public page uses
+local content settings for its download QR/photos. The production builder exposes
+only these six named settings and rejects credentials, query strings, and
+fragments in URLs. Feature destinations must be origins without paths. See
+[configuration](configuration.md).
 
 ```powershell
 npm.cmd run build:client:prod -- --env-file=env.prod

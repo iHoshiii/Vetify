@@ -1,8 +1,9 @@
-# Extract features before building a main-only release
+# Feature extraction and release checklist
 
 Planner/Books/Anatomy/Blog code extraction is complete.
 No stored database data was removed. See [the extraction record](books-anatomy-extraction.md).
-The checklist records the full split; stored-data migration and deployment remain separate.
+Reviewed 25 October 2026. This checklist records the completed source split and
+the release assertions to preserve. Stored-data migration and deployment remain separate.
 
 ## 1. Preserve the implementations
 
@@ -12,7 +13,7 @@ Copy actual feature code/assets and useful tests. Do not replace working behavio
 with code invented from a prompt. Do not copy `.env`, credentials, users,
 professional approvals or production databases.
 
-Local locations under `C:\Users\Administrator\OneDrive\Desktop`:
+Sibling locations relative to the main repository's parent directory:
 
 - `vetify-meal-planner`
 - `vetify-books`
@@ -43,7 +44,7 @@ features: extract the needed definitions instead of deleting the whole file.
   The existing native client registration is not a generic client for all apps.
 - Professional inquiries/approval/profiles, clinic directory/map, appointments,
   messages, notifications, moderation of main accounts, audits and realtime.
-- AI Vet Assistant and its Bedrock integration. Blog moderation is removed.
+- Kupa, its shared semantic scope policy, and Bedrock integration. Blog moderation is removed.
 - Professional selfie/identity proof: it still uses MediaPipe.
   Anatomy is not a reason to remove `@mediapipe/tasks-vision` or its assets.
 - Main branding, home/help/about/legal/contact pages and shared layout.
@@ -107,5 +108,6 @@ This document does not authorize deleting live data.
 - All four repositories can build independently and have safe sample env files.
 - Cross-app sign-in is tested against the shared-auth contract before enabling it.
 
-Only after this gate passes should `dist/client` and `dist/lambda` be called
-main-only deployment artifacts. The current builders do not implement this gate.
+The packaged smoke checks cover several removed-API and collection assertions.
+Inspect the actual frontend and Lambda outputs too; compilation alone does not
+establish every item in this checklist. Record evidence for the released revision.

@@ -40,6 +40,7 @@ beforeEach(() => {
 describe('ChatWindow', () => {
   it('renders the input field', () => {
     renderChat();
+    expect(screen.getByRole('heading', { name: 'Ask Kupa' })).toBeDefined();
     expect(screen.getByPlaceholderText(/ask about your pet/i)).toBeDefined();
   });
 

@@ -26,6 +26,7 @@ export async function installApi(context: BrowserContext, role: Role, realtime =
     ({ role, session }) => {
       if (role !== 'guest') localStorage.setItem('vetify.auth', JSON.stringify(session));
       sessionStorage.setItem('vetify.professionals.termsAgreed', 'yes');
+      sessionStorage.setItem('vetify-testing-notice-acknowledged', 'true');
     },
     { role, session }
   );

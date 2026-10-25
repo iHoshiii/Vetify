@@ -3,6 +3,9 @@
 Completed locally on 14 October 2026. This record covers source extraction,
 not AWS/Vercel deployment, central SSO completion or database migration.
 
+Integration notes reviewed 25 October 2026. The validation counts below are
+historical results from the extraction, not a current full-suite report.
+
 ## Changes
 
 - Removed Books library/upload/affiliate UI and feature tests from main.
@@ -31,9 +34,14 @@ Existing navigation URLs remain useful:
 | `/professionals/dashboard/books`     | Books origin `/manage`    |
 | `/professionals/dashboard/affiliate` | Books origin `/affiliate` |
 
-Main's existing account/role guards remain in front of these pages.
-Configure `VITE_BOOKS_ORIGIN` and `VITE_ANATOMY_ORIGIN` when the separate apps
-are ready. Blank or invalid destinations show a clear unavailable state.
+Current launch behavior differs from the original extraction: `/books` redirects
+to the configured Books origin without a main login gate. Professional management
+and affiliate links retain console role checks. Anatomy validates the main
+session before opening its independent app and supports a hosted viewer bridge.
+
+Configure `VITE_BOOKS_ORIGIN` and `VITE_ANATOMY_ORIGIN` for the intended apps.
+Blank Books configuration shows unavailable. Blank Anatomy configuration uses
+`https://anatomy.vetify.page` in production or localhost:5176 in development.
 Production requires clean HTTPS origins; local loopback HTTP is allowed for dev.
 No credentials, identity records or access tokens are appended to launch URLs.
 The isolated production builder reads these public values explicitly.
@@ -42,7 +50,7 @@ Example local destinations are `http://localhost:5175` for Books and
 `http://localhost:5176` for Anatomy. Proposed production hosts are
 `https://books.vetify.page` and `https://anatomy.vetify.page`.
 These addresses are not proof that the applications are deployed or sign-in works.
-Leave the settings blank until their integrations are validated.
+Validate configured destinations and joint sign-in before relying on them.
 
 ## Validation
 
@@ -54,17 +62,19 @@ Leave the settings blank until their integrations are validated.
 - Packaged Lambda smoke checked signup, realtime tickets/delivery/cleanup,
   Books API 404 and absence of Books collections on startup.
 
-The full repository test suite was not declared green. `build:server` still
-encounters pre-existing obsolete email-verification files/tests included by its
-broad TypeScript configuration. Those files were not changed during extraction.
-The reachable Lambda runtime graph typechecks separately and builds successfully.
+At extraction time, the full repository suite was not declared green and broad
+server checking still encountered obsolete email-verification files/tests.
+The later cleanup removed obsolete modules and retargeted resend tests to the
+current API. Full types and server build now pass. See the
+[cleanup audit](repository-cleanup-audit.md) for current validation.
 
 ## Remaining work
 
 Blog was subsequently extracted into its own repository. Planner feature code was removed and replaced
-by [a public app page](meal-planner-app-page.md). This is not yet a complete main-only release.
-Main shared browser authentication/OIDC and Books professional capabilities are
-still missing, so independent apps cannot yet reuse real accounts completely.
+by [a public app page](meal-planner-app-page.md). Actual release artifacts still
+need acceptance checks. Optional Anatomy/Books OIDC and Books professional
+capabilities are now implemented. Configuration and joint deployed acceptance
+remain necessary before relying on these integrations.
 Stored library documents were not moved or deleted. Review any feature-only data
 migration with backups and immutable main user IDs separately.
 Continue [the remaining extraction checklist](extraction-checklist.md) and

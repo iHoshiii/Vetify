@@ -1,3 +1,4 @@
+import { CHAT_ASSISTANT_NAME } from '@shared/chat-assistant';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -59,7 +60,7 @@ export default function SiteHeader() {
               to="/chat"
               className="flex min-h-11 items-center rounded-md hover:text-teal-700 focus-visible:outline-teal-700"
             >
-              Ask Vetify
+              Ask {CHAT_ASSISTANT_NAME}
             </Link>
             <Link
               to="/services"

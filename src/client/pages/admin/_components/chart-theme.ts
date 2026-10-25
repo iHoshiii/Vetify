@@ -27,15 +27,6 @@ export const CHART_GRID = '#e4efe8';
 /** The tooltip's own border, a step lighter than a panel's. */
 export const CHART_TOOLTIP_BORDER = '#c6dcce';
 
-/**
- * The single-series mark: forest-600, at 7.1:1 on white.
- *
- * One hue for a trend line, because a line over time is magnitude and not identity —
- * there is nothing to tell apart, so nothing needs a second colour. The title names
- * the series, which is why these charts carry no legend.
- */
-export const CHART_SERIES = '#2f6249';
-
 /* -------------------------------------------------------------------------- *
  * Categorical
  * -------------------------------------------------------------------------- */

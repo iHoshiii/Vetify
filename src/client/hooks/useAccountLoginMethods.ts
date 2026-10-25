@@ -2,7 +2,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
   addAccountPassword,
-  connectAccountProvider,
   getAccountLoginMethods,
   reauthenticateAccount,
 } from '@/services/account-auth.service';
@@ -17,10 +16,6 @@ export function useAccountLoginMethods() {
     gcTime: 0,
     retry: false,
   });
-}
-
-export function useConnectAccountProvider() {
-  return useMutation({ mutationFn: connectAccountProvider });
 }
 
 export function useReauthenticateAccount() {

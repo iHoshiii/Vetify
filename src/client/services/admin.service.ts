@@ -390,15 +390,6 @@ export type MetricsOverview = {
 
 export type MetricPoint = { date: string; count: number };
 
-export type MetricsTimeseries = {
-  metric: MetricSeries;
-  days: number;
-  from: string;
-  to: string;
-  /** Every day in the window, oldest first, empty days included as zeroes. */
-  points: MetricPoint[];
-};
-
 export type MetricsProviderTimeseries = {
   metric: 'signups' | 'logins' | 'applications' | 'users';
   days: number;
@@ -418,13 +409,6 @@ export type MetricsBreakdown = {
 
 export function getMetricsOverview(days?: number, signal?: AbortSignal): Promise<MetricsOverview> {
   return apiFetch(`/admin/metrics/overview${queryOf({ days })}`, { signal });
-}
-
-export function getMetricsTimeseries(
-  params: { metric: MetricSeries; days?: number },
-  signal?: AbortSignal
-): Promise<MetricsTimeseries> {
-  return apiFetch(`/admin/metrics/timeseries${queryOf({ ...params })}`, { signal });
 }
 
 export function getMetricsProviderTimeseries(

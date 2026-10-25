@@ -1,5 +1,8 @@
 # Main frontend infrastructure
 
+Reviewed 25 October 2026. Use this for initial infrastructure or reviewed stack
+changes. Existing application releases use [GitHub Actions](../../docs/main-deployment/github-actions.md).
+
 This CloudFormation template provides the private S3 bucket, CloudFront OAC,
 HTTPS domain and `/api/*` proxy described in the main deployment guide.
 It deploys no extracted subsystem. It retains the bucket if the stack is deleted.
@@ -26,7 +29,9 @@ domain. Use the temporary address for asset and API routing checks; OAuth and
 browser-origin checks remain configured for `https://vetify.page`.
 
 Build with public settings in ignored `env.prod`: `/api/v1` and the exact backend
-`RealtimeUrl`. Follow [the deployment guide](../../docs/main-deployment/aws-deploy.md)
+`RealtimeUrl`. The production builder enforces a six-setting public allowlist;
+see [configuration](../../docs/main-deployment/configuration.md).
+Follow [the deployment guide](../../docs/main-deployment/aws-deploy.md)
 for the production build, S3 uploads and invalidation commands. Upload only
 `dist/client`, never environment files or backend/source directories.
 

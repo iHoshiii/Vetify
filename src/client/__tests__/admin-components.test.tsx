@@ -3,25 +3,10 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BreakdownChart } from '../pages/admin/_components/breakdown-chart';
 import { ConfirmDialog } from '../pages/admin/_components/confirm-dialog';
 import { DataTable, type Column } from '../pages/admin/_components/data-table';
 import { InterviewDialog } from '../pages/admin/_components/interview-dialog';
-import { MetricChart } from '../pages/admin/_components/metric-chart';
 import { StatCard } from '../pages/admin/_components/stat-card';
-
-/**
- * Recharts measures its container to lay itself out, and jsdom reports every
- * element as zero by zero — so the SVG never draws here. That is why every one of
- * these wrappers carries its numbers as text as well, and why these tests assert
- * the text: it is the half a screen reader gets too.
- */
-
-const POINTS = [
-  { date: '2026-08-20', count: 3 },
-  { date: '2026-08-21', count: 0 },
-  { date: '2026-08-22', count: 7 },
-];
 
 describe('StatCard', () => {
   it('labels the value and reads the trend as a direction and a share', () => {
@@ -41,60 +26,6 @@ describe('StatCard', () => {
 
     expect(screen.getByText(/no earlier activity to compare/i)).toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-  });
-});
-
-describe('MetricChart', () => {
-  it('totals the window and describes the peak for a screen reader', () => {
-    render(<MetricChart label="Signups" points={POINTS} />);
-
-    expect(screen.getByText('10 total')).toBeInTheDocument();
-    expect(
-      screen.getByText(/10 in total across 3 days, most on Aug 22 with 7/)
-    ).toBeInTheDocument();
-  });
-
-  it('says the window is empty rather than drawing a flat line', () => {
-    render(<MetricChart label="Chats" points={[{ date: '2026-08-20', count: 0 }]} />);
-
-    // Twice over: the visible line, and the sr-only summary above it.
-    expect(screen.getByText('Nothing recorded in this window.')).toBeInTheDocument();
-    expect(screen.getByText('Chats: nothing recorded in this window.')).toBeInTheDocument();
-  });
-
-  it('offers a retry when the read failed', async () => {
-    const onRetry = vi.fn();
-    render(<MetricChart label="Signups" points={[]} error="Network error" onRetry={onRetry} />);
-
-    expect(screen.getByRole('alert')).toHaveTextContent('Network error');
-    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
-    expect(onRetry).toHaveBeenCalledOnce();
-  });
-});
-
-describe('BreakdownChart', () => {
-  it('lists every slice with its count and share', () => {
-    render(
-      <BreakdownChart
-        label="By role"
-        total={10}
-        slices={[
-          { label: 'user', count: 7 },
-          { label: 'admin', count: 3 },
-        ]}
-      />
-    );
-
-    expect(screen.getByText('User')).toBeInTheDocument();
-    expect(screen.getByText('70%')).toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('30%')).toBeInTheDocument();
-  });
-
-  it('holds off entirely when there is nothing to split', () => {
-    render(<BreakdownChart label="By status" total={0} slices={[]} />);
-
-    expect(screen.getByText(/nothing to break down yet/i)).toBeInTheDocument();
   });
 });
 

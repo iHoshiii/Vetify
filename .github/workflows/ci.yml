@@ -40,6 +40,8 @@ jobs:
         run: npm run lint
       - name: Check types
         run: npm run typecheck
+      - name: Check public browser settings
+        run: node --test scripts/__tests__/public-build-settings.test.mjs
       - name: Build app
         run: npm run build
       - name: Run client and server tests

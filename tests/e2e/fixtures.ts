@@ -2,6 +2,9 @@ import { test as base, expect } from '@playwright/test';
 
 export const test = base.extend({
   page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem('vetify-testing-notice-acknowledged', 'true');
+    });
     const unexpected: string[] = [];
     const pageErrors: string[] = [];
     page.on('pageerror', (cause) => pageErrors.push(cause.message));

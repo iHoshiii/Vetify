@@ -70,7 +70,7 @@ describe('navbar auth reactivity', () => {
       'href',
       '/services'
     );
-    expect(screen.getByRole('link', { name: 'Ask Vetify' })).toHaveAttribute('href', '/chat');
+    expect(screen.getByRole('link', { name: 'Ask Kupa' })).toHaveAttribute('href', '/chat');
     expect(screen.getByRole('link', { name: 'Back to Vetify' })).toHaveAttribute(
       'href',
       '/services'

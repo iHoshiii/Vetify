@@ -19,16 +19,6 @@ export function verifyAccountLinkCode(method: AccountLinkMethod, code: string) {
   });
 }
 
-export function connectAccountProvider(input: {
-  provider: 'google' | 'facebook';
-  currentPassword?: string;
-}) {
-  return apiFetch<{ url: string }>(`/account/login-methods/${input.provider}`, {
-    method: 'POST',
-    body: { currentPassword: input.currentPassword },
-  });
-}
-
 export function reauthenticateAccount() {
   return apiFetch<{ url: string }>('/account/login-methods/reauthenticate', {
     method: 'POST',
