@@ -10,6 +10,7 @@ const jwks = {
 };
 const configuration = {
   OIDC_ANATOMY_CLIENT_SECRET: randomBytes(48).toString('base64url'),
+  OIDC_BLOG_CLIENT_SECRET: randomBytes(48).toString('base64url'),
   OIDC_COOKIE_KEYS: JSON.stringify([
     randomBytes(32).toString('base64url'),
     randomBytes(32).toString('base64url'),

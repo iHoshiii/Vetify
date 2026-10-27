@@ -16,6 +16,9 @@ output() { jq -er --arg key "$2" '.Stacks[0].Outputs[] | select(.OutputKey == $k
 secret_arn=$(parameter "$backend" AppSecretArn)
 config_revision=$(parameter "$backend" ConfigRevision)
 shared_auth_enabled=$(jq -r '.Stacks[0].Parameters | map(select(.ParameterKey == "SharedAuthEnabled")) | .[0].ParameterValue // "false"' <<< "$backend")
+books_shared_auth_enabled=$(jq -r '.Stacks[0].Parameters | map(select(.ParameterKey == "BooksSharedAuthEnabled")) | .[0].ParameterValue // "false"' <<< "$backend")
+books_capabilities_enabled=$(jq -r '.Stacks[0].Parameters | map(select(.ParameterKey == "BooksCapabilitiesEnabled")) | .[0].ParameterValue // "false"' <<< "$backend")
+blog_shared_auth_enabled=$(jq -r '.Stacks[0].Parameters | map(select(.ParameterKey == "BlogSharedAuthEnabled")) | .[0].ParameterValue // "false"' <<< "$backend")
 certificate_arn=$(parameter "$frontend" CertificateArn)
 test "$(parameter "$frontend" DomainName)" = vetify.page
 expected_realtime=$(sed -n 's/^VITE_REALTIME_URL=//p' release/deploy/github/frontend-build.env)
@@ -28,6 +31,7 @@ sam deploy --template-file .aws-sam/github-build/template.yaml \
   --stack-name vetify-backend --s3-bucket "$AWS_ARTIFACT_BUCKET" --s3-prefix vetify-ci \
   --role-arn "$AWS_CFN_ROLE_ARN" --capabilities CAPABILITY_IAM \
   --parameter-overrides "AppSecretArn=$secret_arn" ClientOrigin=https://vetify.page "ConfigRevision=$config_revision" "SharedAuthEnabled=$shared_auth_enabled" \
+  "BooksSharedAuthEnabled=$books_shared_auth_enabled" "BooksCapabilitiesEnabled=$books_capabilities_enabled" "BlogSharedAuthEnabled=$blog_shared_auth_enabled" \
   --no-confirm-changeset --no-fail-on-empty-changeset
 
 backend=$(aws cloudformation describe-stacks --stack-name vetify-backend)

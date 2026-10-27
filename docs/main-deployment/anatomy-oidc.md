@@ -1,6 +1,6 @@
 # Anatomy and Books shared sign-in
 
-Reviewed 25 October 2026 against `src/server/oidc/` and the SAM template.
+Reviewed 27 October 2026 against `src/server/oidc/` and the SAM template.
 
 ## Implementation and release status
 
@@ -105,6 +105,8 @@ sessions, disabled accounts, password reset, provider outages and direct access
 to protected Anatomy pictures. Local protocol tests do not establish that AWS
 and Vercel credentials, proxies, cookies and deployed UI versions are aligned.
 
-Meal Planner's version 2 boundary, Blog registration, and cross-app account
+Meal Planner's version 2 boundary and cross-app account
 export/deletion orchestration remain separate work. Books worker approval uses
 the [separate capability endpoint](books-capabilities.md), not OIDC identity alone.
+
+Blog uses an independent optional registration and permission contract. See [Blog shared sign-in](blog-oidc.md).

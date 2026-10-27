@@ -6,10 +6,12 @@ import { env } from '../config/env';
 export const OIDC_PATH = '/api/oidc';
 export const ANATOMY_CLIENT_ID = 'vetify-anatomy';
 export const BOOKS_CLIENT_ID = 'vetify-books';
+export const BLOG_CLIENT_ID = 'vetify-blog';
 const schema = z.object({
   OIDC_ISSUER: z.string().url(),
   OIDC_ANATOMY_CLIENT_SECRET: z.string().min(32),
   OIDC_BOOKS_CLIENT_SECRET: z.union([z.string().min(32), z.literal('')]).optional(),
+  OIDC_BLOG_CLIENT_SECRET: z.union([z.string().min(32), z.literal('')]).optional(),
   OIDC_COOKIE_KEYS: z
     .string()
     .transform((value) => z.array(z.string().min(32)).min(1).parse(JSON.parse(value))),
@@ -25,7 +27,12 @@ export function readOidcSettings(source: NodeJS.ProcessEnv = process.env) {
   let parsed: z.infer<typeof schema>;
   try {
     parsed = schema.parse(source);
-    if (parsed.OIDC_BOOKS_CLIENT_SECRET === parsed.OIDC_ANATOMY_CLIENT_SECRET) throw new Error();
+    const secrets = [
+      parsed.OIDC_ANATOMY_CLIENT_SECRET,
+      parsed.OIDC_BOOKS_CLIENT_SECRET,
+      parsed.OIDC_BLOG_CLIENT_SECRET,
+    ].filter(Boolean);
+    if (new Set(secrets).size !== secrets.length) throw new Error();
     if (!parsed.OIDC_JWKS.keys?.length) throw new Error();
     for (const key of parsed.OIDC_JWKS.keys) {
       if (key.kty !== 'RSA' || !key.kid || key.alg !== 'RS256' || key.use !== 'sig')
@@ -54,6 +61,10 @@ export function readOidcSettings(source: NodeJS.ProcessEnv = process.env) {
     issuer: parsed.OIDC_ISSUER,
     clientSecret: parsed.OIDC_ANATOMY_CLIENT_SECRET,
     booksClientSecret: parsed.OIDC_BOOKS_CLIENT_SECRET || undefined,
+    blogClientSecret: parsed.OIDC_BLOG_CLIENT_SECRET || undefined,
+    blogCallback: loopback
+      ? 'http://localhost:5178/auth/callback'
+      : 'https://blogs.vetify.page/auth/callback',
     booksCallback: loopback
       ? 'http://localhost:5175/auth/callback'
       : 'https://books.vetify.page/auth/callback',

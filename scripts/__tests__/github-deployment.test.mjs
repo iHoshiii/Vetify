@@ -111,6 +111,14 @@ test('deployment preserves runtime configuration, uploads assets before HTML and
   assert.ok(script.includes('test "${GITHUB_EVENT_NAME:-}" = push'));
   assert.match(script, /ConfigRevision/);
   assert.match(script, /AppSecretArn/);
+  for (const flag of [
+    'SharedAuthEnabled',
+    'BooksSharedAuthEnabled',
+    'BooksCapabilitiesEnabled',
+    'BlogSharedAuthEnabled',
+  ]) {
+    assert.match(script, new RegExp(flag + '=\\$'));
+  }
   assert.match(script, /get-caller-identity/);
   assert.match(script, /test .*RealtimeUrl.*expected_realtime/);
   assert.ok(script.indexOf('aws s3 sync') < script.indexOf('aws s3 cp'));

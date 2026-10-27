@@ -46,7 +46,8 @@
     "pretest:responsive": "npm run typecheck:responsive && npm run build:client:prod -- --env-file=tests/responsive/build.env",
     "test:responsive": "playwright test -c playwright.responsive.config.ts",
     "test:production": "node scripts/smoke-production.mjs",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test:blog:integration": "tsx --tsconfig tsconfig.server.json scripts/test-blog-integration.ts"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.1151.0",

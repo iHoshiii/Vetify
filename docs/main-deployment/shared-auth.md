@@ -1,17 +1,17 @@
 # Shared accounts and independent applications
 
-Reviewed 25 October 2026. Main is the account authority. Each feature app owns its
+Reviewed 27 October 2026. Main is the account authority. Each feature app owns its
 feature data and app session, identified by the immutable main user ID.
 
 ## Current contracts
 
-| Interface                        | Implementation                                                                 | Boundary                                             |
-| -------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| Main browser auth                | Password/social login, verification, explicit linking, rotating refresh cookie | Main host only                                       |
-| Native handoff and introspection | `POST /api/v1/auth/introspect`, version 1                                      | Existing native registration and session checks      |
-| Shared web sign-in               | Optional OIDC provider at `/api/oidc`                                          | Anatomy; Books only when independently configured    |
-| Books worker approval            | `POST /api/v1/auth/books-capabilities`, version 2                              | Expiring service credential, current author approval |
-| Blog sign-in                     | No OIDC client registration                                                    | Separate future integration                          |
+| Interface                        | Implementation                                                                 | Boundary                                              |
+| -------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Main browser auth                | Password/social login, verification, explicit linking, rotating refresh cookie | Main host only                                        |
+| Native handoff and introspection | `POST /api/v1/auth/introspect`, version 1                                      | Existing native registration and session checks       |
+| Shared web sign-in               | Optional OIDC provider at `/api/oidc`                                          | Anatomy; Books only when independently configured     |
+| Books worker approval            | `POST /api/v1/auth/books-capabilities`, version 2                              | Expiring service credential, current author approval  |
+| Blog sign-in                     | Optional confidential `vetify-blog` client and `/api/oidc/blog-capabilities`   | Current token-bound account/professional/admin access |
 
 These version numbers belong to different contracts. Books capability version 2
 does not make native introspection compatible with Planner v2.
@@ -26,7 +26,7 @@ does not make native introspection compatible with Planner v2.
 4. The feature backend exchanges the code and establishes its own session.
 5. Protected feature requests check the current identity and revocation contract.
 
-The provider supports Anatomy and an optional Books registration. Credentials
+The provider supports Anatomy and independent optional Books and Blog registrations. Credentials
 and callbacks are separate; a token for one client cannot authorize the other.
 See [provider setup, flags, and joint tests](anatomy-oidc.md).
 
@@ -75,8 +75,9 @@ not establish verified professional authority.
 - Define local and global logout clearly. Honor account/password/session changes.
 - Coordinate account export and deletion across independently owned data.
 
-Blog needs its own registration and admin authorization contract. Account
-export/deletion orchestration across apps remains separate work.
+Blog has its own registered client and token-bound capability contract; see
+[Blog integration](blog-oidc.md). Account export/deletion orchestration across
+apps remains separate work.
 
 ## Joint acceptance
 
