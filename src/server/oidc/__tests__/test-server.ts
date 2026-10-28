@@ -5,14 +5,16 @@ import * as oidc from 'openid-client';
 import { createApp } from '../../app';
 import { env } from '../../config/env';
 import { startTestDb, stopTestDb } from '../../test-utils/db';
-import { ANATOMY_CLIENT_ID, BOOKS_CLIENT_ID } from '../settings';
+import { ANATOMY_CLIENT_ID, BOOKS_CLIENT_ID, BLOG_CLIENT_ID } from '../settings';
 
 export let origin: string;
 export let config: oidc.Configuration;
 export let booksConfig: oidc.Configuration;
+export let blogConfig: oidc.Configuration;
 let server: Server;
 export const secret = 'synthetic-anatomy-client-secret-at-least-32-characters';
 export const booksSecret = 'synthetic-books-client-secret-independent-from-anatomy';
+export const blogSecret = 'synthetic-blog-client-secret-independent-from-other-apps';
 const oldServerUrl = env.SERVER_URL;
 const previous = new Map<string, string | undefined>();
 
@@ -27,6 +29,7 @@ export async function startOidc() {
     OIDC_ISSUER: `${origin}/api/oidc`,
     OIDC_ANATOMY_CLIENT_SECRET: secret,
     OIDC_BOOKS_CLIENT_SECRET: booksSecret,
+    OIDC_BLOG_CLIENT_SECRET: blogSecret,
     OIDC_COOKIE_KEYS: JSON.stringify(['synthetic-independent-cookie-key-at-least-32-characters']),
     OIDC_JWKS: JSON.stringify({
       keys: [
@@ -55,6 +58,14 @@ export async function startOidc() {
     { execute: [oidc.allowInsecureRequests] }
   );
   oidc.enableNonRepudiationChecks(booksConfig);
+  blogConfig = await oidc.discovery(
+    new URL(values.OIDC_ISSUER),
+    BLOG_CLIENT_ID,
+    { client_secret: blogSecret },
+    oidc.ClientSecretPost(blogSecret),
+    { execute: [oidc.allowInsecureRequests] }
+  );
+  oidc.enableNonRepudiationChecks(blogConfig);
 }
 
 export async function stopOidc() {

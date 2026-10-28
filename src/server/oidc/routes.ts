@@ -9,6 +9,7 @@ import { mainBrowserSession } from './bindings';
 import { completeSharedSignIn } from './complete';
 import { isSharedAuthClient } from './clients';
 import { createOidcProvider } from './provider';
+import { blogCapabilityRoutes } from './blog-capabilities';
 import { OIDC_PATH, readOidcSettings } from './settings';
 
 function interactionRoutes(provider: Provider) {
@@ -88,5 +89,12 @@ export function mountSharedAuth(app: Express) {
     res.setHeader('Cache-Control', 'no-store');
     next();
   });
-  app.use(OIDC_PATH, limiter, cookieParser(), interactionRoutes(provider), provider.callback());
+  app.use(
+    OIDC_PATH,
+    limiter,
+    cookieParser(),
+    blogCapabilityRoutes(provider, settings),
+    interactionRoutes(provider),
+    provider.callback()
+  );
 }

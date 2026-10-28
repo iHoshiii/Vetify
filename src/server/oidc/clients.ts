@@ -1,9 +1,12 @@
 import type { Configuration } from 'oidc-provider';
-import { ANATOMY_CLIENT_ID, BOOKS_CLIENT_ID, type OidcSettings } from './settings';
+import { ANATOMY_CLIENT_ID, BOOKS_CLIENT_ID, BLOG_CLIENT_ID, type OidcSettings } from './settings';
 
 export function sharedAuthClients(settings: OidcSettings): NonNullable<Configuration['clients']> {
   const registrations = [
     { id: ANATOMY_CLIENT_ID, secret: settings.clientSecret, callback: settings.callback },
+    ...(settings.blogClientSecret
+      ? [{ id: BLOG_CLIENT_ID, secret: settings.blogClientSecret, callback: settings.blogCallback }]
+      : []),
     ...(settings.booksClientSecret
       ? [
           {
@@ -26,5 +29,5 @@ export function sharedAuthClients(settings: OidcSettings): NonNullable<Configura
 }
 
 export function isSharedAuthClient(id: unknown) {
-  return id === ANATOMY_CLIENT_ID || id === BOOKS_CLIENT_ID;
+  return id === ANATOMY_CLIENT_ID || id === BOOKS_CLIENT_ID || id === BLOG_CLIENT_ID;
 }
